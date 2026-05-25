@@ -1,0 +1,232 @@
+from fastapi import HTTPException
+from supabase import create_client
+from config import get_settings
+from datetime import date
+
+settings = get_settings()
+
+
+def get_admin():
+    return create_client(settings.supabase_url, settings.supabase_service_key)
+
+
+def generate_queue_number(transaction_name: str, count: int) -> str:
+    if "transcript" in transaction_name.lower() or "tor" in transaction_name.lower():
+        prefix = "TOR"
+    elif "enrollment" in transaction_name.lower() or "coe" in transaction_name.lower():
+        prefix = "COE"
+    elif "diploma" in transaction_name.lower():
+        prefix = "DIP"
+    else:
+        prefix = "TXN"
+    return f"{prefix}-{str(count).zfill(3)}"
+
+
+def activate_queue(appointment_id: str, student_id: str):
+    """Called when a student arrives on their appointment day."""
+    admin = get_admin()
+
+    # Verify appointment belongs to student and is today
+    try:
+        appt_res = admin.table("appointments") \
+            .select("*, transaction_types(name, processing_steps)") \
+            .eq("id", appointment_id) \
+            .eq("student_id", student_id) \
+            .single() \
+            .execute()
+        appt = appt_res.data
+    except Exception:
+        raise HTTPException(status_code=404, detail="Appointment not found")
+
+    if appt["status"] != "confirmed":
+        raise HTTPException(status_code=400, detail="Appointment is not confirmed")
+
+    if appt["appointment_date"] != str(date.today()):
+        raise HTTPException(
+            status_code=400,
+            detail=f"Queue can only be activated on your appointment date ({appt['appointment_date']})"
+        )
+
+    # Check if queue ticket already exists
+    existing = admin.table("queue_tickets") \
+        .select("*") \
+        .eq("appointment_id", appointment_id) \
+        .execute()
+    if existing.data:
+        # Return existing ticket with steps
+        ticket = existing.data[0]
+        steps = admin.table("transaction_steps") \
+            .select("*") \
+            .eq("queue_ticket_id", ticket["id"]) \
+            .order("step_number") \
+            .execute()
+        return {"ticket": ticket, "steps": steps.data}
+
+    # Generate queue number
+    tt = appt["transaction_types"]
+    processing_steps = tt["processing_steps"] or []
+
+    count_res = admin.table("queue_tickets") \
+        .select("id") \
+        .execute()
+    queue_number = generate_queue_number(tt["name"], len(count_res.data) + 1)
+
+    # Create queue ticket
+    ticket_res = admin.table("queue_tickets").insert({
+        "appointment_id": appointment_id,
+        "student_id": student_id,
+        "queue_number": queue_number,
+        "current_step": 1,
+        "total_steps": len(processing_steps),
+        "status": "in_progress"
+    }).execute()
+    ticket = ticket_res.data[0]
+
+    # Create transaction steps
+    steps_to_insert = []
+    for i, step_name in enumerate(processing_steps):
+        steps_to_insert.append({
+            "queue_ticket_id": ticket["id"],
+            "step_number": i + 1,
+            "step_name": step_name,
+            "location": step_name.split(" - ")[0] if " - " in step_name else step_name,
+            "status": "in_progress" if i == 0 else "pending"
+        })
+
+    steps_res = admin.table("transaction_steps").insert(steps_to_insert).execute()
+
+    # Update appointment status
+    admin.table("appointments") \
+        .update({"status": "confirmed"}) \
+        .eq("id", appointment_id) \
+        .execute()
+
+    return {"ticket": ticket, "steps": steps_res.data}
+
+
+def get_student_queue(student_id: str):
+    """Get active queue ticket for a student."""
+    admin = get_admin()
+    try:
+        tickets_res = admin.table("queue_tickets") \
+            .select("*, appointments(appointment_date, time_slot, transaction_types(name))") \
+            .eq("student_id", student_id) \
+            .in_("status", ["waiting", "in_progress"]) \
+            .order("created_at", desc=True) \
+            .limit(1) \
+            .execute()
+
+        if not tickets_res.data:
+            return None
+
+        ticket = tickets_res.data[0]
+        steps_res = admin.table("transaction_steps") \
+            .select("*") \
+            .eq("queue_ticket_id", ticket["id"]) \
+            .order("step_number") \
+            .execute()
+
+        return {"ticket": ticket, "steps": steps_res.data}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+def confirm_step(queue_ticket_id: str, step_number: int, staff_id: str):
+    """Staff confirms a student's step is complete."""
+    admin = get_admin()
+    from datetime import datetime, timezone
+
+    # Get the ticket
+    try:
+        ticket_res = admin.table("queue_tickets") \
+            .select("*") \
+            .eq("id", queue_ticket_id) \
+            .single() \
+            .execute()
+        ticket = ticket_res.data
+    except Exception:
+        raise HTTPException(status_code=404, detail="Queue ticket not found")
+
+    # Get the step
+    try:
+        step_res = admin.table("transaction_steps") \
+            .select("*") \
+            .eq("queue_ticket_id", queue_ticket_id) \
+            .eq("step_number", step_number) \
+            .single() \
+            .execute()
+        step = step_res.data
+    except Exception:
+        raise HTTPException(status_code=404, detail="Step not found")
+
+    if step["status"] == "completed":
+        raise HTTPException(status_code=400, detail="Step already completed")
+
+    now = datetime.now(timezone.utc).isoformat()
+
+    # Mark current step as completed
+    admin.table("transaction_steps") \
+        .update({
+            "status": "completed",
+            "confirmed_by": staff_id,
+            "confirmed_at": now
+        }) \
+        .eq("id", step["id"]) \
+        .execute()
+
+    total_steps = ticket["total_steps"]
+    next_step = step_number + 1
+
+    if next_step > total_steps:
+        # All steps done — complete the ticket and appointment
+        admin.table("queue_tickets") \
+            .update({"status": "completed", "current_step": total_steps}) \
+            .eq("id", queue_ticket_id) \
+            .execute()
+        admin.table("appointments") \
+            .update({"status": "completed"}) \
+            .eq("id", ticket["appointment_id"]) \
+            .execute()
+        return {"message": "Transaction completed", "status": "completed"}
+    else:
+        # Advance to next step
+        admin.table("queue_tickets") \
+            .update({"current_step": next_step}) \
+            .eq("id", queue_ticket_id) \
+            .execute()
+        admin.table("transaction_steps") \
+            .update({"status": "in_progress"}) \
+            .eq("queue_ticket_id", queue_ticket_id) \
+            .eq("step_number", next_step) \
+            .execute()
+        return {"message": f"Step {step_number} confirmed. Moved to step {next_step}.", "status": "in_progress"}
+
+
+def get_todays_queue(date_filter: str = None):
+    """Get all active queue tickets for today — for staff dashboard."""
+    admin = get_admin()
+    today = date_filter or str(date.today())
+    try:
+        tickets_res = admin.table("queue_tickets") \
+            .select("*, appointments(appointment_date, time_slot, transaction_types(name)), users(first_name, last_name, student_id)") \
+            .order("created_at") \
+            .execute()
+
+        # Filter by today's appointments
+        filtered = [
+            t for t in tickets_res.data
+            if t.get("appointments") and t["appointments"].get("appointment_date") == today
+        ]
+
+        result = []
+        for ticket in filtered:
+            steps_res = admin.table("transaction_steps") \
+                .select("*") \
+                .eq("queue_ticket_id", ticket["id"]) \
+                .order("step_number") \
+                .execute()
+            result.append({"ticket": ticket, "steps": steps_res.data})
+
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))

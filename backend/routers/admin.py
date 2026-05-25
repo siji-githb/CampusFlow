@@ -1,0 +1,95 @@
+from fastapi import APIRouter, Header, HTTPException
+from services.admin_service import (
+    get_dashboard_stats,
+    get_reports,
+    get_audit_log,
+    get_office_config,
+    update_office_config,
+    get_all_users,
+    update_user_role,
+    get_transaction_types
+)
+from models.admin_models import OfficeConfigUpdate
+from supabase import create_client
+from config import get_settings
+
+settings = get_settings()
+router = APIRouter(prefix="/admin", tags=["Admin"])
+
+
+def get_current_user(authorization: str):
+    if not authorization.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Invalid authorization header")
+    token = authorization.replace("Bearer ", "")
+    try:
+        supabase = create_client(settings.supabase_url, settings.supabase_anon_key)
+        user = supabase.auth.get_user(token)
+        if not user or not user.user:
+            raise HTTPException(status_code=401, detail="Invalid or expired token")
+        return user.user
+    except HTTPException:
+        raise
+    except Exception:
+        raise HTTPException(status_code=401, detail="Invalid or expired token")
+
+
+def require_admin(authorization: str):
+    user = get_current_user(authorization)
+    admin_client = create_client(settings.supabase_url, settings.supabase_service_key)
+    try:
+        profile = admin_client.table("users").select("role").eq("id", user.id).single().execute()
+        if profile.data["role"] != "admin":
+            raise HTTPException(status_code=403, detail="Admin access required")
+        return user
+    except HTTPException:
+        raise
+    except Exception:
+        raise HTTPException(status_code=403, detail="Admin access required")
+
+
+@router.get("/stats")
+def dashboard_stats(authorization: str = Header(...)):
+    require_admin(authorization)
+    return get_dashboard_stats()
+
+
+@router.get("/reports")
+def reports(days: int = 7, authorization: str = Header(...)):
+    require_admin(authorization)
+    return get_reports(days)
+
+
+@router.get("/audit-log")
+def audit_log(limit: int = 50, authorization: str = Header(...)):
+    require_admin(authorization)
+    return get_audit_log(limit)
+
+
+@router.get("/office-config")
+def office_config(authorization: str = Header(...)):
+    require_admin(authorization)
+    return get_office_config()
+
+
+@router.patch("/office-config")
+def update_config(data: OfficeConfigUpdate, authorization: str = Header(...)):
+    require_admin(authorization)
+    return update_office_config(data.key, data.value)
+
+
+@router.get("/users")
+def all_users(authorization: str = Header(...)):
+    require_admin(authorization)
+    return get_all_users()
+
+
+@router.patch("/users/{user_id}/role")
+def change_role(user_id: str, role: str, authorization: str = Header(...)):
+    require_admin(authorization)
+    return update_user_role(user_id, role)
+
+
+@router.get("/transaction-types")
+def transaction_types(authorization: str = Header(...)):
+    require_admin(authorization)
+    return get_transaction_types()
