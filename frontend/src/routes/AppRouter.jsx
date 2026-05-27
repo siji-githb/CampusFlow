@@ -8,6 +8,7 @@ import StudentDashboard from '../pages/student/StudentDashboard'
 import BookAppointment from '../pages/student/BookAppointment'
 import MyAppointments from '../pages/student/MyAppointments'
 import MyQueue from '../pages/student/MyQueue'
+import AiChat from '../pages/student/AiChat'
 import StaffDashboard from '../pages/staff/StaffDashboard'
 import AdminDashboard from '../pages/admin/AdminDashboard'
 
@@ -47,6 +48,11 @@ export default function AppRouter() {
         <Route path="/student/queue" element={
           <ProtectedRoute allowedRoles={['student']}>
             <MyQueue />
+          </ProtectedRoute>
+        } />
+        <Route path="/student/ai-chat" element={
+          <ProtectedRoute allowedRoles={['student']}>
+            <AiChat />
           </ProtectedRoute>
         } />
 

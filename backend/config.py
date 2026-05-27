@@ -7,6 +7,8 @@ class Settings(BaseSettings):
     supabase_anon_key: str
     supabase_service_key: str
     openai_api_key: str = "placeholder"
+    openai_base_url: str = "https://api.openai.com/v1"
+    openai_model: str = "gpt-4o-mini"
     secret_key: str
     algorithm: str = "HS256"
     access_token_expire_minutes: int = 60

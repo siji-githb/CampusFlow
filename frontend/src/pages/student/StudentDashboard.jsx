@@ -42,7 +42,7 @@ export default function StudentDashboard() {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
           <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
             <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center mb-3">
               <span className="text-green-600 text-lg">📅</span>
@@ -70,7 +70,9 @@ export default function StudentDashboard() {
               View Queue →
             </button>
           </div>
+        </div>
 
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
             <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center mb-3">
               <span className="text-purple-600 text-lg">📋</span>
@@ -82,6 +84,20 @@ export default function StudentDashboard() {
               className="mt-4 text-sm bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg font-medium"
             >
               View All →
+            </button>
+          </div>
+
+          <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+            <div className="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center mb-3">
+              <span className="text-orange-600 text-lg">🤖</span>
+            </div>
+            <h3 className="font-semibold text-gray-800">AI Assistant</h3>
+            <p className="text-gray-500 text-sm mt-1">Get help with your transactions</p>
+            <button
+              onClick={() => navigate('/student/ai-chat')}
+              className="mt-4 text-sm bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-lg font-medium"
+            >
+              Chat Now →
             </button>
           </div>
         </div>
