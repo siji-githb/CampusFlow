@@ -7,7 +7,8 @@ from services.admin_service import (
     update_office_config,
     get_all_users,
     update_user_role,
-    get_transaction_types
+    get_transaction_types,
+    get_ai_insights,          # ← M12
 )
 from models.admin_models import OfficeConfigUpdate
 from supabase import create_client
@@ -93,3 +94,12 @@ def change_role(user_id: str, role: str, authorization: str = Header(...)):
 def transaction_types(authorization: str = Header(...)):
     require_admin(authorization)
     return get_transaction_types()
+
+
+# ── M12: AI-Generated Admin Insights ─────────────────────────────────────────
+
+@router.get("/insights")
+def ai_insights(authorization: str = Header(...)):
+    """Today's appointment stats + AI-generated summary for the Reports tab."""
+    require_admin(authorization)
+    return get_ai_insights()

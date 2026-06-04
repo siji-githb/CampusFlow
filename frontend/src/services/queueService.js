@@ -46,3 +46,12 @@ export const confirmStep = async (token, queueTicketId, stepNumber) => {
   if (!res.ok) throw new Error(data.detail || 'Failed to confirm step')
   return data
 }
+
+export const getTimeEstimate = async (token, appointmentId) => {
+  const res = await fetch(`${API_URL}/queue/time-estimate/${appointmentId}`, {
+    headers: authHeader(token)
+  })
+  const data = await res.json()
+  if (!res.ok) throw new Error(data.detail || 'Failed to fetch time estimate')
+  return data
+}

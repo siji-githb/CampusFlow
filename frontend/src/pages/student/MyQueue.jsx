@@ -1,156 +1,176 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/useAuth'
-import { getMyQueue, activateQueue } from '../../services/queueService'
+import Navbar from '../../components/layout/Navbar'
+import { getMyQueue, activateQueue, getTimeEstimate } from '../../services/queueService'  // ← M9
 import { getMyAppointments } from '../../services/appointmentService'
 
-const STEP_STATUS = {
-  pending: { label: 'Pending', color: 'bg-gray-100 text-gray-500', dot: 'bg-gray-300' },
-  in_progress: { label: 'In Progress', color: 'bg-yellow-100 text-yellow-700', dot: 'bg-yellow-400' },
-  completed: { label: 'Done', color: 'bg-green-100 text-green-700', dot: 'bg-green-500' },
+const M = { maroon: '#7B1A2A', maroonLight: '#F9F0F1', gold: '#B8900A', goldLight: '#FDF6E3', offWhite: '#F9F7F4', gray200: '#EAE7E2', gray500: '#706B65', text: '#1C1917' }
+
+const STEP_STYLE = {
+  pending:     { dot: M.gray200, text: M.gray500, badge: 'Pending',     badgeBg: '#F9F9F9',   badgeColor: M.gray500 },
+  in_progress: { dot: M.gold,    text: M.text,    badge: 'In Progress', badgeBg: M.goldLight,  badgeColor: M.gold    },
+  completed:   { dot: M.maroon,  text: M.text,    badge: 'Done',        badgeBg: M.maroonLight,badgeColor: M.maroon  },
 }
 
 export default function MyQueue() {
-  // eslint-disable-next-line no-unused-vars
-  const { user, token } = useAuth()
+  const { token } = useAuth()
   const navigate = useNavigate()
-  const [queueData, setQueueData] = useState(null)
-  const [todayAppointments, setTodayAppointments] = useState([])
-  const [loading, setLoading] = useState(true)
+  const [queueData, setQueueData]   = useState(null)
+  const [todayAppts, setTodayAppts] = useState([])
+  const [loading, setLoading]       = useState(true)
   const [activating, setActivating] = useState(null)
-  const [error, setError] = useState('')
-
-  const today = new Date().toISOString().split('T')[0]
+  const [error, setError]           = useState('')
+  const [estimates, setEstimates]   = useState([])   // ← M9
+  const today    = new Date().toISOString().split('T')[0]
+  const pollRef  = useRef(null)
 
   const fetchQueue = async () => {
     try {
       const data = await getMyQueue(token)
       setQueueData(data.ticket ? data : null)
-    } catch (err) {
-      setError(err.message)
-    }
+    } catch (e) { setError(e.message) }
   }
 
-  const fetchTodayAppointments = async () => {
+  const fetchAppts = async () => {
     try {
-      const appts = await getMyAppointments(token)
-      const todayAppts = appts.filter(
-        a => a.appointment_date === today && a.status === 'confirmed'
-      )
-      setTodayAppointments(todayAppts)
-    } catch (err) {
-      setError(err.message)
+      const all = await getMyAppointments(token)
+      setTodayAppts(all.filter(a => a.appointment_date === today && a.status === 'confirmed'))
+    } catch (e) { setError(e.message) }
+  }
+
+  // ── M9: fetch time estimates once we have a queue ticket ──────────────────
+  const fetchEstimates = async (appointmentId) => {
+    try {
+      const data = await getTimeEstimate(token, appointmentId)
+      setEstimates(data.estimates || [])
+    } catch {
+      setEstimates([])   // fail silently — estimates are non-critical
     }
   }
 
   useEffect(() => {
-    Promise.all([fetchQueue(), fetchTodayAppointments()])
-      .finally(() => setLoading(false))
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    Promise.all([fetchQueue(), fetchAppts()]).finally(() => setLoading(false))
+    pollRef.current = setInterval(fetchQueue, 15000)
+    return () => clearInterval(pollRef.current)
   }, [])
 
-  const handleActivate = async (appointmentId) => {
-    setActivating(appointmentId)
-    setError('')
-    try {
-      await activateQueue(token, appointmentId)
-      await fetchQueue()
-      await fetchTodayAppointments()
-    } catch (err) {
-      setError(err.message)
-    } finally {
-      setActivating(null)
+  // ── M9: trigger estimate fetch when ticket becomes available ──────────────
+  useEffect(() => {
+    if (queueData?.ticket?.appointment_id) {
+      fetchEstimates(queueData.ticket.appointment_id)
     }
+  }, [queueData?.ticket?.appointment_id])
+
+  const handleActivate = async (id) => {
+    setActivating(id); setError('')
+    try { await activateQueue(token, id); await Promise.all([fetchQueue(), fetchAppts()]) }
+    catch (e) { setError(e.message) }
+    finally { setActivating(null) }
   }
 
   const ticket = queueData?.ticket
-  const steps = queueData?.steps || []
+  const steps  = queueData?.steps || []
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <nav className="bg-white shadow-sm px-6 py-4 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 bg-green-600 rounded-lg flex items-center justify-center">
-            <span className="text-white text-sm font-bold">CF</span>
-          </div>
-          <span className="font-semibold text-gray-800">My Queue</span>
-        </div>
-        <button
-          onClick={() => navigate('/student/dashboard')}
-          className="text-sm text-gray-500 hover:text-gray-700"
-        >
-          ← Back
-        </button>
-      </nav>
-
-      <main className="max-w-2xl mx-auto px-4 py-8">
+    <div style={{ minHeight: '100vh', background: M.offWhite, fontFamily: "'DM Sans', sans-serif" }}>
+      <Navbar backTo="/student/dashboard" title="My Queue" />
+      <main style={{ maxWidth: '560px', margin: '0 auto', padding: '2rem 1.5rem' }}>
         {error && (
-          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-4 text-sm">
+          <div style={{ padding: '10px 14px', borderRadius: '8px', background: M.maroonLight, color: M.maroon, fontSize: '13px', marginBottom: '1rem' }}>
             {error}
           </div>
         )}
 
         {loading ? (
-          <div className="text-center py-12 text-gray-400">Loading queue...</div>
+          <div style={{ textAlign: 'center', padding: '3rem', color: M.gray500 }}>Loading queue...</div>
+
         ) : ticket ? (
-          // Active queue ticket
           <div>
-            <div className="bg-white rounded-2xl border border-gray-200 p-6 mb-4">
-              <div className="flex items-center justify-between mb-4">
+            {/* Queue ticket card */}
+            <div style={{ background: `linear-gradient(135deg, ${M.maroon} 0%, #9B2335 100%)`, borderRadius: '16px', padding: '1.75rem', marginBottom: '1rem', color: 'white' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
                 <div>
-                  <p className="text-xs text-gray-400 uppercase tracking-wide">Queue Number</p>
-                  <p className="text-4xl font-bold text-green-600">{ticket.queue_number}</p>
+                  <p style={{ fontSize: '11px', color: 'rgba(255,255,255,0.5)', margin: '0 0 4px', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Queue Number</p>
+                  <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '3rem', fontWeight: 800, color: '#F0C040', lineHeight: 1 }}>{ticket.queue_number}</div>
                 </div>
-                <div className="text-right">
-                  <p className="text-xs text-gray-400 uppercase tracking-wide">Status</p>
-                  <span className={`text-sm font-medium px-3 py-1 rounded-full capitalize
-                    ${ticket.status === 'completed' ? 'bg-blue-100 text-blue-700' : 'bg-yellow-100 text-yellow-700'}`}>
-                    {ticket.status === 'in_progress' ? 'In Progress' : ticket.status}
-                  </span>
-                </div>
+                <span style={{
+                  fontSize: '12px', fontWeight: 600, padding: '5px 12px', borderRadius: '100px',
+                  background: ticket.status === 'completed' ? '#EFF6FF' : 'rgba(240,192,64,0.2)',
+                  color: ticket.status === 'completed' ? '#1D4ED8' : '#F0C040',
+                  border: ticket.status === 'completed' ? '1px solid #BFDBFE' : '1px solid rgba(240,192,64,0.3)'
+                }}>
+                  {ticket.status === 'in_progress' ? 'In Progress' : ticket.status === 'completed' ? 'Completed' : ticket.status}
+                </span>
               </div>
-              <div className="text-sm text-gray-500">
-                <p>{ticket.appointments?.transaction_types?.name}</p>
-                <p>{ticket.appointments?.appointment_date} at {ticket.appointments?.time_slot}</p>
-              </div>
+              <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.7)', margin: '0 0 3px' }}>{ticket.appointments?.transaction_types?.name}</p>
+              <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.45)', margin: 0 }}>{ticket.appointments?.appointment_date} at {ticket.appointments?.time_slot}</p>
             </div>
 
             {/* Step tracker */}
-            <div className="bg-white rounded-2xl border border-gray-200 p-6">
-              <h3 className="font-semibold text-gray-800 mb-4">Transaction Progress</h3>
-              <div className="space-y-4">
-                {steps.map((step, index) => {
-                  const style = STEP_STATUS[step.status] || STEP_STATUS.pending
-                  const isLast = index === steps.length - 1
+            <div style={{ background: 'white', borderRadius: '14px', border: `1px solid ${M.gray200}`, padding: '1.5rem', boxShadow: '0 1px 4px rgba(0,0,0,0.04)' }}>
+              <h3 style={{ fontSize: '14px', fontWeight: 700, color: M.text, margin: '0 0 1.25rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Transaction Progress</h3>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0' }}>
+                {steps.map((step, idx) => {
+                  const ss     = STEP_STYLE[step.status] || STEP_STYLE.pending
+                  const isLast = idx === steps.length - 1
+
+                  // ── M9: find estimate for this step ──────────────────────
+                  const est = estimates.find(e => e.step === step.step_number)
+
                   return (
-                    <div key={step.id} className="flex gap-4">
-                      <div className="flex flex-col items-center">
-                        <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold
-                          ${step.status === 'completed' ? 'bg-green-500 text-white' :
-                            step.status === 'in_progress' ? 'bg-yellow-400 text-white' :
-                            'bg-gray-200 text-gray-500'}`}>
+                    <div key={step.id} style={{ display: 'flex', gap: '14px' }}>
+                      {/* Step dot + connector */}
+                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                        <div style={{
+                          width: '28px', height: '28px', borderRadius: '50%', flexShrink: 0,
+                          background: step.status === 'completed' ? M.maroon : step.status === 'in_progress' ? M.gold : M.gray200,
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          color: step.status === 'pending' ? M.gray500 : 'white',
+                          fontSize: '12px', fontWeight: 700,
+                        }}>
                           {step.status === 'completed' ? '✓' : step.step_number}
                         </div>
                         {!isLast && (
-                          <div className={`w-0.5 h-8 mt-1 ${step.status === 'completed' ? 'bg-green-300' : 'bg-gray-200'}`} />
+                          <div style={{ width: '2px', flex: 1, minHeight: '24px', margin: '3px 0', background: step.status === 'completed' ? M.maroon : M.gray200 }} />
                         )}
                       </div>
-                      <div className="flex-1 pb-4">
-                        <div className="flex items-center justify-between">
-                          <p className="font-medium text-gray-800 text-sm">{step.step_name}</p>
-                          <span className={`text-xs px-2 py-0.5 rounded-full ${style.color}`}>
-                            {style.label}
+
+                      {/* Step content */}
+                      <div style={{ flex: 1, paddingBottom: isLast ? 0 : '16px' }}>
+                        {/* Name row + status badge */}
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '3px' }}>
+                          <span style={{ fontSize: '14px', fontWeight: 600, color: ss.text }}>{step.step_name}</span>
+                          <span style={{ fontSize: '11px', fontWeight: 600, padding: '2px 8px', borderRadius: '100px', background: ss.badgeBg, color: ss.badgeColor }}>
+                            {ss.badge}
                           </span>
                         </div>
+
+                        {/* ── M9: estimate badge — only on pending steps ── */}
+                        {est && step.status === 'pending' && (
+                          <div style={{ marginBottom: '4px' }}>
+                            <span style={{
+                              display: 'inline-flex', alignItems: 'center', gap: '4px',
+                              fontSize: '11px', fontWeight: 500,
+                              background: 'rgba(184,144,10,0.08)',
+                              color: M.gold,
+                              border: `1px solid rgba(184,144,10,0.25)`,
+                              borderRadius: '100px',
+                              padding: '2px 10px',
+                              fontFamily: 'monospace',
+                              letterSpacing: '0.03em',
+                            }}>
+                              ⏱ {est.label}
+                            </span>
+                          </div>
+                        )}
+
+                        {/* Sub-labels */}
                         {step.status === 'in_progress' && (
-                          <p className="text-xs text-yellow-600 mt-1">
-                            ⏳ Please proceed to this counter
-                          </p>
+                          <p style={{ fontSize: '12px', color: M.gold, margin: 0 }}>⏳ Please proceed to this counter</p>
                         )}
                         {step.status === 'completed' && step.confirmed_at && (
-                          <p className="text-xs text-gray-400 mt-1">
-                            ✅ Confirmed at {new Date(step.confirmed_at).toLocaleTimeString()}
-                          </p>
+                          <p style={{ fontSize: '11px', color: M.gray500, margin: 0 }}>✓ Confirmed at {new Date(step.confirmed_at).toLocaleTimeString()}</p>
                         )}
                       </div>
                     </div>
@@ -159,40 +179,30 @@ export default function MyQueue() {
               </div>
 
               {ticket.status === 'completed' && (
-                <div className="mt-4 pt-4 border-t border-gray-100 text-center">
-                  <p className="text-green-600 font-semibold">🎉 Transaction Complete!</p>
-                  <p className="text-gray-400 text-sm mt-1">All steps have been processed.</p>
+                <div style={{ marginTop: '1rem', padding: '1rem', background: M.maroonLight, borderRadius: '10px', textAlign: 'center', border: `1px solid ${M.maroon}20` }}>
+                  <p style={{ fontSize: '15px', fontWeight: 700, color: M.maroon, margin: '0 0 3px' }}>🎉 Transaction Complete!</p>
+                  <p style={{ fontSize: '12px', color: M.gray500, margin: 0 }}>All steps have been processed.</p>
                 </div>
               )}
             </div>
           </div>
-        ) : todayAppointments.length > 0 ? (
-          // Has appointment today but no queue yet
+
+        ) : todayAppts.length > 0 ? (
           <div>
-            <h2 className="text-lg font-bold text-gray-800 mb-1">Today's Appointments</h2>
-            <p className="text-gray-500 text-sm mb-4">
-              Activate your queue number when you arrive at the Registrar's Office.
-            </p>
-            <div className="space-y-3">
-              {todayAppointments.map((appt) => (
-                <div key={appt.id} className="bg-white rounded-xl border border-gray-200 p-4">
-                  <div className="flex items-start justify-between mb-2">
-                    <div>
-                      <h3 className="font-semibold text-gray-800 text-sm">
-                        {appt.transaction_types?.name}
-                      </h3>
-                      <p className="text-gray-500 text-sm">
-                        📅 {appt.appointment_date} at {appt.time_slot}
-                      </p>
-                    </div>
-                    <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full font-medium">
-                      Confirmed
-                    </span>
+            <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: '1.4rem', fontWeight: 700, color: M.maroon, margin: '0 0 6px' }}>Today's Appointments</h2>
+            <p style={{ fontSize: '13px', color: M.gray500, margin: '0 0 1.25rem' }}>Activate your queue number when you arrive at the Registrar's Office.</p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              {todayAppts.map(appt => (
+                <div key={appt.id} style={{ background: 'white', borderRadius: '14px', border: `1px solid ${M.gray200}`, padding: '1.25rem', boxShadow: '0 1px 4px rgba(0,0,0,0.04)' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                    <h3 style={{ fontSize: '15px', fontWeight: 600, color: M.text, margin: 0 }}>{appt.transaction_types?.name}</h3>
+                    <span style={{ fontSize: '11px', fontWeight: 600, padding: '2px 10px', borderRadius: '100px', background: '#F0FDF4', color: '#15803D', border: '1px solid #BBF7D0' }}>Confirmed</span>
                   </div>
+                  <p style={{ fontSize: '13px', color: M.gray500, margin: '0 0 1rem' }}>📅 {appt.appointment_date} at {appt.time_slot}</p>
                   <button
                     onClick={() => handleActivate(appt.id)}
                     disabled={activating === appt.id}
-                    className="w-full mt-3 bg-green-600 hover:bg-green-700 disabled:bg-green-300 text-white font-semibold py-2.5 rounded-lg text-sm"
+                    style={{ width: '100%', padding: '12px', borderRadius: '8px', border: 'none', background: activating === appt.id ? '#B8667A' : M.maroon, color: 'white', fontSize: '14px', fontWeight: 700, cursor: activating === appt.id ? 'not-allowed' : 'pointer', fontFamily: "'DM Sans', sans-serif" }}
                   >
                     {activating === appt.id ? 'Activating...' : '🎫 Get Queue Number'}
                   </button>
@@ -200,18 +210,13 @@ export default function MyQueue() {
               ))}
             </div>
           </div>
+
         ) : (
-          // No appointments today
-          <div className="text-center py-12">
-            <p className="text-4xl mb-4">📭</p>
-            <p className="text-gray-600 font-medium">No appointments today</p>
-            <p className="text-gray-400 text-sm mt-1">
-              Queue numbers are only available on your appointment date.
-            </p>
-            <button
-              onClick={() => navigate('/student/book')}
-              className="mt-6 bg-green-600 hover:bg-green-700 text-white font-semibold px-6 py-2.5 rounded-lg text-sm"
-            >
+          <div style={{ textAlign: 'center', padding: '4rem 2rem', background: 'white', borderRadius: '16px', border: `1px solid ${M.gray200}` }}>
+            <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>📭</div>
+            <p style={{ fontSize: '15px', fontWeight: 600, color: M.text, margin: '0 0 6px' }}>No appointments today</p>
+            <p style={{ fontSize: '13px', color: M.gray500, margin: '0 0 1.5rem' }}>Queue numbers are only available on your appointment date.</p>
+            <button onClick={() => navigate('/student/book')} style={{ padding: '11px 24px', borderRadius: '8px', border: 'none', background: M.maroon, color: 'white', fontSize: '14px', fontWeight: 600, cursor: 'pointer' }}>
               Book an Appointment
             </button>
           </div>

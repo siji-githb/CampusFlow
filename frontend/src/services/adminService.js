@@ -60,3 +60,12 @@ export const updateUserRole = async (token, userId, role) => {
   if (!res.ok) throw new Error(data.detail || 'Failed to update role')
   return data
 }
+
+// ── M12: AI-Generated Admin Insights ─────────────────────────────────────────
+
+export const getAiInsights = async (token) => {
+  const res = await fetch(`${API_URL}/admin/insights`, { headers: authHeader(token) })
+  const data = await res.json()
+  if (!res.ok) throw new Error(data.detail || 'Failed to fetch AI insights')
+  return data
+}

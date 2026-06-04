@@ -2,8 +2,9 @@ from openai import OpenAI
 from fastapi import HTTPException
 from supabase import create_client
 from config import get_settings
-from datetime import date, timedelta
+from datetime import date
 import json
+import re
 
 settings = get_settings()
 
@@ -80,7 +81,6 @@ def get_or_create_session(student_id: str):
             .execute()
         if res.data:
             return res.data[0]
-        # Create new session
         new_session = admin.table("ai_chat_sessions").insert({
             "student_id": student_id,
             "messages": []
@@ -101,26 +101,79 @@ def save_messages(session_id: str, messages: list):
         raise HTTPException(status_code=500, detail=str(e))
 
 
+# ── M10: Message Auto-Categorization ─────────────────────────────────────────
+
+def _categorize_message(question: str) -> dict:
+    """
+    Makes a quick AI call to tag the escalated message with
+    priority (urgent/normal/fyi) and category (requirements/scheduling/process/complaint/other).
+    Falls back to safe defaults if the call fails.
+    """
+    try:
+        client = get_openai_client()
+        resp = client.chat.completions.create(
+            model=settings.openai_model,
+            max_tokens=60,
+            temperature=0,
+            messages=[{
+                "role": "user",
+                "content": (
+                    f"Classify this student message for a university registrar staff inbox.\n"
+                    f"Message: \"{question}\"\n\n"
+                    f"Reply with ONLY a JSON object, no extra text:\n"
+                    f"{{\"priority\": \"urgent|normal|fyi\", "
+                    f"\"category\": \"requirements|scheduling|process|complaint|other\"}}"
+                )
+            }]
+        )
+        raw   = resp.choices[0].message.content.strip()
+        match = re.search(r'\{.*?\}', raw, re.DOTALL)
+        if match:
+            tags = json.loads(match.group())
+            priority = tags.get("priority", "normal")
+            category = tags.get("category", "other")
+            # Validate values
+            if priority not in ("urgent", "normal", "fyi"):
+                priority = "normal"
+            if category not in ("requirements", "scheduling", "process", "complaint", "other"):
+                category = "other"
+            return {"priority": priority, "category": category}
+    except Exception:
+        pass
+    return {"priority": "normal", "category": "other"}
+
+
 def escalate_to_staff(student_id: str, question: str):
+    """
+    Saves an AI-escalated student question to the messages table.
+    Automatically tags priority + category via a second AI call (M10).
+    """
     admin = get_admin()
+
+    # ── M10: categorize before saving ────────────────────────────────────────
+    tags = _categorize_message(question)
+    priority = tags["priority"]
+    category = tags["category"]
+
     try:
         admin.table("messages").insert({
             "student_id": student_id,
-            "subject": "AI Escalation — Unanswered Question",
-            "body": f"A student asked the AI assistant: \"{question}\"\n\nThe AI could not answer this. Please follow up with the student.",
-            "is_resolved": False
+            "content":    question,          # raw student question
+            "priority":   priority,          # urgent | normal | fyi
+            "category":   category,          # requirements | scheduling | process | complaint | other
+            "is_read":    False,
         }).execute()
     except Exception:
-        pass
+        pass  # escalation failure must never crash the chat
 
 
 def chat(student_id: str, user_message: str):
     client = get_openai_client()
 
     # Get or create session
-    session = get_or_create_session(student_id)
+    session    = get_or_create_session(student_id)
     session_id = session["id"]
-    history = session.get("messages") or []
+    history    = session.get("messages") or []
 
     # Add user message to history
     history.append({"role": "user", "content": user_message})
@@ -150,7 +203,7 @@ def chat(student_id: str, user_message: str):
         should_escalate = any(kw in assistant_message.lower() for kw in escalation_keywords)
 
         if should_escalate:
-            escalate_to_staff(student_id, user_message)
+            escalate_to_staff(student_id, user_message)  # ← M10 runs here
             assistant_message += "\n\n*Your question has been forwarded to a Registrar staff member who will follow up with you.*"
 
         # Save to history
@@ -158,9 +211,9 @@ def chat(student_id: str, user_message: str):
         save_messages(session_id, history[-20:])
 
         return {
-            "message": assistant_message,
+            "message":    assistant_message,
             "session_id": session_id,
-            "escalated": should_escalate
+            "escalated":  should_escalate
         }
 
     except Exception as e:

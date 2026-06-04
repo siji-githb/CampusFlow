@@ -230,3 +230,65 @@ def get_todays_queue(date_filter: str = None):
         return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+# ── M9: Queue Time Estimator ───────────────────────────────────────────────────
+
+def get_time_estimate(appointment_id: str, student_id: str):
+    """
+    Returns estimated wait time per step for a given appointment,
+    calculated from historical transaction_steps confirmed_at timestamps.
+    Falls back to 10 min per step if no history exists yet.
+    """
+    admin = get_admin()
+
+    # Get appointment + transaction type info
+    try:
+        appt_res = admin.table("appointments") \
+            .select("*, transaction_types(id, total_steps)") \
+            .eq("id", appointment_id) \
+            .eq("student_id", student_id) \
+            .single() \
+            .execute()
+        appt = appt_res.data
+    except Exception:
+        raise HTTPException(status_code=404, detail="Appointment not found")
+
+    if not appt:
+        return {"estimates": []}
+
+    tx_type_id = appt["transaction_type_id"]
+    total_steps = appt["transaction_types"]["total_steps"]
+
+    # Pull historical confirmed steps for this transaction type
+    history = admin.table("transaction_steps") \
+        .select("step_number, created_at, confirmed_at") \
+        .eq("transaction_type_id", tx_type_id) \
+        .not_.is_("confirmed_at", "null") \
+        .execute()
+
+    from collections import defaultdict
+    from datetime import datetime
+
+    durations_by_step = defaultdict(list)
+    for row in (history.data or []):
+        try:
+            start = datetime.fromisoformat(row["created_at"])
+            end   = datetime.fromisoformat(row["confirmed_at"])
+            mins  = (end - start).total_seconds() / 60
+            if 0 < mins < 120:  # ignore outliers over 2 hours
+                durations_by_step[row["step_number"]].append(mins)
+        except Exception:
+            pass
+
+    estimates = []
+    for step_num in range(1, total_steps + 1):
+        d = durations_by_step.get(step_num, [])
+        avg = round(sum(d) / len(d)) if d else 10  # 10 min fallback
+        estimates.append({
+            "step": step_num,
+            "estimated_minutes": avg,
+            "label": f"~{avg} min",
+        })
+
+    return {"estimates": estimates}

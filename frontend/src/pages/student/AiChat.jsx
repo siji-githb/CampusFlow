@@ -1,124 +1,163 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/useAuth'
+import Navbar from '../../components/layout/Navbar'
 import { sendMessage, clearChat } from '../../services/aiService'
 
-const SUGGESTED_QUESTIONS = [
-  "What documents do I need for a TOR?",
-  "How do I book an appointment?",
-  "What are the office hours?",
-  "How long does a COE take?",
+const M = { maroon: '#7B1A2A', maroonLight: '#F9F0F1', gold: '#B8900A', goldLight: '#FDF6E3', offWhite: '#F9F7F4', gray200: '#EAE7E2', gray500: '#706B65', text: '#1C1917' }
+
+const SUGGESTED = [
+  'What documents do I need for a TOR?',
+  'What are the office hours?',
+  'How do I book an appointment?',
+  'How long does a COE take?',
 ]
 
 export default function AiChat() {
   const { token } = useAuth()
-  const navigate = useNavigate()
-  const [messages, setMessages] = useState([
-    {
-      role: 'assistant',
-      content: "Hi! I'm the CampusFlow Assistant 👋 I can help you book appointments, answer questions about registrar transactions, and guide you through the process. How can I help you today?"
-    }
-  ])
-  const [input, setInput] = useState('')
+  // eslint-disable-next-line no-unused-vars
+  const navigate  = useNavigate()
+
+  const [messages, setMessages] = useState([{
+    role: 'assistant',
+    content: "Hi! I'm the CampusFlow AI Assistant 👋 I can help you with appointment booking, transaction requirements, and registrar procedures. How can I help you today?",
+  }])
+  const [input,   setInput]   = useState('')
   const [loading, setLoading] = useState(false)
-  const [error, setError] = useState('')
+  const [error,   setError]   = useState('')
+
+  // ── M11: Voice state ──────────────────────────────────────────────────────
+  const [isListening, setIsListening] = useState(false)
+  const [isSpeaking,  setIsSpeaking]  = useState(false)
+  const recognitionRef = useRef(null)
+  const voiceSupported = typeof window !== 'undefined' &&
+    ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window)
+
   const bottomRef = useRef(null)
 
+  useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [messages])
+
+  // ── M11: Cleanup on unmount ───────────────────────────────────────────────
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [messages])
-
-  const handleSend = async (messageText = null) => {
-    const text = messageText || input.trim()
-    if (!text || loading) return
-
-    setInput('')
-    setError('')
-    setMessages(prev => [...prev, { role: 'user', content: text }])
-    setLoading(true)
-
-    try {
-      const data = await sendMessage(token, text)
-      setMessages(prev => [...prev, {
-        role: 'assistant',
-        content: data.message,
-        escalated: data.escalated
-      }])
-    } catch (err) {
-      setError(err.message)
-      setMessages(prev => [...prev, {
-        role: 'assistant',
-        content: "Sorry, I'm having trouble connecting right now. Please try again in a moment.",
-        isError: true
-      }])
-    } finally {
-      setLoading(false)
+    return () => {
+      recognitionRef.current?.stop()
+      window.speechSynthesis?.cancel()
     }
+  }, [])
+
+  // ── M11: Speak AI response aloud ─────────────────────────────────────────
+  const speakResponse = (text) => {
+    if (!('speechSynthesis' in window)) return
+    window.speechSynthesis.cancel()
+    const clean = text.replace(/[\u{1F600}-\u{1F6FF}]/gu, '').trim()
+    const utter  = new SpeechSynthesisUtterance(clean)
+    utter.lang   = 'en-PH'
+    utter.rate   = 0.95
+    utter.pitch  = 1
+    utter.onstart = () => setIsSpeaking(true)
+    utter.onend   = () => setIsSpeaking(false)
+    utter.onerror = () => setIsSpeaking(false)
+    window.speechSynthesis.speak(utter)
+  }
+
+  // ── M11: Start voice input ────────────────────────────────────────────────
+  const startListening = () => {
+    if (!voiceSupported) {
+      alert('Voice input requires Chrome or Edge.')
+      return
+    }
+    window.speechSynthesis?.cancel()
+    setIsSpeaking(false)
+
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition
+    const recognition = new SR()
+    recognition.lang            = 'en-PH'
+    recognition.interimResults  = false
+    recognition.maxAlternatives = 1
+
+    recognition.onstart  = () => setIsListening(true)
+    recognition.onend    = () => setIsListening(false)
+    recognition.onerror  = () => setIsListening(false)
+    recognition.onresult = (e) => {
+      const transcript = e.results[0][0].transcript
+      setInput(transcript)
+    }
+
+    recognitionRef.current = recognition
+    recognition.start()
+  }
+
+  const stopListening = () => {
+    recognitionRef.current?.stop()
+    setIsListening(false)
+  }
+
+  const handleSend = async (text = null) => {
+    const msg = text || input.trim()
+    if (!msg || loading) return
+    setInput(''); setError('')
+    recognitionRef.current?.stop()
+    window.speechSynthesis?.cancel()
+    setIsListening(false); setIsSpeaking(false)
+
+    setMessages(prev => [...prev, { role: 'user', content: msg }])
+    setLoading(true)
+    try {
+      const data  = await sendMessage(token, msg)
+      const reply = data.message
+      setMessages(prev => [...prev, { role: 'assistant', content: reply, escalated: data.escalated }])
+      speakResponse(reply)   // ── M11: read reply aloud
+    } catch (e) {
+      setError(e.message)
+      setMessages(prev => [...prev, { role: 'assistant', content: "Sorry, I'm having trouble connecting. Please try again.", isError: true }])
+    } finally { setLoading(false) }
   }
 
   const handleClear = async () => {
-    if (!confirm('Clear the chat history?')) return
+    if (!confirm('Clear chat history?')) return
+    window.speechSynthesis?.cancel()
+    setIsSpeaking(false)
     try {
       await clearChat(token)
-      setMessages([{
-        role: 'assistant',
-        content: "Chat cleared! How can I help you today?"
-      }])
-    } catch (err) {
-      setError(err.message)
-    }
-  }
-
-  const handleKeyDown = (e) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault()
-      handleSend()
-    }
+      setMessages([{ role: 'assistant', content: 'Chat cleared! How can I help you today?' }])
+    } catch (e) { setError(e.message) }
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
-      {/* Navbar */}
-      <nav className="bg-white shadow-sm px-6 py-4 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 bg-purple-600 rounded-lg flex items-center justify-center">
-            <span className="text-white text-sm font-bold">AI</span>
-          </div>
-          <div>
-            <span className="font-semibold text-gray-800">AI Assistant</span>
-            <span className="ml-2 text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full">Online</span>
-          </div>
-        </div>
-        <div className="flex items-center gap-3">
-          <button
-            onClick={handleClear}
-            className="text-xs text-gray-400 hover:text-gray-600"
-          >
-            Clear chat
-          </button>
-          <button
-            onClick={() => navigate('/student/dashboard')}
-            className="text-sm text-gray-500 hover:text-gray-700"
-          >
-            ← Back
-          </button>
-        </div>
-      </nav>
+    <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', background: M.offWhite, fontFamily: "'DM Sans', sans-serif" }}>
+
+      <style>{`
+        @keyframes bounce {
+          0%, 80%, 100% { transform: translateY(0); }
+          40%            { transform: translateY(-6px); }
+        }
+        @keyframes pulse-ring {
+          0%   { box-shadow: 0 0 0 0 rgba(184,144,10,0.45); }
+          70%  { box-shadow: 0 0 0 8px rgba(184,144,10,0); }
+          100% { box-shadow: 0 0 0 0 rgba(184,144,10,0); }
+        }
+        @keyframes speaking-wave {
+          0%, 100% { opacity: 0.4; transform: scaleY(0.6); }
+          50%       { opacity: 1;   transform: scaleY(1.4); }
+        }
+      `}</style>
+
+      <Navbar backTo="/student/dashboard" title="AI Assistant">
+        <button onClick={handleClear} style={{ fontSize: '12px', color: 'rgba(255,255,255,0.4)', background: 'none', border: 'none', cursor: 'pointer' }}>Clear chat</button>
+      </Navbar>
 
       {/* Chat area */}
-      <div className="flex-1 overflow-y-auto px-4 py-6 max-w-2xl w-full mx-auto">
+      <div style={{ flex: 1, overflowY: 'auto', padding: '1.5rem', maxWidth: '680px', width: '100%', margin: '0 auto', boxSizing: 'border-box' }}>
 
-        {/* Suggested questions — only show at start */}
         {messages.length === 1 && (
-          <div className="mb-6">
-            <p className="text-xs text-gray-400 text-center mb-3">Suggested questions</p>
-            <div className="grid grid-cols-2 gap-2">
-              {SUGGESTED_QUESTIONS.map((q, i) => (
-                <button
-                  key={i}
-                  onClick={() => handleSend(q)}
-                  className="text-left text-sm bg-white border border-gray-200 hover:border-purple-400 hover:bg-purple-50 text-gray-600 px-3 py-2 rounded-xl transition-all"
-                >
+          <div style={{ marginBottom: '1.5rem' }}>
+            <p style={{ fontSize: '11px', color: M.gray500, textAlign: 'center', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '10px' }}>Suggested questions</p>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '8px' }}>
+              {SUGGESTED.map((q, i) => (
+                <button key={i} onClick={() => handleSend(q)}
+                  style={{ textAlign: 'left', padding: '10px 12px', borderRadius: '10px', border: `1.5px solid ${M.gray200}`, background: 'white', color: M.text, fontSize: '12px', cursor: 'pointer', fontFamily: "'DM Sans', sans-serif", lineHeight: 1.45, transition: 'border-color .15s' }}
+                  onMouseEnter={e => e.currentTarget.style.borderColor = M.maroon}
+                  onMouseLeave={e => e.currentTarget.style.borderColor = M.gray200}>
                   {q}
                 </button>
               ))}
@@ -126,43 +165,25 @@ export default function AiChat() {
           </div>
         )}
 
-        {/* Messages */}
-        <div className="space-y-4">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
           {messages.map((msg, i) => (
-            <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+            <div key={i} style={{ display: 'flex', justifyContent: msg.role === 'user' ? 'flex-end' : 'flex-start', gap: '8px', alignItems: 'flex-end' }}>
               {msg.role === 'assistant' && (
-                <div className="w-8 h-8 bg-purple-600 rounded-full flex items-center justify-center mr-2 flex-shrink-0 mt-1">
-                  <span className="text-white text-xs font-bold">AI</span>
-                </div>
+                <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: M.maroon, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: '11px', fontWeight: 700, color: '#F0C040', fontFamily: "'Playfair Display', serif" }}>CF</div>
               )}
-              <div className={`max-w-xs md:max-w-md lg:max-w-lg rounded-2xl px-4 py-3 text-sm
-                ${msg.role === 'user'
-                  ? 'bg-purple-600 text-white rounded-tr-sm'
-                  : msg.isError
-                    ? 'bg-red-50 text-red-700 border border-red-200 rounded-tl-sm'
-                    : 'bg-white text-gray-800 border border-gray-200 rounded-tl-sm shadow-sm'
-                }`}>
-                <p className="whitespace-pre-wrap leading-relaxed">{msg.content}</p>
-                {msg.escalated && (
-                  <p className="text-xs text-purple-500 mt-2 pt-2 border-t border-purple-100">
-                    📨 Forwarded to staff
-                  </p>
-                )}
+              <div style={{ maxWidth: '72%', padding: '10px 14px', borderRadius: msg.role === 'user' ? '16px 16px 4px 16px' : '16px 16px 16px 4px', background: msg.role === 'user' ? M.maroon : msg.isError ? M.maroonLight : 'white', color: msg.role === 'user' ? 'white' : msg.isError ? M.maroon : M.text, fontSize: '13px', lineHeight: 1.6, boxShadow: '0 1px 3px rgba(0,0,0,0.06)', border: msg.role === 'assistant' && !msg.isError ? `1px solid ${M.gray200}` : 'none' }}>
+                <p style={{ margin: 0, whiteSpace: 'pre-wrap' }}>{msg.content}</p>
+                {msg.escalated && <p style={{ fontSize: '11px', color: M.gold, margin: '6px 0 0', paddingTop: '6px', borderTop: `1px solid ${M.gold}30` }}>📨 Forwarded to Registrar staff</p>}
               </div>
             </div>
           ))}
 
-          {/* Loading indicator */}
           {loading && (
-            <div className="flex justify-start">
-              <div className="w-8 h-8 bg-purple-600 rounded-full flex items-center justify-center mr-2 flex-shrink-0">
-                <span className="text-white text-xs font-bold">AI</span>
-              </div>
-              <div className="bg-white border border-gray-200 rounded-2xl rounded-tl-sm px-4 py-3 shadow-sm">
-                <div className="flex gap-1 items-center h-4">
-                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+            <div style={{ display: 'flex', gap: '8px', alignItems: 'flex-end' }}>
+              <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: M.maroon, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: '11px', fontWeight: 700, color: '#F0C040', fontFamily: "'Playfair Display', serif" }}>CF</div>
+              <div style={{ padding: '12px 16px', borderRadius: '16px 16px 16px 4px', background: 'white', border: `1px solid ${M.gray200}` }}>
+                <div style={{ display: 'flex', gap: '4px', alignItems: 'center', height: '16px' }}>
+                  {[0, 1, 2].map(j => <div key={j} style={{ width: '6px', height: '6px', borderRadius: '50%', background: M.gray500, animation: 'bounce 1.2s infinite', animationDelay: `${j * 0.15}s` }} />)}
                 </div>
               </div>
             </div>
@@ -172,34 +193,79 @@ export default function AiChat() {
       </div>
 
       {/* Input area */}
-      <div className="bg-white border-t border-gray-200 px-4 py-4">
-        <div className="max-w-2xl mx-auto">
-          {error && (
-            <p className="text-red-500 text-xs mb-2">{error}</p>
-          )}
-          <div className="flex gap-2 items-end">
+      <div style={{ background: 'white', borderTop: `1px solid ${M.gray200}`, padding: '1rem' }}>
+        <div style={{ maxWidth: '680px', margin: '0 auto' }}>
+          {error && <p style={{ fontSize: '12px', color: M.maroon, marginBottom: '6px' }}>{error}</p>}
+
+          <div style={{ display: 'flex', gap: '8px', alignItems: 'flex-end' }}>
             <textarea
               value={input}
               onChange={e => setInput(e.target.value)}
-              onKeyDown={handleKeyDown}
-              placeholder="Ask me anything about registrar transactions..."
+              onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend() } }}
+              placeholder={isListening ? '🎤 Listening...' : 'Ask about registrar transactions...'}
               rows={1}
-              className="flex-1 px-4 py-3 border border-gray-300 rounded-2xl focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm resize-none"
-              style={{ minHeight: '48px', maxHeight: '120px' }}
+              style={{ flex: 1, padding: '11px 14px', borderRadius: '10px', border: `1.5px solid ${isListening ? M.gold : M.gray200}`, fontSize: '14px', resize: 'none', outline: 'none', fontFamily: "'DM Sans', sans-serif", color: M.text, minHeight: '44px', maxHeight: '120px', boxSizing: 'border-box', transition: 'border-color .15s' }}
+              onFocus={e => { if (!isListening) e.target.style.borderColor = M.maroon }}
+              onBlur={e  => { if (!isListening) e.target.style.borderColor = M.gray200 }}
             />
+
+            {/* ── M11: Mic button ── */}
+            {voiceSupported && (
+              <button
+                onClick={isListening ? stopListening : startListening}
+                title={isListening ? 'Stop listening' : 'Tap to speak'}
+                style={{
+                  width: '44px', height: '44px', borderRadius: '10px', flexShrink: 0,
+                  border: `1.5px solid ${isListening ? M.gold : M.gray200}`,
+                  background: isListening ? M.goldLight : 'white',
+                  color: isListening ? M.gold : M.gray500,
+                  cursor: 'pointer', fontSize: '18px',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  transition: 'all 0.2s',
+                  animation: isListening ? 'pulse-ring 1.2s infinite' : 'none',
+                }}
+              >
+                🎤
+              </button>
+            )}
+
+            {/* Send button */}
             <button
               onClick={() => handleSend()}
               disabled={!input.trim() || loading}
-              className="w-12 h-12 bg-purple-600 hover:bg-purple-700 disabled:bg-purple-300 text-white rounded-2xl flex items-center justify-center flex-shrink-0 transition-colors"
+              style={{ width: '44px', height: '44px', borderRadius: '10px', border: 'none', background: !input.trim() || loading ? M.gray200 : M.maroon, color: !input.trim() || loading ? M.gray500 : 'white', cursor: !input.trim() || loading ? 'not-allowed' : 'pointer', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px' }}
             >
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
-                <path d="M3.478 2.405a.75.75 0 00-.926.94l2.432 7.905H13.5a.75.75 0 010 1.5H4.984l-2.432 7.905a.75.75 0 00.926.94 60.519 60.519 0 0018.445-8.986.75.75 0 000-1.218A60.517 60.517 0 003.478 2.405z" />
-              </svg>
+              ➤
             </button>
           </div>
-          <p className="text-xs text-gray-400 text-center mt-2">
-            Press Enter to send · Shift+Enter for new line
-          </p>
+
+          {/* ── M11: Status bar ── */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '16px', marginTop: '6px', minHeight: '18px' }}>
+            {isListening ? (
+              <span style={{ fontSize: '11px', color: M.gold, display: 'flex', alignItems: 'center', gap: '5px' }}>
+                {[0,1,2,3].map(j => (
+                  <span key={j} style={{ display: 'inline-block', width: '3px', height: '12px', background: M.gold, borderRadius: '2px', animation: 'speaking-wave 0.8s infinite', animationDelay: `${j*0.12}s` }} />
+                ))}
+                Listening...
+              </span>
+            ) : isSpeaking ? (
+              <span style={{ fontSize: '11px', color: M.maroon, display: 'flex', alignItems: 'center', gap: '5px' }}>
+                {[0,1,2,3].map(j => (
+                  <span key={j} style={{ display: 'inline-block', width: '3px', height: '12px', background: M.maroon, borderRadius: '2px', animation: 'speaking-wave 0.8s infinite', animationDelay: `${j*0.12}s` }} />
+                ))}
+                Speaking...
+                <button onClick={() => { window.speechSynthesis.cancel(); setIsSpeaking(false) }}
+                  style={{ marginLeft: '4px', fontSize: '10px', color: M.gray500, background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
+                  ✕ stop
+                </button>
+              </span>
+            ) : (
+              <p style={{ fontSize: '11px', color: M.gray500, margin: 0 }}>
+                Enter to send · Shift+Enter for new line{voiceSupported ? ' · 🎤 for voice' : ''}
+              </p>
+            )}
+          </div>
+
         </div>
       </div>
     </div>

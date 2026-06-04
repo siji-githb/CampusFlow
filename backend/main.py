@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from routers import auth, appointments, queue, admin, ai
+from routers import auth, appointments, queue, admin, ai, messages
 
 app = FastAPI(
     title="CampusFlow API",
@@ -23,6 +23,7 @@ app.include_router(appointments.router)
 app.include_router(queue.router)
 app.include_router(admin.router)
 app.include_router(ai.router)
+app.include_router(messages.router)
 
 
 @app.get("/")

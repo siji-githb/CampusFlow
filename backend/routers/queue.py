@@ -3,7 +3,8 @@ from services.queue_service import (
     activate_queue,
     get_student_queue,
     confirm_step,
-    get_todays_queue
+    get_todays_queue,
+    get_time_estimate,          # ← M9
 )
 from models.queue_models import ConfirmStepRequest
 from supabase import create_client
@@ -69,3 +70,15 @@ def todays_queue(authorization: str = Header(...)):
     if profile["role"] not in ["staff", "admin"]:
         raise HTTPException(status_code=403, detail="Only staff can view today's queue")
     return get_todays_queue()
+
+
+# ── M9: Queue Time Estimator ───────────────────────────────────────────────────
+
+@router.get("/time-estimate/{appointment_id}")
+def queue_time_estimate(appointment_id: str, authorization: str = Header(...)):
+    """
+    Returns estimated wait time per step for a given appointment.
+    Student-only — validates ownership via student_id.
+    """
+    user = get_current_user(authorization)
+    return get_time_estimate(appointment_id, user.id)
