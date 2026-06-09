@@ -5,8 +5,16 @@ from services.appointment_service import (
     get_available_slots,
     create_appointment,
     get_student_appointments,
-    cancel_appointment
+    cancel_appointment,
+    get_all_appointments,
+    get_appointment_stats,
+    reschedule_appointment
 )
+from pydantic import BaseModel
+
+class RescheduleRequest(BaseModel):
+    new_date: str
+    new_time: str
 from supabase import create_client
 from config import get_settings
 from datetime import date
@@ -56,6 +64,33 @@ def book_appointment(data: AppointmentCreate, authorization: str = Header(...)):
     user = get_current_user(authorization)
     profile = get_user_profile(user.id)
     return create_appointment(user.id, profile["priority_class"], data)
+
+
+@router.get("/all")
+def all_appointments(date: str = None, authorization: str = Header(...)):
+    user = get_current_user(authorization)
+    profile = get_user_profile(user.id)
+    if profile["role"] not in ["staff", "admin"]:
+        raise HTTPException(status_code=403, detail="Staff only")
+    return get_all_appointments(date)
+
+
+@router.get("/stats")
+def appointment_stats(authorization: str = Header(...)):
+    user = get_current_user(authorization)
+    profile = get_user_profile(user.id)
+    if profile["role"] not in ["staff", "admin"]:
+        raise HTTPException(status_code=403, detail="Staff only")
+    return get_appointment_stats()
+
+
+@router.patch("/{appointment_id}/reschedule")
+def reschedule(appointment_id: str, data: RescheduleRequest, authorization: str = Header(...)):
+    user = get_current_user(authorization)
+    profile = get_user_profile(user.id)
+    if profile["role"] not in ["staff", "admin"]:
+        raise HTTPException(status_code=403, detail="Staff only")
+    return reschedule_appointment(appointment_id, data.new_date, data.new_time, user.id)
 
 
 @router.get("/my")

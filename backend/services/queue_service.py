@@ -1,7 +1,8 @@
 from fastapi import HTTPException
 from supabase import create_client
 from config import get_settings
-from datetime import date
+from datetime import date, datetime, timezone
+from services.admin_service import log_audit_action
 
 settings = get_settings()
 
@@ -173,6 +174,16 @@ def confirm_step(queue_ticket_id: str, step_number: int, staff_id: str):
         }) \
         .eq("id", step["id"]) \
         .execute()
+        
+    log_audit_action(
+        user_id=staff_id,
+        action=f"Confirmed Queue Step {step_number}",
+        table_name="transaction_steps",
+        record_id=step["id"],
+        status="Success",
+        changes=f"Step marked completed",
+        severity="Info"
+    )
 
     total_steps = ticket["total_steps"]
     next_step = step_number + 1
@@ -292,3 +303,66 @@ def get_time_estimate(appointment_id: str, student_id: str):
         })
 
     return {"estimates": estimates}
+
+
+def get_live_queue_stats():
+    """Get dynamic live queue stats like avg wait time and peak forecast."""
+    try:
+        admin = get_admin()
+        today = str(date.today())
+        from datetime import datetime
+
+        # 1. Avg Wait Time
+        recent_steps = admin.table("transaction_steps") \
+            .select("created_at, confirmed_at") \
+            .not_.is_("confirmed_at", "null") \
+            .order("confirmed_at", desc=True) \
+            .limit(50) \
+            .execute()
+            
+        total_mins = 0
+        valid_steps = 0
+        for row in (recent_steps.data or []):
+            try:
+                start = datetime.fromisoformat(row["created_at"].replace("Z", "+00:00"))
+                end = datetime.fromisoformat(row["confirmed_at"].replace("Z", "+00:00"))
+                mins = (end - start).total_seconds() / 60
+                if 0 < mins < 120:
+                    total_mins += mins
+                    valid_steps += 1
+            except Exception:
+                pass
+                
+        avg_mins = round(total_mins / valid_steps) if valid_steps > 0 else 8
+
+        # 2. Peak Forecast
+        today_appts = admin.table("appointments") \
+            .select("time_slot") \
+            .eq("appointment_date", today) \
+            .execute()
+            
+        hour_counts = {}
+        for appt in (today_appts.data or []):
+            time_slot = appt.get("time_slot")
+            if time_slot:
+                hour = time_slot.split(":")[0]
+                hour_counts[hour] = hour_counts.get(hour, 0) + 1
+                
+        peak_hour_str = "No Data"
+        if hour_counts:
+            best_hour = max(hour_counts, key=hour_counts.get)
+            hr_int = int(best_hour)
+            ampm = "AM" if hr_int < 12 else "PM"
+            display_hr = hr_int if hr_int <= 12 else hr_int - 12
+            if display_hr == 0: display_hr = 12
+            peak_hour_str = f"{display_hr}:00 {ampm}"
+            
+        return {
+            "avg_wait_minutes": avg_mins,
+            "avg_wait_seconds": 0,
+            "peak_forecast": peak_hour_str
+        }
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))

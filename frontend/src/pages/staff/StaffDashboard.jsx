@@ -1,292 +1,415 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/useAuth'
-import Navbar from '../../components/layout/Navbar'
-import QueueManager from './QueueManager'
-import { getMessages, markMessageRead } from '../../services/messagesService'  // ← M10
+import crmcLogo from '../../assets/crmc-logo.webp'
+import LiveQueuePage from './LiveQueuePage'
+import MessagesPage from './MessagesPage'
+import AppointmentsPage from './AppointmentsPage'
+import { getTodaysQueue } from '../../services/queueService'
+import { getMessages, markMessageRead } from '../../services/messagesService'
+import { getAppointmentStats } from '../../services/appointmentService'
 
+// ── Design Tokens ──────────────────────────────────────────────────────────────
 const M = {
-  maroon:      '#7B1A2A',
+  maroon: '#7B1A2A',
+  maroonDark: '#5C1320',
   maroonLight: '#F9F0F1',
-  gold:        '#B8900A',
-  goldLight:   '#FDF6E3',
-  offWhite:    '#F9F7F4',
-  gray200:     '#EAE7E2',
-  gray500:     '#706B65',
-  text:        '#1C1917',
+  maroonMid: 'rgba(123,26,42,0.08)',
+  maroonBorder: 'rgba(123,26,42,0.2)',
+  gold: '#B8900A',
+  goldLight: '#FDF6E3',
+  goldBorder: 'rgba(184,144,10,0.3)',
+  white: '#FFFFFF',
+  offWhite: '#F9F7F4',
+  surface: '#F2EDE8',
+  border: '#EAE7E2',
+  text: '#1C1917',
+  textSub: '#57534E',
+  textMuted: '#A8A29E',
+  green: '#15803D',
+  greenLight: '#F0FDF4',
+  greenBorder: '#BBF7D0',
+  blue: '#1D4ED8',
+  blueLight: '#EFF6FF',
+  blueBorder: '#BFDBFE',
+  red: '#DC2626',
+  redLight: '#FEF2F2',
+  redBorder: '#FECACA',
 }
 
-const TABS = ['Queue Manager', 'Messages']
-
-// ── M10: priority badge styles ────────────────────────────────────────────────
 const PRIORITY = {
-  urgent: { bg: 'rgba(180,30,30,0.1)',   color: '#B41E1E', border: 'rgba(180,30,30,0.25)',  label: '🔴 Urgent'  },
-  normal: { bg: 'rgba(184,144,10,0.1)',  color: '#B8900A', border: 'rgba(184,144,10,0.25)', label: '🟡 Normal'  },
-  fyi:    { bg: 'rgba(100,130,160,0.1)', color: '#4A6A8A', border: 'rgba(100,130,160,0.2)', label: '🔵 FYI'     },
+  urgent: { bg: M.redLight, color: M.red, border: M.redBorder, label: 'Urgent' },
+  normal: { bg: M.goldLight, color: M.gold, border: M.goldBorder, label: 'Normal' },
+  fyi: { bg: M.blueLight, color: M.blue, border: M.blueBorder, label: 'FYI' },
 }
-
 const CATEGORY = {
   requirements: { label: 'Requirements' },
-  scheduling:   { label: 'Scheduling'   },
-  process:      { label: 'Process'      },
-  complaint:    { label: 'Complaint'    },
-  other:        { label: 'Other'        },
+  scheduling: { label: 'Scheduling' },
+  process: { label: 'Process' },
+  complaint: { label: 'Complaint' },
+  other: { label: 'Other' },
 }
 
-// ── Messages inbox component ──────────────────────────────────────────────────
-function MessagesInbox() {
-  const { token } = useAuth()
-  const [messages, setMessages]   = useState([])
-  const [loading, setLoading]     = useState(true)
-  const [error, setError]         = useState('')
-  const [expanded, setExpanded]   = useState(null)
-  const [marking, setMarking]     = useState(null)
-  const [filter, setFilter]       = useState('all')   // all | unread | urgent
-
-  const load = async () => {
-    try {
-      const data = await getMessages(token)
-      setMessages(data)
-    } catch (e) {
-      setError(e.message)
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  useEffect(() => { load() }, [])
-
-  const handleMarkRead = async (e, id) => {
-    e.stopPropagation()
-    setMarking(id)
-    try {
-      await markMessageRead(token, id)
-      setMessages(prev => prev.map(m => m.id === id ? { ...m, is_read: true } : m))
-    } catch (err) {
-      setError(err.message)
-    } finally {
-      setMarking(null)
-    }
-  }
-
-  const filtered = messages.filter(m => {
-    if (filter === 'unread') return !m.is_read
-    if (filter === 'urgent') return m.priority === 'urgent'
-    return true
-  })
-
-  const unreadCount = messages.filter(m => !m.is_read).length
+// ── Compact Queue Preview (Overview panel) ─────────────────────────────────────
+function CompactQueuePreview({ queue, loading }) {
+  const active = queue.filter(q => q.ticket.status !== 'completed').slice(0, 4)
 
   if (loading) return (
-    <div style={{ textAlign: 'center', padding: '4rem', color: M.gray500, fontSize: '14px' }}>
-      Loading messages...
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+      {[1,2,3].map(i => <div key={i} style={{ height: '48px', borderRadius: '10px' }} className="animate-shimmer" />)}
+    </div>
+  )
+
+  if (active.length === 0) return (
+    <div style={{ textAlign: 'center', padding: '28px 0', color: M.textMuted, fontSize: '13px' }}>
+      <div style={{ fontSize: '2rem', marginBottom: '8px' }}>📭</div>
+      No active tickets right now
     </div>
   )
 
   return (
-    <div>
-      {/* Header row */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.25rem', flexWrap: 'wrap', gap: '10px' }}>
-        <div>
-          <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: '1.3rem', fontWeight: 700, color: M.maroon, margin: 0 }}>
-            Messages Inbox
-          </h2>
-          <p style={{ fontSize: '12px', color: M.gray500, margin: '3px 0 0' }}>
-            AI-escalated student queries
-            {unreadCount > 0 && (
-              <span style={{ marginLeft: '8px', background: M.maroon, color: 'white', fontSize: '10px', fontWeight: 700, padding: '2px 7px', borderRadius: '100px' }}>
-                {unreadCount} unread
-              </span>
-            )}
-          </p>
-        </div>
-
-        {/* Filter pills */}
-        <div style={{ display: 'flex', gap: '6px' }}>
-          {[['all', 'All'], ['unread', 'Unread'], ['urgent', 'Urgent']].map(([val, label]) => (
-            <button
-              key={val}
-              onClick={() => setFilter(val)}
-              style={{
-                padding: '5px 14px', borderRadius: '100px', border: `1px solid ${filter === val ? M.maroon : M.gray200}`,
-                background: filter === val ? M.maroon : 'white',
-                color: filter === val ? 'white' : M.gray500,
-                fontSize: '12px', fontWeight: filter === val ? 600 : 400,
-                cursor: 'pointer', fontFamily: "'DM Sans', sans-serif",
-              }}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {error && (
-        <div style={{ padding: '10px 14px', borderRadius: '8px', background: M.maroonLight, color: M.maroon, fontSize: '13px', marginBottom: '1rem' }}>
-          {error}
-        </div>
-      )}
-
-      {filtered.length === 0 ? (
-        <div style={{ textAlign: 'center', padding: '4rem 2rem', background: 'white', borderRadius: '14px', border: `1px solid ${M.gray200}` }}>
-          <div style={{ fontSize: '2.5rem', marginBottom: '1rem' }}>💬</div>
-          <p style={{ fontSize: '14px', fontWeight: 600, color: M.text, margin: '0 0 6px' }}>
-            {filter === 'all' ? 'No messages yet' : `No ${filter} messages`}
-          </p>
-          <p style={{ fontSize: '13px', color: M.gray500, margin: 0 }}>
-            AI-escalated queries from students will appear here.
-          </p>
-        </div>
-      ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-          {filtered.map(msg => {
-            const prio     = PRIORITY[msg.priority] || PRIORITY.normal
-            const cat      = CATEGORY[msg.category]  || CATEGORY.other
-            const isOpen   = expanded === msg.id
-            const student  = msg.users
-            const name     = student ? `${student.first_name} ${student.last_name}` : 'Unknown Student'
-            const sid      = student?.student_id || '—'
-            const time     = new Date(msg.created_at).toLocaleString('en-PH', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
-
-            // Strip the [PRIORITY · category] prefix from content if present
-            const rawContent = msg.content || ''
-            const bodyMatch  = rawContent.match(/^\[.*?\]\s*\n\n([\s\S]*)/)
-            const bodyText   = bodyMatch ? bodyMatch[1].trim() : rawContent
-
-            return (
-              <div
-                key={msg.id}
-                onClick={() => setExpanded(isOpen ? null : msg.id)}
-                style={{
-                  background: 'white',
-                  borderRadius: '12px',
-                  border: `1px solid ${!msg.is_read ? 'rgba(123,26,42,0.25)' : M.gray200}`,
-                  padding: '1rem 1.25rem',
-                  cursor: 'pointer',
-                  boxShadow: !msg.is_read ? '0 1px 6px rgba(123,26,42,0.08)' : '0 1px 3px rgba(0,0,0,0.04)',
-                  transition: 'box-shadow 0.15s',
-                }}
-              >
-                {/* Top row */}
-                <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '10px' }}>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    {/* Student + time */}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px', flexWrap: 'wrap' }}>
-                      <span style={{ fontSize: '13px', fontWeight: 700, color: M.text }}>{name}</span>
-                      <span style={{ fontSize: '11px', color: M.gray500, fontFamily: 'monospace' }}>{sid}</span>
-                      {!msg.is_read && (
-                        <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: M.maroon, flexShrink: 0, display: 'inline-block' }} />
-                      )}
-                    </div>
-
-                    {/* ── M10: Priority + Category badges ── */}
-                    <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginBottom: '6px' }}>
-                      {msg.priority && (
-                        <span style={{
-                          fontSize: '10px', fontWeight: 600, letterSpacing: '0.05em',
-                          padding: '2px 9px', borderRadius: '100px',
-                          background: prio.bg, color: prio.color, border: `1px solid ${prio.border}`,
-                        }}>
-                          {prio.label}
-                        </span>
-                      )}
-                      {msg.category && (
-                        <span style={{
-                          fontSize: '10px', fontWeight: 500, letterSpacing: '0.04em',
-                          padding: '2px 9px', borderRadius: '100px',
-                          background: 'rgba(123,26,42,0.06)', color: M.maroon,
-                          border: '1px solid rgba(123,26,42,0.15)',
-                        }}>
-                          {cat.label}
-                        </span>
-                      )}
-                      <span style={{ fontSize: '10px', color: M.gray500, marginLeft: 'auto', whiteSpace: 'nowrap' }}>
-                        {time}
-                      </span>
-                    </div>
-
-                    {/* Message preview / full text */}
-                    <p style={{
-                      fontSize: '13px', color: M.gray500, margin: 0, lineHeight: 1.55,
-                      display: isOpen ? 'block' : '-webkit-box',
-                      WebkitLineClamp: isOpen ? 'unset' : 2,
-                      WebkitBoxOrient: 'vertical',
-                      overflow: isOpen ? 'visible' : 'hidden',
-                      whiteSpace: isOpen ? 'pre-wrap' : 'normal',
-                    }}>
-                      {bodyText}
-                    </p>
-                  </div>
-
-                  {/* Expand chevron */}
-                  <div style={{ color: M.gray500, fontSize: '14px', flexShrink: 0, marginTop: '2px', transform: isOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }}>
-                    ▾
-                  </div>
-                </div>
-
-                {/* Expanded actions */}
-                {isOpen && !msg.is_read && (
-                  <div style={{ marginTop: '12px', paddingTop: '12px', borderTop: `1px solid ${M.gray200}`, display: 'flex', justifyContent: 'flex-end' }}>
-                    <button
-                      onClick={(e) => handleMarkRead(e, msg.id)}
-                      disabled={marking === msg.id}
-                      style={{
-                        padding: '7px 18px', borderRadius: '7px', border: 'none',
-                        background: marking === msg.id ? '#B8667A' : M.maroon,
-                        color: 'white', fontSize: '12px', fontWeight: 600,
-                        cursor: marking === msg.id ? 'not-allowed' : 'pointer',
-                        fontFamily: "'DM Sans', sans-serif",
-                      }}
-                    >
-                      {marking === msg.id ? 'Marking...' : '✓ Mark as Read'}
-                    </button>
-                  </div>
-                )}
-              </div>
-            )
-          })}
-        </div>
-      )}
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+      {active.map(({ ticket }) => {
+        const name = ticket.users ? `${ticket.users.last_name}, ${ticket.users.first_name}` : 'Unknown'
+        const isServing = ticket.status === 'in_progress'
+        return (
+          <div key={ticket.id} style={{
+            display: 'flex', alignItems: 'center', gap: '12px',
+            padding: '10px 12px', borderRadius: '10px',
+            border: `1px solid ${isServing ? M.greenBorder : M.border}`,
+            background: isServing ? M.greenLight : M.offWhite,
+          }}>
+            <span style={{ fontFamily: "'Fraunces', serif", fontSize: '17px', fontWeight: 800, color: M.maroon, minWidth: '60px' }}>{ticket.queue_number}</span>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: '13px', fontWeight: 600, color: M.text, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{name}</div>
+              <div style={{ fontSize: '11px', color: M.textMuted, marginTop: '1px' }}>{ticket.appointments?.transaction_types?.name || 'Transaction'}</div>
+            </div>
+            <span style={{ fontSize: '10px', fontWeight: 700, padding: '3px 8px', borderRadius: '100px', whiteSpace: 'nowrap', background: isServing ? M.greenLight : M.goldLight, color: isServing ? M.green : M.gold, border: `1px solid ${isServing ? M.greenBorder : M.goldBorder}` }}>
+              {isServing ? '● Serving' : '◔ Waiting'}
+            </span>
+          </div>
+        )
+      })}
     </div>
   )
 }
 
-// ── Main StaffDashboard ───────────────────────────────────────────────────────
-export default function StaffDashboard() {
-  const { user, logout } = useAuth()
-  const navigate = useNavigate()
-  const [activeTab, setActiveTab] = useState('Queue Manager')
+// ── Sidebar Item ───────────────────────────────────────────────────────────────
+const SideItem = ({ icon, label, active, onClick, badge }) => (
+
+  <button onClick={onClick} style={{
+    display: 'flex', alignItems: 'center', gap: '11px',
+    width: '100%', padding: '10px 14px', borderRadius: '10px',
+    border: 'none', cursor: 'pointer', textAlign: 'left',
+    background: active ? M.maroonMid : 'transparent',
+    color: active ? M.maroon : M.textSub,
+    fontSize: '13.5px', fontWeight: active ? 600 : 400,
+    fontFamily: "'IBM Plex Sans', sans-serif",
+    position: 'relative', transition: 'background 0.15s, color 0.15s',
+  }}
+    onMouseEnter={e => { if (!active) { e.currentTarget.style.background = M.surface; e.currentTarget.style.color = M.text; } }}
+    onMouseLeave={e => { if (!active) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = M.textSub; } }}
+  >
+    <span style={{ fontSize: '17px', width: '20px', textAlign: 'center', flexShrink: 0 }}>{icon}</span>
+    <span style={{ flex: 1 }}>{label}</span>
+    {badge > 0 && (
+      <span style={{ background: M.maroon, color: M.white, fontSize: '10px', fontWeight: 700, padding: '1px 6px', borderRadius: '100px', minWidth: '18px', textAlign: 'center' }}>
+        {badge}
+      </span>
+    )}
+  </button>
+)
+
+// ── Stat Card ──────────────────────────────────────────────────────────────────
+const StatCard = ({ icon, value, label, color = M.maroon, bg = M.maroonLight, loading, delay }) => (
+  <div className="animate-fade-up" style={{ animationDelay: delay || '0s', background: M.white, borderRadius: '14px', padding: '18px 20px', border: `1px solid ${M.border}`, display: 'flex', alignItems: 'center', gap: '16px', boxShadow: '0 1px 4px rgba(0,0,0,0.04)' }}>
+    <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: bg, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px', flexShrink: 0 }}>
+      {icon}
+    </div>
+    <div>
+      <div style={{ fontFamily: "'Fraunces', serif", fontSize: '28px', fontWeight: 700, color, lineHeight: 1, minHeight: '28px' }}>
+        {loading ? <div className="animate-shimmer" style={{ width: '50px', height: '28px', borderRadius: '6px', background: M.border }} /> : value}
+      </div>
+      <div style={{ fontSize: '12px', color: M.textMuted, marginTop: '4px' }}>{label}</div>
+    </div>
+  </div>
+)
+
+// ── Compact Messages Preview (Overview panel) ──────────────────────────────────
+function CompactMessagesPreview() {
+  const { token } = useAuth()
+  const [messages, setMessages] = useState([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    getMessages(token).then(setMessages).catch(() => { }).finally(() => setLoading(false))
+  }, [token])
+
+  const unread = messages.filter(m => !m.is_read).slice(0, 3)
+
+  if (loading) return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+      {[1,2,3].map(i => <div key={i} style={{ height: '64px', borderRadius: '12px' }} className="animate-shimmer" />)}
+    </div>
+  )
+
+  if (unread.length === 0) return (
+    <div style={{ textAlign: 'center', padding: '28px 0', color: M.textMuted, fontSize: '13px' }}>
+      <div style={{ fontSize: '2rem', marginBottom: '8px' }}>💬</div>
+      No new escalations
+    </div>
+  )
 
   return (
-    <div style={{ minHeight: '100vh', background: M.offWhite, fontFamily: "'DM Sans', sans-serif" }}>
-      <Navbar user={user} subtitle="Staff Dashboard" onLogout={() => { logout(); navigate('/login') }} />
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+      {unread.map(msg => {
+        const name = msg.users ? `${msg.users.first_name} ${msg.users.last_name}` : 'Unknown Student'
+        const raw = msg.content || ''
+        const body = (raw.match(/^\[.*?\]\s*\n\n([\s\S]*)/) || [])[1]?.trim() || raw
+        return (
+          <div key={msg.id} style={{
+            background: M.white, borderRadius: '12px',
+            border: `1px solid ${M.maroonBorder}`,
+            padding: '12px 14px',
+            boxShadow: '0 1px 6px rgba(123,26,42,0.06)',
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px' }}>
+              <span style={{ fontSize: '13px', fontWeight: 700, color: M.text }}>{name}</span>
+              {msg.priority === 'urgent' && <span style={{ fontSize: '9px', fontWeight: 700, padding: '2px 6px', borderRadius: '100px', background: M.redLight, color: M.red, border: `1px solid ${M.redBorder}` }}>URGENT</span>}
+            </div>
+            <p style={{ fontSize: '12px', color: M.textSub, margin: 0, lineHeight: 1.5, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+              {body}
+            </p>
+          </div>
+        )
+      })}
+    </div>
+  )
+}
 
-      {/* Tab bar */}
-      <div style={{ background: 'white', borderBottom: `1px solid ${M.gray200}`, padding: '0 1.5rem' }}>
-        <div style={{ maxWidth: '960px', margin: '0 auto', display: 'flex', gap: '4px' }}>
-          {TABS.map(tab => (
-            <button
-              key={tab}
-              onClick={() => setActiveTab(tab)}
-              style={{
-                padding: '14px 20px', border: 'none', background: 'none', cursor: 'pointer',
-                fontSize: '14px', fontFamily: "'DM Sans', sans-serif",
-                fontWeight: activeTab === tab ? 600 : 400,
-                color: activeTab === tab ? M.maroon : M.gray500,
-                borderBottom: `2px solid ${activeTab === tab ? M.maroon : 'transparent'}`,
-                marginBottom: '-1px', transition: 'color .15s',
-              }}
-            >
-              {tab}
-            </button>
-          ))}
+// ── Main StaffDashboard ────────────────────────────────────────────────────────
+export default function StaffDashboard() {
+  const { user, logout, token } = useAuth()
+  const navigate = useNavigate()
+  const [activeNav, setActiveNav] = useState('overview')
+  const [profileOpen, setProfileOpen] = useState(false)
+
+  // Data states
+  const [queue, setQueue] = useState([])
+  const [loadingQueue, setLoadingQueue] = useState(true)
+  const [apptStats, setApptStats] = useState({ today_total: 0, today_completed: 0, monthly_total: 0 })
+
+  const loadData = useCallback(async () => {
+    if (!token) return
+    try {
+      const [qData, aStats] = await Promise.all([
+        getTodaysQueue(token),
+        getAppointmentStats(token).catch(() => ({ today_total: 0, today_completed: 0, monthly_total: 0 }))
+      ])
+      setQueue(qData)
+      setApptStats(aStats)
+    } catch (e) { console.error("Error loading dashboard stats", e) }
+    finally { setLoadingQueue(false) }
+  }, [token])
+
+  useEffect(() => {
+    loadData()
+    const t = setInterval(loadData, 30000)
+    return () => clearInterval(t)
+  }, [loadData])
+
+  // Calculate stats
+  const activeInQueue = queue.filter(q => q.ticket.status !== 'completed').length
+  const completedToday = queue.filter(q => q.ticket.status === 'completed').length
+  
+  let avgWait = 0
+  const done = queue.filter(q => q.ticket.status === 'completed')
+  if (done.length > 0) {
+    let totalMins = 0
+    let validCount = 0
+    done.forEach(({ ticket, steps }) => {
+      if (!ticket.created_at) return
+      const created = new Date(ticket.created_at)
+      const lastStep = steps.slice().reverse().find(s => s.status === 'completed' && s.confirmed_at)
+      if (lastStep) {
+        const completed = new Date(lastStep.confirmed_at)
+        totalMins += Math.max(0, (completed - created) / 60000)
+        validCount++
+      }
+    })
+    avgWait = validCount > 0 ? Math.round(totalMins / validCount) : 12
+  } else {
+    avgWait = 12
+  }
+
+  const pendingAppts = Math.max(0, apptStats.today_total - apptStats.today_completed)
+
+  const stats = [
+    { icon: '👥', value: activeInQueue.toString(), label: 'Active in Queue', color: M.maroon, bg: M.maroonLight, loading: loadingQueue, delay: '0.1s' },
+    { icon: '✅', value: completedToday.toString(), label: 'Completed Today', color: M.green, bg: M.greenLight, loading: loadingQueue, delay: '0.2s' },
+    { icon: '⏱', value: `${avgWait}m`, label: 'Avg. Process Time', color: M.gold, bg: M.goldLight, loading: loadingQueue, delay: '0.3s' },
+    { icon: '📋', value: pendingAppts.toString(), label: 'Pending Appts.', color: M.blue, bg: M.blueLight, loading: loadingQueue, delay: '0.4s' },
+  ]
+
+  const navItems = [
+    { id: 'overview', icon: '📊', label: 'Dashboard' },
+    { id: 'queue', icon: '🎫', label: 'Live Queue Management' },
+    { id: 'appointments', icon: '📅', label: 'Appointments' },
+    { id: 'messages', icon: '💬', label: 'Messages' },
+  ]
+
+  return (
+    <div style={{ minHeight: '100vh', display: 'flex', background: M.offWhite, fontFamily: "'IBM Plex Sans', sans-serif" }}>
+
+      {/* ── Fixed Left Sidebar ── */}
+      <aside style={{
+        width: '240px', flexShrink: 0,
+        background: M.white, borderRight: `1px solid ${M.border}`,
+        display: 'flex', flexDirection: 'column',
+        position: 'fixed', left: 0, top: 0, bottom: 0,
+        zIndex: 50, padding: '20px 14px',
+      }}>
+        {/* Logo */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', paddingLeft: '6px', marginBottom: '28px' }}>
+          <img src={crmcLogo} alt="CRMC" style={{ width: '34px', height: '34px', borderRadius: '50%' }} />
+          <div>
+            <div style={{ fontFamily: "'Fraunces', serif", fontSize: '15px', fontWeight: 700, color: M.maroon }}>CampusFlow</div>
+            <div style={{ fontSize: '10px', color: M.textMuted, letterSpacing: '0.04em' }}>Staff Portal</div>
+          </div>
         </div>
-      </div>
 
-      <main style={{ maxWidth: '960px', margin: '0 auto', padding: '2rem 1.5rem' }}>
-        {activeTab === 'Queue Manager' && <QueueManager />}
-        {activeTab === 'Messages'      && <MessagesInbox />}
-      </main>
+        {/* Nav */}
+        <div style={{ fontSize: '10px', fontWeight: 700, color: M.textMuted, letterSpacing: '0.08em', textTransform: 'uppercase', padding: '0 14px', marginBottom: '6px' }}>Navigation</div>
+        <nav style={{ display: 'flex', flexDirection: 'column', gap: '3px', flex: 1 }}>
+          {navItems.map(item => (
+            <SideItem key={item.id} icon={item.icon} label={item.label} active={activeNav === item.id} onClick={() => setActiveNav(item.id)} badge={item.badge} />
+          ))}
+        </nav>
+      </aside>
+
+      {/* ── Right Content ── */}
+      <div style={{ marginLeft: '240px', flex: 1, display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
+
+        {/* Top Bar */}
+        <header style={{
+          background: M.white, borderBottom: `1px solid ${M.border}`,
+          padding: '0 28px', height: '60px',
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          position: 'sticky', top: 0, zIndex: 40,
+          boxShadow: '0 1px 4px rgba(0,0,0,0.04)',
+        }}>
+          <div>
+            <span style={{ fontSize: '18px', fontFamily: "'Fraunces', serif", fontWeight: 700, color: M.maroon }}>Welcome back, {user?.first_name}. Here's what's happening today.</span>
+          </div>
+
+          {/* Search + Avatar */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+
+
+            {/* Avatar dropdown */}
+            <div style={{ position: 'relative' }}>
+              {profileOpen && <div onClick={() => setProfileOpen(false)} style={{ position: 'fixed', inset: 0, zIndex: 105 }} />}
+              <button onClick={() => setProfileOpen(!profileOpen)} style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                padding: '0', borderRadius: '50%', border: 'none',
+                background: 'transparent', cursor: 'pointer', outline: 'none',
+              }}>
+                <div style={{ width: '38px', height: '38px', borderRadius: '50%', background: M.maroonMid, border: `1.5px solid ${M.maroonBorder}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '15px', fontWeight: 700, color: M.maroon }}>
+                  {user?.first_name?.[0]?.toUpperCase() || 'S'}
+                </div>
+              </button>
+              {profileOpen && (
+                <div style={{ position: 'absolute', top: '44px', right: 0, width: '200px', background: M.white, borderRadius: '12px', boxShadow: '0 8px 24px rgba(0,0,0,0.12), 0 0 0 1px rgba(0,0,0,0.05)', padding: '12px', zIndex: 110 }}>
+                  <div style={{ fontSize: '13px', fontWeight: 600, color: M.text, marginBottom: '4px' }}>{user?.first_name} {user?.last_name}</div>
+                  <div style={{ fontSize: '11px', color: M.textMuted, marginBottom: '12px', wordBreak: 'break-all' }}>{user?.email}</div>
+                  <div style={{ height: '1px', background: M.border, marginBottom: '10px' }} />
+                  <button onClick={() => { logout(); navigate('/login') }} style={{
+                    width: '100%', padding: '9px 12px', borderRadius: '8px', border: 'none',
+                    background: '#FEF2F2', color: '#DC2626', fontSize: '13px', fontWeight: 600,
+                    cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', fontFamily: "'IBM Plex Sans', sans-serif",
+                  }}>
+                    <span>🚪</span> Log Out
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        </header>
+
+        {/* ── Page Content ── */}
+        <main style={{ padding: '28px', flex: 1 }}>
+
+          {/* ──── OVERVIEW VIEW ──── */}
+          {activeNav === 'overview' && (
+            <>
+              <div style={{ marginBottom: '24px' }}>
+                <p style={{ fontSize: '11px', fontWeight: 700, color: M.gold, letterSpacing: '0.1em', textTransform: 'uppercase', margin: '0 0 6px' }}>Today's Summary</p>
+                <h1 style={{ fontFamily: "'Fraunces', serif", fontSize: '22px', fontWeight: 700, color: M.text, margin: 0 }}>Daily Overview</h1>
+              </div>
+
+              {/* Stats Grid */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px', marginBottom: '28px' }}>
+                {stats.map((s, i) => <StatCard key={i} {...s} />)}
+              </div>
+
+              {/* Two-column: Queue preview + AI Escalations */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 340px', gap: '20px' }}>
+
+                {/* Live Queue Preview */}
+                <div className="animate-fade-up" style={{ animationDelay: '0.5s', background: M.white, borderRadius: '16px', padding: '24px', border: `1px solid ${M.border}`, boxShadow: '0 1px 4px rgba(0,0,0,0.04)' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
+                    <div>
+                      <p style={{ fontSize: '11px', fontWeight: 700, color: M.gold, letterSpacing: '0.1em', textTransform: 'uppercase', margin: '0 0 4px' }}>Real-Time</p>
+                      <h2 style={{ fontFamily: "'Fraunces', serif", fontSize: '18px', fontWeight: 700, color: M.text, margin: 0 }}>Live Queue Management</h2>
+                    </div>
+                    <button onClick={() => setActiveNav('queue')} style={{
+                      padding: '6px 14px', borderRadius: '8px', border: `1px solid ${M.maroonBorder}`,
+                      background: M.maroonLight, color: M.maroon,
+                      fontSize: '12px', fontWeight: 600, cursor: 'pointer', fontFamily: "'IBM Plex Sans', sans-serif",
+                    }}>View All</button>
+                  </div>
+                  <CompactQueuePreview queue={queue} loading={loadingQueue} />
+                </div>
+
+                {/* AI Escalations Panel */}
+                <div className="animate-fade-up" style={{ animationDelay: '0.6s', background: M.white, borderRadius: '16px', padding: '24px', border: `1px solid ${M.border}`, boxShadow: '0 1px 4px rgba(0,0,0,0.04)', display: 'flex', flexDirection: 'column' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
+                    <div>
+                      <p style={{ fontSize: '11px', fontWeight: 700, color: M.gold, letterSpacing: '0.1em', textTransform: 'uppercase', margin: '0 0 4px' }}>Inbox</p>
+                      <h2 style={{ fontFamily: "'Fraunces', serif", fontSize: '18px', fontWeight: 700, color: M.text, margin: 0 }}>AI Escalations</h2>
+                    </div>
+                    <span style={{ background: '#DC2626', color: M.white, fontSize: '11px', fontWeight: 700, padding: '2px 8px', borderRadius: '100px' }}>New</span>
+                  </div>
+                  <div style={{ flex: 1, overflow: 'auto' }}>
+                    <CompactMessagesPreview />
+                  </div>
+                  <button onClick={() => setActiveNav('messages')} style={{
+                    marginTop: '16px', width: '100%', padding: '9px', borderRadius: '9px',
+                    border: `1px solid ${M.border}`, background: M.offWhite,
+                    color: M.textSub, fontSize: '13px', fontWeight: 600, cursor: 'pointer',
+                    fontFamily: "'IBM Plex Sans', sans-serif",
+                  }}>View All Messages</button>
+                </div>
+              </div>
+            </>
+          )}
+
+          {/* ──── QUEUE VIEW ──── */}
+          {activeNav === 'queue' && (
+            <LiveQueuePage />
+          )}
+
+          {/* ──── MESSAGES VIEW ──── */}
+          {activeNav === 'messages' && (
+            <MessagesPage />
+          )}
+
+          {/* ──── APPOINTMENTS VIEW ──── */}
+          {activeNav === 'appointments' && (
+            <AppointmentsPage />
+          )}
+        </main>
+      </div>
     </div>
   )
 }

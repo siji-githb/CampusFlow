@@ -50,3 +50,33 @@ export const cancelAppointment = async (token, appointmentId) => {
   if (!res.ok) throw new Error(data.detail || 'Failed to cancel appointment')
   return data
 }
+
+export const getAllAppointments = async (token, dateStr = null) => {
+  const url = dateStr 
+    ? `${API_URL}/appointments/all?date=${dateStr}` 
+    : `${API_URL}/appointments/all`
+  const res = await fetch(url, { headers: authHeader(token) })
+  const data = await res.json()
+  if (!res.ok) throw new Error(data.detail || 'Failed to fetch all appointments')
+  return data
+}
+
+export const getAppointmentStats = async (token) => {
+  const res = await fetch(`${API_URL}/appointments/stats`, {
+    headers: authHeader(token)
+  })
+  const data = await res.json()
+  if (!res.ok) throw new Error(data.detail || 'Failed to fetch appointment stats')
+  return data
+}
+
+export const rescheduleAppointment = async (token, appointmentId, newDate, newTime) => {
+  const res = await fetch(`${API_URL}/appointments/${appointmentId}/reschedule`, {
+    method: 'PATCH',
+    headers: authHeader(token),
+    body: JSON.stringify({ new_date: newDate, new_time: newTime })
+  })
+  const data = await res.json()
+  if (!res.ok) throw new Error(data.detail || 'Failed to reschedule appointment')
+  return data
+}

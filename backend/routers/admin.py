@@ -2,20 +2,27 @@ from fastapi import APIRouter, Header, HTTPException
 from services.admin_service import (
     get_dashboard_stats,
     get_reports,
+    get_registrar_records,
     get_audit_log,
     get_office_config,
     update_office_config,
     get_all_users,
     update_user_role,
+    toggle_user_status,
     get_transaction_types,
     get_ai_insights,          # ← M12
 )
 from models.admin_models import OfficeConfigUpdate
+from pydantic import BaseModel
+from services.appointment_service import get_all_appointments, update_appointment_status
 from supabase import create_client
 from config import get_settings
 
 settings = get_settings()
 router = APIRouter(prefix="/admin", tags=["Admin"])
+
+class StatusUpdate(BaseModel):
+    status: str
 
 
 def get_current_user(authorization: str):
@@ -60,6 +67,12 @@ def reports(days: int = 7, authorization: str = Header(...)):
     return get_reports(days)
 
 
+@router.get("/records")
+def registrar_records(days: int = 30, authorization: str = Header(...)):
+    require_admin(authorization)
+    return get_registrar_records(days)
+
+
 @router.get("/audit-log")
 def audit_log(limit: int = 50, authorization: str = Header(...)):
     require_admin(authorization)
@@ -74,8 +87,8 @@ def office_config(authorization: str = Header(...)):
 
 @router.patch("/office-config")
 def update_config(data: OfficeConfigUpdate, authorization: str = Header(...)):
-    require_admin(authorization)
-    return update_office_config(data.key, data.value)
+    user = require_admin(authorization)
+    return update_office_config(data.key, data.value, user.id)
 
 
 @router.get("/users")
@@ -86,14 +99,33 @@ def all_users(authorization: str = Header(...)):
 
 @router.patch("/users/{user_id}/role")
 def change_role(user_id: str, role: str, authorization: str = Header(...)):
-    require_admin(authorization)
-    return update_user_role(user_id, role)
+    user = require_admin(authorization)
+    return update_user_role(user_id, role, user.id)
+
+
+@router.patch("/users/{user_id}/status")
+def change_status(user_id: str, is_active: bool, authorization: str = Header(...)):
+    user = require_admin(authorization)
+    return toggle_user_status(user_id, is_active, user.id)
 
 
 @router.get("/transaction-types")
 def transaction_types(authorization: str = Header(...)):
     require_admin(authorization)
     return get_transaction_types()
+
+
+@router.get("/appointments")
+def all_appointments(date: str = None, authorization: str = Header(...)):
+    require_admin(authorization)
+    return get_all_appointments(date)
+
+
+@router.patch("/appointments/{appointment_id}/status")
+def change_appointment_status(appointment_id: str, data: StatusUpdate, authorization: str = Header(...)):
+    user = require_admin(authorization)
+    return update_appointment_status(appointment_id, data.status, user.id)
+
 
 
 # ── M12: AI-Generated Admin Insights ─────────────────────────────────────────

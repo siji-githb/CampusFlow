@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/useAuth'
 import Navbar from '../../components/layout/Navbar'
-import { sendMessage, clearChat } from '../../services/aiService'
+import { sendMessage, clearChat, getChatHistory } from '../../services/aiService'
 
 const M = { maroon: '#7B1A2A', maroonLight: '#F9F0F1', gold: '#B8900A', goldLight: '#FDF6E3', offWhite: '#F9F7F4', gray200: '#EAE7E2', gray500: '#706B65', text: '#1C1917' }
 
@@ -18,11 +18,26 @@ export default function AiChat() {
   // eslint-disable-next-line no-unused-vars
   const navigate  = useNavigate()
 
-  const [messages, setMessages] = useState([{
+  const DEFAULT_MESSAGE = {
     role: 'assistant',
     content: "Hi! I'm the CampusFlow AI Assistant 👋 I can help you with appointment booking, transaction requirements, and registrar procedures. How can I help you today?",
-  }])
+  }
+  const [messages, setMessages] = useState([DEFAULT_MESSAGE])
   const [input,   setInput]   = useState('')
+
+  useEffect(() => {
+    const loadHistory = async () => {
+      try {
+        const data = await getChatHistory(token)
+        if (data.messages && data.messages.length > 0) {
+          setMessages([DEFAULT_MESSAGE, ...data.messages])
+        }
+      } catch (e) {
+        console.error('Failed to load history', e)
+      }
+    }
+    loadHistory()
+  }, [token])
   const [loading, setLoading] = useState(false)
   const [error,   setError]   = useState('')
 
@@ -171,7 +186,11 @@ export default function AiChat() {
               {msg.role === 'assistant' && (
                 <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: M.maroon, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: '11px', fontWeight: 700, color: '#F0C040', fontFamily: "'Playfair Display', serif" }}>CF</div>
               )}
-              <div style={{ maxWidth: '72%', padding: '10px 14px', borderRadius: msg.role === 'user' ? '16px 16px 4px 16px' : '16px 16px 16px 4px', background: msg.role === 'user' ? M.maroon : msg.isError ? M.maroonLight : 'white', color: msg.role === 'user' ? 'white' : msg.isError ? M.maroon : M.text, fontSize: '13px', lineHeight: 1.6, boxShadow: '0 1px 3px rgba(0,0,0,0.06)', border: msg.role === 'assistant' && !msg.isError ? `1px solid ${M.gray200}` : 'none' }}>
+              {msg.role === 'staff' && (
+                <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: M.gold, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: '11px', fontWeight: 700, color: M.maroon, fontFamily: "'IBM Plex Sans', sans-serif" }}>S</div>
+              )}
+              <div style={{ maxWidth: '72%', padding: '10px 14px', borderRadius: msg.role === 'user' ? '16px 16px 4px 16px' : '16px 16px 16px 4px', background: msg.role === 'user' ? M.maroon : msg.role === 'staff' ? M.goldLight : msg.isError ? M.maroonLight : 'white', color: msg.role === 'user' ? 'white' : msg.role === 'staff' ? M.maroonDark : msg.isError ? M.maroon : M.text, fontSize: '13px', lineHeight: 1.6, boxShadow: '0 1px 3px rgba(0,0,0,0.06)', border: (msg.role === 'assistant' || msg.role === 'staff') && !msg.isError ? `1px solid ${msg.role === 'staff' ? M.goldBorder : M.gray200}` : 'none' }}>
+                {msg.role === 'staff' && <p style={{ fontSize: '10px', fontWeight: 700, margin: '0 0 4px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{msg.staff_name || 'Registrar Staff'}</p>}
                 <p style={{ margin: 0, whiteSpace: 'pre-wrap' }}>{msg.content}</p>
                 {msg.escalated && <p style={{ fontSize: '11px', color: M.gold, margin: '6px 0 0', paddingTop: '6px', borderTop: `1px solid ${M.gold}30` }}>📨 Forwarded to Registrar staff</p>}
               </div>

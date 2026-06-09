@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Header, HTTPException
 from pydantic import BaseModel
-from services.ai_service import chat, clear_session
+from services.ai_service import chat, clear_session, get_or_create_session
 from supabase import create_client
 from config import get_settings
 
@@ -32,6 +32,13 @@ def get_current_user(authorization: str):
 def chat_endpoint(data: ChatRequest, authorization: str = Header(...)):
     user = get_current_user(authorization)
     return chat(user.id, data.message)
+
+
+@router.get("/history")
+def get_history(authorization: str = Header(...)):
+    user = get_current_user(authorization)
+    session = get_or_create_session(user.id)
+    return {"messages": session.get("messages", [])}
 
 
 @router.delete("/chat/clear")

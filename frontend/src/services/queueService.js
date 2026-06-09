@@ -33,6 +33,15 @@ export const getTodaysQueue = async (token) => {
   return data
 }
 
+export const getLiveQueueStats = async (token) => {
+  const res = await fetch(`${API_URL}/queue/live-stats`, {
+    headers: authHeader(token)
+  })
+  const data = await res.json()
+  if (!res.ok) throw new Error(data.detail || 'Failed to fetch queue stats')
+  return data
+}
+
 export const confirmStep = async (token, queueTicketId, stepNumber) => {
   const res = await fetch(`${API_URL}/queue/confirm-step`, {
     method: 'POST',

@@ -3,6 +3,7 @@ from config import get_settings
 from supabase import create_client
 from models.appointment_models import AppointmentCreate
 from datetime import date, datetime, timedelta
+from services.admin_service import log_audit_action
 
 settings = get_settings()
 
@@ -179,6 +180,16 @@ def create_appointment(student_id: str, priority_class: str, data: AppointmentCr
             "notes": data.notes
         }).execute()
         appt = appt_res.data[0]
+        
+        log_audit_action(
+            user_id=student_id,
+            action="Created new appointment",
+            table_name="appointments",
+            record_id=appt["id"],
+            status="Success",
+            changes=f"Date: {data.appointment_date}, Time: {data.time_slot}",
+            severity="Info"
+        )
     except HTTPException:
         raise
     except Exception as e:
@@ -233,6 +244,128 @@ def cancel_appointment(appointment_id: str, student_id: str):
             .update({"status": "cancelled"}) \
             .eq("id", appointment_id) \
             .execute()
+            
+        log_audit_action(
+            user_id=student_id,
+            action="Cancelled appointment",
+            table_name="appointments",
+            record_id=appointment_id,
+            status="Success",
+            changes="Status: confirmed ➔ cancelled",
+            severity="Warning"
+        )
         return {"message": "Appointment cancelled successfully"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+def get_all_appointments(date_str: str = None):
+    admin = get_admin()
+    try:
+        query = admin.table("appointments") \
+            .select("*, transaction_types(name), users(first_name, last_name, student_id)")
+            
+        if date_str:
+            query = query.eq("appointment_date", date_str)
+            
+        res = query.order("time_slot", desc=False).execute()
+        return res.data
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+def get_appointment_stats():
+    admin = get_admin()
+    try:
+        today = str(date.today())
+        
+        # Today's appointments
+        res_today = admin.table("appointments").select("id").eq("appointment_date", today).execute()
+        today_count = len(res_today.data) if res_today.data else 0
+        
+        # Completed today
+        res_comp = admin.table("appointments").select("id").eq("appointment_date", today).eq("status", "completed").execute()
+        comp_count = len(res_comp.data) if res_comp.data else 0
+        
+        # Total monthly volume
+        month_start = str(date.today().replace(day=1))
+        res_month = admin.table("appointments").select("id").gte("appointment_date", month_start).execute()
+        month_count = len(res_month.data) if res_month.data else 0
+        
+        return {
+            "today_appointments": today_count,
+            "completed_today": comp_count,
+            "total_monthly": month_count
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+def reschedule_appointment(appointment_id: str, new_date: str, new_time: str, actor_id: str = None):
+    admin = get_admin()
+    try:
+        res = admin.table("appointments").select("id, appointment_date, time_slot").eq("id", appointment_id).execute()
+        if not res.data:
+            raise HTTPException(status_code=404, detail="Appointment not found")
+            
+        old_date = res.data[0]["appointment_date"]
+        old_time = res.data[0]["time_slot"]
+            
+        admin.table("appointments").update({
+            "appointment_date": new_date,
+            "time_slot": new_time,
+            "status": "pending" 
+        }).eq("id", appointment_id).execute()
+        
+        if actor_id:
+            log_audit_action(
+                user_id=actor_id,
+                action="Rescheduled appointment",
+                table_name="appointments",
+                record_id=appointment_id,
+                status="Success",
+                changes=f"From: {old_date} {old_time} ➔ To: {new_date} {new_time}",
+                severity="Warning"
+            )
+        
+        return {"success": True}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+def update_appointment_status(appointment_id: str, status: str, actor_id: str = None):
+    admin = get_admin()
+    valid_statuses = ["pending", "confirmed", "in_progress", "completed", "cancelled", "no_show"]
+    
+    if status not in valid_statuses:
+        raise HTTPException(status_code=400, detail="Invalid status")
+        
+    try:
+        res = admin.table("appointments").select("status").eq("id", appointment_id).execute()
+        if not res.data:
+            raise HTTPException(status_code=404, detail="Appointment not found")
+            
+        old_status = res.data[0]["status"]
+        
+        admin.table("appointments").update({"status": status}).eq("id", appointment_id).execute()
+        
+        if actor_id and old_status != status:
+            severity = "Info"
+            if status in ["cancelled", "no_show"]:
+                severity = "Warning"
+                
+            log_audit_action(
+                user_id=actor_id,
+                action=f"Updated appointment status",
+                table_name="appointments",
+                record_id=appointment_id,
+                status="Success",
+                changes=f"Status: {old_status} ➔ {status}",
+                severity=severity
+            )
+            
+        return {"success": True, "status": status}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))

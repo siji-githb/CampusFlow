@@ -25,3 +25,12 @@ export const clearChat = async (token) => {
   if (!res.ok) throw new Error(data.detail || 'Failed to clear chat')
   return data
 }
+
+export const getChatHistory = async (token) => {
+  const res = await fetch(`${API_URL}/ai/history`, {
+    headers: authHeader(token)
+  })
+  const data = await res.json()
+  if (!res.ok) throw new Error(data.detail || 'Failed to fetch history')
+  return data
+}

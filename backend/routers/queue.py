@@ -4,7 +4,8 @@ from services.queue_service import (
     get_student_queue,
     confirm_step,
     get_todays_queue,
-    get_time_estimate,          # ← M9
+    get_time_estimate,
+    get_live_queue_stats,
 )
 from models.queue_models import ConfirmStepRequest
 from supabase import create_client
@@ -70,6 +71,15 @@ def todays_queue(authorization: str = Header(...)):
     if profile["role"] not in ["staff", "admin"]:
         raise HTTPException(status_code=403, detail="Only staff can view today's queue")
     return get_todays_queue()
+
+
+@router.get("/live-stats")
+def live_queue_stats(authorization: str = Header(...)):
+    user = get_current_user(authorization)
+    profile = get_user_profile(user.id)
+    if profile["role"] not in ["staff", "admin"]:
+        raise HTTPException(status_code=403, detail="Only staff can view queue stats")
+    return get_live_queue_stats()
 
 
 # ── M9: Queue Time Estimator ───────────────────────────────────────────────────

@@ -23,3 +23,14 @@ export const markMessageRead = async (token, messageId) => {
   if (!res.ok) throw new Error(data.detail || 'Failed to mark as read')
   return data
 }
+
+export const replyToMessage = async (token, messageId, replyText) => {
+  const res = await fetch(`${API_URL}/messages/${messageId}/reply`, {
+    method: 'POST',
+    headers: authHeader(token),
+    body: JSON.stringify({ replyText })
+  })
+  const data = await res.json()
+  if (!res.ok) throw new Error(data.detail || 'Failed to send reply')
+  return data
+}
