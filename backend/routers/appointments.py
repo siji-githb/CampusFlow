@@ -1,4 +1,7 @@
-from fastapi import APIRouter, Header, HTTPException
+from fastapi import APIRouter, Header, HTTPException, UploadFile, File
+import os
+import uuid
+from typing import Optional
 from models.appointment_models import AppointmentCreate
 from services.appointment_service import (
     get_transaction_types,
@@ -15,6 +18,7 @@ from pydantic import BaseModel
 class RescheduleRequest(BaseModel):
     new_date: str
     new_time: str
+    notes: Optional[str] = None
 from supabase import create_client
 from config import get_settings
 from datetime import date
@@ -88,9 +92,7 @@ def appointment_stats(authorization: str = Header(...)):
 def reschedule(appointment_id: str, data: RescheduleRequest, authorization: str = Header(...)):
     user = get_current_user(authorization)
     profile = get_user_profile(user.id)
-    if profile["role"] not in ["staff", "admin"]:
-        raise HTTPException(status_code=403, detail="Staff only")
-    return reschedule_appointment(appointment_id, data.new_date, data.new_time, user.id)
+    return reschedule_appointment(appointment_id, data.new_date, data.new_time, user.id, profile["role"], data.notes)
 
 
 @router.get("/my")
@@ -103,3 +105,22 @@ def my_appointments(authorization: str = Header(...)):
 def cancel(appointment_id: str, authorization: str = Header(...)):
     user = get_current_user(authorization)
     return cancel_appointment(appointment_id, user.id)
+
+
+@router.post("/upload-media")
+async def upload_media(file: UploadFile = File(...), authorization: str = Header(...)):
+    user = get_current_user(authorization)
+    
+    # validate extension
+    ext = file.filename.split('.')[-1].lower()
+    if ext not in ['png', 'jpg', 'jpeg']:
+        raise HTTPException(status_code=400, detail="Only PNG or JPG files are allowed.")
+    
+    filename = f"{uuid.uuid4()}.{ext}"
+    os.makedirs("media", exist_ok=True)
+    filepath = os.path.join("media", filename)
+    
+    with open(filepath, "wb") as f:
+        f.write(await file.read())
+        
+    return {"url": f"/media/{filename}"}

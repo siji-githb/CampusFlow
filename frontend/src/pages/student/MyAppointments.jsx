@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/useAuth'
 import BottomNav from '../../components/layout/BottomNav'
 import { getMyAppointments, cancelAppointment } from '../../services/appointmentService'
+import RescheduleModal from '../../components/RescheduleModal'
 
 const M = { maroon: '#7B1A2A', maroonLight: '#F9F0F1', gold: '#B8900A', goldLight: '#FDF6E3', offWhite: '#F9F7F4', gray200: '#EAE7E2', gray500: '#706B65', text: '#1C1917', white: '#FFFFFF' }
 
@@ -22,6 +23,15 @@ export default function MyAppointments() {
   const [cancelling, setCancelling] = useState(null)
   const [error, setError] = useState('')
   const [filter, setFilter] = useState('all')
+  const [reschedulingAppt, setReschedulingAppt] = useState(null)
+  const [confirmCancelId, setConfirmCancelId] = useState(null)
+
+  const canReschedule = (apptDateStr, apptTimeStr) => {
+    const apptDate = new Date(`${apptDateStr}T${apptTimeStr}:00`)
+    const now = new Date()
+    const diffHours = (apptDate - now) / (1000 * 60 * 60)
+    return diffHours >= 48
+  }
 
   const fetch = async () => {
     try { setAppointments(await getMyAppointments(token)) }
@@ -30,8 +40,10 @@ export default function MyAppointments() {
   }
   useEffect(() => { fetch() }, [token])
 
-  const handleCancel = async (id) => {
-    if (!window.confirm('Cancel this appointment?')) return
+  const handleCancelConfirm = async () => {
+    if (!confirmCancelId) return
+    const id = confirmCancelId
+    setConfirmCancelId(null)
     setCancelling(id)
     try { await cancelAppointment(token, id); await fetch() }
     catch (e) { setError(e.message) }
@@ -41,6 +53,15 @@ export default function MyAppointments() {
   const filteredAppointments = appointments.filter(appt => {
     if (filter === 'all') return true;
     return appt.status === filter;
+  }).sort((a, b) => {
+    const aEnd = a.status === 'completed' || a.status === 'cancelled';
+    const bEnd = b.status === 'completed' || b.status === 'cancelled';
+    if (aEnd && !bEnd) return 1;
+    if (!aEnd && bEnd) return -1;
+    
+    const dateCmp = (a.appointment_date || '').localeCompare(b.appointment_date || '');
+    if (dateCmp !== 0) return dateCmp;
+    return (a.time_slot || '').localeCompare(b.time_slot || '');
   });
 
   return (
@@ -132,7 +153,13 @@ export default function MyAppointments() {
                     <span style={{ fontSize: '11px', fontWeight: 600, padding: '3px 10px', borderRadius: '100px', background: s.bg, color: s.color, border: `1px solid ${s.border}`, whiteSpace: 'nowrap' }}>{s.label}</span>
                   </div>
                   <div style={{ fontSize: '13px', color: M.gray500, marginBottom: '12px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                    <span>📅 {appt.appointment_date} at {appt.time_slot}</span>
+                    <span>📅 {appt.appointment_date} at {(() => {
+                      const [hStr, mStr] = appt.time_slot.split(':')
+                      const h = parseInt(hStr, 10)
+                      const suffix = h < 12 ? 'AM' : 'PM'
+                      const h12 = h % 12 || 12
+                      return `${h12}:${mStr} ${suffix}`
+                    })()}</span>
                     <span>🏷️ Priority: <span style={{ textTransform: 'capitalize' }}>{appt.priority_class}</span></span>
                     {appt.notes && <span>📝 {appt.notes}</span>}
                   </div>
@@ -146,11 +173,22 @@ export default function MyAppointments() {
                       </div>
                     </div>
                   )}
-                  {appt.status === 'confirmed' && (
-                    <button onClick={() => handleCancel(appt.id)} disabled={cancelling === appt.id}
-                      style={{ width: '100%', minHeight: '44px', marginTop: '16px', fontSize: '13px', fontWeight: 600, color: M.maroon, background: 'transparent', border: `1px solid ${M.maroonBorder || 'rgba(123,26,42,0.2)'}`, borderRadius: '10px', cursor: 'pointer', opacity: cancelling === appt.id ? 0.5 : 1, fontFamily: "'IBM Plex Sans', sans-serif" }}>
-                      {cancelling === appt.id ? 'Cancelling...' : 'Cancel Appointment'}
-                    </button>
+                  {(appt.status === 'confirmed' || appt.status === 'pending') && (
+                    <div style={{ display: 'flex', gap: '8px', marginTop: '16px' }}>
+                      <button 
+                        onClick={() => setReschedulingAppt(appt)} 
+                        disabled={cancelling === appt.id || !canReschedule(appt.appointment_date, appt.time_slot)}
+                        title={!canReschedule(appt.appointment_date, appt.time_slot) ? "Cannot reschedule within 48 hours of appointment" : ""}
+                        style={{ flex: 1, minHeight: '44px', fontSize: '13px', fontWeight: 600, color: M.text, background: M.white, border: `1px solid ${M.gray200}`, borderRadius: '10px', cursor: !canReschedule(appt.appointment_date, appt.time_slot) ? 'not-allowed' : 'pointer', opacity: (!canReschedule(appt.appointment_date, appt.time_slot) || cancelling === appt.id) ? 0.5 : 1, fontFamily: "'IBM Plex Sans', sans-serif" }}>
+                        Reschedule
+                      </button>
+                      <button 
+                        onClick={() => setConfirmCancelId(appt.id)} 
+                        disabled={cancelling === appt.id}
+                        style={{ flex: 1, minHeight: '44px', fontSize: '13px', fontWeight: 600, color: M.maroon, background: 'transparent', border: `1px solid ${M.maroonBorder || 'rgba(123,26,42,0.2)'}`, borderRadius: '10px', cursor: 'pointer', opacity: cancelling === appt.id ? 0.5 : 1, fontFamily: "'IBM Plex Sans', sans-serif" }}>
+                        {cancelling === appt.id ? 'Cancelling...' : 'Cancel'}
+                      </button>
+                    </div>
                   )}
                 </div>
               )
@@ -161,6 +199,47 @@ export default function MyAppointments() {
 
       {/* ── Bottom Nav ── */}
       <BottomNav active="appointments" />
+
+      {reschedulingAppt && (
+        <RescheduleModal 
+          token={token}
+          appointment={reschedulingAppt}
+          onClose={() => setReschedulingAppt(null)}
+          onSuccess={() => {
+            setReschedulingAppt(null)
+            fetch()
+          }}
+        />
+      )}
+
+      {confirmCancelId && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)' }} onClick={() => setConfirmCancelId(null)} />
+          <div className="animate-fade-up" style={{ position: 'relative', width: '90%', maxWidth: '320px', background: M.white, borderRadius: '20px', padding: '24px', textAlign: 'center', boxShadow: '0 10px 40px rgba(0,0,0,0.2)' }}>
+            <div style={{ width: '48px', height: '48px', borderRadius: '50%', background: M.maroonLight, color: M.maroon, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px', margin: '0 auto 16px' }}>
+              ⚠
+            </div>
+            <h3 style={{ fontFamily: "'Fraunces', serif", fontSize: '18px', fontWeight: 700, color: M.text, margin: '0 0 8px' }}>Cancel Appointment?</h3>
+            <p style={{ fontSize: '13px', color: M.textSub, margin: '0 0 24px', lineHeight: 1.4 }}>
+              Are you sure you want to cancel this appointment? This action cannot be undone.
+            </p>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <button 
+                onClick={() => setConfirmCancelId(null)}
+                style={{ flex: 1, padding: '10px', borderRadius: '10px', border: `1px solid ${M.gray200}`, background: M.white, color: M.text, fontSize: '13px', fontWeight: 600, cursor: 'pointer', fontFamily: "'IBM Plex Sans', sans-serif" }}
+              >
+                Keep It
+              </button>
+              <button 
+                onClick={handleCancelConfirm}
+                style={{ flex: 1, padding: '10px', borderRadius: '10px', border: 'none', background: M.maroon, color: M.white, fontSize: '13px', fontWeight: 600, cursor: 'pointer', fontFamily: "'IBM Plex Sans', sans-serif" }}
+              >
+                Yes, Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

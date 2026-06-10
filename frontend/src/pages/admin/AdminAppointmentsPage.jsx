@@ -198,7 +198,13 @@ export default function AdminAppointmentsPage() {
   // Derived
   const filtered = appointments.filter(a =>
     statusFilter === 'all' || a.status === statusFilter
-  )
+  ).sort((a, b) => {
+    const aComp = a.status === 'completed'
+    const bComp = b.status === 'completed'
+    if (aComp && !bComp) return 1
+    if (!aComp && bComp) return -1
+    return (a.time_slot || '').localeCompare(b.time_slot || '')
+  })
   const totalPages = Math.max(1, Math.ceil(filtered.length / PER_PAGE))
   const paginated  = filtered.slice((page - 1) * PER_PAGE, page * PER_PAGE)
 
@@ -207,9 +213,12 @@ export default function AdminAppointmentsPage() {
     ? Math.round((completedCount / appointments.length) * 100)
     : 0
 
-  const formatTime = (dt) => {
-    if (!dt) return '—'
-    return new Date(dt).toLocaleTimeString('en-PH', { hour: '2-digit', minute: '2-digit' })
+  const formatTime = (timeSlot) => {
+    if (!timeSlot) return '—'
+    const [hStr, mStr] = timeSlot.split(':')
+    if (!hStr || !mStr) return timeSlot
+    const h = parseInt(hStr, 10)
+    return `${h % 12 || 12}:${mStr} ${h < 12 ? 'AM' : 'PM'}`
   }
 
   const formatDateLabel = (ds) => {
@@ -418,7 +427,7 @@ export default function AdminAppointmentsPage() {
                 const name    = student ? `${student.first_name} ${student.last_name}` : 'Unknown Student'
                 const txName  = appt.transaction_types?.name || appt.transaction_type?.name || 'Transaction'
                 const isLast  = idx === paginated.length - 1
-                const time    = formatTime(appt.appointment_date || appt.slot_time || appt.created_at)
+                const time    = formatTime(appt.time_slot)
 
                 return (
                   <div key={appt.id} style={{
@@ -454,7 +463,9 @@ export default function AdminAppointmentsPage() {
                     <div style={{ fontSize: '13px', color: M.textSub, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{txName}</div>
 
                     {/* Status */}
-                    <StatusBadge status={appt.status} />
+                    <div style={{ display: 'flex', alignItems: 'center' }}>
+                      <StatusBadge status={appt.status} />
+                    </div>
 
                     {/* Action */}
                     <div style={{ display: 'flex', gap: '6px' }}>
@@ -474,10 +485,10 @@ export default function AdminAppointmentsPage() {
                         </button>
                       )}
                       {appt.status === 'completed' && (
-                        <span style={{ fontSize: '16px', color: M.green, fontWeight: 'bold' }}>✓</span>
+                        <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: M.greenLight, color: M.green, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px', fontWeight: 'bold', border: `1px solid ${M.greenBorder}` }}>✓</div>
                       )}
                       {appt.status === 'cancelled' && (
-                        <span style={{ fontSize: '16px', color: M.red, fontWeight: 'bold' }}>✕</span>
+                        <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: M.redLight, color: M.red, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px', fontWeight: 'bold', border: `1px solid ${M.redBorder}` }}>✕</div>
                       )}
                     </div>
                   </div>

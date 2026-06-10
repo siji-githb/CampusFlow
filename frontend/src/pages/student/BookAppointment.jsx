@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/useAuth'
-import { getTransactionTypes, getAvailableSlots, bookAppointment } from '../../services/appointmentService'
+import { getTransactionTypes, getAvailableSlots, bookAppointment, uploadMedia } from '../../services/appointmentService'
 
 const M = {
   maroon:       '#7B1A2A',
@@ -84,19 +84,20 @@ function CalendarWidget({ selectedDate, onDateSelect, minDateStr, maxDateStr }) 
           const dateStr    = `${year}-${String(month + 1).padStart(2,'0')}-${String(d).padStart(2,'0')}`
           const t          = new Date(dateStr + 'T00:00:00').getTime()
           const dow        = new Date(dateStr + 'T00:00:00').getDay()
-          const isDisabled = dow === 0 || dow === 6 || t < minD || t > maxD
+          const isDisabled = dow === 0 || t < minD || t > maxD
           const isSelected = selectedDate === dateStr
           return (
             <button key={i} type="button" disabled={isDisabled}
+              title={isDisabled ? "Outside booking window or unavailable" : ""}
               onClick={() => !isDisabled && onDateSelect(dateStr)}
               style={{
                 aspectRatio: '1', borderRadius: '50%', border: 'none',
-                background: isSelected ? M.maroon : 'transparent',
-                color: isSelected ? M.white : isDisabled ? M.borderStrong : M.text,
+                background: isSelected ? M.maroon : isDisabled ? '#F5F5F5' : 'transparent',
+                color: isSelected ? M.white : isDisabled ? M.textSub : M.text,
                 fontSize: '13px', fontWeight: isSelected ? 700 : 400,
                 cursor: isDisabled ? 'not-allowed' : 'pointer',
                 fontFamily: "'IBM Plex Sans', sans-serif",
-                opacity: isDisabled ? 0.35 : 1,
+                opacity: isDisabled ? 0.5 : 1,
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 transition: 'all 0.15s',
               }}
@@ -152,27 +153,71 @@ function Stepper({ step }) {
   )
 }
 
-// ── Slot Button ──
-function SlotBtn({ slot, selected, onSelect }) {
+// ── UPDATED: slot visual states ──
+const isSlotPast = (slotTime, selectedDate) => {
+  const today = new Date().toISOString().split('T')[0]
+  if (selectedDate !== today) return false  // future date — never gray out by time
+
+  const [slotHour, slotMin] = slotTime.split(':').map(Number)
+  const now = new Date()
+  const bufferMinutes = 0  // No advance buffer required
+
+  const slotDate = new Date()
+  slotDate.setHours(slotHour, slotMin, 0, 0)
+
+  const cutoff = new Date(now.getTime() + bufferMinutes * 60000)
+  return slotDate <= cutoff
+}
+
+function SlotBtn({ slot, selected, onSelect, selectedDate }) {
+  const isPast = isSlotPast(slot.time_slot, selectedDate);
+  const isFull = !slot.available;
+  const isAvailable = !isPast && !isFull;
+
+  let bg = M.white;
+  let color = M.text;
+  let border = M.border;
+  let opacity = 1;
+  let cursor = 'pointer';
+  let text = slot.display || slot.time_slot;
+
+  if (selected) {
+    bg = M.maroon;
+    color = M.white;
+    border = M.maroon;
+  } else if (isPast) {
+    bg = M.gray200; // #EAE7E2
+    color = M.textMuted;
+    border = M.borderStrong;
+    opacity = 0.5;
+    cursor = 'not-allowed';
+    text = 'Past';
+  } else if (isFull) {
+    bg = M.maroonLight; // #F9F0F1
+    color = M.maroon;
+    border = M.maroonLight;
+    opacity = 1;
+    cursor = 'not-allowed';
+    text = 'Full';
+  }
+
   return (
     <button
       type="button"
-      onClick={() => slot.available && onSelect(slot.time_slot)}
+      onClick={() => isAvailable && onSelect(slot.time_slot)}
       style={{
         padding: '10px 6px', borderRadius: '8px', border: 'none',
-        background: selected
-          ? M.maroon
-          : slot.available ? M.white : M.surface,
-        color: selected ? M.white : slot.available ? M.text : M.textMuted,
+        background: bg,
+        color: color,
         fontSize: '12px', fontWeight: 600,
-        cursor: slot.available ? 'pointer' : 'not-allowed',
+        cursor: cursor,
         fontFamily: "'IBM Plex Sans', sans-serif",
-        opacity: slot.available ? 1 : 0.4,
-        border: `1.5px solid ${selected ? M.maroon : slot.available ? M.border : M.borderStrong}`,
+        opacity: opacity,
+        border: `1.5px solid ${border}`,
         transition: 'all 0.15s', textAlign: 'center',
       }}
     >
-      {slot.display || slot.time_slot}
+      {text}
     </button>
   )
 }
@@ -192,9 +237,14 @@ export default function BookAppointment() {
   const [slotsLoading, setSlotsLoading] = useState(false)
   const [error, setError]               = useState('')
   const [success, setSuccess]           = useState(false)
+  const [confirmingBook, setConfirmingBook] = useState(false)
+  
+  const [notes, setNotes]               = useState('')
+  const [selectedFile, setSelectedFile] = useState(null)
+  const [isUploading, setIsUploading]   = useState(false)
 
-  const tomorrow   = new Date(); tomorrow.setDate(tomorrow.getDate() + 1)
-  const minDate    = tomorrow.toISOString().split('T')[0]
+  const todayDate  = new Date()
+  const minDate    = todayDate.toISOString().split('T')[0]
   const maxDateObj = new Date(); maxDateObj.setDate(maxDateObj.getDate() + 30)
   const maxDate    = maxDateObj.toISOString().split('T')[0]
 
@@ -210,18 +260,33 @@ export default function BookAppointment() {
     finally { setSlotsLoading(false) }
   }
 
+  const handleConfirmClick = () => {
+    setConfirmingBook(true)
+  }
+
   const handleBook = async () => {
-    setLoading(true); setError('')
+    setLoading(true); setError(''); setIsUploading(true);
     try {
+      let finalNotes = notes
+      if (selectedFile) {
+        const uploadRes = await uploadMedia(token, selectedFile)
+        finalNotes = finalNotes ? `${finalNotes}\n\nMEDIA_URL: ${uploadRes.url}` : `MEDIA_URL: ${uploadRes.url}`
+      }
+      
       await bookAppointment(token, {
         transaction_type_id: selectedType.id,
         appointment_date: selectedDate,
         time_slot: selectedSlot,
-        notes: null,
+        notes: finalNotes || null,
       })
       setSuccess(true)
-    } catch (e) { setError(e.message) }
-    finally { setLoading(false) }
+    } catch (e) { 
+      setError(e.message); 
+    } finally {
+      setLoading(false); 
+      setIsUploading(false);
+      setConfirmingBook(false);
+    }
   }
 
   // 24h format from backend e.g. '08:00', '13:30'
@@ -426,21 +491,58 @@ export default function BookAppointment() {
                       ⛅ Morning
                     </p>
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '8px' }}>
-                      {morningSlots.map(s => <SlotBtn key={s.time_slot} slot={{ ...s, display: fmt12h(s.time_slot) }} selected={selectedSlot === s.time_slot} onSelect={setSelectedSlot} />)}
+                      {morningSlots.map(s => <SlotBtn key={s.time_slot} slot={{ ...s, display: fmt12h(s.time_slot) }} selected={selectedSlot === s.time_slot} onSelect={setSelectedSlot} selectedDate={selectedDate} />)}
                     </div>
                   </div>
                 )}
 
                 {afternoonSlots.length > 0 && (
-                  <div>
+                  <div style={{ marginBottom: '24px' }}>
                     <p style={{ fontSize: '12px', fontWeight: 600, color: M.textSub, margin: '0 0 10px', display: 'flex', alignItems: 'center', gap: '6px' }}>
                       ☀️ Afternoon
                     </p>
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '8px' }}>
-                      {afternoonSlots.map(s => <SlotBtn key={s.time_slot} slot={{ ...s, display: fmt12h(s.time_slot) }} selected={selectedSlot === s.time_slot} onSelect={setSelectedSlot} />)}
+                      {afternoonSlots.map(s => <SlotBtn key={s.time_slot} slot={{ ...s, display: fmt12h(s.time_slot) }} selected={selectedSlot === s.time_slot} onSelect={setSelectedSlot} selectedDate={selectedDate} />)}
                     </div>
                   </div>
                 )}
+
+                {/* Notes & Media Upload */}
+                <div style={{ borderTop: `1px solid ${M.border}`, paddingTop: '20px', marginTop: '10px' }}>
+                  <p style={{ fontSize: '12px', fontWeight: 700, color: M.text, margin: '0 0 12px' }}>Additional Notes & Media (Optional)</p>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr', gap: '16px' }}>
+                    <textarea 
+                      placeholder="Add any urgent requests here or upload... "
+                      value={notes}
+                      onChange={e => setNotes(e.target.value)}
+                      style={{
+                        width: '100%', minHeight: '80px', padding: '12px', borderRadius: '10px',
+                        border: `1.5px solid ${M.border}`, background: M.offWhite,
+                        fontSize: '13px', color: M.text, fontFamily: "'IBM Plex Sans', sans-serif",
+                        resize: 'vertical'
+                      }}
+                    />
+                    <div style={{ 
+                      border: `1.5px dashed ${M.borderStrong}`, borderRadius: '10px', 
+                      display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                      padding: '16px', textAlign: 'center', background: M.white, cursor: 'pointer',
+                      position: 'relative'
+                    }}>
+                      <span style={{ fontSize: '20px', marginBottom: '4px' }}>🖼️</span>
+                      <span style={{ fontSize: '11px', color: M.textSub, fontWeight: 500 }}>
+                        {selectedFile ? selectedFile.name : 'Upload PNG or JPG'}
+                      </span>
+                      <input 
+                        type="file" 
+                        accept=".png, .jpg, .jpeg"
+                        onChange={e => {
+                          if(e.target.files && e.target.files[0]) setSelectedFile(e.target.files[0])
+                        }}
+                        style={{ position: 'absolute', inset: 0, opacity: 0, cursor: 'pointer' }}
+                      />
+                    </div>
+                  </div>
+                </div>
               </div>
             )}
 
@@ -512,7 +614,7 @@ export default function BookAppointment() {
                       <span>📅</span> {fmtDate(selectedDate)}
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', color: M.text }}>
-                      <span>🕐</span> {selectedSlot}
+                      <span>🕐</span> {fmt12h(selectedSlot)}
                     </div>
                   </div>
                   <div>
@@ -520,12 +622,33 @@ export default function BookAppointment() {
                     <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', fontSize: '14px', color: M.text }}>
                       <span style={{ marginTop: '1px' }}>📍</span>
                       <div>
-                        <div style={{ fontWeight: 600 }}>Registrar's Office – Window 2</div>
-                        <div style={{ fontSize: '12px', color: M.textSub, marginTop: '2px' }}>Main Campus Building, Second Floor</div>
+                        <div style={{ fontWeight: 600 }}>
+                          Registrar's Office – Window {(() => {
+                            const slotObj = slotsData?.slots?.find(s => s.time_slot === selectedSlot)
+                            const staffCount = slotsData && slotsData.slots?.length > 0 
+                              ? Math.round(slotsData.daily_cap / slotsData.slots.length) 
+                              : 2
+                            return slotObj ? (staffCount - slotObj.remaining) + 1 : 1
+                          })()}
+                        </div>
+                        <div style={{ fontSize: '12px', color: M.textSub, marginTop: '2px' }}>CRMC Elementary School</div>
                       </div>
                     </div>
                   </div>
                 </div>
+
+                {/* Notes & Media */}
+                {(notes || selectedFile) && (
+                  <div style={{ marginBottom: '24px', paddingBottom: '20px', borderBottom: `1px solid ${M.border}` }}>
+                    <p style={{ fontSize: '10px', fontWeight: 700, color: M.textMuted, letterSpacing: '0.1em', textTransform: 'uppercase', margin: '0 0 10px' }}>NOTES & MEDIA</p>
+                    {notes && <div style={{ fontSize: '14px', color: M.text, marginBottom: selectedFile ? '8px' : '0', whiteSpace: 'pre-wrap' }}>{notes}</div>}
+                    {selectedFile && (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: M.textSub, background: M.offWhite, padding: '8px 12px', borderRadius: '8px', border: `1px solid ${M.border}`, width: 'fit-content' }}>
+                        <span>🖼️</span> {selectedFile.name}
+                      </div>
+                    )}
+                  </div>
+                )}
 
                 {/* Requirements */}
                 <div>
@@ -560,25 +683,52 @@ export default function BookAppointment() {
                 Back
               </button>
               <button type="button"
-                onClick={handleBook}
-                disabled={loading}
+                onClick={handleConfirmClick}
+                disabled={loading || isUploading}
                 style={{
                   padding: '12px 28px', borderRadius: '10px', border: 'none',
-                  background: loading ? '#B8667A' : M.maroon,
+                  background: (loading || isUploading) ? '#B8667A' : M.maroon,
                   color: M.white, fontSize: '14px', fontWeight: 700,
-                  cursor: loading ? 'not-allowed' : 'pointer',
+                  cursor: (loading || isUploading) ? 'not-allowed' : 'pointer',
                   fontFamily: "'IBM Plex Sans', sans-serif",
                   display: 'flex', alignItems: 'center', gap: '8px',
                   minWidth: '140px', justifyContent: 'center',
+                  transition: 'all 0.2s',
+                  boxShadow: '0 4px 12px rgba(123,26,42,0.15)',
                 }}>
-                {loading
-                  ? <span className="spinner" />
-                  : <>
-                      <div style={{ width: '16px', height: '16px', borderRadius: '50%', background: 'rgba(255,255,255,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '9px' }}>✓</div>
-                      Confirm &amp; Book
-                    </>
-                }
+                {isUploading ? 'Uploading Media...' : loading ? 'Booking...' : 'Confirm & Book'}
               </button>
+            </div>
+          </div>
+        )}
+
+        {confirmingBook && (
+          <div style={{ position: 'fixed', inset: 0, zIndex: 110, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)' }} onClick={() => !loading && setConfirmingBook(false)} />
+            <div className="animate-fade-up" style={{ position: 'relative', width: '90%', maxWidth: '320px', background: M.white, borderRadius: '20px', padding: '24px', textAlign: 'center', boxShadow: '0 10px 40px rgba(0,0,0,0.2)' }}>
+              <div style={{ width: '48px', height: '48px', borderRadius: '50%', background: M.greenLight, color: M.green, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px', margin: '0 auto 16px' }}>
+                ❓
+              </div>
+              <h3 style={{ fontFamily: "'Fraunces', serif", fontSize: '18px', fontWeight: 700, color: M.text, margin: '0 0 8px' }}>Confirm Booking?</h3>
+              <p style={{ fontSize: '13px', color: M.textSub, margin: '0 0 24px', lineHeight: 1.4 }}>
+                Are you ready to book your appointment for <strong>{fmtDate(selectedDate)}</strong> at <strong>{fmt12h(selectedSlot)}</strong>?
+              </p>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <button 
+                  onClick={() => setConfirmingBook(false)}
+                  disabled={loading}
+                  style={{ flex: 1, padding: '10px', borderRadius: '10px', border: `1px solid ${M.border}`, background: M.white, color: M.text, fontSize: '13px', fontWeight: 600, cursor: 'pointer', fontFamily: "'IBM Plex Sans', sans-serif", opacity: loading ? 0.5 : 1 }}
+                >
+                  Go Back
+                </button>
+                <button 
+                  onClick={handleBook}
+                  disabled={loading}
+                  style={{ flex: 1, padding: '10px', borderRadius: '10px', border: 'none', background: M.maroon, color: M.white, fontSize: '13px', fontWeight: 600, cursor: 'pointer', fontFamily: "'IBM Plex Sans', sans-serif", opacity: loading ? 0.5 : 1 }}
+                >
+                  {loading ? 'Booking...' : 'Yes, Book'}
+                </button>
+              </div>
             </div>
           </div>
         )}

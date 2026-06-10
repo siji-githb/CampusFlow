@@ -58,12 +58,14 @@ const STATUS_STYLES = {
 };
 
 // ── Desktop Sidebar Nav Item ──
-const SideNavItem = ({ icon, label, path, active, navigate }) => (
+const SideNavItem = ({ icon, label, path, active, navigate, collapsed }) => (
   <button
     onClick={() => navigate(path)}
+    title={collapsed ? label : undefined}
     style={{
-      display: 'flex', alignItems: 'center', gap: '14px',
-      width: '100%', padding: '12px 16px', borderRadius: '12px',
+      display: 'flex', alignItems: 'center', gap: collapsed ? '0' : '14px',
+      justifyContent: collapsed ? 'center' : 'flex-start',
+      width: '100%', padding: collapsed ? '12px 0' : '12px 16px', borderRadius: '12px',
       border: 'none', cursor: 'pointer', textAlign: 'left',
       background: active ? M.maroonMid : 'transparent',
       color: active ? M.maroon : M.textSub,
@@ -85,7 +87,9 @@ const SideNavItem = ({ icon, label, path, active, navigate }) => (
       fontSize: '18px', width: '22px', textAlign: 'center', flexShrink: 0,
       transition: 'transform 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
     }} className="sidebar-icon">{icon}</span>
-    <span style={{ transition: 'transform 0.3s cubic-bezier(0.16, 1, 0.3, 1)' }} className="sidebar-label">{label}</span>
+    {!collapsed && (
+      <span style={{ transition: 'transform 0.3s cubic-bezier(0.16, 1, 0.3, 1)', whiteSpace: 'nowrap' }} className="sidebar-label">{label}</span>
+    )}
   </button>
 );
 
@@ -100,6 +104,7 @@ export default function StudentDashboard() {
   const [loading, setLoading] = useState(true);
   const [appointments, setAppointments] = useState([]);
   const [liveTicket, setLiveTicket] = useState(null);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   const fetchDashboardData = async () => {
     try {
@@ -371,37 +376,78 @@ export default function StudentDashboard() {
 
         {/* ── Left Sidebar ── */}
         <aside style={{
-          width: '260px', flexShrink: 0,
+          width: sidebarCollapsed ? '80px' : '260px', flexShrink: 0,
           background: M.white,
           borderRight: `1px solid ${M.border}`,
           display: 'flex', flexDirection: 'column',
           position: 'fixed', left: 0, top: 0, bottom: 0,
-          zIndex: 50, padding: '32px 20px',
+          zIndex: 50, padding: sidebarCollapsed ? '32px 10px' : '32px 20px',
+          transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
         }}>
           {/* Logo */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '40px', paddingLeft: '8px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: sidebarCollapsed ? 'center' : 'flex-start', gap: '12px', marginBottom: '40px', paddingLeft: sidebarCollapsed ? '0' : '8px' }}>
             <img src={crmcLogo} alt="CRMC Logo" style={{ width: '38px', height: '38px', borderRadius: '50%' }} />
-            <div>
-              <div style={{ fontFamily: "'Fraunces', serif", fontSize: '17px', fontWeight: 700, color: M.maroon, letterSpacing: '-0.01em' }}>CampusFlow</div>
-              <div style={{ fontSize: '10px', fontWeight: 600, color: M.textMuted, letterSpacing: '0.06em', textTransform: 'uppercase', marginTop: '1px' }}>Student Portal</div>
-            </div>
+            {!sidebarCollapsed && (
+              <div style={{ whiteSpace: 'nowrap', overflow: 'hidden' }}>
+                <div style={{ fontFamily: "'Fraunces', serif", fontSize: '17px', fontWeight: 700, color: M.maroon, letterSpacing: '-0.01em' }}>CampusFlow</div>
+                <div style={{ fontSize: '10px', fontWeight: 600, color: M.textMuted, letterSpacing: '0.06em', textTransform: 'uppercase', marginTop: '1px' }}>Student Portal</div>
+              </div>
+            )}
           </div>
 
           {/* Nav items */}
-          <nav style={{ display: 'flex', flexDirection: 'column', gap: '6px', flex: 1 }}>
-            <div style={{ fontSize: '10px', fontWeight: 700, color: M.textMuted, letterSpacing: '0.1em', textTransform: 'uppercase', padding: '0 16px', marginBottom: '8px' }}>Main Menu</div>
-            <SideNavItem icon="🏠" label="Dashboard" path="/student/dashboard" active={true} navigate={navigate} />
-            <SideNavItem icon="📅" label="Book Appointment" path="/student/book" active={false} navigate={navigate} />
-            <SideNavItem icon="📋" label="My Appointments" path="/student/appointments" active={false} navigate={navigate} />
-            <SideNavItem icon="🎫" label="My Queue Status" path="/student/queue" active={false} navigate={navigate} />
+          <nav style={{ display: 'flex', flexDirection: 'column', gap: '6px', flex: 1, overflowX: 'hidden' }}>
+            <div style={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              justifyContent: sidebarCollapsed ? 'center' : 'space-between',
+              padding: sidebarCollapsed ? '0' : '0 16px', 
+              marginBottom: '8px' 
+            }}>
+              <div style={{ 
+                fontSize: '10px', fontWeight: 700, color: M.textMuted, 
+                letterSpacing: '0.1em', textTransform: 'uppercase', 
+                display: sidebarCollapsed ? 'none' : 'block' 
+              }}>
+                Main Menu
+              </div>
+              <button
+                onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+                title="Toggle Sidebar"
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  cursor: 'pointer',
+                  color: M.textMuted,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  padding: '4px',
+                  borderRadius: '6px',
+                  transition: 'all 0.2s',
+                  transform: sidebarCollapsed ? 'rotate(180deg)' : 'none',
+                }}
+                onMouseEnter={e => { e.currentTarget.style.background = M.border; e.currentTarget.style.color = M.text; }}
+                onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = M.textMuted; }}
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M15 18l-6-6 6-6" />
+                </svg>
+              </button>
+            </div>
+            <SideNavItem icon="🏠" label="Dashboard" path="/student/dashboard" active={true} navigate={navigate} collapsed={sidebarCollapsed} />
+            <SideNavItem icon="📅" label="Book Appointment" path="/student/book" active={false} navigate={navigate} collapsed={sidebarCollapsed} />
+            <SideNavItem icon="📋" label="My Appointments" path="/student/appointments" active={false} navigate={navigate} collapsed={sidebarCollapsed} />
+            <SideNavItem icon="🎫" label="My Queue Status" path="/student/queue" active={false} navigate={navigate} collapsed={sidebarCollapsed} />
             <div style={{ height: '1px', background: M.border, margin: '16px 0' }} />
-            <div style={{ fontSize: '10px', fontWeight: 700, color: M.textMuted, letterSpacing: '0.1em', textTransform: 'uppercase', padding: '0 16px', marginBottom: '8px' }}>Support</div>
-            <SideNavItem icon="🤖" label="AI Assistant" path="/student/ai-chat" active={false} navigate={navigate} />
+            <div style={{ fontSize: '10px', fontWeight: 700, color: M.textMuted, letterSpacing: '0.1em', textTransform: 'uppercase', padding: sidebarCollapsed ? '0' : '0 16px', textAlign: sidebarCollapsed ? 'center' : 'left', marginBottom: '8px' }}>{sidebarCollapsed ? '···' : 'Support'}</div>
+            <SideNavItem icon="🤖" label="AI Assistant" path="/student/ai-chat" active={false} navigate={navigate} collapsed={sidebarCollapsed} />
           </nav>
+
         </aside>
 
         {/* ── Main Content Area ── */}
-        <div style={{ marginLeft: '260px', flex: 1, display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
+        <div style={{ marginLeft: sidebarCollapsed ? '80px' : '260px', flex: 1, display: 'flex', flexDirection: 'column', minHeight: '100vh', transition: 'margin-left 0.3s cubic-bezier(0.16, 1, 0.3, 1)' }}>
 
           {/* Desktop Top Bar */}
           <header style={{

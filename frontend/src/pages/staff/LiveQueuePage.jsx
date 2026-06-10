@@ -186,6 +186,90 @@ const FilterSidebar = ({ filters, onChange, highPriorityCount, onReset }) => {
   )
 }
 
+// ── Queue Details Modal ────────────────────────────────────────────────────────
+const QueueDetailsModal = ({ ticketData, onClose, onConfirm, confirming }) => {
+  const { ticket, steps } = ticketData
+  const student = ticket.users
+  const name    = student ? `${student.last_name}, ${student.first_name}` : 'Unknown'
+  const appt    = ticket.appointments
+  
+  return (
+    <div style={{ position: 'fixed', inset: 0, zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)' }} onClick={onClose} />
+      <div className="animate-fade-up" style={{ position: 'relative', width: '100%', maxWidth: '680px', background: M.white, borderRadius: '24px', padding: '28px', maxHeight: '90vh', overflowY: 'auto' }}>
+        
+        {/* Header */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '24px' }}>
+          <div>
+            <div style={{ fontSize: '12px', fontWeight: 700, color: M.gold, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '6px' }}>Queue Details</div>
+            <h2 style={{ fontFamily: "'Fraunces', serif", fontSize: '28px', fontWeight: 800, color: M.maroon, margin: 0, lineHeight: 1 }}>{ticket.queue_number}</h2>
+          </div>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', fontSize: '28px', cursor: 'pointer', color: M.textMuted, lineHeight: 1 }}>×</button>
+        </div>
+
+        {/* Info Cards */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginBottom: '28px' }}>
+          <div style={{ padding: '16px', background: M.surface, borderRadius: '14px', border: `1px solid ${M.border}` }}>
+            <div style={{ fontSize: '11px', color: M.textMuted, textTransform: 'uppercase', fontWeight: 700, letterSpacing: '0.04em', marginBottom: '6px' }}>Student</div>
+            <div style={{ fontSize: '15px', fontWeight: 700, color: M.text, marginBottom: '2px' }}>{name}</div>
+            <div style={{ fontSize: '13px', color: M.textSub, fontFamily: 'monospace' }}>{student?.student_id || '—'}</div>
+          </div>
+          <div style={{ padding: '16px', background: M.surface, borderRadius: '14px', border: `1px solid ${M.border}` }}>
+            <div style={{ fontSize: '11px', color: M.textMuted, textTransform: 'uppercase', fontWeight: 700, letterSpacing: '0.04em', marginBottom: '6px' }}>Transaction</div>
+            <div style={{ fontSize: '14px', fontWeight: 600, color: M.text, lineHeight: 1.3 }}>{appt?.transaction_types?.name}</div>
+          </div>
+        </div>
+
+        {/* Steps */}
+        <div>
+          <h3 style={{ fontSize: '14px', fontWeight: 700, color: M.text, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '20px' }}>Processing Steps</h3>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0' }}>
+            {steps.map((step, idx) => {
+              const isLast = idx === steps.length - 1
+              const isCurrent = ticket.status === 'in_progress' && step.status === 'in_progress'
+              const confirmKey = `${ticket.id}-${step.step_number}`
+              const isConfirming = confirming === confirmKey
+              
+              return (
+                <div key={step.id} style={{ display: 'flex', gap: '16px' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                    <div style={{ width: '32px', height: '32px', borderRadius: '50%', flexShrink: 0, background: step.status === 'completed' ? M.green : step.status === 'in_progress' ? M.gold : M.border, color: step.status === 'completed' || step.status === 'in_progress' ? M.white : M.textMuted, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '13px', fontWeight: 700, border: step.status === 'in_progress' ? `2px solid ${M.goldBorder}` : 'none' }}>
+                      {step.status === 'completed' ? '✓' : step.step_number}
+                    </div>
+                    {!isLast && <div style={{ width: '2px', flex: 1, minHeight: '36px', margin: '4px 0', background: step.status === 'completed' ? M.green : M.border }} />}
+                  </div>
+                  <div style={{ flex: 1, paddingBottom: isLast ? 0 : '16px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: isCurrent ? M.goldLight : 'transparent', padding: isCurrent ? '12px' : '6px 0', borderRadius: '12px', border: isCurrent ? `1px solid ${M.goldBorder}` : 'none', marginTop: isCurrent ? '-6px' : '0' }}>
+                      <div>
+                        <div style={{ fontSize: '15px', fontWeight: 600, color: step.status === 'completed' ? M.green : M.text }}>{step.step_name}</div>
+                        {step.status === 'completed' && step.confirmed_at && (
+                          <div style={{ fontSize: '12px', color: M.textMuted, marginTop: '2px' }}>Confirmed at {new Date(step.confirmed_at).toLocaleTimeString()}</div>
+                        )}
+                        {isCurrent && (
+                          <div style={{ fontSize: '12px', color: M.gold, marginTop: '2px', fontWeight: 600 }}>Active Step</div>
+                        )}
+                      </div>
+                      {isCurrent && (
+                        <button
+                          onClick={() => onConfirm(ticket.id, step.step_number)}
+                          disabled={isConfirming}
+                          style={{ padding: '10px 18px', borderRadius: '10px', border: 'none', background: M.maroon, color: M.white, fontSize: '13px', fontWeight: 700, cursor: isConfirming ? 'not-allowed' : 'pointer', fontFamily: "'IBM Plex Sans', sans-serif" }}
+                        >
+                          {isConfirming ? 'Confirming...' : 'Confirm Step'}
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // ── Main LiveQueuePage ─────────────────────────────────────────────────────────
 export default function LiveQueuePage() {
   const { token } = useAuth()
@@ -197,6 +281,7 @@ export default function LiveQueuePage() {
   const [now, setNow]           = useState(new Date())
   const [search, setSearch]     = useState('')
   const [filters, setFilters]   = useState({ statuses: ['in_progress', 'pending'], priority: 'all', transactionType: 'all' })
+  const [viewingTicketId, setViewingTicketId] = useState(null)
 
   // Clock tick
   useEffect(() => {
@@ -316,15 +401,15 @@ export default function LiveQueuePage() {
       {/* ── Stats Bar ── */}
       <div style={{ display: 'flex', gap: '14px' }}>
         <MiniStat 
-          icon="⏱" 
+          icon={<svg width="26" height="26" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="13" r="8" fill="currentColor" fillOpacity="0.15" stroke="currentColor" strokeWidth="1.5"/><path d="M12 9V13L14.5 15.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/><path d="M10 3H14M12 3V5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>} 
           value={`${avgWait}m`} 
           label="Average Wait Time" 
           sub={avgWait > 15 ? "↑ Higher than avg" : "↓ Fast processing"} 
           subColor={avgWait > 15 ? M.orange : M.green} 
           loading={loading} delay="0.1s"
         />
-        <MiniStat icon="👥" value={waiting.length} label="Waiting in Queue" sub={`${serving.length} serving now`} subColor={M.green} loading={loading} delay="0.2s" />
-        <MiniStat icon="✅" value={done.length} label="Total Serviced" sub={done.length >= 80 ? 'High volume — Important' : 'Normal volume'} subColor={done.length >= 80 ? M.red : M.green} loading={loading} delay="0.3s" />
+        <MiniStat icon={<svg width="26" height="26" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" fill="currentColor" fillOpacity="0.15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/><circle cx="9" cy="7" r="4" fill="currentColor" fillOpacity="0.15" stroke="currentColor" strokeWidth="1.5"/><path d="M22 21v-2a4 4 0 0 0-3-3.87" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/><path d="M16 3.13a4 4 0 0 1 0 7.75" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>} value={waiting.length} label="Waiting in Queue" sub={`${serving.length} serving now`} subColor={M.green} loading={loading} delay="0.2s" />
+        <MiniStat icon={<svg width="26" height="26" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="3" y="3" width="18" height="18" rx="5" fill="currentColor" fillOpacity="0.15" stroke="currentColor" strokeWidth="1.5"/><path d="M9 12.5L11.5 15L16 9.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>} value={done.length} label="Total Serviced" sub={done.length >= 80 ? 'High volume — Important' : 'Normal volume'} subColor={done.length >= 80 ? M.red : M.green} loading={loading} delay="0.3s" />
       </div>
 
       {error && (
@@ -469,22 +554,20 @@ export default function LiveQueuePage() {
                       <div style={{ fontSize: '14px', fontWeight: 700, color: ticket.status === 'in_progress' ? M.green : M.textSub }}>{waitMins}m</div>
                     </div>
 
-                    {/* Action */}
                     <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
                       {ticket.status === 'in_progress' && inProgressStep && (
                         <button
-                          onClick={() => handleConfirm(ticket.id, inProgressStep.step_number)}
-                          disabled={isConfirming}
+                          onClick={() => setViewingTicketId(ticket.id)}
                           style={{
                             padding: '8px 14px', borderRadius: '8px', border: 'none',
-                            background: isConfirming ? '#B8667A' : M.maroon,
+                            background: M.maroon,
                             color: M.white, fontSize: '12px', fontWeight: 700,
-                            cursor: isConfirming ? 'not-allowed' : 'pointer',
+                            cursor: 'pointer',
                             fontFamily: "'IBM Plex Sans', sans-serif",
                             whiteSpace: 'nowrap',
                           }}
                         >
-                          {isConfirming ? 'Saving…' : ticket.current_step === ticket.total_steps ? '✓ Complete' : 'Confirm Step'}
+                          View Details
                         </button>
                       )}
                       {ticket.status === 'pending' && (
@@ -541,7 +624,6 @@ export default function LiveQueuePage() {
           )}
         </div>
 
-        {/* Filter Sidebar */}
         <div className="animate-fade-up" style={{ animationDelay: '0.5s' }}>
           <FilterSidebar
             filters={filters}
@@ -551,6 +633,20 @@ export default function LiveQueuePage() {
           />
         </div>
       </div>
+
+      {/* ── Modals ── */}
+      {viewingTicketId && (() => {
+        const activeModalData = queue.find(q => q.ticket.id === viewingTicketId)
+        if (!activeModalData) return null
+        return (
+          <QueueDetailsModal
+            ticketData={activeModalData}
+            onClose={() => setViewingTicketId(null)}
+            onConfirm={(ticketId, stepNum) => handleConfirm(ticketId, stepNum)}
+            confirming={confirming}
+          />
+        )
+      })()}
 
       {/* Shimmer CSS */}
       <style>{`

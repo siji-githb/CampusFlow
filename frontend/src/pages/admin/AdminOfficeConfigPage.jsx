@@ -25,19 +25,19 @@ const M = {
 }
 
 const SETTINGS_CATEGORIES = {
-  general: ['office_open_time', 'office_close_time'],
+  general: ['office_open_time', 'office_close_time', 'lunch_break_start', 'lunch_break_end'],
   appointments: ['slot_duration_minutes', 'booking_cutoff_days'],
-  caps: ['daily_cap_tor', 'daily_cap_coe', 'daily_cap_diploma'],
+  staffing: ['staff_count'],
 }
 
 const LABELS = {
   office_open_time:      { title: 'Office Open Time',      desc: 'When the registrar begins serving students' },
   office_close_time:     { title: 'Office Close Time',     desc: 'When the registrar stops accepting queue numbers' },
+  lunch_break_start:     { title: 'Lunch Break Start',     desc: 'When the staff lunch break begins' },
+  lunch_break_end:       { title: 'Lunch Break End',       desc: 'When the staff lunch break ends' },
   slot_duration_minutes: { title: 'Slot Duration',         desc: 'Length of each appointment block in minutes' },
   booking_cutoff_days:   { title: 'Booking Cutoff',        desc: 'Minimum days required for advance booking' },
-  daily_cap_tor:         { title: 'Daily Cap: TOR',        desc: 'Maximum TOR requests processed per day' },
-  daily_cap_coe:         { title: 'Daily Cap: COE',        desc: 'Maximum COE requests processed per day' },
-  daily_cap_diploma:     { title: 'Daily Cap: Diploma',    desc: 'Maximum Diploma requests processed per day' },
+  staff_count:           { title: 'Staff Count',           desc: 'Number of active registrar staff serving queues' },
 }
 
 export default function AdminOfficeConfigPage() {
@@ -47,6 +47,7 @@ export default function AdminOfficeConfigPage() {
   const [saving, setSaving]   = useState(null)
   const [edited, setEdited]   = useState({})
   const [toast, setToast]     = useState(null)
+  const [confirmSave, setConfirmSave] = useState(null)
 
   useEffect(() => {
     getOfficeConfig(token)
@@ -64,7 +65,13 @@ export default function AdminOfficeConfigPage() {
     setTimeout(() => setToast(null), 3000)
   }
 
-  const handleSave = async (key) => {
+  const handleSave = (key) => {
+    setConfirmSave(key)
+  }
+
+  const executeSave = async () => {
+    const key = confirmSave
+    setConfirmSave(null)
     setSaving(key)
     try {
       await updateOfficeConfig(token, key, edited[key])
@@ -80,15 +87,14 @@ export default function AdminOfficeConfigPage() {
   }
 
   const hasChanges = (key) => {
-    const orig = config.find(c => c.key === key)?.value
-    return String(edited[key]) !== String(orig)
+    const orig = config.find(c => c.key === key)?.value || ''
+    return String(edited[key] || '') !== String(orig)
   }
 
   const renderGroup = (keys) => {
     return keys.map((key, i) => {
-      const origItem = config.find(c => c.key === key)
-      if (!origItem) return null
       const isChanged = hasChanges(key)
+      const isTimeField = key.includes('time') || key.includes('lunch')
 
       return (
         <div key={key} style={{
@@ -103,16 +109,16 @@ export default function AdminOfficeConfigPage() {
           </div>
           <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
             <input
-              type={key.includes('time') ? 'time' : 'number'}
+              type={isTimeField ? 'time' : 'number'}
               value={edited[key] ?? ''}
               onChange={e => setEdited({ ...edited, [key]: e.target.value })}
               style={{
-                width: key.includes('time') ? '130px' : '100px',
+                width: isTimeField ? '130px' : '100px',
                 padding: '11px 16px', borderRadius: '10px',
                 border: `1.5px solid ${isChanged ? M.maroon : M.border}`,
                 background: M.white, fontSize: '14px', outline: 'none',
                 fontFamily: "'IBM Plex Sans', sans-serif", color: M.text,
-                textAlign: key.includes('time') ? 'left' : 'center',
+                textAlign: isTimeField ? 'left' : 'center',
                 boxShadow: isChanged ? '0 0 0 3px rgba(123,26,42,0.1)' : 'none',
                 transition: 'all 0.2s'
               }}
@@ -196,16 +202,59 @@ export default function AdminOfficeConfigPage() {
             </div>
           </section>
 
-          {/* Daily Caps */}
+          {/* Staffing */}
           <section className="animate-fade-up" style={{ animationDelay: '0.3s' }}>
-            <h2 style={{ fontSize: '12px', fontWeight: 700, color: M.gold, textTransform: 'uppercase', letterSpacing: '0.1em', margin: '0 0 12px 4px' }}>Daily Processing Caps</h2>
+            <h2 style={{ fontSize: '12px', fontWeight: 700, color: M.gold, textTransform: 'uppercase', letterSpacing: '0.1em', margin: '0 0 12px 4px' }}>Staffing & Capacity</h2>
             <div style={{ background: M.white, borderRadius: '16px', border: `1px solid ${M.border}`, overflow: 'hidden', boxShadow: '0 2px 8px rgba(0,0,0,0.03)' }}>
-              {renderGroup(SETTINGS_CATEGORIES.caps)}
+              {renderGroup(SETTINGS_CATEGORIES.staffing)}
             </div>
           </section>
 
         </div>
       )}
+
+      {/* Confirmation Modal */}
+      {confirmSave && (
+        <div style={{
+          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+          background: 'rgba(0,0,0,0.5)', zIndex: 10000,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          animation: 'fadeIn 0.2s ease'
+        }}>
+          <div style={{
+            background: M.white, borderRadius: '16px', padding: '32px', width: '90%', maxWidth: '400px',
+            boxShadow: '0 20px 40px rgba(0,0,0,0.2)', textAlign: 'center',
+            animation: 'slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1)'
+          }}>
+            <div style={{ fontSize: '40px', marginBottom: '16px' }}>⚙️</div>
+            <h3 style={{ margin: '0 0 12px', fontSize: '20px', fontWeight: 700, color: M.text }}>Confirm Changes</h3>
+            <p style={{ margin: '0 0 24px', fontSize: '15px', color: M.textSub, lineHeight: 1.5 }}>
+              Are you sure you want to save changes to <br/>
+              <strong style={{ color: M.maroon }}>{LABELS[confirmSave]?.title || confirmSave}</strong>?
+            </p>
+            <div style={{ display: 'flex', gap: '12px' }}>
+              <button onClick={() => setConfirmSave(null)}
+                style={{ flex: 1, padding: '12px', borderRadius: '10px', background: M.surface, color: M.textSub, border: 'none', fontSize: '14px', fontWeight: 600, cursor: 'pointer', transition: 'background 0.2s' }}
+                onMouseEnter={e => e.target.style.background = M.border}
+                onMouseLeave={e => e.target.style.background = M.surface}
+              >
+                Cancel
+              </button>
+              <button onClick={executeSave}
+                style={{ flex: 1, padding: '12px', borderRadius: '10px', background: M.maroon, color: M.white, border: 'none', fontSize: '14px', fontWeight: 600, cursor: 'pointer', transition: 'background 0.2s', boxShadow: '0 4px 12px rgba(123,26,42,0.2)' }}
+                onMouseEnter={e => e.target.style.background = M.maroonDark}
+                onMouseLeave={e => e.target.style.background = M.maroon}
+              >
+                Yes, Save
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      <style>{`
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+      `}</style>
     </div>
   )
 }

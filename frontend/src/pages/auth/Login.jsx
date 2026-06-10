@@ -43,9 +43,11 @@ export default function Login() {
   const { login }       = useAuth()
   const width           = useWindowWidth()
   const isMobile        = width < 768
-  const [form, setForm] = useState({ email: '', password: '' })
+  const [form, setForm] = useState({ email: localStorage.getItem('rememberedEmail') || '', password: '' })
   const [error, setError]     = useState('')
   const [loading, setLoading] = useState(false)
+  const [showPassword, setShowPassword] = useState(false)
+  const [rememberMe, setRememberMe] = useState(!!localStorage.getItem('rememberedEmail'))
   const successMessage        = location.state?.message
 
   const handleChange = (e) => { setForm({ ...form, [e.target.name]: e.target.value }); setError('') }
@@ -53,6 +55,11 @@ export default function Login() {
   const handleSubmit = async (e) => {
     e.preventDefault(); setLoading(true); setError('')
     try {
+      if (rememberMe) {
+        localStorage.setItem('rememberedEmail', form.email)
+      } else {
+        localStorage.removeItem('rememberedEmail')
+      }
       const result = await loginUser(form)
       login(result.access_token, result.user)
       const role = result.user.role
@@ -146,9 +153,25 @@ export default function Login() {
               </div>
               <div style={{ marginBottom: '24px' }}>
                 <label style={{ display: 'block', fontSize: '11px', fontWeight: 600, color: M.textSub, marginBottom: '6px', letterSpacing: '0.06em', textTransform: 'uppercase' }}>Password</label>
-                <input type="password" name="password" value={form.password} onChange={handleChange} required placeholder="••••••••" style={inp()}
-                  onFocus={e => e.target.style.borderColor = M.maroon}
-                  onBlur={e => e.target.style.borderColor = M.border} />
+                <div style={{ position: 'relative' }}>
+                  <input type={showPassword ? "text" : "password"} name="password" value={form.password} onChange={handleChange} required placeholder="••••••••" style={{ ...inp(), paddingRight: '48px' }}
+                    onFocus={e => e.target.style.borderColor = M.maroon}
+                    onBlur={e => e.target.style.borderColor = M.border} />
+                  <button type="button" onClick={() => setShowPassword(!showPassword)} style={{ position: 'absolute', right: '14px', top: '50%', transform: 'translateY(-50%)', background: 'transparent', border: 'none', padding: 0, color: M.textMuted, cursor: 'pointer', display: 'flex' }}>
+                    {showPassword ? (
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                    ) : (
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+                    )}
+                  </button>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '12px' }}>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}>
+                    <input type="checkbox" checked={rememberMe} onChange={e => setRememberMe(e.target.checked)} style={{ accentColor: M.maroon, width: '14px', height: '14px', cursor: 'pointer', margin: 0 }} />
+                    <span style={{ fontSize: '12px', color: M.textSub, fontWeight: 500 }}>Remember me</span>
+                  </label>
+                  <Link to="/forgot-password" style={{ fontSize: '12px', color: M.maroon, textDecoration: 'none', fontWeight: 600 }}>Forgot password?</Link>
+                </div>
               </div>
               <button type="submit" disabled={loading} style={{
                 width: '100%', minHeight: '52px', padding: '14px 24px',
@@ -183,27 +206,7 @@ export default function Login() {
           </div>
         </main>
 
-        {/* Sticky bottom sign-in bar */}
-        <div style={{
-          position: 'fixed', bottom: 0, left: '50%', transform: 'translateX(-50%)',
-          width: '100%', maxWidth: '480px',
-          background: M.white, borderTop: `1px solid ${M.border}`,
-          boxShadow: '0 -4px 20px rgba(0,0,0,0.08)',
-          padding: '12px 16px',
-          paddingBottom: 'calc(12px + env(safe-area-inset-bottom))',
-          zIndex: 200,
-        }}>
-          <button onClick={handleSubmit} disabled={loading} style={{
-            width: '100%', minHeight: '52px', padding: '14px',
-            borderRadius: '10px', border: 'none',
-            background: loading ? '#B8667A' : M.maroon, color: M.white,
-            fontSize: '15px', fontWeight: 700,
-            cursor: loading ? 'not-allowed' : 'pointer',
-            fontFamily: "'IBM Plex Sans', sans-serif",
-          }}>
-            {loading ? <span className="spinner" /> : 'Sign In →'}
-          </button>
-        </div>
+
       </div>
     )
   }
@@ -275,9 +278,25 @@ export default function Login() {
             </div>
             <div style={{ marginBottom: '1.5rem' }}>
               <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: M.textSub, marginBottom: '5px', letterSpacing: '0.03em' }}>Password</label>
-              <input type="password" name="password" value={form.password} onChange={handleChange} required placeholder="••••••••" style={inp()}
-                onFocus={e => e.target.style.borderColor = M.maroon}
-                onBlur={e => e.target.style.borderColor = M.border} />
+              <div style={{ position: 'relative' }}>
+                <input type={showPassword ? "text" : "password"} name="password" value={form.password} onChange={handleChange} required placeholder="••••••••" style={{ ...inp(), paddingRight: '44px' }}
+                  onFocus={e => e.target.style.borderColor = M.maroon}
+                  onBlur={e => e.target.style.borderColor = M.border} />
+                <button type="button" onClick={() => setShowPassword(!showPassword)} style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', background: 'transparent', border: 'none', padding: 0, color: M.textMuted, cursor: 'pointer', display: 'flex' }}>
+                  {showPassword ? (
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                  ) : (
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+                  )}
+                </button>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '12px' }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}>
+                  <input type="checkbox" checked={rememberMe} onChange={e => setRememberMe(e.target.checked)} style={{ accentColor: M.maroon, width: '14px', height: '14px', cursor: 'pointer', margin: 0 }} />
+                  <span style={{ fontSize: '12px', color: M.textSub, fontWeight: 500 }}>Remember me</span>
+                </label>
+                <Link to="/forgot-password" style={{ fontSize: '12px', color: M.maroon, textDecoration: 'none', fontWeight: 600 }}>Forgot password?</Link>
+              </div>
             </div>
             <button type="submit" disabled={loading} style={{
               width: '100%', padding: '13px', borderRadius: '8px', border: 'none',

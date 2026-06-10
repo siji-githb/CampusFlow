@@ -268,13 +268,31 @@ export default function MyQueue() {
                         <span style={{ fontSize: '11px', fontWeight: 600, padding: '2px 10px', borderRadius: '100px', background: '#F0FDF4', color: '#15803D', border: '1px solid #BBF7D0' }}>Confirmed</span>
                       </div>
                       <p style={{ fontSize: '13px', color: M.gray500, margin: '0 0 1rem' }}>📅 {appt.appointment_date} at {appt.time_slot}</p>
-                      <button
-                        onClick={() => handleActivate(appt.id)}
-                        disabled={activating === appt.id || !isToday}
-                        style={{ width: '100%', padding: '12px', borderRadius: '8px', border: 'none', background: !isToday ? M.gray200 : activating === appt.id ? '#B8667A' : M.maroon, color: !isToday ? M.gray500 : 'white', fontSize: '14px', fontWeight: 700, cursor: activating === appt.id || !isToday ? 'not-allowed' : 'pointer', fontFamily: "'DM Sans', sans-serif" }}
-                      >
-                        {activating === appt.id ? 'Activating...' : !isToday ? 'Available on Appointment Date' : '🎫 Get Queue Number'}
-                      </button>
+                      {ticket && ticket.appointment_id === appt.id ? (
+                        <div style={{ display: 'flex', gap: '8px' }}>
+                          <button
+                            disabled
+                            style={{ flex: 1, padding: '12px', borderRadius: '8px', border: `1px solid ${M.gray200}`, background: '#F0FDF4', color: '#15803D', fontSize: '14px', fontWeight: 700, cursor: 'default', fontFamily: "'DM Sans', sans-serif" }}
+                          >
+                            ✓ Activated
+                          </button>
+                          <button
+                            onClick={() => setActiveTab('active')}
+                            style={{ flex: 1, padding: '12px', borderRadius: '8px', border: 'none', background: M.maroon, color: 'white', fontSize: '14px', fontWeight: 700, cursor: 'pointer', fontFamily: "'DM Sans', sans-serif" }}
+                          >
+                            View Details
+                          </button>
+                        </div>
+                      ) : (
+                        <button
+                          onClick={() => handleActivate(appt.id)}
+                          disabled={activating === appt.id || !isToday || ticket}
+                          title={ticket ? "You already have an active queue ticket" : ""}
+                          style={{ width: '100%', padding: '12px', borderRadius: '8px', border: 'none', background: (!isToday || ticket) ? M.gray200 : activating === appt.id ? '#B8667A' : M.maroon, color: (!isToday || ticket) ? M.gray500 : 'white', fontSize: '14px', fontWeight: 700, cursor: activating === appt.id || !isToday || ticket ? 'not-allowed' : 'pointer', fontFamily: "'DM Sans', sans-serif" }}
+                        >
+                          {activating === appt.id ? 'Activating...' : !isToday ? 'Available on Appointment Date' : '🎫 Get Queue Number'}
+                        </button>
+                      )}
                     </div>
                   )
                 })}

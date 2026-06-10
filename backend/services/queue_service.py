@@ -108,9 +108,23 @@ def activate_queue(appointment_id: str, student_id: str):
 def get_student_queue(student_id: str):
     """Get active queue ticket for a student."""
     admin = get_admin()
+    
+    # Auto-cleanup stale tickets from previous days
+    try:
+        from datetime import date
+        today_str = str(date.today())
+        admin.table("queue_tickets") \
+            .update({"status": "abandoned"}) \
+            .eq("student_id", student_id) \
+            .in_("status", ["waiting", "in_progress"]) \
+            .lt("created_at", today_str) \
+            .execute()
+    except Exception:
+        pass
+
     try:
         tickets_res = admin.table("queue_tickets") \
-            .select("*, appointments(appointment_date, time_slot, transaction_types(name))") \
+            .select("*, appointments(appointment_date, time_slot, status, transaction_types(name))") \
             .eq("student_id", student_id) \
             .in_("status", ["waiting", "in_progress"]) \
             .order("created_at", desc=True) \
@@ -121,6 +135,11 @@ def get_student_queue(student_id: str):
             return None
 
         ticket = tickets_res.data[0]
+        
+        # If the underlying appointment was cancelled, abandon the ticket
+        if ticket.get("appointments") and ticket["appointments"].get("status") == "cancelled":
+            admin.table("queue_tickets").update({"status": "abandoned"}).eq("id", ticket["id"]).execute()
+            return None
         steps_res = admin.table("transaction_steps") \
             .select("*") \
             .eq("queue_ticket_id", ticket["id"]) \

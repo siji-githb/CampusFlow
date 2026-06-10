@@ -70,13 +70,29 @@ export const getAppointmentStats = async (token) => {
   return data
 }
 
-export const rescheduleAppointment = async (token, appointmentId, newDate, newTime) => {
+export const rescheduleAppointment = async (token, appointmentId, newDate, newTime, notes = null) => {
   const res = await fetch(`${API_URL}/appointments/${appointmentId}/reschedule`, {
     method: 'PATCH',
     headers: authHeader(token),
-    body: JSON.stringify({ new_date: newDate, new_time: newTime })
+    body: JSON.stringify({ new_date: newDate, new_time: newTime, notes })
   })
   const data = await res.json()
   if (!res.ok) throw new Error(data.detail || 'Failed to reschedule appointment')
+  return data
+}
+
+export const uploadMedia = async (token, file) => {
+  const formData = new FormData()
+  formData.append('file', file)
+  
+  const res = await fetch(`${API_URL}/appointments/upload-media`, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${token}`
+    },
+    body: formData
+  })
+  const data = await res.json()
+  if (!res.ok) throw new Error(data.detail || 'Failed to upload media')
   return data
 }

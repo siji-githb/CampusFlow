@@ -31,28 +31,23 @@ def get_office_config():
         raise HTTPException(status_code=500, detail=str(e))
 
 
-def generate_time_slots(open_time: str, close_time: str, duration_minutes: int):
+# ── UPDATED: Slot generation (lunch breaks & processing time) ──
+def generate_time_slots(open_time: str, close_time: str, duration_minutes: int, lunch_start: str = "12:00", lunch_end: str = "13:00"):
     slots = []
     open_dt = datetime.strptime(open_time, "%H:%M")
     close_dt = datetime.strptime(close_time, "%H:%M")
+    lunch_start_dt = datetime.strptime(lunch_start, "%H:%M")
+    lunch_end_dt = datetime.strptime(lunch_end, "%H:%M")
+    
     current = open_dt
     while current < close_dt:
-        slots.append(current.strftime("%H:%M"))
+        if not (lunch_start_dt <= current < lunch_end_dt):
+            slots.append(current.strftime("%H:%M"))
         current += timedelta(minutes=duration_minutes)
     return slots
 
 
-def get_daily_cap(config: dict, transaction_type_name: str) -> int:
-    name_lower = transaction_type_name.lower()
-    if "transcript" in name_lower or "tor" in name_lower:
-        return int(config.get("daily_cap_tor", 20))
-    elif "enrollment" in name_lower or "coe" in name_lower:
-        return int(config.get("daily_cap_coe", 30))
-    elif "diploma" in name_lower:
-        return int(config.get("daily_cap_diploma", 10))
-    return 20
-
-
+# ── UPDATED: Fetch availability dynamically using new capacity check logic ──
 def get_available_slots(transaction_type_id: str, appointment_date: date):
     admin = get_admin()
     config = get_office_config()
@@ -64,18 +59,22 @@ def get_available_slots(transaction_type_id: str, appointment_date: date):
     except Exception:
         raise HTTPException(status_code=404, detail="Transaction type not found")
 
-    daily_cap = get_daily_cap(config, tt["name"])
+    staff_count = int(config.get("staff_count", 2))
+    lunch_start = config.get("lunch_break_start", "12:00")
+    lunch_end = config.get("lunch_break_end", "13:00")
     open_time = config.get("office_open_time", "08:00")
     close_time = config.get("office_close_time", "17:00")
-    duration = int(config.get("slot_duration_minutes", 30))
+    
+    # Use processing time from transaction type or default
+    duration = tt.get("processing_time", int(config.get("slot_duration_minutes", 30)))
 
-    all_slots = generate_time_slots(open_time, close_time, duration)
+    all_slots = generate_time_slots(open_time, close_time, duration, lunch_start, lunch_end)
+    daily_cap = len(all_slots) * staff_count
 
-    # Get existing bookings for this date and type
+    # Get existing bookings for this date across ALL types (capacity is shared by staff)
     try:
         bookings_res = admin.table("appointments") \
             .select("time_slot") \
-            .eq("transaction_type_id", transaction_type_id) \
             .eq("appointment_date", str(appointment_date)) \
             .neq("status", "cancelled") \
             .execute()
@@ -88,17 +87,15 @@ def get_available_slots(transaction_type_id: str, appointment_date: date):
     for slot in booked_slots:
         slot_counts[slot] = slot_counts.get(slot, 0) + 1
 
-    # Total bookings today
     total_booked = len(booked_slots)
-    slots_per_slot = max(1, daily_cap // len(all_slots)) if all_slots else 1
 
     result = []
     for slot in all_slots:
         booked_in_slot = slot_counts.get(slot, 0)
-        remaining = max(0, slots_per_slot - booked_in_slot)
+        remaining = max(0, staff_count - booked_in_slot)
         result.append({
             "time_slot": slot,
-            "available": remaining > 0 and total_booked < daily_cap,
+            "available": remaining > 0,
             "remaining": remaining
         })
 
@@ -111,6 +108,7 @@ def get_available_slots(transaction_type_id: str, appointment_date: date):
     }
 
 
+# ── UPDATED: Capacity check based on new slots and staff_count logic ──
 def create_appointment(student_id: str, priority_class: str, data: AppointmentCreate):
     admin = get_admin()
     config = get_office_config()
@@ -125,8 +123,8 @@ def create_appointment(student_id: str, priority_class: str, data: AppointmentCr
         )
 
     # Check if date is a weekday
-    if data.appointment_date.weekday() >= 5:
-        raise HTTPException(status_code=400, detail="Appointments can only be booked on weekdays")
+    if data.appointment_date.weekday() == 6:
+        raise HTTPException(status_code=400, detail="Appointments cannot be booked on Sundays")
 
     # Get transaction type
     try:
@@ -135,18 +133,18 @@ def create_appointment(student_id: str, priority_class: str, data: AppointmentCr
     except Exception:
         raise HTTPException(status_code=404, detail="Transaction type not found")
 
-    daily_cap = get_daily_cap(config, tt["name"])
+    staff_count = int(config.get("staff_count", 2))
 
-    # Check daily cap
+    # Check slot capacity across ALL transaction types at that exact time
     try:
         count_res = admin.table("appointments") \
             .select("id") \
-            .eq("transaction_type_id", data.transaction_type_id) \
             .eq("appointment_date", str(data.appointment_date)) \
+            .eq("time_slot", data.time_slot) \
             .neq("status", "cancelled") \
             .execute()
-        if len(count_res.data) >= daily_cap:
-            raise HTTPException(status_code=400, detail="Daily appointment cap reached for this transaction type")
+        if len(count_res.data) >= staff_count:
+            raise HTTPException(status_code=400, detail="This time slot is full")
     except HTTPException:
         raise
     except Exception as e:
@@ -203,6 +201,19 @@ def create_appointment(student_id: str, priority_class: str, data: AppointmentCr
 
 def get_student_appointments(student_id: str):
     admin = get_admin()
+    
+    # Auto-cancel past appointments for this student
+    try:
+        today_str = str(date.today())
+        admin.table("appointments") \
+            .update({"status": "cancelled"}) \
+            .in_("status", ["pending", "confirmed"]) \
+            .lt("appointment_date", today_str) \
+            .eq("student_id", student_id) \
+            .execute()
+    except Exception:
+        pass
+
     try:
         res = admin.table("appointments") \
             .select("*, transaction_types(name, processing_steps, required_documents)") \
@@ -232,12 +243,7 @@ def cancel_appointment(appointment_id: str, student_id: str):
     if appt["status"] in ["completed", "cancelled"]:
         raise HTTPException(status_code=400, detail="Cannot cancel a completed or already cancelled appointment")
 
-    # Check cutoff
-    config = get_office_config()
-    cutoff_days = int(config.get("booking_cutoff_days", 1))
-    appt_date = date.fromisoformat(appt["appointment_date"])
-    if date.today() >= appt_date - timedelta(days=cutoff_days):
-        raise HTTPException(status_code=400, detail="Cannot cancel within the cutoff period")
+    # Removed cutoff check so students can cancel at any time
 
     try:
         admin.table("appointments") \
@@ -261,6 +267,18 @@ def cancel_appointment(appointment_id: str, student_id: str):
 
 def get_all_appointments(date_str: str = None):
     admin = get_admin()
+    
+    # Auto-cancel all past appointments globally
+    try:
+        today_str = str(date.today())
+        admin.table("appointments") \
+            .update({"status": "cancelled"}) \
+            .in_("status", ["pending", "confirmed"]) \
+            .lt("appointment_date", today_str) \
+            .execute()
+    except Exception:
+        pass
+
     try:
         query = admin.table("appointments") \
             .select("*, transaction_types(name), users(first_name, last_name, student_id)")
@@ -301,21 +319,43 @@ def get_appointment_stats():
         raise HTTPException(status_code=500, detail=str(e))
 
 
-def reschedule_appointment(appointment_id: str, new_date: str, new_time: str, actor_id: str = None):
+def reschedule_appointment(appointment_id: str, new_date: str, new_time: str, actor_id: str = None, role: str = None, notes: str = None):
     admin = get_admin()
+    config = get_office_config()
     try:
-        res = admin.table("appointments").select("id, appointment_date, time_slot").eq("id", appointment_id).execute()
+        res = admin.table("appointments").select("id, appointment_date, time_slot, status, student_id").eq("id", appointment_id).execute()
         if not res.data:
             raise HTTPException(status_code=404, detail="Appointment not found")
             
-        old_date = res.data[0]["appointment_date"]
-        old_time = res.data[0]["time_slot"]
+        appt = res.data[0]
+        
+        if role == "student" and appt.get("student_id") != actor_id:
+            raise HTTPException(status_code=403, detail="Not authorized to reschedule this appointment")
             
-        admin.table("appointments").update({
+        old_date = appt["appointment_date"]
+        old_time = appt["time_slot"]
+        current_status = appt["status"]
+        
+        staff_count = int(config.get("staff_count", 2))
+        count_res = admin.table("appointments") \
+            .select("id") \
+            .eq("appointment_date", new_date) \
+            .eq("time_slot", new_time) \
+            .neq("status", "cancelled") \
+            .execute()
+            
+        if len(count_res.data) >= staff_count:
+            raise HTTPException(status_code=400, detail="This time slot is full")
+            
+        update_data = {
             "appointment_date": new_date,
             "time_slot": new_time,
-            "status": "pending" 
-        }).eq("id", appointment_id).execute()
+            "status": current_status
+        }
+        if notes is not None:
+            update_data["notes"] = notes
+            
+        admin.table("appointments").update(update_data).eq("id", appointment_id).execute()
         
         if actor_id:
             log_audit_action(
@@ -329,6 +369,8 @@ def reschedule_appointment(appointment_id: str, new_date: str, new_time: str, ac
             )
         
         return {"success": True}
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -368,4 +410,4 @@ def update_appointment_status(appointment_id: str, status: str, actor_id: str = 
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e))

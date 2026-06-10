@@ -28,6 +28,16 @@ const M = {
 
 export default function AppointmentsPage() {
   const { token } = useAuth()
+  
+  const fmt12h = (t) => {
+    if (!t) return '—'
+    const [hStr, mStr] = t.split(':')
+    const h = parseInt(hStr, 10)
+    const suffix = h < 12 ? 'AM' : 'PM'
+    const h12 = h % 12 || 12
+    return `${h12}:${mStr} ${suffix}`
+  }
+
   const [view, setView] = useState('list')
   const [currentMonth, setCurrentMonth] = useState(new Date(new Date().getFullYear(), new Date().getMonth(), 1))
   const [selectedDate, setSelectedDate] = useState(new Date())
@@ -100,7 +110,14 @@ export default function AppointmentsPage() {
       // Local time string YYYY-MM-DD
       const dateStr = `${selectedDate.getFullYear()}-${String(selectedDate.getMonth() + 1).padStart(2, '0')}-${String(selectedDate.getDate()).padStart(2, '0')}`
       const data = await getAllAppointments(token, dateStr)
-      setAppointments(data)
+      const sortedData = (Array.isArray(data) ? data : []).sort((a, b) => {
+        const aComp = a.status === 'completed'
+        const bComp = b.status === 'completed'
+        if (aComp && !bComp) return 1
+        if (!aComp && bComp) return -1
+        return (a.time_slot || '').localeCompare(b.time_slot || '')
+      })
+      setAppointments(sortedData)
     } catch (err) {
       setError(err.message)
     } finally {
@@ -159,14 +176,6 @@ export default function AppointmentsPage() {
                 {!statsData ? <div className="animate-shimmer" style={{ width: '40px', height: '32px', background: M.border, borderRadius: '6px' }} /> : s.value}
               </span>
               <span style={{ fontSize: '11px', color: M.textMuted }}>{s.sub}</span>
-            </div>
-            <div style={{
-              position: 'absolute', top: '20px', right: '20px',
-              width: '28px', height: '28px', borderRadius: '8px',
-              background: M.offWhite, border: `1px solid ${M.border}`,
-              display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px'
-            }}>
-              {s.icon}
             </div>
           </div>
         ))}
@@ -300,7 +309,7 @@ export default function AppointmentsPage() {
                       👤 <span style={{ fontWeight: 500 }}>{studentName}</span> (ID: {studentId})
                     </div>
                     <div style={{ display: 'flex', gap: '16px', fontSize: '12px', color: M.textMuted }}>
-                      <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>📅 {apt.time_slot}</span>
+                      <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>📅 {fmt12h(apt.time_slot)}</span>
                       <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>🏷️ Priority: {apt.priority_class}</span>
                     </div>
                   </div>
@@ -360,21 +369,101 @@ export default function AppointmentsPage() {
       </div>
 
       {/* Modals */}
-      {viewDetailsModal && (
-        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
-          <div style={{ background: M.white, padding: '32px', borderRadius: '16px', width: '400px', maxWidth: '90%', fontFamily: "'IBM Plex Sans', sans-serif" }}>
-            <h2 style={{ margin: '0 0 16px', color: M.maroon, fontFamily: "'Fraunces', serif" }}>Appointment Details</h2>
-            <div style={{ marginBottom: '8px', fontSize: '14px' }}><strong>Student:</strong> {viewDetailsModal.users?.first_name} {viewDetailsModal.users?.last_name} ({viewDetailsModal.users?.student_id})</div>
-            <div style={{ marginBottom: '8px', fontSize: '14px' }}><strong>Type:</strong> {viewDetailsModal.transaction_types?.name}</div>
-            <div style={{ marginBottom: '8px', fontSize: '14px' }}><strong>Date:</strong> {viewDetailsModal.appointment_date}</div>
-            <div style={{ marginBottom: '8px', fontSize: '14px' }}><strong>Time:</strong> {viewDetailsModal.time_slot}</div>
-            <div style={{ marginBottom: '8px', fontSize: '14px' }}><strong>Priority:</strong> {viewDetailsModal.priority_class}</div>
-            <div style={{ marginBottom: '8px', fontSize: '14px' }}><strong>Status:</strong> <span style={{textTransform:'capitalize'}}>{viewDetailsModal.status}</span></div>
-            {viewDetailsModal.notes && <div style={{ marginBottom: '8px', fontSize: '14px' }}><strong>Notes:</strong> {viewDetailsModal.notes}</div>}
-            <button onClick={() => setViewDetailsModal(null)} style={{ marginTop: '24px', background: M.maroon, color: M.white, padding: '10px 16px', borderRadius: '8px', border: 'none', cursor: 'pointer', width: '100%', fontWeight: 600 }}>Close</button>
+      {viewDetailsModal && (() => {
+        const student = viewDetailsModal.users
+        const name = student ? `${student.first_name} ${student.last_name}` : 'Unknown Student'
+        const initials = name.split(' ').slice(0, 2).map(w => w[0]?.toUpperCase()).join('') || '?'
+        const studentId = student?.student_id || 'N/A'
+        
+        // Parse Notes & Media URL
+        let parsedNotes = viewDetailsModal.notes || ''
+        let mediaUrl = null
+        if (parsedNotes.includes('MEDIA_URL:')) {
+          const parts = parsedNotes.split('MEDIA_URL:')
+          parsedNotes = parts[0].trim()
+          mediaUrl = parts[1] ? parts[1].trim() : null
+        }
+
+        const sColor = viewDetailsModal.status === 'completed' ? M.green : viewDetailsModal.status === 'cancelled' ? M.red : viewDetailsModal.status === 'pending' ? M.gold : M.blue
+        const sBg = viewDetailsModal.status === 'completed' ? M.greenLight : viewDetailsModal.status === 'cancelled' ? M.redLight : viewDetailsModal.status === 'pending' ? M.goldLight : M.blueLight
+        const sBorder = viewDetailsModal.status === 'completed' ? M.greenBorder : viewDetailsModal.status === 'cancelled' ? M.redBorder : viewDetailsModal.status === 'pending' ? M.goldBorder : M.blueBorder
+
+        return (
+          <div style={{ position: 'fixed', inset: 0, zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)' }} onClick={() => setViewDetailsModal(null)} />
+            <div className="animate-fade-up" style={{ position: 'relative', background: M.white, borderRadius: '24px', width: '480px', maxWidth: '90%', maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 20px 40px rgba(0,0,0,0.2)' }}>
+              
+              {/* Header */}
+              <div style={{ padding: '24px 32px', borderBottom: `1px solid ${M.border}`, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                <div>
+                  <h2 style={{ margin: '0 0 6px', color: M.text, fontFamily: "'Fraunces', serif", fontSize: '22px', fontWeight: 700 }}>Appointment Details</h2>
+                  <p style={{ margin: 0, fontSize: '13px', color: M.textMuted }}>ID: {viewDetailsModal.id.split('-')[0].toUpperCase()}</p>
+                </div>
+                <button onClick={() => setViewDetailsModal(null)} style={{ background: M.surface, border: 'none', width: '32px', height: '32px', borderRadius: '50%', cursor: 'pointer', color: M.textSub, display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'background 0.2s' }} onMouseEnter={e => e.currentTarget.style.background = M.border} onMouseLeave={e => e.currentTarget.style.background = M.surface}>✕</button>
+              </div>
+
+              <div style={{ padding: '32px' }}>
+                {/* Student Info Profile */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '32px', padding: '16px', background: M.offWhite, borderRadius: '16px', border: `1px solid ${M.border}` }}>
+                  <div style={{ width: '56px', height: '56px', borderRadius: '50%', background: M.maroonLight, color: M.maroon, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px', fontWeight: 700, border: `1px solid ${M.maroonBorder}` }}>
+                    {initials}
+                  </div>
+                  <div>
+                    <h3 style={{ margin: '0 0 4px', fontSize: '16px', fontWeight: 700, color: M.text }}>{name}</h3>
+                    <p style={{ margin: 0, fontSize: '13px', color: M.textMuted, fontFamily: 'monospace' }}>{studentId}</p>
+                  </div>
+                </div>
+
+                {/* Grid Details */}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px', marginBottom: '32px' }}>
+                  <div>
+                    <p style={{ fontSize: '11px', fontWeight: 700, color: M.textMuted, textTransform: 'uppercase', letterSpacing: '0.06em', margin: '0 0 8px' }}>Transaction Type</p>
+                    <p style={{ fontSize: '14px', fontWeight: 600, color: M.text, margin: 0 }}>{viewDetailsModal.transaction_types?.name}</p>
+                  </div>
+                  <div>
+                    <p style={{ fontSize: '11px', fontWeight: 700, color: M.textMuted, textTransform: 'uppercase', letterSpacing: '0.06em', margin: '0 0 8px' }}>Schedule</p>
+                    <p style={{ fontSize: '14px', fontWeight: 600, color: M.text, margin: 0 }}>
+                      {new Date(viewDetailsModal.appointment_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })} at {fmt12h(viewDetailsModal.time_slot)}
+                    </p>
+                  </div>
+                  <div>
+                    <p style={{ fontSize: '11px', fontWeight: 700, color: M.textMuted, textTransform: 'uppercase', letterSpacing: '0.06em', margin: '0 0 8px' }}>Priority Class</p>
+                    <span style={{ fontSize: '12px', fontWeight: 600, color: M.maroon, background: M.maroonLight, padding: '4px 12px', borderRadius: '100px', border: `1px solid ${M.maroonBorder}`, textTransform: 'capitalize' }}>
+                      {viewDetailsModal.priority_class}
+                    </span>
+                  </div>
+                  <div>
+                    <p style={{ fontSize: '11px', fontWeight: 700, color: M.textMuted, textTransform: 'uppercase', letterSpacing: '0.06em', margin: '0 0 8px' }}>Status</p>
+                    <span style={{ fontSize: '12px', fontWeight: 600, color: sColor, background: sBg, padding: '4px 12px', borderRadius: '100px', border: `1px solid ${sBorder}`, textTransform: 'capitalize' }}>
+                      {viewDetailsModal.status}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Notes & Media */}
+                {(parsedNotes || mediaUrl) && (
+                  <div style={{ borderTop: `1px solid ${M.border}`, paddingTop: '24px' }}>
+                    <p style={{ fontSize: '11px', fontWeight: 700, color: M.textMuted, textTransform: 'uppercase', letterSpacing: '0.06em', margin: '0 0 12px' }}>Notes & Attachments</p>
+                    {parsedNotes && (
+                      <div style={{ padding: '16px', background: M.surface, borderRadius: '12px', fontSize: '13px', color: M.textSub, lineHeight: 1.5, marginBottom: '16px' }}>
+                        {parsedNotes}
+                      </div>
+                    )}
+                    {mediaUrl && (
+                      <div>
+                        <p style={{ fontSize: '12px', fontWeight: 600, color: M.text, margin: '0 0 8px' }}>Attached Media</p>
+                        <a href={mediaUrl} target="_blank" rel="noreferrer" style={{ display: 'block', borderRadius: '12px', overflow: 'hidden', border: `1px solid ${M.border}` }}>
+                          <img src={mediaUrl} alt="Attachment" style={{ width: '100%', display: 'block' }} />
+                        </a>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
-        </div>
-      )}
+        )
+      })()}
 
       {rescheduleModal && (
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
