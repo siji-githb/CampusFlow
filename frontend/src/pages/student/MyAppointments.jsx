@@ -30,7 +30,7 @@ export default function MyAppointments() {
     const apptDate = new Date(`${apptDateStr}T${apptTimeStr}:00`)
     const now = new Date()
     const diffHours = (apptDate - now) / (1000 * 60 * 60)
-    return diffHours >= 48
+    return diffHours >= 24
   }
 
   const fetch = async () => {
@@ -178,7 +178,7 @@ export default function MyAppointments() {
                       <button 
                         onClick={() => setReschedulingAppt(appt)} 
                         disabled={cancelling === appt.id || !canReschedule(appt.appointment_date, appt.time_slot)}
-                        title={!canReschedule(appt.appointment_date, appt.time_slot) ? "Cannot reschedule within 48 hours of appointment" : ""}
+                        title={!canReschedule(appt.appointment_date, appt.time_slot) ? "Cannot reschedule within 24 hours of appointment" : ""}
                         style={{ flex: 1, minHeight: '44px', fontSize: '13px', fontWeight: 600, color: M.text, background: M.white, border: `1px solid ${M.gray200}`, borderRadius: '10px', cursor: !canReschedule(appt.appointment_date, appt.time_slot) ? 'not-allowed' : 'pointer', opacity: (!canReschedule(appt.appointment_date, appt.time_slot) || cancelling === appt.id) ? 0.5 : 1, fontFamily: "'IBM Plex Sans', sans-serif" }}>
                         Reschedule
                       </button>

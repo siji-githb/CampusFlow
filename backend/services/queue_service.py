@@ -114,7 +114,7 @@ def get_student_queue(student_id: str):
         from datetime import date
         today_str = str(date.today())
         admin.table("queue_tickets") \
-            .update({"status": "abandoned"}) \
+            .update({"status": "cancelled"}) \
             .eq("student_id", student_id) \
             .in_("status", ["waiting", "in_progress"]) \
             .lt("created_at", today_str) \
@@ -138,7 +138,7 @@ def get_student_queue(student_id: str):
         
         # If the underlying appointment was cancelled, abandon the ticket
         if ticket.get("appointments") and ticket["appointments"].get("status") == "cancelled":
-            admin.table("queue_tickets").update({"status": "abandoned"}).eq("id", ticket["id"]).execute()
+            admin.table("queue_tickets").update({"status": "cancelled"}).eq("id", ticket["id"]).execute()
             return None
         steps_res = admin.table("transaction_steps") \
             .select("*") \

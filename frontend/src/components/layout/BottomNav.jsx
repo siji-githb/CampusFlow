@@ -16,16 +16,24 @@ export default function BottomNav({ active }) {
     { id: 'queue',        label: 'Queue',   icon: '🎫', path: '/student/queue' },
   ];
   return (
-    <nav style={{
-      position: 'fixed', bottom: 0, left: 0, right: 0,
-      height: '64px',
-      background: M.white,
-      borderTop: `1px solid ${M.border}`,
-      boxShadow: '0 -2px 12px rgba(0,0,0,0.06)',
-      display: 'flex', alignItems: 'stretch',
-      zIndex: 100,
-      paddingBottom: 'env(safe-area-inset-bottom)',
-    }}>
+    <>
+      <style>{`
+        @media (min-width: 1024px) {
+          .mobile-bottom-nav {
+            display: none !important;
+          }
+        }
+      `}</style>
+      <nav className="mobile-bottom-nav" style={{
+        position: 'fixed', bottom: 0, left: 0, right: 0,
+        height: '64px',
+        background: M.white,
+        borderTop: `1px solid ${M.border}`,
+        boxShadow: '0 -2px 12px rgba(0,0,0,0.06)',
+        display: 'flex', alignItems: 'stretch',
+        zIndex: 100,
+        paddingBottom: 'env(safe-area-inset-bottom)',
+      }}>
       {tabs.map(tab => (
         <button key={tab.id} onClick={() => navigate(tab.path)} style={{
           flex: 1, display: 'flex', flexDirection: 'column',
@@ -41,6 +49,7 @@ export default function BottomNav({ active }) {
             fontFamily: "'IBM Plex Sans', sans-serif" }}>{tab.label}</span>
         </button>
       ))}
-    </nav>
+      </nav>
+    </>
   );
 }
