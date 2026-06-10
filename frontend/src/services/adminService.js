@@ -117,3 +117,77 @@ export const updateReleaseDate = async (token, appointmentId, releaseDate) => {
   if (!res.ok) throw new Error(data.detail || 'Failed to update release date')
   return data
 }
+
+// ── Student Records ─────────────────────────────────────────────────────────
+
+export const getStudentRecords = async (token) => {
+  const res = await fetch(`${API_URL}/admin/student-records/`, { headers: authHeader(token) })
+  const data = await res.json()
+  if (!res.ok) throw new Error(data.detail || 'Failed to fetch student records')
+  return data
+}
+
+export const addStudentRecord = async (token, record) => {
+  const formData = new URLSearchParams()
+  formData.append('student_id', record.student_id)
+  formData.append('first_name', record.first_name)
+  formData.append('last_name', record.last_name)
+  formData.append('course', record.course)
+
+  const res = await fetch(`${API_URL}/admin/student-records/`, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/x-www-form-urlencoded'
+    },
+    body: formData.toString()
+  })
+  const data = await res.json()
+  if (!res.ok) throw new Error(data.detail || 'Failed to add student record')
+  return data
+}
+
+export const uploadStudentRecords = async (token, formData) => {
+  const res = await fetch(`${API_URL}/admin/student-records/upload`, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${token}`
+      // Note: Do not set Content-Type for FormData, the browser handles the boundary automatically
+    },
+    body: formData
+  })
+  const data = await res.json()
+  if (!res.ok) throw new Error(data.detail || 'Failed to upload student records')
+  return data
+}
+
+export const deleteStudentRecord = async (token, studentId) => {
+  const res = await fetch(`${API_URL}/admin/student-records/${studentId}`, {
+    method: 'DELETE',
+    headers: {
+      'Authorization': `Bearer ${token}`
+    }
+  })
+  const data = await res.json()
+  if (!res.ok) throw new Error(data.detail || 'Failed to delete student record')
+  return data
+}
+
+export const editStudentRecord = async (token, studentId, record) => {
+  const formData = new URLSearchParams()
+  formData.append('first_name', record.first_name)
+  formData.append('last_name', record.last_name)
+  formData.append('course', record.course)
+
+  const res = await fetch(`${API_URL}/admin/student-records/${studentId}`, {
+    method: 'PATCH',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/x-www-form-urlencoded'
+    },
+    body: formData.toString()
+  })
+  const data = await res.json()
+  if (!res.ok) throw new Error(data.detail || 'Failed to update student record')
+  return data
+}

@@ -21,3 +21,10 @@ export const loginUser = async (data) => {
   if (!response.ok) throw new Error(result.detail || 'Login failed')
   return result
 }
+
+export const verifyStudent = async (studentId) => {
+  const response = await fetch(`${API_URL}/auth/verify-student/${studentId}`)
+  const result = await response.json()
+  if (!response.ok) throw new Error(result.detail || 'Verification failed')
+  return result
+}

@@ -8,6 +8,7 @@ class RegisterRequest(BaseModel):
     first_name: str
     last_name: str
     student_id: Optional[str] = None
+    course: Optional[str] = None
     priority_class: str = "regular"
 
 
@@ -24,6 +25,7 @@ class UserResponse(BaseModel):
     role: str
     priority_class: str
     student_id: Optional[str] = None
+    course: Optional[str] = None
 
 
 class TokenResponse(BaseModel):

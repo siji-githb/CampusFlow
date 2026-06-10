@@ -40,6 +40,7 @@ async def register_user(data: RegisterRequest) -> dict:
             "first_name": data.first_name,
             "last_name": data.last_name,
             "student_id": data.student_id,
+            "course": data.course,
             "priority_class": data.priority_class,
             "role": "student",
         }).execute()
@@ -92,5 +93,31 @@ async def login_user(data: LoginRequest) -> dict:
             "role": profile["role"],
             "priority_class": profile["priority_class"],
             "student_id": profile.get("student_id"),
+            "course": profile.get("course"),
         }
+
     }
+
+async def verify_student(student_id: str) -> dict:
+    admin = get_supabase_admin()
+    
+    # 1. Check if the student_id is already in the 'users' table
+    try:
+        existing = admin.table("users").select("id").eq("student_id", student_id).execute()
+        if existing.data:
+            raise HTTPException(status_code=400, detail="Student ID is already registered.")
+    except Exception as e:
+        if isinstance(e, HTTPException):
+            raise e
+        raise HTTPException(status_code=500, detail="Error checking registration status.")
+        
+    # 2. Check if the student_id exists in 'school_students' table
+    try:
+        record = admin.table("school_students").select("*").eq("student_id", student_id).single().execute()
+        if not record.data:
+            raise HTTPException(status_code=404, detail="Student ID not found in school records.")
+        return record.data
+    except Exception as e:
+        if isinstance(e, HTTPException):
+            raise e
+        raise HTTPException(status_code=404, detail="Student ID not found in school records.")

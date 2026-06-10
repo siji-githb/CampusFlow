@@ -42,7 +42,7 @@ export default function AppRouter() {
 
         {/* Staff */}
         <Route path="/staff/dashboard" element={
-          <ProtectedRoute allowedRoles={['staff']}><StaffDashboard /></ProtectedRoute>
+          <ProtectedRoute allowedRoles={['staff', 'admin']}><StaffDashboard /></ProtectedRoute>
         } />
 
         {/* Admin */}

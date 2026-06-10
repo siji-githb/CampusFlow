@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 from models.auth_models import RegisterRequest, LoginRequest
-from services.auth_service import register_user, login_user
+from services.auth_service import register_user, login_user, verify_student
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
@@ -13,6 +13,11 @@ async def register(data: RegisterRequest):
 @router.post("/login")
 async def login(data: LoginRequest):
     return await login_user(data)
+
+
+@router.get("/verify-student/{student_id}")
+async def verify(student_id: str):
+    return await verify_student(student_id)
 
 
 @router.get("/health")

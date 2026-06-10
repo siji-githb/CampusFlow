@@ -5,6 +5,7 @@ import crmcLogo from '../../assets/crmc-logo.webp'
 import LiveQueuePage from './LiveQueuePage'
 import MessagesPage from './MessagesPage'
 import AppointmentsPage from './AppointmentsPage'
+import StudentRecordsPage from './StudentRecordsPage'
 import { getTodaysQueue } from '../../services/queueService'
 import { getMessages, markMessageRead } from '../../services/messagesService'
 import { getAppointmentStats } from '../../services/appointmentService'
@@ -255,6 +256,7 @@ export default function StaffDashboard() {
     { id: 'overview', icon: '📊', label: 'Dashboard' },
     { id: 'queue', icon: '🎫', label: 'Live Queue Management' },
     { id: 'appointments', icon: '📅', label: 'Appointments' },
+    { id: 'records', icon: '📋', label: 'Student Records' },
     { id: 'messages', icon: '💬', label: 'Messages' },
   ]
 
@@ -407,6 +409,11 @@ export default function StaffDashboard() {
           {/* ──── APPOINTMENTS VIEW ──── */}
           {activeNav === 'appointments' && (
             <AppointmentsPage />
+          )}
+
+          {/* ──── STUDENT RECORDS VIEW ──── */}
+          {activeNav === 'records' && (
+            <StudentRecordsPage />
           )}
         </main>
       </div>

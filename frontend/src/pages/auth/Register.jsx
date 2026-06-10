@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
-import { registerUser } from '../../services/authService'
+import { registerUser, verifyStudent } from '../../services/authService'
 import crmcLogo from '../../assets/crmc-logo.webp'
 
 // ── Responsive hook ──
@@ -39,15 +39,39 @@ export default function Register() {
   const isMobile   = width < 768
   const [form, setForm] = useState({
     first_name: '', last_name: '', email: '',
-    password: '', student_id: '', priority_class: 'regular',
+    password: '', confirm_password: '', student_id: '', priority_class: 'regular', course: '',
   })
   const [error, setError]     = useState('')
   const [loading, setLoading] = useState(false)
+  const [step, setStep] = useState(1)
+  const [showPassword, setShowPassword] = useState(false)
+  const [showConfirm, setShowConfirm] = useState(false)
 
   const handleChange = (e) => { setForm({ ...form, [e.target.name]: e.target.value }); setError('') }
 
+  const handleVerify = async (e) => {
+    e.preventDefault(); setLoading(true); setError('')
+    try {
+      if (!form.student_id.trim()) throw new Error('Please enter a Student ID')
+      const studentData = await verifyStudent(form.student_id.trim())
+      setForm(prev => ({
+        ...prev,
+        first_name: studentData.first_name,
+        last_name: studentData.last_name,
+        course: studentData.course
+      }))
+      setStep(2)
+    } catch (err) { setError(err.message) }
+    finally { setLoading(false) }
+  }
+
   const handleSubmit = async (e) => {
     e.preventDefault(); setLoading(true); setError('')
+    if (form.password !== form.confirm_password) {
+      setError("Passwords do not match")
+      setLoading(false)
+      return
+    }
     try {
       await registerUser(form)
       navigate('/login', { state: { message: 'Account created! Please sign in.' } })
@@ -138,67 +162,103 @@ export default function Register() {
 
             {errorBanner}
 
-            <form onSubmit={handleSubmit}>
-              {/* Name row — stacked on mobile */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '12px', marginBottom: '12px' }}>
-                <div>
-                  <label style={lbl}>First Name</label>
-                  <input type="text" name="first_name" value={form.first_name} onChange={handleChange} required placeholder="Juan" style={inp()}
+            {step === 1 ? (
+              <form onSubmit={handleVerify}>
+                <div style={{ marginBottom: '24px' }}>
+                  <label style={lbl}>Student ID</label>
+                  <input type="text" name="student_id" value={form.student_id} onChange={handleChange} required placeholder="2024-00001" pattern="^\d{4}-\d{4,5}$" title="Format: 0000-00000 or 0000-0000" style={inp()}
+                    onFocus={e => e.target.style.borderColor = M.maroon}
+                    onBlur={e => e.target.style.borderColor = M.border} />
+                  <p style={{ fontSize: '11px', color: M.textSub, marginTop: '8px' }}>We need to verify your ID against the school records before creating an account.</p>
+                </div>
+
+                <button type="submit" disabled={loading} style={{
+                  width: '100%', minHeight: '52px', padding: '14px 24px',
+                  borderRadius: '10px', border: 'none',
+                  background: loading ? '#B8667A' : M.maroon, color: M.white,
+                  fontSize: '15px', fontWeight: 700,
+                  cursor: loading ? 'not-allowed' : 'pointer',
+                  fontFamily: "'IBM Plex Sans', sans-serif",
+                  boxShadow: '0 4px 20px rgba(123,26,42,0.25)',
+                  transition: 'background 0.15s',
+                }}>
+                  {loading ? <span className="spinner" /> : 'Verify ID →'}
+                </button>
+              </form>
+            ) : (
+              <form onSubmit={handleSubmit}>
+                <div style={{ marginBottom: '16px', padding: '12px', background: M.goldLight, borderRadius: '10px', border: `1px solid ${M.goldBorder}` }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                    <span style={{ fontSize: '11px', fontWeight: 700, color: M.gold, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Verified Student</span>
+                    <button type="button" onClick={() => setStep(1)} style={{ background: 'none', border: 'none', color: M.maroon, fontSize: '11px', cursor: 'pointer', fontWeight: 600, textDecoration: 'underline' }}>Change ID</button>
+                  </div>
+                  <div style={{ fontSize: '14px', fontWeight: 600, color: M.text, marginBottom: '2px' }}>{form.first_name} {form.last_name}</div>
+                  <div style={{ fontSize: '12px', color: M.textSub }}>{form.student_id} • {form.course}</div>
+                </div>
+
+                <div style={{ marginBottom: '12px' }}>
+                  <label style={lbl}>Email Address</label>
+                  <input type="email" name="email" value={form.email} onChange={handleChange} required placeholder="you@email.com" style={inp()}
                     onFocus={e => e.target.style.borderColor = M.maroon}
                     onBlur={e => e.target.style.borderColor = M.border} />
                 </div>
-                <div>
-                  <label style={lbl}>Last Name</label>
-                  <input type="text" name="last_name" value={form.last_name} onChange={handleChange} required placeholder="Dela Cruz" style={inp()}
-                    onFocus={e => e.target.style.borderColor = M.maroon}
-                    onBlur={e => e.target.style.borderColor = M.border} />
+
+                <div style={{ marginBottom: '12px' }}>
+                  <label style={lbl}>Password</label>
+                  <div style={{ position: 'relative' }}>
+                    <input type={showPassword ? "text" : "password"} name="password" value={form.password} onChange={handleChange} required minLength={8} placeholder="At least 8 characters" style={{...inp(), paddingRight: '40px'}}
+                      onFocus={e => e.target.style.borderColor = M.maroon}
+                      onBlur={e => e.target.style.borderColor = M.border} />
+                    <button type="button" onClick={() => setShowPassword(!showPassword)} style={{ position: 'absolute', right: '14px', top: '50%', transform: 'translateY(-50%)', background: 'transparent', border: 'none', padding: 0, color: M.textMuted, cursor: 'pointer', display: 'flex' }} title={showPassword ? "Hide password" : "Show password"}>
+                      {showPassword ? (
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                      ) : (
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+                      )}
+                    </button>
+                  </div>
                 </div>
-              </div>
 
-              <div style={{ marginBottom: '12px' }}>
-                <label style={lbl}>Student ID</label>
-                <input type="text" name="student_id" value={form.student_id} onChange={handleChange} placeholder="2021-00001" style={inp()}
-                  onFocus={e => e.target.style.borderColor = M.maroon}
-                  onBlur={e => e.target.style.borderColor = M.border} />
-              </div>
+                <div style={{ marginBottom: '12px' }}>
+                  <label style={lbl}>Confirm Password</label>
+                  <div style={{ position: 'relative' }}>
+                    <input type={showConfirm ? "text" : "password"} name="confirm_password" value={form.confirm_password} onChange={handleChange} required minLength={8} placeholder="Confirm your password" style={{...inp(), paddingRight: '40px'}}
+                      onFocus={e => e.target.style.borderColor = M.maroon}
+                      onBlur={e => e.target.style.borderColor = M.border} />
+                    <button type="button" onClick={() => setShowConfirm(!showConfirm)} style={{ position: 'absolute', right: '14px', top: '50%', transform: 'translateY(-50%)', background: 'transparent', border: 'none', padding: 0, color: M.textMuted, cursor: 'pointer', display: 'flex' }} title={showConfirm ? "Hide password" : "Show password"}>
+                      {showConfirm ? (
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                      ) : (
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+                      )}
+                    </button>
+                  </div>
+                </div>
 
-              <div style={{ marginBottom: '12px' }}>
-                <label style={lbl}>Email Address</label>
-                <input type="email" name="email" value={form.email} onChange={handleChange} required placeholder="you@email.com" style={inp()}
-                  onFocus={e => e.target.style.borderColor = M.maroon}
-                  onBlur={e => e.target.style.borderColor = M.border} />
-              </div>
+                <div style={{ marginBottom: '24px' }}>
+                  <label style={lbl}>Priority Classification</label>
+                  <select name="priority_class" value={form.priority_class} onChange={handleChange} style={{ ...inp(), appearance: 'none', background: M.offWhite }}>
+                    <option value="regular">Regular Student</option>
+                    <option value="graduating">Graduating Student</option>
+                    <option value="pwd">PWD</option>
+                    <option value="transferee">Transferee</option>
+                  </select>
+                </div>
 
-              <div style={{ marginBottom: '12px' }}>
-                <label style={lbl}>Password</label>
-                <input type="password" name="password" value={form.password} onChange={handleChange} required minLength={6} placeholder="At least 6 characters" style={inp()}
-                  onFocus={e => e.target.style.borderColor = M.maroon}
-                  onBlur={e => e.target.style.borderColor = M.border} />
-              </div>
-
-              <div style={{ marginBottom: '24px' }}>
-                <label style={lbl}>Priority Classification</label>
-                <select name="priority_class" value={form.priority_class} onChange={handleChange} style={{ ...inp(), appearance: 'none', background: M.offWhite }}>
-                  <option value="regular">Regular Student</option>
-                  <option value="graduating">Graduating Student</option>
-                  <option value="pwd">PWD</option>
-                  <option value="transferee">Transferee</option>
-                </select>
-              </div>
-
-              <button type="submit" disabled={loading} style={{
-                width: '100%', minHeight: '52px', padding: '14px 24px',
-                borderRadius: '10px', border: 'none',
-                background: loading ? '#B8667A' : M.maroon, color: M.white,
-                fontSize: '15px', fontWeight: 700,
-                cursor: loading ? 'not-allowed' : 'pointer',
-                fontFamily: "'IBM Plex Sans', sans-serif",
-                boxShadow: '0 4px 20px rgba(123,26,42,0.25)',
-                transition: 'background 0.15s',
-              }}>
-                {loading ? <span className="spinner" /> : 'Create Account →'}
-              </button>
-            </form>
+                <button type="submit" disabled={loading} style={{
+                  width: '100%', minHeight: '52px', padding: '14px 24px',
+                  borderRadius: '10px', border: 'none',
+                  background: loading ? '#B8667A' : M.maroon, color: M.white,
+                  fontSize: '15px', fontWeight: 700,
+                  cursor: loading ? 'not-allowed' : 'pointer',
+                  fontFamily: "'IBM Plex Sans', sans-serif",
+                  boxShadow: '0 4px 20px rgba(123,26,42,0.25)',
+                  transition: 'background 0.15s',
+                }}>
+                  {loading ? <span className="spinner" /> : 'Create Account →'}
+                </button>
+              </form>
+            )}
 
             <p style={{ fontSize: '13px', color: M.textMuted, marginTop: '20px', textAlign: 'center' }}>
               Already have an account?{' '}
@@ -236,64 +296,99 @@ export default function Register() {
           <div style={{ padding: '1.75rem 2rem' }}>
             {errorBanner}
 
-            <form onSubmit={handleSubmit}>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '12px' }}>
-                <div>
-                  <label style={lbl}>First Name</label>
-                  <input type="text" name="first_name" value={form.first_name} onChange={handleChange} required placeholder="Juan" style={inp()}
+            {step === 1 ? (
+              <form onSubmit={handleVerify}>
+                <div style={{ marginBottom: '1.5rem' }}>
+                  <label style={lbl}>Student ID</label>
+                  <input type="text" name="student_id" value={form.student_id} onChange={handleChange} required placeholder="2026-00001" pattern="^\d{4}-\d{4,5}$" title="Format: 0000-0000 or 0000-00000" style={inp()}
+                    onFocus={e => e.target.style.borderColor = M.maroon}
+                    onBlur={e => e.target.style.borderColor = M.border} />
+                  <p style={{ fontSize: '11px', color: M.textSub, marginTop: '8px' }}>We need to verify your ID against the school records before creating an account.</p>
+                </div>
+
+                <button type="submit" disabled={loading} style={{
+                  width: '100%', padding: '13px', borderRadius: '8px', border: 'none',
+                  background: loading ? '#B8667A' : M.maroon, color: 'white',
+                  fontSize: '14px', fontWeight: 700,
+                  cursor: loading ? 'not-allowed' : 'pointer',
+                  fontFamily: "'IBM Plex Sans', sans-serif",
+                  boxShadow: '0 3px 14px rgba(123,26,42,0.2)',
+                }}>
+                  {loading ? <span className="spinner" /> : 'Verify ID →'}
+                </button>
+              </form>
+            ) : (
+              <form onSubmit={handleSubmit}>
+                <div style={{ marginBottom: '16px', padding: '12px', background: M.goldLight, borderRadius: '10px', border: `1px solid ${M.goldBorder}` }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                    <span style={{ fontSize: '11px', fontWeight: 700, color: M.gold, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Verified Student</span>
+                    <button type="button" onClick={() => setStep(1)} style={{ background: 'none', border: 'none', color: M.maroon, fontSize: '11px', cursor: 'pointer', fontWeight: 600, textDecoration: 'underline' }}>Change ID</button>
+                  </div>
+                  <div style={{ fontSize: '14px', fontWeight: 600, color: M.text, marginBottom: '2px' }}>{form.first_name} {form.last_name}</div>
+                  <div style={{ fontSize: '12px', color: M.textSub }}>{form.student_id} • {form.course}</div>
+                </div>
+
+                <div style={{ marginBottom: '12px' }}>
+                  <label style={lbl}>Email Address</label>
+                  <input type="email" name="email" value={form.email} onChange={handleChange} required placeholder="you@email.com" style={inp()}
                     onFocus={e => e.target.style.borderColor = M.maroon}
                     onBlur={e => e.target.style.borderColor = M.border} />
                 </div>
-                <div>
-                  <label style={lbl}>Last Name</label>
-                  <input type="text" name="last_name" value={form.last_name} onChange={handleChange} required placeholder="Dela Cruz" style={inp()}
-                    onFocus={e => e.target.style.borderColor = M.maroon}
-                    onBlur={e => e.target.style.borderColor = M.border} />
+
+                <div style={{ marginBottom: '12px' }}>
+                  <label style={lbl}>Password</label>
+                  <div style={{ position: 'relative' }}>
+                    <input type={showPassword ? "text" : "password"} name="password" value={form.password} onChange={handleChange} required minLength={8} placeholder="At least 8 characters" style={{...inp(), paddingRight: '40px'}}
+                      onFocus={e => e.target.style.borderColor = M.maroon}
+                      onBlur={e => e.target.style.borderColor = M.border} />
+                    <button type="button" onClick={() => setShowPassword(!showPassword)} style={{ position: 'absolute', right: '14px', top: '50%', transform: 'translateY(-50%)', background: 'transparent', border: 'none', padding: 0, color: M.textMuted, cursor: 'pointer', display: 'flex' }} title={showPassword ? "Hide password" : "Show password"}>
+                      {showPassword ? (
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                      ) : (
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+                      )}
+                    </button>
+                  </div>
                 </div>
-              </div>
 
-              <div style={{ marginBottom: '12px' }}>
-                <label style={lbl}>Student ID</label>
-                <input type="text" name="student_id" value={form.student_id} onChange={handleChange} placeholder="2021-00001" style={inp()}
-                  onFocus={e => e.target.style.borderColor = M.maroon}
-                  onBlur={e => e.target.style.borderColor = M.border} />
-              </div>
+                <div style={{ marginBottom: '12px' }}>
+                  <label style={lbl}>Confirm Password</label>
+                  <div style={{ position: 'relative' }}>
+                    <input type={showConfirm ? "text" : "password"} name="confirm_password" value={form.confirm_password} onChange={handleChange} required minLength={8} placeholder="Confirm your password" style={{...inp(), paddingRight: '40px'}}
+                      onFocus={e => e.target.style.borderColor = M.maroon}
+                      onBlur={e => e.target.style.borderColor = M.border} />
+                    <button type="button" onClick={() => setShowConfirm(!showConfirm)} style={{ position: 'absolute', right: '14px', top: '50%', transform: 'translateY(-50%)', background: 'transparent', border: 'none', padding: 0, color: M.textMuted, cursor: 'pointer', display: 'flex' }} title={showConfirm ? "Hide password" : "Show password"}>
+                      {showConfirm ? (
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                      ) : (
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+                      )}
+                    </button>
+                  </div>
+                </div>
 
-              <div style={{ marginBottom: '12px' }}>
-                <label style={lbl}>Email Address</label>
-                <input type="email" name="email" value={form.email} onChange={handleChange} required placeholder="you@email.com" style={inp()}
-                  onFocus={e => e.target.style.borderColor = M.maroon}
-                  onBlur={e => e.target.style.borderColor = M.border} />
-              </div>
+                <div style={{ marginBottom: '1.5rem' }}>
+                  <label style={lbl}>Priority Classification</label>
+                  <select name="priority_class" value={form.priority_class} onChange={handleChange} style={{ ...inp(), appearance: 'none', background: M.offWhite }}>
+                    <option value="regular">Regular Student</option>
+                    <option value="graduating">Graduating Student</option>
+                    <option value="pwd">PWD</option>
+                    <option value="transferee">Transferee</option>
+                  </select>
+                </div>
 
-              <div style={{ marginBottom: '12px' }}>
-                <label style={lbl}>Password</label>
-                <input type="password" name="password" value={form.password} onChange={handleChange} required minLength={6} placeholder="At least 6 characters" style={inp()}
-                  onFocus={e => e.target.style.borderColor = M.maroon}
-                  onBlur={e => e.target.style.borderColor = M.border} />
-              </div>
-
-              <div style={{ marginBottom: '1.5rem' }}>
-                <label style={lbl}>Priority Classification</label>
-                <select name="priority_class" value={form.priority_class} onChange={handleChange} style={{ ...inp(), appearance: 'none', background: M.offWhite }}>
-                  <option value="regular">Regular Student</option>
-                  <option value="graduating">Graduating Student</option>
-                  <option value="pwd">PWD</option>
-                  <option value="transferee">Transferee</option>
-                </select>
-              </div>
-
-              <button type="submit" disabled={loading} style={{
-                width: '100%', padding: '13px', borderRadius: '8px', border: 'none',
-                background: loading ? '#B8667A' : M.maroon, color: 'white',
-                fontSize: '14px', fontWeight: 700,
-                cursor: loading ? 'not-allowed' : 'pointer',
-                fontFamily: "'IBM Plex Sans', sans-serif",
-                boxShadow: '0 3px 14px rgba(123,26,42,0.2)',
-              }}>
-                {loading ? <span className="spinner" /> : 'Create Account →'}
-              </button>
-            </form>
+                <button type="submit" disabled={loading} style={{
+                  width: '100%', padding: '13px', borderRadius: '8px', border: 'none',
+                  background: loading ? '#B8667A' : M.maroon, color: 'white',
+                  fontSize: '14px', fontWeight: 700,
+                  cursor: loading ? 'not-allowed' : 'pointer',
+                  fontFamily: "'IBM Plex Sans', sans-serif",
+                  boxShadow: '0 3px 14px rgba(123,26,42,0.2)',
+                }}>
+                  {loading ? <span className="spinner" /> : 'Create Account →'}
+                </button>
+              </form>
+            )}
 
             <p style={{ fontSize: '13px', color: M.textMuted, marginTop: '1.25rem', textAlign: 'center' }}>
               Already have an account?{' '}
