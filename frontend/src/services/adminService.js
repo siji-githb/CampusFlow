@@ -106,3 +106,14 @@ export const updateAppointmentStatus = async (token, appointmentId, status) => {
   if (!res.ok) throw new Error(data.detail || 'Failed to update appointment')
   return data
 }
+
+export const updateReleaseDate = async (token, appointmentId, releaseDate) => {
+  const res = await fetch(`${API_URL}/admin/appointments/${appointmentId}/release-date`, {
+    method: 'PATCH',
+    headers: authHeader(token),
+    body: JSON.stringify({ release_date: releaseDate }),
+  })
+  const data = await res.json()
+  if (!res.ok) throw new Error(data.detail || 'Failed to update release date')
+  return data
+}

@@ -13,8 +13,9 @@ from services.admin_service import (
     get_ai_insights,          # ← M12
 )
 from models.admin_models import OfficeConfigUpdate
+from models.appointment_models import ReleaseDateUpdate
 from pydantic import BaseModel
-from services.appointment_service import get_all_appointments, update_appointment_status
+from services.appointment_service import get_all_appointments, update_appointment_status, set_release_date
 from supabase import create_client
 from config import get_settings
 
@@ -125,6 +126,12 @@ def all_appointments(date: str = None, authorization: str = Header(...)):
 def change_appointment_status(appointment_id: str, data: StatusUpdate, authorization: str = Header(...)):
     user = require_admin(authorization)
     return update_appointment_status(appointment_id, data.status, user.id)
+
+
+@router.patch("/appointments/{appointment_id}/release-date")
+def update_release_date(appointment_id: str, data: ReleaseDateUpdate, authorization: str = Header(...)):
+    user = require_admin(authorization)
+    return set_release_date(appointment_id, data.release_date, user.id)
 
 
 

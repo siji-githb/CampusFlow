@@ -411,3 +411,32 @@ def update_appointment_status(appointment_id: str, status: str, actor_id: str = 
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+def set_release_date(appointment_id: str, release_date: str, actor_id: str = None):
+    admin = get_admin()
+    try:
+        res = admin.table("appointments").select("release_date").eq("id", appointment_id).execute()
+        if not res.data:
+            raise HTTPException(status_code=404, detail="Appointment not found")
+            
+        old_date = res.data[0].get("release_date")
+        
+        admin.table("appointments").update({"release_date": release_date}).eq("id", appointment_id).execute()
+        
+        if actor_id and old_date != release_date:
+            log_audit_action(
+                user_id=actor_id,
+                action="Set document release date",
+                table_name="appointments",
+                record_id=appointment_id,
+                status="Success",
+                changes=f"Release Date: {old_date or 'None'} ➔ {release_date}",
+                severity="Info"
+            )
+            
+        return {"success": True, "release_date": release_date}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))

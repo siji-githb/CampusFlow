@@ -186,12 +186,11 @@ function SlotBtn({ slot, selected, onSelect, selectedDate }) {
     color = M.white;
     border = M.maroon;
   } else if (isPast) {
-    bg = M.gray200; // #EAE7E2
+    bg = M.offWhite;
     color = M.textMuted;
-    border = M.borderStrong;
-    opacity = 0.5;
+    border = M.border;
+    opacity = 0.4;
     cursor = 'not-allowed';
-    text = 'Past';
   } else if (isFull) {
     bg = M.maroonLight; // #F9F0F1
     color = M.maroon;

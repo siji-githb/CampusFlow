@@ -207,27 +207,7 @@ export default function Register() {
           </div>
         </main>
 
-        {/* Sticky bottom submit bar */}
-        <div style={{
-          position: 'fixed', bottom: 0, left: '50%', transform: 'translateX(-50%)',
-          width: '100%', maxWidth: '480px',
-          background: M.white, borderTop: `1px solid ${M.border}`,
-          boxShadow: '0 -4px 20px rgba(0,0,0,0.08)',
-          padding: '12px 16px',
-          paddingBottom: 'calc(12px + env(safe-area-inset-bottom))',
-          zIndex: 200,
-        }}>
-          <button onClick={handleSubmit} disabled={loading} style={{
-            width: '100%', minHeight: '52px', padding: '14px',
-            borderRadius: '10px', border: 'none',
-            background: loading ? '#B8667A' : M.maroon, color: M.white,
-            fontSize: '15px', fontWeight: 700,
-            cursor: loading ? 'not-allowed' : 'pointer',
-            fontFamily: "'IBM Plex Sans', sans-serif",
-          }}>
-            {loading ? <span className="spinner" /> : 'Create Account →'}
-          </button>
-        </div>
+
       </div>
     )
   }

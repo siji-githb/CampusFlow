@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useAuth } from '../../context/useAuth'
 import { getTodaysQueue, confirmStep } from '../../services/queueService'
+import { updateReleaseDate } from '../../services/adminService'
 
 // ── Design Tokens ──────────────────────────────────────────────────────────────
 const M = {
@@ -187,12 +188,15 @@ const FilterSidebar = ({ filters, onChange, highPriorityCount, onReset }) => {
 }
 
 // ── Queue Details Modal ────────────────────────────────────────────────────────
-const QueueDetailsModal = ({ ticketData, onClose, onConfirm, confirming }) => {
+const QueueDetailsModal = ({ ticketData, onClose, onConfirm, confirming, onSetReleaseDate }) => {
   const { ticket, steps } = ticketData
   const student = ticket.users
   const name    = student ? `${student.last_name}, ${student.first_name}` : 'Unknown'
   const appt    = ticket.appointments
   
+  const [releaseDate, setReleaseDate] = useState(appt?.release_date || '')
+  const [savingDate, setSavingDate] = useState(false)
+
   return (
     <div style={{ position: 'fixed', inset: 0, zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
       <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)' }} onClick={onClose} />
@@ -218,6 +222,30 @@ const QueueDetailsModal = ({ ticketData, onClose, onConfirm, confirming }) => {
             <div style={{ fontSize: '11px', color: M.textMuted, textTransform: 'uppercase', fontWeight: 700, letterSpacing: '0.04em', marginBottom: '6px' }}>Transaction</div>
             <div style={{ fontSize: '14px', fontWeight: 600, color: M.text, lineHeight: 1.3 }}>{appt?.transaction_types?.name}</div>
           </div>
+        </div>
+
+        {/* Release Date */}
+        <div style={{ marginBottom: '28px', background: M.offWhite, padding: '16px', borderRadius: '14px', border: `1px solid ${M.border}`, display: 'flex', alignItems: 'flex-end', gap: '12px', flexWrap: 'wrap' }}>
+          <div style={{ flex: 1, minWidth: '200px' }}>
+            <label style={{ display: 'block', fontSize: '11px', fontWeight: 700, color: M.textMuted, textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '6px' }}>Document Release Date</label>
+            <input 
+              type="date" 
+              value={releaseDate} 
+              onChange={e => setReleaseDate(e.target.value)}
+              style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: `1px solid ${M.border}`, background: M.white, fontSize: '14px', outline: 'none', color: M.text, fontFamily: "'IBM Plex Sans', sans-serif" }}
+            />
+          </div>
+          <button 
+            onClick={async () => {
+              setSavingDate(true)
+              await onSetReleaseDate(appt?.id, releaseDate)
+              setSavingDate(false)
+            }}
+            disabled={savingDate || releaseDate === (appt?.release_date || '')}
+            style={{ padding: '10px 18px', borderRadius: '8px', border: 'none', background: (savingDate || releaseDate === (appt?.release_date || '')) ? M.border : M.maroon, color: (savingDate || releaseDate === (appt?.release_date || '')) ? M.textMuted : M.white, fontSize: '13px', fontWeight: 700, cursor: (savingDate || releaseDate === (appt?.release_date || '')) ? 'not-allowed' : 'pointer', height: '42px', fontFamily: "'IBM Plex Sans', sans-serif", whiteSpace: 'nowrap' }}
+          >
+            {savingDate ? 'Saving...' : 'Set Date'}
+          </button>
         </div>
 
         {/* Steps */}
@@ -309,6 +337,15 @@ export default function LiveQueuePage() {
     try { await confirmStep(token, ticketId, stepNum); await fetchQueue() }
     catch (e) { setError(e.message) }
     finally { setConfirming(null) }
+  }
+
+  const handleSetReleaseDate = async (appointmentId, dateVal) => {
+    try {
+      await updateReleaseDate(token, appointmentId, dateVal)
+      await fetchQueue()
+    } catch (e) {
+      setError(e.message)
+    }
   }
 
   // ── Derived stats ──
@@ -644,6 +681,7 @@ export default function LiveQueuePage() {
             onClose={() => setViewingTicketId(null)}
             onConfirm={(ticketId, stepNum) => handleConfirm(ticketId, stepNum)}
             confirming={confirming}
+            onSetReleaseDate={handleSetReleaseDate}
           />
         )
       })()}

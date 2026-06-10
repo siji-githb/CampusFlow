@@ -20,9 +20,12 @@ class AppointmentResponse(BaseModel):
     status: str
     priority_class: str
     notes: Optional[str] = None
+    release_date: Optional[str] = None
     created_at: str
 
 
+class ReleaseDateUpdate(BaseModel):
+    release_date: str
 class TransactionTypeResponse(BaseModel):
     id: str
     name: str
