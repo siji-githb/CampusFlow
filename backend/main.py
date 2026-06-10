@@ -16,7 +16,7 @@ app.add_middleware(
     allow_origins=[
         "http://localhost:5173",
         "https://campus-flow.vercel.app",
-        "https://campus-flow-nine-tan.vercel.app"
+        "https://campus-flow-iota.vercel.app/login"
     ],
     allow_credentials=True,
     allow_methods=["*"],
