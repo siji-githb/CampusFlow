@@ -436,7 +436,7 @@ export default function StudentDashboard() {
               </button>
             </div>
             <SideNavItem icon="🏠" label="Dashboard" path="/student/dashboard" active={true} navigate={navigate} collapsed={sidebarCollapsed} />
-            <SideNavItem icon="📅" label="Book Appointment" path="/student/book" active={false} navigate={navigate} collapsed={sidebarCollapsed} />
+            <SideNavItem icon="🗓️" label="Book Appointment" path="/student/book" active={false} navigate={navigate} collapsed={sidebarCollapsed} />
             <SideNavItem icon="📋" label="My Appointments" path="/student/appointments" active={false} navigate={navigate} collapsed={sidebarCollapsed} />
             <SideNavItem icon="🎫" label="My Queue Status" path="/student/queue" active={false} navigate={navigate} collapsed={sidebarCollapsed} />
             <div style={{ height: '1px', background: M.border, margin: '16px 0' }} />
@@ -540,7 +540,7 @@ export default function StudentDashboard() {
                     width: '44px', height: '44px', borderRadius: '12px',
                     background: M.maroonMid, display: 'flex',
                     alignItems: 'center', justifyContent: 'center', fontSize: '22px', flexShrink: 0,
-                  }}>📅</div>
+                  }}>🗓️</div>
                   <div>
                     <div style={{ fontSize: '15px', fontWeight: 700, color: M.maroon, fontFamily: "'Fraunces', serif" }}>Book Appointment</div>
                     <div style={{ fontSize: '12px', color: M.textSub, marginTop: '3px' }}>Schedule a visit with campus offices</div>
@@ -873,7 +873,7 @@ export default function StudentDashboard() {
         >
           <div style={{ background: M.white, borderRadius: '16px', boxShadow: '0 4px 12px rgba(0,0,0,0.04), 0 0 0 1px rgba(123, 26, 42, 0.04)', padding: '16px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
             <div>
-              <div style={{ fontSize: '28px', marginBottom: '10px' }}>📅</div>
+              <div style={{ fontSize: '28px', marginBottom: '10px' }}>🗓️</div>
               <div style={{ fontSize: '14px', fontWeight: 600, color: M.text, marginBottom: '4px' }}>Book Visit</div>
               <div style={{ fontSize: '11px', color: M.textMuted, marginBottom: '14px', lineHeight: 1.4 }}>Schedule document processing</div>
             </div>
@@ -985,7 +985,7 @@ export default function StudentDashboard() {
                     <div style={{ fontSize: '14px', fontWeight: 600, color: M.text, margin: '0 0 4px' }}>{apt.type}</div>
                     <div style={{ fontSize: '12px', color: M.textSub, margin: '0 0 6px' }}>{apt.step}</div>
                     <div style={{ fontSize: '12px', color: M.textMuted, display: 'flex', gap: '8px' }}>
-                      <span>📅 {apt.date}</span><span>⏰ {apt.time}</span>
+                      <span>🗓️ {apt.date}</span><span>⏰ {apt.time}</span>
                     </div>
                   </div>
                   <div>

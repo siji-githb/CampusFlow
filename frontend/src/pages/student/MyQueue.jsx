@@ -267,7 +267,7 @@ export default function MyQueue() {
                         <h3 style={{ fontSize: '15px', fontWeight: 600, color: M.text, margin: 0 }}>{appt.transaction_types?.name}</h3>
                         <span style={{ fontSize: '11px', fontWeight: 600, padding: '2px 10px', borderRadius: '100px', background: '#F0FDF4', color: '#15803D', border: '1px solid #BBF7D0' }}>Confirmed</span>
                       </div>
-                      <p style={{ fontSize: '13px', color: M.gray500, margin: '0 0 1rem' }}>📅 {appt.appointment_date} at {appt.time_slot}</p>
+                      <p style={{ fontSize: '13px', color: M.gray500, margin: '0 0 1rem' }}>🗓️ {appt.appointment_date} at {appt.time_slot}</p>
                       {ticket && ticket.appointment_id === appt.id ? (
                         <div style={{ display: 'flex', gap: '8px' }}>
                           <button

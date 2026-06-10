@@ -153,7 +153,7 @@ export default function MyAppointments() {
                     <span style={{ fontSize: '11px', fontWeight: 600, padding: '3px 10px', borderRadius: '100px', background: s.bg, color: s.color, border: `1px solid ${s.border}`, whiteSpace: 'nowrap' }}>{s.label}</span>
                   </div>
                   <div style={{ fontSize: '13px', color: M.gray500, marginBottom: '12px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                    <span>📅 {appt.appointment_date} at {(() => {
+                    <span>🗓️ {appt.appointment_date} at {(() => {
                       const [hStr, mStr] = appt.time_slot.split(':')
                       const h = parseInt(hStr, 10)
                       const suffix = h < 12 ? 'AM' : 'PM'

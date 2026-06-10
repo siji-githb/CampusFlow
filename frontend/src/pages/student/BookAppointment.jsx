@@ -318,7 +318,7 @@ export default function BookAppointment() {
         <h2 style={{ fontFamily: "'Fraunces', serif", fontSize: '26px', fontWeight: 700, color: M.maroon, margin: '0 0 8px' }}>Appointment Confirmed!</h2>
         <p style={{ fontSize: '15px', fontWeight: 600, color: M.text, margin: '0 0 4px' }}>{selectedType?.name}</p>
         <p style={{ fontSize: '14px', color: M.textSub, margin: '0 0 24px' }}>
-          📅 {fmtDate(selectedDate)} at {selectedSlot}
+          🗓️ {fmtDate(selectedDate)} at {selectedSlot}
         </p>
         <div style={{ background: M.goldLight, borderRadius: '10px', padding: '14px 16px', marginBottom: '24px', border: `1px solid ${M.goldBorder}`, textAlign: 'left' }}>
           <p style={{ fontSize: '13px', color: M.gold, margin: 0, fontWeight: 500, lineHeight: 1.5 }}>
@@ -610,7 +610,7 @@ export default function BookAppointment() {
                   <div>
                     <p style={{ fontSize: '10px', fontWeight: 700, color: M.textMuted, letterSpacing: '0.1em', textTransform: 'uppercase', margin: '0 0 10px' }}>SCHEDULE</p>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', color: M.text, marginBottom: '6px' }}>
-                      <span>📅</span> {fmtDate(selectedDate)}
+                      <span>🗓️</span> {fmtDate(selectedDate)}
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', color: M.text }}>
                       <span>🕐</span> {fmt12h(selectedSlot)}

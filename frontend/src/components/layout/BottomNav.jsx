@@ -11,7 +11,7 @@ export default function BottomNav({ active }) {
   const navigate = useNavigate();
   const tabs = [
     { id: 'home',         label: 'Home',    icon: '🏠', path: '/student/dashboard' },
-    { id: 'book',         label: 'Book',    icon: '📅', path: '/student/book' },
+    { id: 'book',         label: 'Book',    icon: '🗓️', path: '/student/book' },
     { id: 'appointments', label: 'History', icon: '📋', path: '/student/appointments' },
     { id: 'queue',        label: 'Queue',   icon: '🎫', path: '/student/queue' },
   ];
