@@ -166,7 +166,7 @@ export default function Register() {
               <form onSubmit={handleVerify}>
                 <div style={{ marginBottom: '24px' }}>
                   <label style={lbl}>Student ID</label>
-                  <input type="text" name="student_id" value={form.student_id} onChange={handleChange} required placeholder="2024-00001" pattern="^\d{4}-\d{4,5}$" title="Format: 0000-00000 or 0000-0000" style={inp()}
+                  <input type="text" name="student_id" value={form.student_id} onChange={handleChange} required placeholder="202400001" pattern="^\d{9,13}$" title="Format: 9 to 13 numbers" style={inp()}
                     onFocus={e => e.target.style.borderColor = M.maroon}
                     onBlur={e => e.target.style.borderColor = M.border} />
                   <p style={{ fontSize: '11px', color: M.textSub, marginTop: '8px' }}>We need to verify your ID against the school records before creating an account.</p>
@@ -300,7 +300,7 @@ export default function Register() {
               <form onSubmit={handleVerify}>
                 <div style={{ marginBottom: '1.5rem' }}>
                   <label style={lbl}>Student ID</label>
-                  <input type="text" name="student_id" value={form.student_id} onChange={handleChange} required placeholder="2026-00001" pattern="^\d{4}-\d{4,5}$" title="Format: 0000-0000 or 0000-00000" style={inp()}
+                  <input type="text" name="student_id" value={form.student_id} onChange={handleChange} required placeholder="202400001" pattern="^\d{9,13}$" title="Format: 9 to 13 numbers" style={inp()}
                     onFocus={e => e.target.style.borderColor = M.maroon}
                     onBlur={e => e.target.style.borderColor = M.border} />
                   <p style={{ fontSize: '11px', color: M.textSub, marginTop: '8px' }}>We need to verify your ID against the school records before creating an account.</p>
