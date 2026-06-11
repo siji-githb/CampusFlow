@@ -9,6 +9,7 @@ import StudentRecordsPage from './StudentRecordsPage'
 import { getTodaysQueue } from '../../services/queueService'
 import { getMessages, markMessageRead } from '../../services/messagesService'
 import { getAppointmentStats } from '../../services/appointmentService'
+import { Inbox, MessageSquare, BarChart2, Ticket, Calendar, ClipboardList, LogOut, Users, CheckSquare, Clock, CalendarClock } from 'lucide-react'
 
 // ── Design Tokens ──────────────────────────────────────────────────────────────
 const M = {
@@ -63,7 +64,7 @@ function CompactQueuePreview({ queue, loading }) {
 
   if (active.length === 0) return (
     <div style={{ textAlign: 'center', padding: '28px 0', color: M.textMuted, fontSize: '13px' }}>
-      <div style={{ fontSize: '2rem', marginBottom: '8px' }}>📭</div>
+      <div style={{ marginBottom: '8px', display: 'flex', justifyContent: 'center' }}><Inbox size={32} /></div>
       No active tickets right now
     </div>
   )
@@ -123,15 +124,15 @@ const SideItem = ({ icon, label, active, onClick, badge }) => (
 
 // ── Stat Card ──────────────────────────────────────────────────────────────────
 const StatCard = ({ icon, value, label, color = M.maroon, bg = M.maroonLight, loading, delay }) => (
-  <div className="animate-fade-up" style={{ animationDelay: delay || '0s', background: M.white, borderRadius: '14px', padding: '18px 20px', border: `1px solid ${M.border}`, display: 'flex', alignItems: 'center', gap: '16px', boxShadow: '0 1px 4px rgba(0,0,0,0.04)' }}>
-    <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: bg, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px', flexShrink: 0 }}>
-      {icon}
-    </div>
-    <div>
-      <div style={{ fontFamily: "'Fraunces', serif", fontSize: '28px', fontWeight: 700, color, lineHeight: 1, minHeight: '28px' }}>
-        {loading ? <div className="animate-shimmer" style={{ width: '50px', height: '28px', borderRadius: '6px', background: M.border }} /> : value}
+  <div className="animate-fade-up" style={{ animationDelay: delay || '0s', background: M.white, borderRadius: '14px', padding: '18px 20px', border: `1px solid ${M.border}`, display: 'flex', flexDirection: 'column', gap: '12px', boxShadow: '0 1px 4px rgba(0,0,0,0.04)' }}>
+    <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
+      <div style={{ fontSize: '12px', fontWeight: 600, color: M.textMuted, textTransform: 'uppercase', letterSpacing: '0.06em', marginTop: '6px' }}>{label}</div>
+      <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: bg, display: 'flex', alignItems: 'center', justifyContent: 'center', color: color, flexShrink: 0 }}>
+        {icon}
       </div>
-      <div style={{ fontSize: '12px', color: M.textMuted, marginTop: '4px' }}>{label}</div>
+    </div>
+    <div style={{ fontFamily: "'Fraunces', serif", fontSize: '28px', fontWeight: 800, color, lineHeight: 1, margin: 0, minHeight: '28px' }}>
+      {loading ? <div className="animate-shimmer" style={{ width: '60px', height: '28px', borderRadius: '6px', background: M.border }} /> : value}
     </div>
   </div>
 )
@@ -156,7 +157,7 @@ function CompactMessagesPreview() {
 
   if (unread.length === 0) return (
     <div style={{ textAlign: 'center', padding: '28px 0', color: M.textMuted, fontSize: '13px' }}>
-      <div style={{ fontSize: '2rem', marginBottom: '8px' }}>💬</div>
+      <div style={{ marginBottom: '8px', display: 'flex', justifyContent: 'center' }}><MessageSquare size={32} /></div>
       No new escalations
     </div>
   )
@@ -198,14 +199,14 @@ export default function StaffDashboard() {
   // Data states
   const [queue, setQueue] = useState([])
   const [loadingQueue, setLoadingQueue] = useState(true)
-  const [apptStats, setApptStats] = useState({ today_total: 0, today_completed: 0, monthly_total: 0 })
+  const [apptStats, setApptStats] = useState({ today_appointments: 0, completed_today: 0, total_monthly: 0 })
 
   const loadData = useCallback(async () => {
     if (!token) return
     try {
       const [qData, aStats] = await Promise.all([
         getTodaysQueue(token),
-        getAppointmentStats(token).catch(() => ({ today_total: 0, today_completed: 0, monthly_total: 0 }))
+        getAppointmentStats(token).catch(() => ({ today_appointments: 0, completed_today: 0, total_monthly: 0 }))
       ])
       setQueue(qData)
       setApptStats(aStats)
@@ -243,21 +244,21 @@ export default function StaffDashboard() {
     avgWait = 12
   }
 
-  const pendingAppts = Math.max(0, apptStats.today_total - apptStats.today_completed)
+  const pendingAppts = Math.max(0, (apptStats.today_appointments || 0) - (apptStats.completed_today || 0))
 
   const stats = [
-    { icon: <svg width="26" height="26" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" fill="currentColor" fillOpacity="0.15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/><circle cx="9" cy="7" r="4" fill="currentColor" fillOpacity="0.15" stroke="currentColor" strokeWidth="1.5"/><path d="M22 21v-2a4 4 0 0 0-3-3.87" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/><path d="M16 3.13a4 4 0 0 1 0 7.75" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>, value: activeInQueue.toString(), label: 'Active in Queue', color: M.maroon, bg: M.maroonLight, loading: loadingQueue, delay: '0.1s' },
-    { icon: <svg width="26" height="26" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="3" y="3" width="18" height="18" rx="5" fill="currentColor" fillOpacity="0.15" stroke="currentColor" strokeWidth="1.5"/><path d="M9 12.5L11.5 15L16 9.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>, value: completedToday.toString(), label: 'Completed Today', color: M.green, bg: M.greenLight, loading: loadingQueue, delay: '0.2s' },
-    { icon: <svg width="26" height="26" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="13" r="8" fill="currentColor" fillOpacity="0.15" stroke="currentColor" strokeWidth="1.5"/><path d="M12 9V13L14.5 15.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/><path d="M10 3H14M12 3V5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>, value: `${avgWait}m`, label: 'Avg. Process Time', color: M.gold, bg: M.goldLight, loading: loadingQueue, delay: '0.3s' },
-    { icon: <svg width="26" height="26" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="5" y="4" width="14" height="18" rx="3" fill="currentColor" fillOpacity="0.15" stroke="currentColor" strokeWidth="1.5"/><rect x="9" y="2" width="6" height="4" rx="1" fill="currentColor" stroke="currentColor" strokeWidth="1.5"/><path d="M9 11H15M9 15H13" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>, value: pendingAppts.toString(), label: 'Pending Appts.', color: M.blue, bg: M.blueLight, loading: loadingQueue, delay: '0.4s' },
+    { icon: <Users size={20} />, value: activeInQueue.toString(), label: 'Active in Queue', color: M.maroon, bg: M.maroonLight, loading: loadingQueue, delay: '0.1s' },
+    { icon: <CheckSquare size={20} />, value: completedToday.toString(), label: 'Completed Today', color: M.green, bg: M.greenLight, loading: loadingQueue, delay: '0.2s' },
+    { icon: <Clock size={20} />, value: `${avgWait}m`, label: 'Avg. Process Time', color: M.gold, bg: M.goldLight, loading: loadingQueue, delay: '0.3s' },
+    { icon: <CalendarClock size={20} />, value: pendingAppts.toString(), label: 'Pending Appts.', color: M.blue, bg: M.blueLight, loading: loadingQueue, delay: '0.4s' },
   ]
 
   const navItems = [
-    { id: 'overview', icon: '📊', label: 'Dashboard' },
-    { id: 'queue', icon: '🎫', label: 'Live Queue Management' },
-    { id: 'appointments', icon: '📅', label: 'Appointments' },
-    { id: 'records', icon: '📋', label: 'Student Records' },
-    { id: 'messages', icon: '💬', label: 'Messages' },
+    { id: 'overview', icon: <BarChart2 size={18} />, label: 'Dashboard' },
+    { id: 'queue', icon: <Ticket size={18} />, label: 'Live Queue Management' },
+    { id: 'appointments', icon: <Calendar size={18} />, label: 'Appointments' },
+    { id: 'records', icon: <ClipboardList size={18} />, label: 'Student Records' },
+    { id: 'messages', icon: <MessageSquare size={18} />, label: 'Messages' },
   ]
 
   return (
@@ -330,7 +331,7 @@ export default function StaffDashboard() {
                     background: '#FEF2F2', color: '#DC2626', fontSize: '13px', fontWeight: 600,
                     cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', fontFamily: "'IBM Plex Sans', sans-serif",
                   }}>
-                    <span>🚪</span> Log Out
+                    <span style={{ display: 'flex', alignItems: 'center' }}><LogOut size={16} /></span> Log Out
                   </button>
                 </div>
               )}

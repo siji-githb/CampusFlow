@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { getAvailableSlots, rescheduleAppointment, uploadMedia } from '../services/appointmentService'
+import { Image as ImageIcon, HelpCircle } from 'lucide-react'
 
 const M = { maroon: '#7B1A2A', maroonLight: '#F9F0F1', gold: '#B8900A', white: '#FFFFFF', border: '#EAE7E2', borderStrong: '#D4CEC8', text: '#1C1917', textSub: '#57534E', textMuted: '#A8A29E', gray200: '#EAE7E2' }
 
@@ -170,7 +171,7 @@ export default function RescheduleModal({ token, appointment, onClose, onSuccess
                 padding: '16px', textAlign: 'center', background: M.white, cursor: 'pointer',
                 position: 'relative'
               }}>
-                <span style={{ fontSize: '20px', marginBottom: '4px' }}>🖼️</span>
+                <span style={{ color: M.textMuted, marginBottom: '4px' }}><ImageIcon size={24} /></span>
                 <span style={{ fontSize: '11px', color: M.textSub, fontWeight: 500 }}>
                   {selectedFile ? selectedFile.name : 'Upload PNG or JPG'}
                 </span>
@@ -197,8 +198,8 @@ export default function RescheduleModal({ token, appointment, onClose, onSuccess
         <div style={{ position: 'fixed', inset: 0, zIndex: 110, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)' }} onClick={() => !loading && setConfirmingReschedule(false)} />
           <div className="animate-fade-up" style={{ position: 'relative', width: '90%', maxWidth: '320px', background: M.white, borderRadius: '20px', padding: '24px', textAlign: 'center', boxShadow: '0 10px 40px rgba(0,0,0,0.2)' }}>
-            <div style={{ width: '48px', height: '48px', borderRadius: '50%', background: M.goldLight, color: M.gold, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px', margin: '0 auto 16px' }}>
-              ❓
+            <div style={{ width: '48px', height: '48px', borderRadius: '50%', background: M.goldLight, color: M.gold, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
+              <HelpCircle size={24} />
             </div>
             <h3 style={{ fontFamily: "'Fraunces', serif", fontSize: '18px', fontWeight: 700, color: M.text, margin: '0 0 8px' }}>Confirm Reschedule?</h3>
             <p style={{ fontSize: '13px', color: M.textSub, margin: '0 0 24px', lineHeight: 1.4 }}>

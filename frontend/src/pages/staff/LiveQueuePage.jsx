@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { useAuth } from '../../context/useAuth'
 import { getTodaysQueue, confirmStep } from '../../services/queueService'
 import { updateReleaseDate } from '../../services/adminService'
+import { Check, Circle, Clock, X, Search, RefreshCw, Users, CheckSquare, AlertTriangle, Download, Inbox, Play } from 'lucide-react'
 
 // ── Design Tokens ──────────────────────────────────────────────────────────────
 const M = {
@@ -49,15 +50,19 @@ const MiniStat = ({ icon, value, label, sub, subColor = M.green, loading, delay 
     animationDelay: delay || '0s',
     background: M.white, borderRadius: '14px', padding: '18px 20px',
     border: `1px solid ${M.border}`, boxShadow: '0 1px 4px rgba(0,0,0,0.04)',
-    display: 'flex', alignItems: 'center', gap: '14px', flex: 1,
+    display: 'flex', flexDirection: 'column', gap: '12px', flex: 1,
   }}>
-    <div style={{ fontSize: '28px', flexShrink: 0 }}>{icon}</div>
-    <div>
-      <div style={{ fontFamily: "'Fraunces', serif", fontSize: '26px', fontWeight: 700, color: M.maroon, lineHeight: 1, minHeight: '26px' }}>
-        {loading ? <div className="animate-shimmer" style={{ width: '40px', height: '26px', background: M.border, borderRadius: '4px' }} /> : value}
+    <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
+      <div style={{ fontSize: '12px', fontWeight: 600, color: M.textMuted, textTransform: 'uppercase', letterSpacing: '0.06em', marginTop: '6px' }}>{label}</div>
+      <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: M.maroonLight, display: 'flex', alignItems: 'center', justifyContent: 'center', color: M.maroon, flexShrink: 0 }}>
+        {icon}
       </div>
-      <div style={{ fontSize: '12px', color: M.textMuted, marginTop: '3px' }}>{label}</div>
-      {sub && <div style={{ fontSize: '11px', color: subColor, fontWeight: 600, marginTop: '2px' }}>{sub}</div>}
+    </div>
+    <div>
+      <div style={{ fontFamily: "'Fraunces', serif", fontSize: '28px', fontWeight: 800, color: M.maroon, lineHeight: 1, margin: 0, minHeight: '28px' }}>
+        {loading ? <div className="animate-shimmer" style={{ width: '60px', height: '28px', borderRadius: '6px', background: M.border }} /> : value}
+      </div>
+      {sub && <div style={{ fontSize: '11px', color: subColor, fontWeight: 600, marginTop: '6px' }}>{sub}</div>}
     </div>
   </div>
 )
@@ -78,7 +83,7 @@ const StepsBar = ({ steps, current, total }) => (
             background: done ? M.green : active ? M.maroon : M.border,
             color: done || active ? M.white : M.textMuted,
             border: active ? `2px solid ${M.maroonDark}` : 'none',
-          }}>{done ? '✓' : stepNum}</div>
+          }}>{done ? <Check size={10} /> : stepNum}</div>
           {i < total - 1 && <div style={{ width: '12px', height: '2px', background: done ? M.green : M.border, borderRadius: '1px' }} />}
         </div>
       )
@@ -121,8 +126,8 @@ const FilterSidebar = ({ filters, onChange, highPriorityCount, onReset }) => {
                   style={{ accentColor: M.maroon, width: '14px', height: '14px' }}
                 />
                 <span style={{ flex: 1 }}>{cfg.label}</span>
-                <span style={{ fontSize: '10px', fontWeight: 600, padding: '1px 6px', borderRadius: '100px', background: cfg.bg, color: cfg.color, border: `1px solid ${cfg.border}` }}>
-                  {s === 'in_progress' ? '●' : s === 'pending' ? '◔' : s === 'completed' ? '✓' : '✕'}
+                <span style={{ fontSize: '10px', fontWeight: 600, padding: '1px 6px', borderRadius: '100px', background: cfg.bg, color: cfg.color, border: `1px solid ${cfg.border}`, display: 'flex', alignItems: 'center' }}>
+                  {s === 'in_progress' ? <Play size={10} fill="currentColor" /> : s === 'pending' ? <Clock size={10} /> : s === 'completed' ? <Check size={10} /> : <X size={10} />}
                 </span>
               </label>
             )
@@ -208,7 +213,7 @@ const QueueDetailsModal = ({ ticketData, onClose, onConfirm, confirming, onSetRe
             <div style={{ fontSize: '12px', fontWeight: 700, color: M.gold, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '6px' }}>Queue Details</div>
             <h2 style={{ fontFamily: "'Fraunces', serif", fontSize: '28px', fontWeight: 800, color: M.maroon, margin: 0, lineHeight: 1 }}>{ticket.queue_number}</h2>
           </div>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', fontSize: '28px', cursor: 'pointer', color: M.textMuted, lineHeight: 1 }}>×</button>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: M.textMuted, display: 'flex', alignItems: 'center', justifyContent: 'center' }}><X size={24} /></button>
         </div>
 
         {/* Info Cards */}
@@ -262,7 +267,7 @@ const QueueDetailsModal = ({ ticketData, onClose, onConfirm, confirming, onSetRe
                 <div key={step.id} style={{ display: 'flex', gap: '16px' }}>
                   <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
                     <div style={{ width: '32px', height: '32px', borderRadius: '50%', flexShrink: 0, background: step.status === 'completed' ? M.green : step.status === 'in_progress' ? M.gold : M.border, color: step.status === 'completed' || step.status === 'in_progress' ? M.white : M.textMuted, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '13px', fontWeight: 700, border: step.status === 'in_progress' ? `2px solid ${M.goldBorder}` : 'none' }}>
-                      {step.status === 'completed' ? '✓' : step.step_number}
+                      {step.status === 'completed' ? <Check size={14} /> : step.step_number}
                     </div>
                     {!isLast && <div style={{ width: '2px', flex: 1, minHeight: '36px', margin: '4px 0', background: step.status === 'completed' ? M.green : M.border }} />}
                   </div>
@@ -416,7 +421,7 @@ export default function LiveQueuePage() {
                 fontFamily: "'IBM Plex Sans', sans-serif",
               }}
             />
-            <span style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', fontSize: '14px', color: M.textMuted }}>🔍</span>
+            <span style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', display: 'flex', alignItems: 'center' }}><Search size={14} color={M.textMuted} /></span>
           </div>
           {/* Refresh */}
           <button onClick={fetchQueue} title="Refresh Queue" style={{
@@ -426,7 +431,7 @@ export default function LiveQueuePage() {
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             width: '34px', height: '34px',
           }}>
-            🔄
+            <RefreshCw size={15} />
           </button>
           {/* Current time */}
           <div style={{ background: M.maroon, color: M.white, padding: '9px 16px', borderRadius: '9px', fontSize: '14px', fontWeight: 700, fontFamily: "'Fraunces', serif" }}>
@@ -438,20 +443,20 @@ export default function LiveQueuePage() {
       {/* ── Stats Bar ── */}
       <div style={{ display: 'flex', gap: '14px' }}>
         <MiniStat 
-          icon={<svg width="26" height="26" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="13" r="8" fill="currentColor" fillOpacity="0.15" stroke="currentColor" strokeWidth="1.5"/><path d="M12 9V13L14.5 15.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/><path d="M10 3H14M12 3V5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>} 
+          icon={<Clock size={20} color={M.maroon} />} 
           value={`${avgWait}m`} 
           label="Average Wait Time" 
           sub={avgWait > 15 ? "↑ Higher than avg" : "↓ Fast processing"} 
           subColor={avgWait > 15 ? M.orange : M.green} 
           loading={loading} delay="0.1s"
         />
-        <MiniStat icon={<svg width="26" height="26" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" fill="currentColor" fillOpacity="0.15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/><circle cx="9" cy="7" r="4" fill="currentColor" fillOpacity="0.15" stroke="currentColor" strokeWidth="1.5"/><path d="M22 21v-2a4 4 0 0 0-3-3.87" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/><path d="M16 3.13a4 4 0 0 1 0 7.75" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>} value={waiting.length} label="Waiting in Queue" sub={`${serving.length} serving now`} subColor={M.green} loading={loading} delay="0.2s" />
-        <MiniStat icon={<svg width="26" height="26" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="3" y="3" width="18" height="18" rx="5" fill="currentColor" fillOpacity="0.15" stroke="currentColor" strokeWidth="1.5"/><path d="M9 12.5L11.5 15L16 9.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>} value={done.length} label="Total Serviced" sub={done.length >= 80 ? 'High volume — Important' : 'Normal volume'} subColor={done.length >= 80 ? M.red : M.green} loading={loading} delay="0.3s" />
+        <MiniStat icon={<Users size={20} color={M.maroon} />} value={waiting.length} label="Waiting in Queue" sub={`${serving.length} serving now`} subColor={M.green} loading={loading} delay="0.2s" />
+        <MiniStat icon={<CheckSquare size={20} color={M.maroon} />} value={done.length} label="Total Serviced" sub={done.length >= 80 ? 'High volume — Important' : 'Normal volume'} subColor={done.length >= 80 ? M.red : M.green} loading={loading} delay="0.3s" />
       </div>
 
       {error && (
         <div style={{ padding: '12px 16px', borderRadius: '10px', background: M.redLight, border: `1px solid ${M.redBorder}`, color: M.red, fontSize: '13px' }}>
-          ⚠ {error}
+          <AlertTriangle size={13} style={{ marginRight: '4px' }} /> {error}
         </div>
       )}
 
@@ -474,7 +479,7 @@ export default function LiveQueuePage() {
               color: M.textSub, fontSize: '12px', fontWeight: 600, cursor: 'pointer',
               fontFamily: "'IBM Plex Sans', sans-serif", display: 'flex', alignItems: 'center', gap: '6px',
             }}>
-              📤 Export
+              <Download size={14} /> Export
             </button>
           </div>
 
@@ -516,7 +521,7 @@ export default function LiveQueuePage() {
               </div>
             ) : displayed.length === 0 ? (
               <div style={{ padding: '48px', textAlign: 'center' }}>
-                <div style={{ fontSize: '2.5rem', marginBottom: '12px' }}>📭</div>
+                <div style={{ display: 'flex', justifyContent: 'center', color: M.textMuted, marginBottom: '12px' }}><Inbox size={40} /></div>
                 <p style={{ fontSize: '14px', fontWeight: 600, color: M.text, margin: '0 0 4px' }}>No tickets match the current filters</p>
                 <p style={{ fontSize: '13px', color: M.textMuted, margin: 0 }}>Try adjusting the status or priority filters on the right.</p>
               </div>
@@ -625,7 +630,7 @@ export default function LiveQueuePage() {
                         </button>
                       )}
                       {ticket.status === 'completed' && (
-                        <span style={{ fontSize: '12px', fontWeight: 600, color: M.blue }}>✓ Done</span>
+                        <span style={{ fontSize: '12px', fontWeight: 600, color: M.blue, display: 'flex', alignItems: 'center', gap: '4px' }}><Check size={12} /> Done</span>
                       )}
                       {ticket.status === 'no_show' && (
                         <span style={{ fontSize: '12px', fontWeight: 600, color: '#6B7280' }}>No Show</span>

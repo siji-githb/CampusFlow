@@ -1,10 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/useAuth';
 import crmcLogo from '../../assets/crmc-logo.webp';
 import BottomNav from '../../components/layout/BottomNav';
 import { getMyAppointments } from '../../services/appointmentService';
 import { getMyQueue, getTimeEstimate } from '../../services/queueService';
+import { LogOut, ClipboardList, Ticket, Home, Calendar, Bot, Clock } from 'lucide-react';
 
 // ── Responsive hook ──
 function useWindowWidth() {
@@ -92,6 +93,98 @@ const SideNavItem = ({ icon, label, path, active, navigate, collapsed }) => (
     )}
   </button>
 );
+
+// ── Draggable AI Bot ──
+const DraggableBot = ({ navigate }) => {
+  const [isDragging, setIsDragging] = useState(false);
+  const [position, setPosition] = useState({ 
+    x: window.innerWidth - 20 - 56, 
+    y: window.innerHeight - 84 - 56 
+  });
+  const buttonRef = useRef(null);
+  const hasDragged = useRef(false);
+  const startPos = useRef({ x: 0, y: 0, btnX: 0, btnY: 0 });
+
+  useEffect(() => {
+    const handleResize = () => {
+      setPosition(prev => {
+        const x = Math.min(prev.x, window.innerWidth - 56);
+        const y = Math.min(prev.y, window.innerHeight - 56);
+        return { x: Math.max(0, x), y: Math.max(0, y) };
+      });
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  const onPointerDown = (e) => {
+    setIsDragging(true);
+    hasDragged.current = false;
+    startPos.current = {
+      x: e.clientX,
+      y: e.clientY,
+      btnX: position.x,
+      btnY: position.y
+    };
+    e.target.setPointerCapture(e.pointerId);
+  };
+
+  const onPointerMove = (e) => {
+    if (!isDragging) return;
+    
+    const dx = e.clientX - startPos.current.x;
+    const dy = e.clientY - startPos.current.y;
+    
+    if (!hasDragged.current && Math.sqrt(dx*dx + dy*dy) > 5) {
+      hasDragged.current = true;
+    }
+
+    if (hasDragged.current) {
+      let newX = startPos.current.btnX + dx;
+      let newY = startPos.current.btnY + dy;
+      
+      newX = Math.max(0, Math.min(newX, window.innerWidth - 56));
+      newY = Math.max(0, Math.min(newY, window.innerHeight - 56));
+
+      setPosition({ x: newX, y: newY });
+    }
+  };
+
+  const onPointerUp = (e) => {
+    setIsDragging(false);
+    e.target.releasePointerCapture(e.pointerId);
+  };
+
+  const onClick = (e) => {
+    if (hasDragged.current) {
+      e.preventDefault();
+      e.stopPropagation();
+      return;
+    }
+    navigate('/student/ai-chat');
+  };
+
+  return (
+    <button
+      ref={buttonRef}
+      onPointerDown={onPointerDown}
+      onPointerMove={onPointerMove}
+      onPointerUp={onPointerUp}
+      onPointerCancel={onPointerUp}
+      onClick={onClick}
+      className="floating-ai-button"
+      style={{ 
+        position: 'fixed', left: position.x + 'px', top: position.y + 'px', width: '56px', height: '56px', 
+        borderRadius: '50%', backgroundColor: M.maroon, color: M.white, border: 'none', 
+        boxShadow: '0 4px 16px rgba(123,26,42,0.3)', display: 'flex', alignItems: 'center', 
+        justifyContent: 'center', cursor: 'pointer', zIndex: 90, 
+        touchAction: 'none', transition: isDragging ? 'none' : 'box-shadow 0.2s'
+      }}
+    >
+      <Bot size={26} style={{ pointerEvents: 'none' }} />
+    </button>
+  );
+};
 
 // ── Main Page Component ──
 export default function StudentDashboard() {
@@ -241,7 +334,7 @@ export default function StudentDashboard() {
               onMouseEnter={e => e.currentTarget.style.opacity = '0.85'}
               onMouseLeave={e => e.currentTarget.style.opacity = '1'}
             >
-              <span>🚪</span> Log Out
+              <LogOut size={16} /> Log Out
             </button>
           </div>
         )}
@@ -335,7 +428,7 @@ export default function StudentDashboard() {
                 fontFamily: "'IBM Plex Sans', sans-serif", fontSize: '14px', fontWeight: 600, color: M.text
               }}
             >
-              <span>📋</span> My Appointments
+              <ClipboardList size={16} /> My Appointments
             </button>
             <button 
               onClick={() => { setProfileOpen(false); navigate('/student/queue'); }}
@@ -346,7 +439,7 @@ export default function StudentDashboard() {
                 fontFamily: "'IBM Plex Sans', sans-serif", fontSize: '14px', fontWeight: 600, color: M.text
               }}
             >
-              <span>🎫</span> Active Queue Ticket
+              <Ticket size={16} /> Active Queue Ticket
             </button>
           </div>
 
@@ -362,7 +455,7 @@ export default function StudentDashboard() {
               marginTop: '12px'
             }}
           >
-            <span>🚪</span> Log Out
+            <LogOut size={16} /> Log Out
           </button>
         </div>
       </>
@@ -435,13 +528,13 @@ export default function StudentDashboard() {
                 </svg>
               </button>
             </div>
-            <SideNavItem icon="🏠" label="Dashboard" path="/student/dashboard" active={true} navigate={navigate} collapsed={sidebarCollapsed} />
-            <SideNavItem icon="🗓️" label="Book Appointment" path="/student/book" active={false} navigate={navigate} collapsed={sidebarCollapsed} />
-            <SideNavItem icon="📋" label="My Appointments" path="/student/appointments" active={false} navigate={navigate} collapsed={sidebarCollapsed} />
-            <SideNavItem icon="🎫" label="My Queue Status" path="/student/queue" active={false} navigate={navigate} collapsed={sidebarCollapsed} />
+            <SideNavItem icon={<Home size={18} />} label="Dashboard" path="/student/dashboard" active={true} navigate={navigate} collapsed={sidebarCollapsed} />
+            <SideNavItem icon={<Calendar size={18} />} label="Book Appointment" path="/student/book" active={false} navigate={navigate} collapsed={sidebarCollapsed} />
+            <SideNavItem icon={<ClipboardList size={18} />} label="My Appointments" path="/student/appointments" active={false} navigate={navigate} collapsed={sidebarCollapsed} />
+            <SideNavItem icon={<Ticket size={18} />} label="My Queue Status" path="/student/queue" active={false} navigate={navigate} collapsed={sidebarCollapsed} />
             <div style={{ height: '1px', background: M.border, margin: '16px 0' }} />
             <div style={{ fontSize: '10px', fontWeight: 700, color: M.textMuted, letterSpacing: '0.1em', textTransform: 'uppercase', padding: sidebarCollapsed ? '0' : '0 16px', textAlign: sidebarCollapsed ? 'center' : 'left', marginBottom: '8px' }}>{sidebarCollapsed ? '···' : 'Support'}</div>
-            <SideNavItem icon="🤖" label="AI Assistant" path="/student/ai-chat" active={false} navigate={navigate} collapsed={sidebarCollapsed} />
+            <SideNavItem icon={<Bot size={18} />} label="AI Assistant" path="/student/ai-chat" active={false} navigate={navigate} collapsed={sidebarCollapsed} />
           </nav>
 
         </aside>
@@ -537,10 +630,10 @@ export default function StudentDashboard() {
                   onMouseLeave={e => { e.currentTarget.style.borderColor = M.border; e.currentTarget.style.boxShadow = '0 4px 16px rgba(0,0,0,0.02)'; }}
                 >
                   <div style={{
-                    width: '44px', height: '44px', borderRadius: '12px',
+                    width: '44px', height: '44px', borderRadius: '12px', color: M.maroon,
                     background: M.maroonMid, display: 'flex',
-                    alignItems: 'center', justifyContent: 'center', fontSize: '22px', flexShrink: 0,
-                  }}>🗓️</div>
+                    alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+                  }}><Calendar size={22} /></div>
                   <div>
                     <div style={{ fontSize: '15px', fontWeight: 700, color: M.maroon, fontFamily: "'Fraunces', serif" }}>Book Appointment</div>
                     <div style={{ fontSize: '12px', color: M.textSub, marginTop: '3px' }}>Schedule a visit with campus offices</div>
@@ -557,10 +650,10 @@ export default function StudentDashboard() {
                   }}
                 >
                   <div style={{
-                    width: '44px', height: '44px', borderRadius: '12px',
+                    width: '44px', height: '44px', borderRadius: '12px', color: M.gold,
                     background: M.goldMid, display: 'flex',
-                    alignItems: 'center', justifyContent: 'center', fontSize: '22px', flexShrink: 0,
-                  }}>🎫</div>
+                    alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+                  }}><Ticket size={22} /></div>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px' }}>
                       <span style={{ fontSize: '10px', fontWeight: 700, color: M.textMuted, letterSpacing: '0.1em', textTransform: 'uppercase' }}>My Queue</span>
@@ -657,21 +750,20 @@ export default function StudentDashboard() {
                     >
                       <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
                         <div style={{ 
-                          width: '46px', height: '46px', borderRadius: '12px', 
+                          width: '46px', height: '46px', borderRadius: '12px', color: M.maroon,
                           background: M.white, border: `1.5px solid ${M.border}`, 
-                          display: 'flex', alignItems: 'center', justifyContent: 'center', 
-                          fontSize: '22px', flexShrink: 0 
+                          display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 
                         }}>
-                          📋
+                          <ClipboardList size={22} />
                         </div>
                         <div>
                           <div style={{ fontSize: '15px', fontWeight: 600, color: M.text }}>{apt.type}</div>
                           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', alignItems: 'center', marginTop: '6px' }}>
-                            <span style={{ fontSize: '12px', color: M.textSub, background: M.white, border: `1px solid ${M.border}`, padding: '2px 8px', borderRadius: '6px' }}>
-                              🗓️ {apt.date}
+                            <span style={{ fontSize: '12px', color: M.textSub, background: M.white, border: `1px solid ${M.border}`, padding: '2px 8px', borderRadius: '6px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                              <Calendar size={12} /> {apt.date}
                             </span>
-                            <span style={{ fontSize: '12px', color: M.textSub, background: M.white, border: `1px solid ${M.border}`, padding: '2px 8px', borderRadius: '6px' }}>
-                              ⏰ {apt.time}
+                            <span style={{ fontSize: '12px', color: M.textSub, background: M.white, border: `1px solid ${M.border}`, padding: '2px 8px', borderRadius: '6px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                              <Clock size={12} /> {apt.time}
                             </span>
                             <span style={{ fontSize: '12px', color: M.textMuted }}>
                               · &nbsp;{apt.step}
@@ -750,7 +842,7 @@ export default function StudentDashboard() {
                   </div>
                 ) : (
                   <div style={{ textAlign: 'center', padding: '40px 20px', color: M.textMuted, flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', background: M.offWhite, borderRadius: '16px', border: `1px dashed ${M.border}` }}>
-                    <div style={{ fontSize: '48px', marginBottom: '14px' }}>🎫</div>
+                    <div style={{ color: M.textMuted, marginBottom: '14px' }}><Ticket size={48} /></div>
                     <p style={{ fontSize: '14px', margin: 0, fontWeight: 500 }}>No Active Queue Ticket</p>
                     <p style={{ fontSize: '12px', margin: '4px 0 0', color: M.textMuted }}>Get a ticket to start your transaction</p>
                   </div>
@@ -873,7 +965,7 @@ export default function StudentDashboard() {
         >
           <div style={{ background: M.white, borderRadius: '16px', boxShadow: '0 4px 12px rgba(0,0,0,0.04), 0 0 0 1px rgba(123, 26, 42, 0.04)', padding: '16px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
             <div>
-              <div style={{ fontSize: '28px', marginBottom: '10px' }}>🗓️</div>
+              <div style={{ color: M.maroon, marginBottom: '10px' }}><Calendar size={28} /></div>
               <div style={{ fontSize: '14px', fontWeight: 600, color: M.text, marginBottom: '4px' }}>Book Visit</div>
               <div style={{ fontSize: '11px', color: M.textMuted, marginBottom: '14px', lineHeight: 1.4 }}>Schedule document processing</div>
             </div>
@@ -881,7 +973,7 @@ export default function StudentDashboard() {
           </div>
           <div style={{ background: M.white, borderRadius: '16px', boxShadow: '0 4px 12px rgba(0,0,0,0.04), 0 0 0 1px rgba(123, 26, 42, 0.04)', padding: '16px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
             <div>
-              <div style={{ fontSize: '28px', marginBottom: '10px' }}>🎫</div>
+              <div style={{ color: M.gold, marginBottom: '10px' }}><Ticket size={28} /></div>
               <div style={{ fontSize: '14px', fontWeight: 600, color: M.text, marginBottom: '4px' }}>My Queue</div>
               <div style={{ fontSize: '11px', color: M.textMuted, marginBottom: '14px', lineHeight: 1.4 }}>Check ticket & line estimates</div>
             </div>
@@ -948,7 +1040,7 @@ export default function StudentDashboard() {
               </div>
             </div>
             <div style={{ textAlign: 'center', padding: '40px 20px', color: M.textMuted, display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', background: M.offWhite, borderRadius: '16px', border: `1px dashed ${M.border}` }}>
-              <div style={{ fontSize: '42px', marginBottom: '14px' }}>🎫</div>
+              <div style={{ color: M.textMuted, marginBottom: '14px' }}><Ticket size={42} /></div>
               <p style={{ fontSize: '15px', margin: 0, fontWeight: 700, color: M.textMuted }}>No Active Queue Ticket</p>
               <p style={{ fontSize: '13px', margin: '6px 0 0', color: '#A8A29E' }}>Get a ticket to start your transaction</p>
             </div>
@@ -985,7 +1077,8 @@ export default function StudentDashboard() {
                     <div style={{ fontSize: '14px', fontWeight: 600, color: M.text, margin: '0 0 4px' }}>{apt.type}</div>
                     <div style={{ fontSize: '12px', color: M.textSub, margin: '0 0 6px' }}>{apt.step}</div>
                     <div style={{ fontSize: '12px', color: M.textMuted, display: 'flex', gap: '8px' }}>
-                      <span>🗓️ {apt.date}</span><span>⏰ {apt.time}</span>
+                      <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><Calendar size={12} /> {apt.date}</span>
+                      <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><Clock size={12} /> {apt.time}</span>
                     </div>
                   </div>
                   <div>
@@ -1005,16 +1098,7 @@ export default function StudentDashboard() {
       </main>
 
       {/* AI Floating Button */}
-      <button
-        onClick={() => navigate('/student/ai-chat')}
-        className="floating-ai-button"
-        style={{ 
-          position: 'fixed', bottom: '84px', right: '20px', width: '56px', height: '56px', 
-          borderRadius: '50%', backgroundColor: M.maroon, color: M.white, border: 'none', 
-          boxShadow: '0 4px 16px rgba(123,26,42,0.3)', display: 'flex', alignItems: 'center', 
-          justifyContent: 'center', fontSize: '26px', cursor: 'pointer', zIndex: 90, 
-        }}
-      >🤖</button>
+      <DraggableBot navigate={navigate} />
 
       <MobileProfileDrawer />
 

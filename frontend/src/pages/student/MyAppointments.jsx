@@ -4,6 +4,7 @@ import { useAuth } from '../../context/useAuth'
 import BottomNav from '../../components/layout/BottomNav'
 import { getMyAppointments, cancelAppointment } from '../../services/appointmentService'
 import RescheduleModal from '../../components/RescheduleModal'
+import { Inbox, Calendar, Tag, FileText, AlertTriangle } from 'lucide-react'
 
 const M = { maroon: '#7B1A2A', maroonLight: '#F9F0F1', gold: '#B8900A', goldLight: '#FDF6E3', offWhite: '#F9F7F4', gray200: '#EAE7E2', gray500: '#706B65', text: '#1C1917', white: '#FFFFFF' }
 
@@ -135,7 +136,7 @@ export default function MyAppointments() {
           </div>
         ) : filteredAppointments.length === 0 ? (
           <div className="animate-fade-up" style={{ textAlign: 'center', padding: '4rem 2rem', background: M.white, borderRadius: '16px', border: `1px solid ${M.gray200}` }}>
-            <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>📭</div>
+            <div style={{ color: M.gold, marginBottom: '1rem', display: 'flex', justifyContent: 'center' }}><Inbox size={48} /></div>
             <p style={{ fontSize: '15px', fontWeight: 600, color: M.text, margin: '0 0 6px' }}>No appointments found</p>
             <p style={{ fontSize: '13px', color: M.gray500, margin: '0 0 1.5rem' }}>{filter === 'all' ? 'Book your first registrar transaction' : `You have no ${filter} appointments`}</p>
             {filter === 'all' && (
@@ -153,15 +154,15 @@ export default function MyAppointments() {
                     <span style={{ fontSize: '11px', fontWeight: 600, padding: '3px 10px', borderRadius: '100px', background: s.bg, color: s.color, border: `1px solid ${s.border}`, whiteSpace: 'nowrap' }}>{s.label}</span>
                   </div>
                   <div style={{ fontSize: '13px', color: M.gray500, marginBottom: '12px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                    <span>🗓️ {appt.appointment_date} at {(() => {
+                    <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><Calendar size={13} color={M.gold} /> {appt.appointment_date} at {(() => {
                       const [hStr, mStr] = appt.time_slot.split(':')
                       const h = parseInt(hStr, 10)
                       const suffix = h < 12 ? 'AM' : 'PM'
                       const h12 = h % 12 || 12
                       return `${h12}:${mStr} ${suffix}`
                     })()}</span>
-                    <span>🏷️ Priority: <span style={{ textTransform: 'capitalize' }}>{appt.priority_class}</span></span>
-                    {appt.notes && <span>📝 {appt.notes}</span>}
+                    <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><Tag size={13} color={M.gold} /> Priority: <span style={{ textTransform: 'capitalize', marginLeft: '4px' }}>{appt.priority_class}</span></span>
+                    {appt.notes && <span style={{ display: 'flex', alignItems: 'flex-start', gap: '6px' }}><FileText size={13} color={M.gold} style={{ flexShrink: 0, marginTop: '2px' }} /> <span>{appt.notes}</span></span>}
                   </div>
                   {appt.transaction_types?.processing_steps && (
                     <div style={{ padding: '12px 0 4px', borderTop: `1px solid ${M.gray200}` }}>
@@ -216,8 +217,8 @@ export default function MyAppointments() {
         <div style={{ position: 'fixed', inset: 0, zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)' }} onClick={() => setConfirmCancelId(null)} />
           <div className="animate-fade-up" style={{ position: 'relative', width: '90%', maxWidth: '320px', background: M.white, borderRadius: '20px', padding: '24px', textAlign: 'center', boxShadow: '0 10px 40px rgba(0,0,0,0.2)' }}>
-            <div style={{ width: '48px', height: '48px', borderRadius: '50%', background: M.maroonLight, color: M.maroon, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px', margin: '0 auto 16px' }}>
-              ⚠
+            <div style={{ width: '48px', height: '48px', borderRadius: '50%', background: M.maroonLight, color: M.maroon, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
+              <AlertTriangle size={24} />
             </div>
             <h3 style={{ fontFamily: "'Fraunces', serif", fontSize: '18px', fontWeight: 700, color: M.text, margin: '0 0 8px' }}>Cancel Appointment?</h3>
             <p style={{ fontSize: '13px', color: M.textSub, margin: '0 0 24px', lineHeight: 1.4 }}>

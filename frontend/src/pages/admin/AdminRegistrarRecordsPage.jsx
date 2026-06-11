@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useAuth } from '../../context/useAuth'
 import { getRegistrarRecords } from '../../services/adminService'
+import { ChevronDown, FileDown, RefreshCw, AlertTriangle, Search, X as XIcon, FolderOpen, Printer, Check, Clipboard } from 'lucide-react'
 
 // ── Design Tokens ──────────────────────────────────────────────────────────────
 const M = {
@@ -174,22 +175,22 @@ export default function AdminRegistrarRecordsPage() {
                 <option value={6}>6 Months</option>
                 <option value={12}>12 Months</option>
               </select>
-              <span style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', color: M.textMuted, fontSize: '12px' }}>▾</span>
+              <span style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', display: 'flex', alignItems: 'center', color: M.textMuted }}><ChevronDown size={14} /></span>
             </div>
           </div>
           <button onClick={() => exportCSV(csvRows, 'registrar_records.csv')}
             style={{ padding: '9px 18px', borderRadius: '9px', border: `1px solid ${M.border}`, background: M.white, color: M.text, fontSize: '13px', fontWeight: 600, cursor: 'pointer', fontFamily: "'IBM Plex Sans', sans-serif", display: 'flex', alignItems: 'center', gap: '7px' }}>
-            📤 Export CSV
+            <FileDown size={15} /> Export CSV
           </button>
           <button onClick={load}
             style={{ padding: '9px 18px', borderRadius: '9px', border: 'none', background: M.maroon, color: M.white, fontSize: '13px', fontWeight: 700, cursor: 'pointer', fontFamily: "'IBM Plex Sans', sans-serif", display: 'flex', alignItems: 'center', gap: '7px' }}>
-            🔄 Refresh
+            <RefreshCw size={15} /> Refresh
           </button>
         </div>
       </div>
 
       {error && (
-        <div style={{ padding: '12px 16px', borderRadius: '10px', background: M.redLight, color: M.red, border: `1px solid ${M.redBorder}`, marginBottom: '20px' }}>⚠ {error}</div>
+        <div style={{ padding: '12px 16px', borderRadius: '10px', background: M.redLight, color: M.red, border: `1px solid ${M.redBorder}`, marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}><AlertTriangle size={16} /> {error}</div>
       )}
 
       {/* ── Stat Cards ── */}
@@ -228,9 +229,9 @@ export default function AdminRegistrarRecordsPage() {
                 onFocus={e => e.target.style.borderColor = M.maroon}
                 onBlur={e => e.target.style.borderColor = M.border}
               />
-              <span style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', fontSize: '15px', color: M.textMuted }}>🔍</span>
+              <span style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', display: 'flex', alignItems: 'center', color: M.textMuted }}><Search size={16} /></span>
               {search && (
-                <button onClick={() => setSearch('')} style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: M.textMuted, fontSize: '16px', padding: '2px 6px' }}>×</button>
+                <button onClick={() => setSearch('')} style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: M.textMuted, display: 'flex', alignItems: 'center', padding: '2px 6px' }}><XIcon size={16} /></button>
               )}
             </div>
 
@@ -281,7 +282,7 @@ export default function AdminRegistrarRecordsPage() {
               ))
             ) : paginated.length === 0 ? (
               <div style={{ padding: '56px 24px', textAlign: 'center' }}>
-                <div style={{ fontSize: '2.8rem', marginBottom: '12px' }}>🗂️</div>
+                <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '12px', color: M.textMuted }}><FolderOpen size={48} /></div>
                 <p style={{ fontSize: '15px', fontWeight: 600, color: M.text, margin: '0 0 6px' }}>No records found</p>
                 <p style={{ fontSize: '13px', color: M.textMuted, margin: 0 }}>Try adjusting your search or filters.</p>
               </div>
@@ -319,7 +320,7 @@ export default function AdminRegistrarRecordsPage() {
                       <span style={{ fontSize: '12px', color: M.textMuted }}>{rec.requested}</span>
                       <span style={{ fontSize: '12px', color: M.textMuted }}>{rec.processed}</span>
                       <StatusBadge status={rec.status} />
-                      <span style={{ color: M.textMuted, fontSize: '14px', transition: 'transform 0.2s', transform: isExpanded ? 'rotate(180deg)' : 'none', display: 'block', textAlign: 'center' }}>▾</span>
+                      <span style={{ color: M.textMuted, transition: 'transform 0.2s', transform: isExpanded ? 'rotate(180deg)' : 'none', display: 'flex', justifyContent: 'center' }}><ChevronDown size={18} /></span>
                     </div>
 
                     {/* Expanded row detail */}
@@ -343,17 +344,17 @@ export default function AdminRegistrarRecordsPage() {
                             View Full Record
                           </button>
                           {(rec.status === 'completed' || rec.status === 'released') && (
-                            <button style={{ padding: '7px 16px', borderRadius: '8px', border: `1px solid ${M.maroonBorder}`, background: 'transparent', color: M.maroon, fontSize: '12px', fontWeight: 600, cursor: 'pointer', fontFamily: "'IBM Plex Sans', sans-serif" }}>
-                              🖨 Print Record
+                            <button style={{ padding: '7px 16px', borderRadius: '8px', border: `1px solid ${M.maroonBorder}`, background: 'transparent', color: M.maroon, fontSize: '12px', fontWeight: 600, cursor: 'pointer', fontFamily: "'IBM Plex Sans', sans-serif", display: 'flex', alignItems: 'center', gap: '6px' }}>
+                              <Printer size={14} /> Print Record
                             </button>
                           )}
                           {(rec.status === 'pending' || rec.status === 'processing') && (
-                            <button style={{ padding: '7px 16px', borderRadius: '8px', border: `1px solid ${M.greenBorder}`, background: M.greenLight, color: M.green, fontSize: '12px', fontWeight: 600, cursor: 'pointer', fontFamily: "'IBM Plex Sans', sans-serif" }}>
-                              ✓ Mark as Released
+                            <button style={{ padding: '7px 16px', borderRadius: '8px', border: `1px solid ${M.greenBorder}`, background: M.greenLight, color: M.green, fontSize: '12px', fontWeight: 600, cursor: 'pointer', fontFamily: "'IBM Plex Sans', sans-serif", display: 'flex', alignItems: 'center', gap: '6px' }}>
+                              <Check size={14} /> Mark as Released
                             </button>
                           )}
-                          <button style={{ padding: '7px 16px', borderRadius: '8px', border: `1px solid ${M.maroonBorder}`, background: 'transparent', color: M.maroon, fontSize: '12px', fontWeight: 600, cursor: 'pointer', fontFamily: "'IBM Plex Sans', sans-serif" }}>
-                            📋 Add Note
+                          <button style={{ padding: '7px 16px', borderRadius: '8px', border: `1px solid ${M.maroonBorder}`, background: 'transparent', color: M.maroon, fontSize: '12px', fontWeight: 600, cursor: 'pointer', fontFamily: "'IBM Plex Sans', sans-serif", display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            <Clipboard size={14} /> Add Note
                           </button>
                         </div>
                       </div>
@@ -421,7 +422,7 @@ export default function AdminRegistrarRecordsPage() {
                   )
                 })}
               </select>
-              <span style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', color: M.textMuted, fontSize: '12px' }}>▾</span>
+              <span style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', display: 'flex', alignItems: 'center', color: M.textMuted }}><ChevronDown size={14} /></span>
             </div>
           </div>
 
@@ -463,7 +464,7 @@ export default function AdminRegistrarRecordsPage() {
                  <h2 style={{ fontFamily: "'Fraunces', serif", fontSize: '24px', fontWeight: 700, color: M.maroon, margin: '0 0 4px' }}>Record Details</h2>
                  <p style={{ fontSize: '13px', color: M.maroon, opacity: 0.8, margin: 0 }}>{viewingRecord.id}</p>
                </div>
-               <button onClick={() => setViewingRecord(null)} style={{ background: 'none', border: 'none', fontSize: '32px', color: M.maroon, cursor: 'pointer', opacity: 0.6, lineHeight: 1 }}>×</button>
+               <button onClick={() => setViewingRecord(null)} style={{ background: 'none', border: 'none', display: 'flex', alignItems: 'center', color: M.maroon, cursor: 'pointer', opacity: 0.6 }}><XIcon size={24} /></button>
              </div>
              
              {/* Body */}
@@ -531,7 +532,7 @@ export default function AdminRegistrarRecordsPage() {
                </button>
                {(viewingRecord.status === 'completed' || viewingRecord.status === 'released') && (
                  <button style={{ padding: '10px 20px', borderRadius: '10px', border: 'none', background: M.maroon, color: M.white, fontSize: '13px', fontWeight: 700, cursor: 'pointer', fontFamily: "'IBM Plex Sans', sans-serif", display: 'flex', alignItems: 'center', gap: '8px' }}>
-                   🖨 Print Record
+                   <Printer size={15} /> Print Record
                  </button>
                )}
              </div>

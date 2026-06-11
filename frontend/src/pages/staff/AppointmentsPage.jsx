@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useAuth } from '../../context/useAuth'
 import { getAllAppointments, getAppointmentStats, rescheduleAppointment } from '../../services/appointmentService'
+import { Calendar, RefreshCw, BarChart2, Circle, User, Tag, X, FileText, Activity } from 'lucide-react'
 
 const M = {
   maroon: '#7B1A2A',
@@ -72,9 +73,9 @@ export default function AppointmentsPage() {
   }, [loadStats])
 
   const stats = [
-    { label: "TODAY'S APPOINTMENTS", value: statsData ? statsData.today_appointments : "-", sub: "Real-time updates", icon: "📅", delay: '0.1s' },
-    { label: "COMPLETED TODAY", value: statsData ? statsData.completed_today : "-", sub: "Automated processing", icon: "🔄", delay: '0.2s' },
-    { label: "TOTAL MONTHLY VOLUME", value: statsData ? statsData.total_monthly : "-", sub: "Total this month", icon: "📊", delay: '0.3s' }
+    { label: "TODAY'S APPOINTMENTS", value: statsData ? statsData.today_appointments : "-", sub: "Real-time updates", icon: <Calendar size={20} color={M.gold} />, delay: '0.1s' },
+    { label: "COMPLETED TODAY", value: statsData ? statsData.completed_today : "-", sub: "Automated processing", icon: <RefreshCw size={20} color={M.gold} />, delay: '0.2s' },
+    { label: "TOTAL MONTHLY VOLUME", value: statsData ? statsData.total_monthly : "-", sub: "Total this month", icon: <BarChart2 size={20} color={M.gold} />, delay: '0.3s' }
   ]
 
   const [appointments, setAppointments] = useState([])
@@ -138,7 +139,7 @@ export default function AppointmentsPage() {
         fontSize: '11px', fontWeight: 600, color: M.textMuted,
         whiteSpace: 'nowrap'
       }}>
-        <span>○</span> {stepStr}
+        <span style={{ display: 'flex', alignItems: 'center' }}><Circle size={10} color={M.gold} /></span> {stepStr}
       </div>
     )
   }
@@ -306,11 +307,11 @@ export default function AppointmentsPage() {
                       {typeName}
                     </h3>
                     <div style={{ fontSize: '13px', color: M.textSub, display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '10px' }}>
-                      👤 <span style={{ fontWeight: 500 }}>{studentName}</span> (ID: {studentId})
+                      <User size={14} color={M.gold} /> <span style={{ fontWeight: 500 }}>{studentName}</span> (ID: {studentId})
                     </div>
                     <div style={{ display: 'flex', gap: '16px', fontSize: '12px', color: M.textMuted }}>
-                      <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>📅 {fmt12h(apt.time_slot)}</span>
-                      <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>🏷️ Priority: {apt.priority_class}</span>
+                      <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><Calendar size={12} color={M.gold} /> {fmt12h(apt.time_slot)}</span>
+                      <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><Tag size={12} color={M.gold} /> Priority: {apt.priority_class}</span>
                     </div>
                   </div>
                   <span style={{ 
@@ -399,7 +400,7 @@ export default function AppointmentsPage() {
                   <h2 style={{ margin: '0 0 6px', color: M.text, fontFamily: "'Fraunces', serif", fontSize: '22px', fontWeight: 700 }}>Appointment Details</h2>
                   <p style={{ margin: 0, fontSize: '13px', color: M.textMuted }}>ID: {viewDetailsModal.id.split('-')[0].toUpperCase()}</p>
                 </div>
-                <button onClick={() => setViewDetailsModal(null)} style={{ background: M.surface, border: 'none', width: '32px', height: '32px', borderRadius: '50%', cursor: 'pointer', color: M.textSub, display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'background 0.2s' }} onMouseEnter={e => e.currentTarget.style.background = M.border} onMouseLeave={e => e.currentTarget.style.background = M.surface}>✕</button>
+                <button onClick={() => setViewDetailsModal(null)} style={{ background: M.surface, border: 'none', width: '32px', height: '32px', borderRadius: '50%', cursor: 'pointer', color: M.textSub, display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'background 0.2s' }} onMouseEnter={e => e.currentTarget.style.background = M.border} onMouseLeave={e => e.currentTarget.style.background = M.surface}><X size={16} /></button>
               </div>
 
               <div style={{ padding: '32px' }}>
@@ -417,23 +418,31 @@ export default function AppointmentsPage() {
                 {/* Grid Details */}
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px', marginBottom: '32px' }}>
                   <div>
-                    <p style={{ fontSize: '11px', fontWeight: 700, color: M.textMuted, textTransform: 'uppercase', letterSpacing: '0.06em', margin: '0 0 8px' }}>Transaction Type</p>
+                    <p style={{ fontSize: '11px', fontWeight: 700, color: M.textMuted, textTransform: 'uppercase', letterSpacing: '0.06em', margin: '0 0 8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <FileText size={14} color={M.gold} /> Transaction Type
+                    </p>
                     <p style={{ fontSize: '14px', fontWeight: 600, color: M.text, margin: 0 }}>{viewDetailsModal.transaction_types?.name}</p>
                   </div>
                   <div>
-                    <p style={{ fontSize: '11px', fontWeight: 700, color: M.textMuted, textTransform: 'uppercase', letterSpacing: '0.06em', margin: '0 0 8px' }}>Schedule</p>
+                    <p style={{ fontSize: '11px', fontWeight: 700, color: M.textMuted, textTransform: 'uppercase', letterSpacing: '0.06em', margin: '0 0 8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <Calendar size={14} color={M.gold} /> Schedule
+                    </p>
                     <p style={{ fontSize: '14px', fontWeight: 600, color: M.text, margin: 0 }}>
                       {new Date(viewDetailsModal.appointment_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })} at {fmt12h(viewDetailsModal.time_slot)}
                     </p>
                   </div>
                   <div>
-                    <p style={{ fontSize: '11px', fontWeight: 700, color: M.textMuted, textTransform: 'uppercase', letterSpacing: '0.06em', margin: '0 0 8px' }}>Priority Class</p>
+                    <p style={{ fontSize: '11px', fontWeight: 700, color: M.textMuted, textTransform: 'uppercase', letterSpacing: '0.06em', margin: '0 0 8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <Tag size={14} color={M.gold} /> Priority Class
+                    </p>
                     <span style={{ fontSize: '12px', fontWeight: 600, color: M.maroon, background: M.maroonLight, padding: '4px 12px', borderRadius: '100px', border: `1px solid ${M.maroonBorder}`, textTransform: 'capitalize' }}>
                       {viewDetailsModal.priority_class}
                     </span>
                   </div>
                   <div>
-                    <p style={{ fontSize: '11px', fontWeight: 700, color: M.textMuted, textTransform: 'uppercase', letterSpacing: '0.06em', margin: '0 0 8px' }}>Status</p>
+                    <p style={{ fontSize: '11px', fontWeight: 700, color: M.textMuted, textTransform: 'uppercase', letterSpacing: '0.06em', margin: '0 0 8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <Activity size={14} color={M.gold} /> Status
+                    </p>
                     <span style={{ fontSize: '12px', fontWeight: 600, color: sColor, background: sBg, padding: '4px 12px', borderRadius: '100px', border: `1px solid ${sBorder}`, textTransform: 'capitalize' }}>
                       {viewDetailsModal.status}
                     </span>

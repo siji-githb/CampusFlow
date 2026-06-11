@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useAuth } from '../../context/useAuth'
 import { getDashboardStats, getAllAppointments, updateAppointmentStatus } from '../../services/adminService'
+import { AlertTriangle, Inbox, Check, X as XIcon, ChevronLeft, ChevronRight, ChevronDown, Filter } from 'lucide-react'
 
 // ── Design Tokens ──────────────────────────────────────────────────────────────
 const M = {
@@ -74,17 +75,17 @@ function MiniCalendar({ selectedDate, onSelect }) {
     <div style={{ background: M.white, borderRadius: '14px', border: `1px solid ${M.border}`, padding: '16px', boxShadow: '0 1px 4px rgba(0,0,0,0.04)' }}>
       {/* Month Nav */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
-        <button onClick={prevMonth} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px 8px', borderRadius: '6px', color: M.textSub, fontSize: '16px' }}
+        <button onClick={prevMonth} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px 8px', borderRadius: '6px', color: M.textSub, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
           onMouseEnter={e => e.currentTarget.style.background = M.surface}
           onMouseLeave={e => e.currentTarget.style.background = 'none'}
-        >‹</button>
+        ><ChevronLeft size={16} /></button>
         <span style={{ fontFamily: "'Fraunces', serif", fontSize: '15px', fontWeight: 700, color: M.text }}>
           {MONTHS[month]} {year}
         </span>
-        <button onClick={nextMonth} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px 8px', borderRadius: '6px', color: M.textSub, fontSize: '16px' }}
+        <button onClick={nextMonth} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px 8px', borderRadius: '6px', color: M.textSub, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
           onMouseEnter={e => e.currentTarget.style.background = M.surface}
           onMouseLeave={e => e.currentTarget.style.background = 'none'}
-        >›</button>
+        ><ChevronRight size={16} /></button>
       </div>
 
       {/* Day headers */}
@@ -239,20 +240,25 @@ export default function AdminAppointmentsPage() {
         </div>
         <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
           {/* Filter pill */}
-          <div style={{ position: 'relative' }}>
-            <select
-              value={statusFilter}
-              onChange={e => { setStatusFilter(e.target.value); setPage(1) }}
-              style={{ appearance: 'none', padding: '9px 32px 9px 14px', borderRadius: '9px', border: `1px solid ${M.border}`, background: M.white, fontSize: '13px', color: M.text, outline: 'none', cursor: 'pointer', fontFamily: "'IBM Plex Sans', sans-serif" }}>
-              <option value="all">All Statuses</option>
-              <option value="pending">Scheduled</option>
-              <option value="confirmed">Confirmed</option>
-              <option value="in_progress">Initiated</option>
-              <option value="completed">Completed</option>
-              <option value="cancelled">Cancelled</option>
-              <option value="no_show">No Show</option>
-            </select>
-            <span style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', color: M.textMuted, fontSize: '12px' }}>▾</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span style={{ fontSize: '12px', fontWeight: 600, color: M.textMuted, display: 'flex', alignItems: 'center', gap: '4px' }}>
+              <Filter size={14} /> STATUS
+            </span>
+            <div style={{ position: 'relative' }}>
+              <select
+                value={statusFilter}
+                onChange={e => { setStatusFilter(e.target.value); setPage(1) }}
+                style={{ appearance: 'none', padding: '9px 32px 9px 14px', borderRadius: '9px', border: `1px solid ${M.border}`, background: M.white, fontSize: '13px', color: M.text, outline: 'none', cursor: 'pointer', fontFamily: "'IBM Plex Sans', sans-serif" }}>
+                <option value="all">All Statuses</option>
+                <option value="pending">Scheduled</option>
+                <option value="confirmed">Confirmed</option>
+                <option value="in_progress">Initiated</option>
+                <option value="completed">Completed</option>
+                <option value="cancelled">Cancelled</option>
+                <option value="no_show">No Show</option>
+              </select>
+              <span style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', display: 'flex', alignItems: 'center', color: M.textMuted }}><ChevronDown size={14} /></span>
+            </div>
           </div>
 
 
@@ -260,7 +266,7 @@ export default function AdminAppointmentsPage() {
       </div>
 
       {error && (
-        <div style={{ padding: '12px 16px', borderRadius: '10px', background: M.redLight, color: M.red, border: `1px solid ${M.redBorder}`, marginBottom: '24px' }}>⚠ {error}</div>
+        <div style={{ padding: '12px 16px', borderRadius: '10px', background: M.redLight, color: M.red, border: `1px solid ${M.redBorder}`, marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '8px' }}><AlertTriangle size={16} /> {error}</div>
       )}
 
       {/* ── Stat Cards ── */}
@@ -386,7 +392,7 @@ export default function AdminAppointmentsPage() {
           {/* Table */}
           <div style={{ background: M.white, borderRadius: '16px', border: `1px solid ${M.border}`, overflow: 'hidden', boxShadow: '0 1px 4px rgba(0,0,0,0.04)' }}>
             {/* Header */}
-            <div style={{ display: 'grid', gridTemplateColumns: '90px 1.8fr 1.5fr 120px 100px', padding: '12px 20px', background: M.surface, borderBottom: `1px solid ${M.border}` }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '90px 1.5fr 1.5fr 110px 150px', padding: '12px 20px', background: M.surface, borderBottom: `1px solid ${M.border}` }}>
               {['Time', 'Student', 'Transaction', 'Status', 'Action'].map(h => (
                 <span key={h} style={{ fontSize: '10px', fontWeight: 700, color: M.textMuted, textTransform: 'uppercase', letterSpacing: '0.06em' }}>{h}</span>
               ))}
@@ -396,7 +402,7 @@ export default function AdminAppointmentsPage() {
             {apptLoading ? (
               [1, 2, 3, 4, 5].map((n, idx) => (
                 <div key={n} style={{
-                  display: 'grid', gridTemplateColumns: '90px 1.8fr 1.5fr 120px 100px',
+                  display: 'grid', gridTemplateColumns: '90px 1.5fr 1.5fr 110px 150px',
                   padding: '16px 20px', alignItems: 'center',
                   borderBottom: idx === 4 ? 'none' : `1px solid ${M.border}`,
                   background: idx % 2 === 0 ? M.white : '#FDFCFB',
@@ -413,7 +419,7 @@ export default function AdminAppointmentsPage() {
               ))
             ) : paginated.length === 0 ? (
               <div style={{ padding: '56px 24px', textAlign: 'center' }}>
-                <div style={{ fontSize: '2.8rem', marginBottom: '12px' }}>📭</div>
+                <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '12px', color: M.textMuted }}><Inbox size={48} /></div>
                 <p style={{ fontSize: '15px', fontWeight: 600, color: M.text, margin: '0 0 6px' }}>
                   No appointments {isToday ? 'today' : `on ${selectedDate}`}
                 </p>
@@ -431,7 +437,7 @@ export default function AdminAppointmentsPage() {
 
                 return (
                   <div key={appt.id} style={{
-                    display: 'grid', gridTemplateColumns: '90px 1.8fr 1.5fr 120px 100px',
+                    display: 'grid', gridTemplateColumns: '90px 1.5fr 1.5fr 110px 150px',
                     padding: '16px 20px', alignItems: 'center',
                     borderBottom: isLast ? 'none' : `1px solid ${M.border}`,
                     background: idx % 2 === 0 ? M.white : '#FDFCFB',
@@ -485,10 +491,10 @@ export default function AdminAppointmentsPage() {
                         </button>
                       )}
                       {appt.status === 'completed' && (
-                        <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: M.greenLight, color: M.green, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px', fontWeight: 'bold', border: `1px solid ${M.greenBorder}` }}>✓</div>
+                        <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: M.greenLight, color: M.green, display: 'flex', alignItems: 'center', justifyContent: 'center', border: `1px solid ${M.greenBorder}` }}><Check size={16} /></div>
                       )}
                       {appt.status === 'cancelled' && (
-                        <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: M.redLight, color: M.red, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px', fontWeight: 'bold', border: `1px solid ${M.redBorder}` }}>✕</div>
+                        <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: M.redLight, color: M.red, display: 'flex', alignItems: 'center', justifyContent: 'center', border: `1px solid ${M.redBorder}` }}><XIcon size={16} /></div>
                       )}
                     </div>
                   </div>

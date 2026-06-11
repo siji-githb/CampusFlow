@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '../../context/useAuth'
 import { getAuditLog } from '../../services/adminService'
+import { FileDown, AlertTriangle, Search, Shield } from 'lucide-react'
 
 const M = {
   maroon:       '#7B1A2A',
@@ -98,11 +99,11 @@ export default function AdminAuditLogPage() {
         </div>
         <button onClick={exportCSV} disabled={filtered.length === 0}
           style={{ padding: '10px 20px', borderRadius: '10px', border: `1px solid ${M.border}`, background: M.white, color: M.text, fontSize: '14px', fontWeight: 600, cursor: filtered.length ? 'pointer' : 'not-allowed', fontFamily: "'IBM Plex Sans', sans-serif", display: 'flex', alignItems: 'center', gap: '8px', boxShadow: '0 2px 6px rgba(0,0,0,0.04)' }}>
-          📤 Export Report
+          <FileDown size={16} /> Export Report
         </button>
       </div>
 
-      {error && <div style={{ padding: '14px 18px', borderRadius: '12px', background: M.redLight, color: M.red, border: `1px solid ${M.redBorder}`, marginBottom: '24px' }}>⚠ {error}</div>}
+      {error && <div style={{ padding: '14px 18px', borderRadius: '12px', background: M.redLight, color: M.red, border: `1px solid ${M.redBorder}`, marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '8px' }}><AlertTriangle size={18} /> {error}</div>}
 
       <div className="animate-fade-up" style={{ animationDelay: '0.1s', background: M.white, borderRadius: '16px', border: `1px solid ${M.border}`, overflow: 'hidden', boxShadow: '0 2px 12px rgba(0,0,0,0.03)' }}>
         
@@ -116,7 +117,7 @@ export default function AdminAuditLogPage() {
               onFocus={e => e.target.style.borderColor = M.maroon}
               onBlur={e => e.target.style.borderColor = M.border}
             />
-            <span style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', fontSize: '15px', color: M.textMuted }}>🔍</span>
+            <span style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', display: 'flex', alignItems: 'center', color: M.textMuted }}><Search size={16} /></span>
           </div>
           <span style={{ fontSize: '13px', color: M.textMuted, fontWeight: 600 }}>Total: {filtered.length} entries</span>
         </div>
@@ -149,7 +150,7 @@ export default function AdminAuditLogPage() {
           </div>
         ) : paginated.length === 0 ? (
           <div style={{ padding: '80px', textAlign: 'center' }}>
-            <div style={{ fontSize: '3rem', marginBottom: '16px' }}>🛡️</div>
+            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '16px', color: M.textMuted }}><Shield size={48} /></div>
             <p style={{ fontSize: '16px', fontWeight: 600, color: M.text, margin: '0 0 6px' }}>No audit entries found</p>
             <p style={{ fontSize: '14px', color: M.textMuted, margin: 0 }}>{search ? 'Try adjusting your search criteria.' : 'System actions will appear here.'}</p>
           </div>

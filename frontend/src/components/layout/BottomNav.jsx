@@ -1,4 +1,5 @@
 import { useNavigate } from 'react-router-dom';
+import { Home, Calendar, ClipboardList, Ticket } from 'lucide-react';
 
 const M = {
   maroon:        '#7B1A2A',
@@ -10,10 +11,10 @@ const M = {
 export default function BottomNav({ active }) {
   const navigate = useNavigate();
   const tabs = [
-    { id: 'home',         label: 'Home',    icon: '🏠', path: '/student/dashboard' },
-    { id: 'book',         label: 'Book',    icon: '🗓️', path: '/student/book' },
-    { id: 'appointments', label: 'History', icon: '📋', path: '/student/appointments' },
-    { id: 'queue',        label: 'Queue',   icon: '🎫', path: '/student/queue' },
+    { id: 'home',         label: 'Home',    icon: <Home size={20} />, path: '/student/dashboard' },
+    { id: 'book',         label: 'Book',    icon: <Calendar size={20} />, path: '/student/book' },
+    { id: 'appointments', label: 'History', icon: <ClipboardList size={20} />, path: '/student/appointments' },
+    { id: 'queue',        label: 'Queue',   icon: <Ticket size={20} />, path: '/student/queue' },
   ];
   return (
     <>
@@ -44,7 +45,7 @@ export default function BottomNav({ active }) {
           transition: 'color 0.15s',
           minHeight: '52px',
         }}>
-          <span style={{ fontSize: '20px', lineHeight: 1 }}>{tab.icon}</span>
+          <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '3px' }}>{tab.icon}</span>
           <span style={{ fontSize: '10px', fontWeight: active === tab.id ? 600 : 400,
             fontFamily: "'IBM Plex Sans', sans-serif" }}>{tab.label}</span>
         </button>

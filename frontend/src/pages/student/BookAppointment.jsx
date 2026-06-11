@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/useAuth'
 import { getTransactionTypes, getAvailableSlots, bookAppointment, uploadMedia } from '../../services/appointmentService'
+import { CheckCircle, Calendar, Users, CloudSun, Sun, Image as ImageIcon, FileText, Clock, MapPin, Mail, HelpCircle } from 'lucide-react'
 
 const M = {
   maroon:       '#7B1A2A',
@@ -314,11 +315,11 @@ export default function BookAppointment() {
   if (success) return (
     <div style={{ minHeight: '100vh', background: M.offWhite, fontFamily: "'IBM Plex Sans', sans-serif", display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
       <div style={{ background: M.white, borderRadius: '20px', border: `1px solid ${M.border}`, padding: '48px 40px', maxWidth: '440px', width: '100%', textAlign: 'center', boxShadow: '0 4px 24px rgba(0,0,0,0.06)' }}>
-        <div style={{ width: '72px', height: '72px', borderRadius: '50%', background: M.greenLight, border: `2px solid ${M.greenBorder}`, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 24px', fontSize: '28px' }}>✅</div>
+        <div style={{ width: '72px', height: '72px', borderRadius: '50%', background: M.greenLight, border: `2px solid ${M.greenBorder}`, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 24px', color: M.green }}><CheckCircle size={28} /></div>
         <h2 style={{ fontFamily: "'Fraunces', serif", fontSize: '26px', fontWeight: 700, color: M.maroon, margin: '0 0 8px' }}>Appointment Confirmed!</h2>
         <p style={{ fontSize: '15px', fontWeight: 600, color: M.text, margin: '0 0 4px' }}>{selectedType?.name}</p>
-        <p style={{ fontSize: '14px', color: M.textSub, margin: '0 0 24px' }}>
-          🗓️ {fmtDate(selectedDate)} at {selectedSlot}
+        <p style={{ fontSize: '14px', color: M.textSub, margin: '0 0 24px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+          <Calendar size={14} /> {fmtDate(selectedDate)} at {selectedSlot}
         </p>
         <div style={{ background: M.goldLight, borderRadius: '10px', padding: '14px 16px', marginBottom: '24px', border: `1px solid ${M.goldBorder}`, textAlign: 'left' }}>
           <p style={{ fontSize: '13px', color: M.gold, margin: 0, fontWeight: 500, lineHeight: 1.5 }}>
@@ -479,15 +480,15 @@ export default function BookAppointment() {
                   <h3 style={{ fontFamily: "'Fraunces', serif", fontSize: '17px', fontWeight: 700, color: M.text, margin: 0 }}>
                     {new Date(selectedDate + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}
                   </h3>
-                  <span style={{ fontSize: '12px', color: M.textSub }}>
-                    👥 {slotsData.daily_cap - slotsData.total_booked} of {slotsData.daily_cap} available
+                  <span style={{ fontSize: '12px', color: M.textSub, display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    <Users size={14} /> {slotsData.daily_cap - slotsData.total_booked} of {slotsData.daily_cap} available
                   </span>
                 </div>
 
                 {morningSlots.length > 0 && (
                   <div style={{ marginBottom: '20px' }}>
                     <p style={{ fontSize: '12px', fontWeight: 600, color: M.textSub, margin: '0 0 10px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                      ⛅ Morning
+                      <CloudSun size={14} color={M.gold} /> Morning
                     </p>
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '8px' }}>
                       {morningSlots.map(s => <SlotBtn key={s.time_slot} slot={{ ...s, display: fmt12h(s.time_slot) }} selected={selectedSlot === s.time_slot} onSelect={setSelectedSlot} selectedDate={selectedDate} />)}
@@ -498,7 +499,7 @@ export default function BookAppointment() {
                 {afternoonSlots.length > 0 && (
                   <div style={{ marginBottom: '24px' }}>
                     <p style={{ fontSize: '12px', fontWeight: 600, color: M.textSub, margin: '0 0 10px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                      ☀️ Afternoon
+                      <Sun size={14} color={M.gold} /> Afternoon
                     </p>
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '8px' }}>
                       {afternoonSlots.map(s => <SlotBtn key={s.time_slot} slot={{ ...s, display: fmt12h(s.time_slot) }} selected={selectedSlot === s.time_slot} onSelect={setSelectedSlot} selectedDate={selectedDate} />)}
@@ -527,7 +528,7 @@ export default function BookAppointment() {
                       padding: '16px', textAlign: 'center', background: M.white, cursor: 'pointer',
                       position: 'relative'
                     }}>
-                      <span style={{ fontSize: '20px', marginBottom: '4px' }}>🖼️</span>
+                      <span style={{ color: M.textMuted, marginBottom: '4px' }}><ImageIcon size={24} /></span>
                       <span style={{ fontSize: '11px', color: M.textSub, fontWeight: 500 }}>
                         {selectedFile ? selectedFile.name : 'Upload PNG or JPG'}
                       </span>
@@ -595,7 +596,7 @@ export default function BookAppointment() {
                 <div style={{ marginBottom: '24px', paddingBottom: '20px', borderBottom: `1px solid ${M.border}` }}>
                   <p style={{ fontSize: '10px', fontWeight: 700, color: M.textMuted, letterSpacing: '0.1em', textTransform: 'uppercase', margin: '0 0 8px' }}>TRANSACTION</p>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-                    <div style={{ width: '44px', height: '44px', borderRadius: '10px', background: M.maroonMid, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px', flexShrink: 0 }}>📄</div>
+                    <div style={{ width: '44px', height: '44px', borderRadius: '10px', background: M.maroonMid, color: M.maroon, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}><FileText size={20} /></div>
                     <div>
                       <h3 style={{ fontFamily: "'Fraunces', serif", fontSize: '18px', fontWeight: 700, color: M.text, margin: '0 0 6px' }}>{selectedType.name}</h3>
                       <span style={{ fontSize: '11px', fontWeight: 600, color: M.gold, background: M.goldLight, padding: '3px 10px', borderRadius: '100px', border: `1px solid ${M.goldBorder}`, display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
@@ -610,16 +611,16 @@ export default function BookAppointment() {
                   <div>
                     <p style={{ fontSize: '10px', fontWeight: 700, color: M.textMuted, letterSpacing: '0.1em', textTransform: 'uppercase', margin: '0 0 10px' }}>SCHEDULE</p>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', color: M.text, marginBottom: '6px' }}>
-                      <span>🗓️</span> {fmtDate(selectedDate)}
+                      <Calendar size={14} color={M.gold} /> {fmtDate(selectedDate)}
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', color: M.text }}>
-                      <span>🕐</span> {fmt12h(selectedSlot)}
+                      <Clock size={14} color={M.gold} /> {fmt12h(selectedSlot)}
                     </div>
                   </div>
                   <div>
                     <p style={{ fontSize: '10px', fontWeight: 700, color: M.textMuted, letterSpacing: '0.1em', textTransform: 'uppercase', margin: '0 0 10px' }}>LOCATION</p>
                     <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', fontSize: '14px', color: M.text }}>
-                      <span style={{ marginTop: '1px' }}>📍</span>
+                      <MapPin size={16} color={M.gold} style={{ marginTop: '2px' }} />
                       <div>
                         <div style={{ fontWeight: 600 }}>
                           Registrar's Office – Window {(() => {
@@ -643,7 +644,7 @@ export default function BookAppointment() {
                     {notes && <div style={{ fontSize: '14px', color: M.text, marginBottom: selectedFile ? '8px' : '0', whiteSpace: 'pre-wrap' }}>{notes}</div>}
                     {selectedFile && (
                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: M.textSub, background: M.offWhite, padding: '8px 12px', borderRadius: '8px', border: `1px solid ${M.border}`, width: 'fit-content' }}>
-                        <span>🖼️</span> {selectedFile.name}
+                        <ImageIcon size={14} /> {selectedFile.name}
                       </div>
                     )}
                   </div>
@@ -665,8 +666,8 @@ export default function BookAppointment() {
             </div>
 
             {/* Email notice */}
-            <div style={{ fontSize: '12px', color: M.textMuted, marginBottom: '24px', textAlign: 'center' }}>
-              ✉️ A confirmation email will be sent to your student email upon booking.
+            <div style={{ fontSize: '12px', color: M.textMuted, marginBottom: '24px', textAlign: 'center', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+              <Mail size={14} /> A confirmation email will be sent to your student email upon appointing.
             </div>
 
             {/* Nav buttons */}
@@ -695,7 +696,7 @@ export default function BookAppointment() {
                   transition: 'all 0.2s',
                   boxShadow: '0 4px 12px rgba(123,26,42,0.15)',
                 }}>
-                {isUploading ? 'Uploading Media...' : loading ? 'Booking...' : 'Confirm & Book'}
+                {isUploading ? 'Uploading Media...' : loading ? 'Appointing...' : 'Confirm & Appoint'}
               </button>
             </div>
           </div>
@@ -705,12 +706,12 @@ export default function BookAppointment() {
           <div style={{ position: 'fixed', inset: 0, zIndex: 110, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)' }} onClick={() => !loading && setConfirmingBook(false)} />
             <div className="animate-fade-up" style={{ position: 'relative', width: '90%', maxWidth: '320px', background: M.white, borderRadius: '20px', padding: '24px', textAlign: 'center', boxShadow: '0 10px 40px rgba(0,0,0,0.2)' }}>
-              <div style={{ width: '48px', height: '48px', borderRadius: '50%', background: M.greenLight, color: M.green, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px', margin: '0 auto 16px' }}>
-                ❓
+              <div style={{ width: '48px', height: '48px', borderRadius: '50%', background: M.goldLight, color: M.gold, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
+                <HelpCircle size={24} />
               </div>
-              <h3 style={{ fontFamily: "'Fraunces', serif", fontSize: '18px', fontWeight: 700, color: M.text, margin: '0 0 8px' }}>Confirm Booking?</h3>
+              <h3 style={{ fontFamily: "'Fraunces', serif", fontSize: '18px', fontWeight: 700, color: M.text, margin: '0 0 8px' }}>Confirm Appointment?</h3>
               <p style={{ fontSize: '13px', color: M.textSub, margin: '0 0 24px', lineHeight: 1.4 }}>
-                Are you ready to book your appointment for <strong>{fmtDate(selectedDate)}</strong> at <strong>{fmt12h(selectedSlot)}</strong>?
+                Are you ready to confirm your appointment for <strong>{fmtDate(selectedDate)}</strong> at <strong>{fmt12h(selectedSlot)}</strong>?
               </p>
               <div style={{ display: 'flex', gap: '8px' }}>
                 <button 
@@ -725,7 +726,7 @@ export default function BookAppointment() {
                   disabled={loading}
                   style={{ flex: 1, padding: '10px', borderRadius: '10px', border: 'none', background: M.maroon, color: M.white, fontSize: '13px', fontWeight: 600, cursor: 'pointer', fontFamily: "'IBM Plex Sans', sans-serif", opacity: loading ? 0.5 : 1 }}
                 >
-                  {loading ? 'Booking...' : 'Yes, Book'}
+                  {loading ? 'Appointing...' : 'Yes, Appoint'}
                 </button>
               </div>
             </div>

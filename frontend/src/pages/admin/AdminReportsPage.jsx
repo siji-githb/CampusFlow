@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useAuth } from '../../context/useAuth'
 import { getReports, getAiInsights } from '../../services/adminService'
+import { Printer, Download, Filter, RefreshCw, AlertTriangle, BarChart2, Bot, FileDown } from 'lucide-react'
 
 // ── Design Tokens ──────────────────────────────────────────────────────────────
 const M = {
@@ -251,11 +252,11 @@ export default function AdminReportsPage() {
         <div style={{ display: 'flex', gap: '10px' }}>
           <button onClick={() => window.print()}
             style={{ padding: '9px 18px', borderRadius: '9px', border: `1px solid ${M.border}`, background: M.white, color: M.text, fontSize: '13px', fontWeight: 600, cursor: 'pointer', fontFamily: "'IBM Plex Sans', sans-serif", display: 'flex', alignItems: 'center', gap: '7px' }}>
-            🖨 Print Data Summary
+            <Printer size={16} /> Print Data Summary
           </button>
           <button onClick={() => exportCSV(tableRows, 'campusflow_annual_report.csv')}
             style={{ padding: '9px 18px', borderRadius: '9px', border: 'none', background: M.maroon, color: M.white, fontSize: '13px', fontWeight: 700, cursor: 'pointer', fontFamily: "'IBM Plex Sans', sans-serif", display: 'flex', alignItems: 'center', gap: '7px' }}>
-            ⬇ Download Annual Report
+            <Download size={16} /> Download Annual Report
           </button>
         </div>
       </div>
@@ -263,7 +264,7 @@ export default function AdminReportsPage() {
       {/* ── Filter Bar ── */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '20px', padding: '14px 20px', background: M.white, borderRadius: '12px', border: `1px solid ${M.border}`, marginBottom: '24px', flexWrap: 'wrap', boxShadow: '0 1px 4px rgba(0,0,0,0.03)' }}>
         <span style={{ fontSize: '13px', fontWeight: 700, color: M.text, display: 'flex', alignItems: 'center', gap: '6px' }}>
-          <span style={{ fontSize: '15px' }}>⚙</span> Filters
+          <span style={{ display: 'flex', alignItems: 'center' }}><Filter size={15} /></span> Filters
         </span>
         <div style={{ width: '1px', height: '24px', background: M.border }} />
         <FilterSelect label="Date Range" value={dateRange} onChange={v => setDateRange(v)} options={[
@@ -279,13 +280,13 @@ export default function AdminReportsPage() {
           { value: 'diploma', label: 'Diploma' },
         ]} />
 
-        <button onClick={load} style={{ marginLeft: 'auto', padding: '7px 14px', borderRadius: '8px', border: `1px solid ${M.maroonBorder}`, background: M.maroonLight, color: M.maroon, fontSize: '12px', fontWeight: 700, cursor: 'pointer', fontFamily: "'IBM Plex Sans', sans-serif" }}>
-          ↻ Apply
+        <button onClick={load} style={{ marginLeft: 'auto', padding: '7px 14px', borderRadius: '8px', border: `1px solid ${M.maroonBorder}`, background: M.maroonLight, color: M.maroon, fontSize: '12px', fontWeight: 700, cursor: 'pointer', fontFamily: "'IBM Plex Sans', sans-serif", display: 'flex', alignItems: 'center', gap: '6px' }}>
+          <RefreshCw size={14} /> Apply
         </button>
       </div>
 
       {error && (
-        <div style={{ padding: '12px 16px', borderRadius: '10px', background: M.redLight, color: M.red, border: `1px solid ${M.redBorder}`, marginBottom: '24px' }}>⚠ {error}</div>
+        <div style={{ padding: '12px 16px', borderRadius: '10px', background: M.redLight, color: M.red, border: `1px solid ${M.redBorder}`, marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '8px' }}><AlertTriangle size={16} /> {error}</div>
       )}
 
       {/* ── Stat Cards ── */}
@@ -371,7 +372,7 @@ export default function AdminReportsPage() {
           </div>
         ) : monthLabels.length < 2 ? (
           <div style={{ height: '160px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: M.textMuted, flexDirection: 'column', gap: '10px' }}>
-            <div style={{ fontSize: '2rem' }}>📊</div>
+            <div style={{ display: 'flex', justifyContent: 'center' }}><BarChart2 size={40} /></div>
             <p style={{ margin: 0, fontSize: '14px' }}>Not enough monthly data to plot trends yet.</p>
           </div>
         ) : (
@@ -383,7 +384,7 @@ export default function AdminReportsPage() {
       <div className="animate-fade-up" style={{ animationDelay: '0.6s', background: M.maroonLight, borderRadius: '16px', border: `1px solid ${M.maroonBorder}`, padding: '24px', marginBottom: '24px', boxShadow: '0 1px 4px rgba(123,26,42,0.04)' }}>
         <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '14px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <span style={{ fontSize: '22px' }}>🤖</span>
+            <span style={{ display: 'flex', alignItems: 'center' }}><Bot size={26} color={M.maroon} /></span>
             <div>
               <div style={{ fontSize: '12px', fontWeight: 700, color: M.maroon, textTransform: 'uppercase', letterSpacing: '0.06em' }}>AI Analytics Insight</div>
               <div style={{ fontSize: '11px', color: M.maroon, opacity: 0.7, marginTop: '1px' }}>
@@ -393,7 +394,7 @@ export default function AdminReportsPage() {
           </div>
           <button onClick={loadInsights} disabled={insightLoading}
             style={{ padding: '8px 18px', borderRadius: '8px', border: 'none', background: M.maroon, color: M.white, fontSize: '12px', fontWeight: 600, cursor: insightLoading ? 'not-allowed' : 'pointer', fontFamily: "'IBM Plex Sans', sans-serif", opacity: insightLoading ? 0.7 : 1 }}>
-            {insightLoading ? 'Generating…' : '↻ Refresh'}
+            {insightLoading ? 'Generating…' : <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><RefreshCw size={14} /> Refresh</span>}
           </button>
         </div>
         {insights ? (
@@ -429,7 +430,7 @@ export default function AdminReportsPage() {
           </div>
           <button onClick={() => exportCSV(tableRows, 'campusflow_monthly_report.csv')}
             style={{ padding: '8px 16px', borderRadius: '8px', border: `1px solid ${M.border}`, background: M.offWhite, color: M.text, fontSize: '12px', fontWeight: 600, cursor: 'pointer', fontFamily: "'IBM Plex Sans', sans-serif", display: 'flex', alignItems: 'center', gap: '7px' }}>
-            <span>📤</span> Export CSV
+            <span style={{ display: 'flex', alignItems: 'center' }}><FileDown size={14} /></span> Export CSV
           </button>
         </div>
 

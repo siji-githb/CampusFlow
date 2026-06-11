@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useAuth } from '../../context/useAuth'
 import { getTodaysQueue, confirmStep, getLiveQueueStats } from '../../services/queueService'
+import { RefreshCw, AlertTriangle, Inbox } from 'lucide-react'
 
 // ── Design Tokens (shared with AdminDashboard) ─────────────────────────────────
 const M = {
@@ -131,8 +132,8 @@ export default function AdminLiveQueuePage() {
             <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: M.green, boxShadow: `0 0 6px ${M.green}` }} />
             <span style={{ fontSize: '12px', fontWeight: 600, color: M.green }}>System Online & Active</span>
           </div>
-          <button onClick={fetchQueue} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '18px', padding: '4px' }} title="Refresh">
-            🔄
+          <button onClick={fetchQueue} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: M.text }} title="Refresh">
+            <RefreshCw size={18} />
           </button>
           <div style={{ background: M.maroon, color: M.white, padding: '8px 16px', borderRadius: '9px', fontFamily: "'Fraunces', serif", fontSize: '15px', fontWeight: 700 }}>
             {currentTime}
@@ -141,8 +142,8 @@ export default function AdminLiveQueuePage() {
       </div>
 
       {error && (
-        <div style={{ padding: '12px 16px', borderRadius: '10px', background: M.redLight, color: M.red, border: `1px solid ${M.redBorder}`, marginBottom: '24px' }}>
-          ⚠ {error}
+        <div style={{ padding: '12px 16px', borderRadius: '10px', background: M.redLight, color: M.red, border: `1px solid ${M.redBorder}`, marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+          <AlertTriangle size={15} /> {error}
         </div>
       )}
 
@@ -220,7 +221,7 @@ export default function AdminLiveQueuePage() {
             ))
           ) : upNext.length === 0 ? (
             <div style={{ padding: '40px', textAlign: 'center' }}>
-              <div style={{ fontSize: '2rem', marginBottom: '10px' }}>📭</div>
+              <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '10px', color: M.textMuted }}><Inbox size={40} /></div>
               <p style={{ fontSize: '14px', fontWeight: 600, color: M.text, margin: '0 0 4px' }}>Queue is clear</p>
               <p style={{ fontSize: '13px', color: M.textMuted, margin: 0 }}>No students are currently waiting.</p>
             </div>

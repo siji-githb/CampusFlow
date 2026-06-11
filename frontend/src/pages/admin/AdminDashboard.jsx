@@ -9,6 +9,7 @@ import AdminRegistrarRecordsPage from './AdminRegistrarRecordsPage'
 import AdminUserManagementPage from './AdminUserManagementPage'
 import AdminOfficeConfigPage from './AdminOfficeConfigPage'
 import AdminAuditLogPage from './AdminAuditLogPage'
+import { Calendar, Ticket, Clock, Bot, Search, Shield, BarChart2, LineChart as LineChartIcon, FolderOpen, Users, Settings, MessageSquare, Bell, LogOut } from 'lucide-react'
 import {
   getDashboardStats, getReports, getOfficeConfig, updateOfficeConfig,
   getAllUsers, updateUserRole, getAuditLog, getAiInsights
@@ -59,7 +60,7 @@ const SideItem = ({ icon, label, active, onClick }) => (
     onMouseEnter={e => { if (!active) { e.currentTarget.style.background = M.surface; e.currentTarget.style.color = M.text; } }}
     onMouseLeave={e => { if (!active) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = M.textSub; } }}
   >
-    <span style={{ fontSize: '16px', width: '20px', textAlign: 'center', flexShrink: 0, opacity: active ? 1 : 0.7 }}>{icon}</span>
+    <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '20px', flexShrink: 0, opacity: active ? 1 : 0.7 }}>{icon}</span>
     <span style={{ flex: 1 }}>{label}</span>
     {active && <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: 'rgba(255,255,255,0.6)', flexShrink: 0 }} />}
   </button>
@@ -184,7 +185,7 @@ function OverviewTab() {
       value: loading || !stats ? null : stats?.today?.total || 0,
       sub: loading || !stats ? '—' : `${stats?.today?.completed || 0} Completed`,
       subColor: M.green,
-      icon: '📅',
+      icon: <Calendar size={20} />,
       bg: M.maroon,
       textColor: M.white,
       dark: true,
@@ -194,7 +195,7 @@ function OverviewTab() {
       value: loading || !stats ? null : stats?.active_queue || 0,
       sub: loading || !stats ? '—' : 'Currently in progress',
       subColor: 'rgba(255,255,255,0.75)',
-      icon: '🎫',
+      icon: <Ticket size={20} />,
       bg: M.gold,
       textColor: M.white,
       dark: true,
@@ -214,7 +215,7 @@ function OverviewTab() {
       value: loading || !stats ? null : `${Math.round(stats?.avg_wait_minutes || 0)} min`,
       sub: loading || !stats ? '—' : 'System-wide average',
       subColor: M.textMuted,
-      icon: '⏱',
+      icon: <Clock size={20} />,
       bg: M.white,
       textColor: M.text,
       dark: false,
@@ -408,7 +409,7 @@ function ReportsTab() {
       <div style={{ background: M.maroonLight, borderRadius: '16px', border: `1px solid ${M.maroonBorder}`, padding: '24px', marginBottom: '24px' }}>
         <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '14px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <span style={{ fontSize: '20px' }}>🤖</span>
+            <span style={{ display: 'flex', alignItems: 'center' }}><Bot size={24} color={M.maroon} /></span>
             <div>
               <div style={{ fontSize: '12px', fontWeight: 700, color: M.maroon, textTransform: 'uppercase', letterSpacing: '0.06em' }}>AI Daily Insight</div>
               <div style={{ fontSize: '11px', color: M.maroon, opacity: 0.7, marginTop: '1px' }}>
@@ -632,7 +633,7 @@ function UsersTab() {
         <div style={{ position: 'relative' }}>
           <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search users…"
             style={{ padding: '9px 14px 9px 34px', borderRadius: '9px', border: `1px solid ${M.border}`, background: M.white, fontSize: '13px', color: M.text, outline: 'none', width: '220px', fontFamily: "'IBM Plex Sans', sans-serif" }} />
-          <span style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: M.textMuted, fontSize: '14px' }}>🔍</span>
+          <span style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', display: 'flex', alignItems: 'center' }}><Search size={14} color={M.textMuted} /></span>
         </div>
       </div>
       {error && <div style={{ padding: '12px 16px', borderRadius: '10px', background: M.redLight, color: M.red, border: `1px solid ${M.redBorder}`, marginBottom: '20px' }}>{error}</div>}
@@ -711,7 +712,7 @@ function AuditLogTab() {
         </div>
       ) : logs.length === 0 ? (
         <div style={{ textAlign: 'center', padding: '60px 24px', background: M.white, borderRadius: '16px', border: `1px solid ${M.border}` }}>
-          <div style={{ fontSize: '3rem', marginBottom: '12px' }}>🛡️</div>
+          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '12px', color: M.textMuted }}><Shield size={48} /></div>
           <p style={{ fontSize: '16px', fontWeight: 600, color: M.text, margin: '0 0 6px' }}>No audit entries yet</p>
           <p style={{ fontSize: '13px', color: M.textMuted, margin: 0 }}>Actions will be recorded here as the system is used.</p>
         </div>
@@ -748,14 +749,14 @@ export default function AdminDashboard() {
   const [profileOpen, setProfileOpen] = useState(false)
 
   const navItems = [
-    { id: 'overview', icon: '📊', label: 'Dashboard' },
-    { id: 'reports', icon: '📈', label: 'Reports' },
-    { id: 'queue', icon: '🎫', label: 'Live Queue' },
-    { id: 'appts', icon: '📅', label: 'Appointments' },
-    { id: 'records', icon: '🗂️', label: 'Registrar Records' },
-    { id: 'users', icon: '👥', label: 'User Management' },
-    { id: 'config', icon: '⚙️', label: 'Office Config' },
-    { id: 'audit', icon: '🛡️', label: 'Audit Log' },
+    { id: 'overview', icon: <BarChart2 size={18} />, label: 'Dashboard' },
+    { id: 'reports', icon: <LineChartIcon size={18} />, label: 'Reports' },
+    { id: 'queue', icon: <Ticket size={18} />, label: 'Live Queue' },
+    { id: 'appts', icon: <Calendar size={18} />, label: 'Appointments' },
+    { id: 'records', icon: <FolderOpen size={18} />, label: 'Registrar Records' },
+    { id: 'users', icon: <Users size={18} />, label: 'User Management' },
+    { id: 'config', icon: <Settings size={18} />, label: 'Office Config' },
+    { id: 'audit', icon: <Shield size={18} />, label: 'Audit Log' },
   ]
 
   return (
@@ -799,7 +800,7 @@ export default function AdminDashboard() {
             onMouseEnter={e => { e.currentTarget.style.background = M.surface; e.currentTarget.style.color = M.text; }}
             onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = M.textMuted; }}
           >
-            <span style={{ fontSize: '16px', width: '20px', textAlign: 'center' }}>💬</span> Support
+            <span style={{ display: 'flex', justifyContent: 'center', width: '20px' }}><MessageSquare size={16} /></span> Support
           </button>
         </div>
       </aside>
@@ -819,7 +820,7 @@ export default function AdminDashboard() {
           {/* Right controls */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             {/* Bell */}
-            <button style={{ width: '36px', height: '36px', borderRadius: '50%', border: `1px solid ${M.border}`, background: M.white, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px' }}>🔔</button>
+            <button style={{ width: '36px', height: '36px', borderRadius: '50%', border: `1px solid ${M.border}`, background: M.white, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: M.textSub }}><Bell size={18} /></button>
 
             {/* Avatar + dropdown */}
             <div style={{ position: 'relative' }}>
@@ -841,7 +842,7 @@ export default function AdminDashboard() {
                     width: '100%', padding: '9px 12px', borderRadius: '9px', border: 'none',
                     background: M.redLight, color: M.red, fontSize: '13px', fontWeight: 600,
                     cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', fontFamily: "'IBM Plex Sans', sans-serif",
-                  }}>🚪 Log Out</button>
+                  }}><LogOut size={16} /> Log Out</button>
                 </div>
               )}
             </div>

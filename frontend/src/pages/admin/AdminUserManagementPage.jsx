@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useAuth } from '../../context/useAuth'
 import { getAllUsers, updateUserRole, getDashboardStats, toggleUserStatus } from '../../services/adminService'
+import { GraduationCap, Briefcase, Shield, AlertTriangle, Check, Search, X as XIcon, Users, Pencil, MoreVertical, Ban, CheckCircle } from 'lucide-react'
 
 // ── Design Tokens ──────────────────────────────────────────────────────────────
 const M = {
@@ -119,8 +120,8 @@ function EditRoleModal({ user, onSave, onClose, saving }) {
                 textTransform: 'capitalize', fontFamily: "'IBM Plex Sans', sans-serif",
                 transition: 'all 0.15s',
               }}>
-                <div style={{ fontSize: '20px', marginBottom: '4px' }}>
-                  {r === 'student' ? '📘' : r === 'staff' ? '👔' : '🛡️'}
+                <div style={{ marginBottom: '4px', display: 'flex', justifyContent: 'center' }}>
+                  {r === 'student' ? <GraduationCap size={24} /> : r === 'staff' ? <Briefcase size={24} /> : <Shield size={24} />}
                 </div>
                 {cfg.label}
               </button>
@@ -249,8 +250,8 @@ export default function AdminUserManagementPage() {
       </div>
 
       {/* Alerts */}
-      {error   && <div style={{ padding: '12px 16px', borderRadius: '10px', background: M.redLight,   color: M.red,   border: `1px solid ${M.redBorder}`,   marginBottom: '20px', fontSize: '13px' }}>⚠ {error}</div>}
-      {success && <div style={{ padding: '12px 16px', borderRadius: '10px', background: M.greenLight, color: M.green, border: `1px solid ${M.greenBorder}`, marginBottom: '20px', fontSize: '13px' }}>✓ {success}</div>}
+      {error   && <div style={{ padding: '12px 16px', borderRadius: '10px', background: M.redLight,   color: M.red,   border: `1px solid ${M.redBorder}`,   marginBottom: '20px', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '8px' }}><AlertTriangle size={16} /> {error}</div>}
+      {success && <div style={{ padding: '12px 16px', borderRadius: '10px', background: M.greenLight, color: M.green, border: `1px solid ${M.greenBorder}`, marginBottom: '20px', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '8px' }}><Check size={16} /> {success}</div>}
 
       {/* ── Stat Cards ── */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px', marginBottom: '28px' }}>
@@ -316,9 +317,9 @@ export default function AdminUserManagementPage() {
                 onFocus={e => e.target.style.borderColor = M.maroon}
                 onBlur={e => e.target.style.borderColor = M.border}
               />
-              <span style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: M.textMuted, fontSize: '14px' }}>🔍</span>
+              <span style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', display: 'flex', alignItems: 'center', color: M.textMuted }}><Search size={14} /></span>
               {search && (
-                <button onClick={() => setSearch('')} style={{ position: 'absolute', right: '8px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: M.textMuted, fontSize: '15px', padding: '0 2px' }}>×</button>
+                <button onClick={() => setSearch('')} style={{ position: 'absolute', right: '8px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: M.textMuted, display: 'flex', alignItems: 'center', padding: '0 2px' }}><XIcon size={14} /></button>
               )}
             </div>
           </div>
@@ -352,7 +353,7 @@ export default function AdminUserManagementPage() {
           ))
         ) : paginated.length === 0 ? (
           <div style={{ padding: '56px 24px', textAlign: 'center' }}>
-            <div style={{ fontSize: '2.8rem', marginBottom: '12px' }}>👥</div>
+            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '12px', color: M.textMuted }}><Users size={48} /></div>
             <p style={{ fontSize: '15px', fontWeight: 600, color: M.text, margin: '0 0 6px' }}>No users found</p>
             <p style={{ fontSize: '13px', color: M.textMuted, margin: 0 }}>
               {search ? 'Try adjusting your search query.' : 'No accounts registered yet.'}
@@ -402,13 +403,13 @@ export default function AdminUserManagementPage() {
                     title="Update role"
                     style={{
                       width: '32px', height: '32px', borderRadius: '8px',
-                      border: `1px solid ${M.border}`, background: M.offWhite,
+                      border: `1px solid ${M.border}`, background: M.offWhite, color: M.textSub,
                       cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      fontSize: '14px', transition: 'all 0.12s',
+                      transition: 'all 0.12s',
                     }}
-                    onMouseEnter={e => { e.currentTarget.style.background = M.maroonLight; e.currentTarget.style.borderColor = M.maroonBorder }}
-                    onMouseLeave={e => { e.currentTarget.style.background = M.offWhite; e.currentTarget.style.borderColor = M.border }}
-                  >✏️</button>
+                    onMouseEnter={e => { e.currentTarget.style.background = M.maroonLight; e.currentTarget.style.borderColor = M.maroonBorder; e.currentTarget.style.color = M.maroon }}
+                    onMouseLeave={e => { e.currentTarget.style.background = M.offWhite; e.currentTarget.style.borderColor = M.border; e.currentTarget.style.color = M.textSub }}
+                  ><Pencil size={14} /></button>
                   <button
                     onClick={() => setDropdownOpen(dropdownOpen === user.id ? null : user.id)}
                     title="More options"
@@ -417,11 +418,11 @@ export default function AdminUserManagementPage() {
                       border: `1px solid ${dropdownOpen === user.id ? M.border : 'transparent'}`,
                       background: dropdownOpen === user.id ? M.surface : 'transparent',
                       cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      fontSize: '16px', transition: 'all 0.12s', color: M.textSub, fontWeight: 700
+                      transition: 'all 0.12s', color: M.textSub,
                     }}
                     onMouseEnter={e => { e.currentTarget.style.background = M.surface }}
                     onMouseLeave={e => { if(dropdownOpen !== user.id) e.currentTarget.style.background = 'transparent' }}
-                  >⋮</button>
+                  ><MoreVertical size={16} /></button>
                   
                   {dropdownOpen === user.id && (
                     <div style={{
@@ -441,7 +442,7 @@ export default function AdminUserManagementPage() {
                         onMouseEnter={e => e.currentTarget.style.background = user.is_active !== false ? M.redLight : M.greenLight}
                         onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
                       >
-                        <span style={{ fontSize: '14px' }}>{user.is_active !== false ? '🚫' : '✅'}</span> 
+                        <span style={{ display: 'flex', alignItems: 'center' }}>{user.is_active !== false ? <Ban size={14} /> : <CheckCircle size={14} />}</span> 
                         {user.is_active !== false ? 'Suspend User' : 'Reactivate User'}
                       </button>
                     </div>

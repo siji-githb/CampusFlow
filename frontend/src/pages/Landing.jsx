@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/useAuth'
+import { Calendar, Ticket, Route, Bot, Zap, BarChart3 } from 'lucide-react'
+
 import crmcLogo from '../assets/crmc-logo.webp'
 
 // ── Responsive hook ──
@@ -32,12 +34,12 @@ const M = {
 }
 
 const FEATURES = [
-  { icon: '📅', title: 'Online Appointment Booking', desc: 'Schedule TOR, COE, or Diploma requests anytime — no need to line up just to get a number.' },
-  { icon: '🎫', title: 'Digital Queue Number',       desc: 'Receive your queue number on your phone the moment you arrive on campus.' },
-  { icon: '👣', title: 'Step-by-Step Guidance',      desc: 'Know exactly which counter to go to next. No confusion, no unnecessary wandering.' },
-  { icon: '🤖', title: 'AI Scheduling Assistant',    desc: 'Ask anything about requirements, schedules, or procedures — conversationally.' },
-  { icon: '⚡', title: 'Real-Time Step Tracking',    desc: 'Your progress updates live as each registrar counter confirms your transaction.' },
-  { icon: '📊', title: 'Smart Admin Reports',        desc: 'Registrar staff see analytics, demand forecasts, and AI insights at a glance.' },
+  { icon: <Calendar size={22} strokeWidth={2} color={M.maroon} />, title: 'Online Appointment Booking', desc: 'Schedule TOR, COE, or Diploma requests anytime — no need to line up just to get a number.' },
+  { icon: <Ticket size={22} strokeWidth={2} color={M.maroon} />, title: 'Digital Queue Number',       desc: 'Receive your queue number on your phone the moment you arrive on campus.' },
+  { icon: <Route size={22} strokeWidth={2} color={M.maroon} />, title: 'Step-by-Step Guidance',      desc: 'Know exactly which counter to go to next. No confusion, no unnecessary wandering.' },
+  { icon: <Bot size={22} strokeWidth={2} color={M.maroon} />, title: 'AI Scheduling Assistant',    desc: 'Ask anything about requirements, schedules, or procedures — conversationally.' },
+  { icon: <Zap size={22} strokeWidth={2} color={M.maroon} />, title: 'Real-Time Step Tracking',    desc: 'Your progress updates live as each registrar counter confirms your transaction.' },
+  { icon: <BarChart3 size={22} strokeWidth={2} color={M.maroon} />, title: 'Smart Admin Reports',        desc: 'Registrar staff see analytics, demand forecasts, and AI insights at a glance.' },
 ]
 
 const STEPS = [

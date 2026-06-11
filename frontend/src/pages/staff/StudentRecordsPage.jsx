@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { getStudentRecords, uploadStudentRecords, addStudentRecord, deleteStudentRecord, editStudentRecord } from '../../services/adminService'
+import { FileSpreadsheet, Edit, Trash2 } from 'lucide-react'
 
 const M = {
   maroon: '#7B1A2A', maroonDark: '#5C1320', maroonLight: '#F9F0F1', maroonBorder: 'rgba(123,26,42,0.15)',
@@ -192,7 +193,7 @@ export default function StudentRecordsPage() {
 
           <div style={{ border: `2px dashed ${M.maroonBorder}`, background: M.maroonLight, padding: '32px', borderRadius: '12px', textAlign: 'center', cursor: 'pointer', transition: 'background 0.2s' }} onClick={() => fileInputRef.current?.click()}>
             <input type="file" accept=".xlsx" ref={fileInputRef} onChange={handleFileUpload} style={{ display: 'none' }} />
-            <div style={{ fontSize: '24px', marginBottom: '8px' }}>📄</div>
+            <div style={{ marginBottom: '8px', display: 'flex', justifyContent: 'center' }}><FileSpreadsheet size={24} color={M.maroon} /></div>
             <div style={{ fontSize: '14px', fontWeight: 600, color: M.maroon }}>{uploading ? 'Uploading...' : 'Click to select Excel file'}</div>
           </div>
         </div>
@@ -225,7 +226,7 @@ export default function StudentRecordsPage() {
               </select>
             </div>
             <div style={{ gridColumn: '1 / -1', marginTop: '8px' }}>
-              <button type="submit" style={{ width: '100%', background: M.gold, color: M.maroon, border: 'none', padding: '12px', borderRadius: '8px', fontWeight: 600, cursor: 'pointer', fontFamily: "'IBM Plex Sans', sans-serif", transition: 'transform 0.1s' }} onMouseDown={e => e.target.style.transform = 'scale(0.98)'} onMouseUp={e => e.target.style.transform = 'scale(1)'}>
+              <button type="submit" style={{ width: '100%', background: M.gold, color: M.white, border: 'none', padding: '12px', borderRadius: '8px', fontWeight: 600, cursor: 'pointer', fontFamily: "'IBM Plex Sans', sans-serif", transition: 'transform 0.1s' }} onMouseDown={e => e.target.style.transform = 'scale(0.98)'} onMouseUp={e => e.target.style.transform = 'scale(1)'}>
                 Add Student
               </button>
             </div>
@@ -276,9 +277,11 @@ export default function StudentRecordsPage() {
                     <td style={{ padding: '12px 24px', color: M.textSub }}>{record.course}</td>
                     <td style={{ padding: '12px 24px', color: M.textMuted, fontSize: '12px' }}>{new Date(record.created_at).toLocaleDateString()}</td>
                     <td style={{ padding: '12px 24px', textAlign: 'right', display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
-                      <button className="action-btn edit" onClick={() => startEdit(record)}>Edit</button>
-                      <button className="action-btn delete" onClick={() => handleDelete(record.student_id)} disabled={isDeleting === record.student_id}>
-                        {isDeleting === record.student_id ? '...' : 'Delete'}
+                      <button className="action-btn edit" style={{ display: 'flex', alignItems: 'center', gap: '4px' }} onClick={() => startEdit(record)}>
+                        <Edit size={14} /> Edit
+                      </button>
+                      <button className="action-btn delete" style={{ display: 'flex', alignItems: 'center', gap: '4px' }} onClick={() => handleDelete(record.student_id)} disabled={isDeleting === record.student_id}>
+                        <Trash2 size={14} /> {isDeleting === record.student_id ? '...' : 'Delete'}
                       </button>
                     </td>
                   </tr>

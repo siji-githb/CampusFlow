@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useAuth } from '../../context/useAuth'
 import { getMessages, markMessageRead, replyToMessage } from '../../services/messagesService'
+import { Bot, MessageSquare, Send, Check } from 'lucide-react'
 
 // ── Design Tokens ──────────────────────────────────────────────────────────────
 const M = {
@@ -124,7 +125,7 @@ const Bubble = ({ text, fromAI, fromStaff, time }) => {
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: isRight ? 'flex-end' : 'flex-start', marginBottom: '14px' }}>
       {fromAI && (
         <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px' }}>
-          <div style={{ width: '20px', height: '20px', borderRadius: '50%', background: M.maroonMid, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px' }}>🤖</div>
+          <div style={{ width: '20px', height: '20px', borderRadius: '50%', background: M.maroonMid, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px', color: M.maroon }}><Bot size={12} /></div>
           <span style={{ fontSize: '10px', fontWeight: 600, color: M.maroon }}>CampusFlow AI</span>
         </div>
       )}
@@ -273,7 +274,7 @@ export default function MessagesPage() {
             </div>
           ) : filtered.length === 0 ? (
             <div style={{ padding: '48px 24px', textAlign: 'center' }}>
-              <div style={{ fontSize: '2.5rem', marginBottom: '12px' }}>💬</div>
+              <div style={{ color: M.textMuted, marginBottom: '12px', display: 'flex', justifyContent: 'center' }}><MessageSquare size={40} /></div>
               <p style={{ fontSize: '14px', fontWeight: 600, color: M.text, margin: '0 0 4px' }}>No messages</p>
               <p style={{ fontSize: '12px', color: M.textMuted, margin: 0 }}>AI-escalated queries appear here.</p>
             </div>
@@ -334,7 +335,7 @@ export default function MessagesPage() {
               )}
               {selected.is_read && (
                 <span style={{ fontSize: '12px', fontWeight: 600, color: M.green, display: 'flex', alignItems: 'center', gap: '4px' }}>
-                  <span>✓</span> Resolved
+                  <Check size={14} /> Resolved
                 </span>
               )}
             </div>
@@ -349,7 +350,7 @@ export default function MessagesPage() {
               borderRadius: '14px', padding: '16px 18px', marginBottom: '20px',
             }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
-                <span style={{ fontSize: '16px' }}>🤖</span>
+                <span style={{ color: M.maroon, display: 'flex', alignItems: 'center' }}><Bot size={18} /></span>
                 <span style={{ fontSize: '12px', fontWeight: 700, color: M.maroon, letterSpacing: '0.04em', textTransform: 'uppercase' }}>AI Escalation Summary</span>
               </div>
               <p style={{ fontSize: '13px', color: M.textSub, margin: '0 0 12px', lineHeight: 1.65 }}>{aiSummary}</p>
@@ -432,14 +433,14 @@ export default function MessagesPage() {
                   opacity: sendingReply ? 0.6 : 1,
                 }}
                 onClick={handleReply}
-              >{sendingReply ? '...' : '›'}</button>
+              >{sendingReply ? '...' : <Send size={18} />}</button>
             </div>
           </div>
         </div>
       ) : (
         /* Empty state */
         <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: M.textMuted, flexDirection: 'column', gap: '12px' }}>
-          <div style={{ fontSize: '3rem' }}>💬</div>
+          <div style={{ display: 'flex', justifyContent: 'center' }}><MessageSquare size={48} /></div>
           <p style={{ fontSize: '15px', fontWeight: 600, color: M.text, margin: 0 }}>Select a message</p>
           <p style={{ fontSize: '13px', color: M.textMuted, margin: 0 }}>Choose a conversation from the left to view it here.</p>
         </div>

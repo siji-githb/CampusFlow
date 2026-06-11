@@ -4,6 +4,7 @@ import { useAuth } from '../../context/useAuth'
 import Navbar from '../../components/layout/Navbar'
 import { getMyQueue, activateQueue, getTimeEstimate } from '../../services/queueService'  // ← M9
 import { getMyAppointments } from '../../services/appointmentService'
+import { Clock, Hourglass, PartyPopper, Ticket, Calendar, Inbox } from 'lucide-react'
 
 const M = { maroon: '#7B1A2A', maroonLight: '#F9F0F1', gold: '#B8900A', goldLight: '#FDF6E3', offWhite: '#F9F7F4', gray200: '#EAE7E2', gray500: '#706B65', text: '#1C1917' }
 
@@ -203,14 +204,14 @@ export default function MyQueue() {
                                 fontFamily: 'monospace',
                                 letterSpacing: '0.03em',
                               }}>
-                                ⏱ {est.label}
+                                <Clock size={11} color={M.gold} /> {est.label}
                               </span>
                             </div>
                           )}
 
                           {/* Sub-labels */}
                           {step.status === 'in_progress' && (
-                            <p style={{ fontSize: '12px', color: M.gold, margin: 0 }}>⏳ Please proceed to this counter</p>
+                            <p style={{ fontSize: '12px', color: M.gold, margin: 0, display: 'flex', alignItems: 'center', gap: '4px' }}><Hourglass size={12} color={M.gold} /> Please proceed to this counter</p>
                           )}
                           {step.status === 'completed' && step.confirmed_at && (
                             <p style={{ fontSize: '11px', color: M.gray500, margin: 0 }}>✓ Confirmed at {new Date(step.confirmed_at).toLocaleTimeString()}</p>
@@ -223,7 +224,7 @@ export default function MyQueue() {
 
                 {ticket.status === 'completed' && (
                   <div style={{ marginTop: '1rem', padding: '1rem', background: M.maroonLight, borderRadius: '10px', textAlign: 'center', border: `1px solid ${M.maroon}20` }}>
-                    <p style={{ fontSize: '15px', fontWeight: 700, color: M.maroon, margin: '0 0 3px' }}>🎉 Transaction Complete!</p>
+                    <p style={{ fontSize: '15px', fontWeight: 700, color: M.maroon, margin: '0 0 3px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}><PartyPopper size={18} color={M.gold} /> Transaction Complete!</p>
                     <p style={{ fontSize: '12px', color: M.gray500, margin: 0 }}>All steps have been processed.</p>
                   </div>
                 )}
@@ -231,7 +232,7 @@ export default function MyQueue() {
             </div>
           ) : (
             <div className="animate-fade-up" style={{ animationDelay: '0.1s', textAlign: 'center', padding: '4rem 2rem', background: 'white', borderRadius: '16px', border: `1px solid ${M.gray200}` }}>
-              <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>🎫</div>
+              <div style={{ color: M.gray500, marginBottom: '1rem', display: 'flex', justifyContent: 'center' }}><Ticket size={48} color={M.gold} /></div>
               <p style={{ fontSize: '15px', fontWeight: 600, color: M.text, margin: '0 0 6px' }}>No Active Queue Ticket</p>
               <p style={{ fontSize: '13px', color: M.gray500, margin: '0 0 1.5rem' }}>Check your upcoming appointments to activate a queue number.</p>
               <button onClick={() => setActiveTab('upcoming')} style={{ padding: '11px 24px', borderRadius: '8px', border: 'none', background: M.maroon, color: 'white', fontSize: '14px', fontWeight: 600, cursor: 'pointer' }}>
@@ -267,7 +268,7 @@ export default function MyQueue() {
                         <h3 style={{ fontSize: '15px', fontWeight: 600, color: M.text, margin: 0 }}>{appt.transaction_types?.name}</h3>
                         <span style={{ fontSize: '11px', fontWeight: 600, padding: '2px 10px', borderRadius: '100px', background: '#F0FDF4', color: '#15803D', border: '1px solid #BBF7D0' }}>Confirmed</span>
                       </div>
-                      <p style={{ fontSize: '13px', color: M.gray500, margin: '0 0 1rem' }}>🗓️ {appt.appointment_date} at {appt.time_slot}</p>
+                      <p style={{ fontSize: '13px', color: M.gray500, margin: '0 0 1rem', display: 'flex', alignItems: 'center', gap: '6px' }}><Calendar size={13} color={M.gold} /> {appt.appointment_date} at {appt.time_slot}</p>
                       {ticket && ticket.appointment_id === appt.id ? (
                         <div style={{ display: 'flex', gap: '8px' }}>
                           <button
@@ -288,9 +289,9 @@ export default function MyQueue() {
                           onClick={() => handleActivate(appt.id)}
                           disabled={activating === appt.id || !isToday || ticket}
                           title={ticket ? "You already have an active queue ticket" : ""}
-                          style={{ width: '100%', padding: '12px', borderRadius: '8px', border: 'none', background: (!isToday || ticket) ? M.gray200 : activating === appt.id ? '#B8667A' : M.maroon, color: (!isToday || ticket) ? M.gray500 : 'white', fontSize: '14px', fontWeight: 700, cursor: activating === appt.id || !isToday || ticket ? 'not-allowed' : 'pointer', fontFamily: "'DM Sans', sans-serif" }}
+                          style={{ width: '100%', padding: '12px', borderRadius: '8px', border: 'none', background: (!isToday || ticket) ? M.gray200 : activating === appt.id ? '#B8667A' : M.maroon, color: (!isToday || ticket) ? M.gray500 : 'white', fontSize: '14px', fontWeight: 700, cursor: activating === appt.id || !isToday || ticket ? 'not-allowed' : 'pointer', fontFamily: "'DM Sans', sans-serif", display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
                         >
-                          {activating === appt.id ? 'Activating...' : !isToday ? 'Available on Appointment Date' : '🎫 Get Queue Number'}
+                          {activating === appt.id ? 'Activating...' : !isToday ? 'Available on Appointment Date' : <><Ticket size={16} color={M.gold} /> Get Queue Number</>}
                         </button>
                       )}
                     </div>
@@ -300,7 +301,7 @@ export default function MyQueue() {
             </div>
           ) : (
             <div className="animate-fade-up" style={{ animationDelay: '0.1s', textAlign: 'center', padding: '4rem 2rem', background: 'white', borderRadius: '16px', border: `1px solid ${M.gray200}` }}>
-              <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>📭</div>
+              <div style={{ color: M.gold, marginBottom: '1rem', display: 'flex', justifyContent: 'center' }}><Inbox size={48} /></div>
               <p style={{ fontSize: '15px', fontWeight: 600, color: M.text, margin: '0 0 6px' }}>No upcoming appointments</p>
               <p style={{ fontSize: '13px', color: M.gray500, margin: '0 0 1.5rem' }}>Queue numbers are only available on your appointment date.</p>
               <button onClick={() => navigate('/student/book')} style={{ padding: '11px 24px', borderRadius: '8px', border: 'none', background: M.maroon, color: 'white', fontSize: '14px', fontWeight: 600, cursor: 'pointer' }}>
