@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useAuth } from '../../context/useAuth'
 import { getDashboardStats, getAllAppointments, updateAppointmentStatus } from '../../services/adminService'
+import { rescheduleAppointment, getAvailableSlots } from '../../services/appointmentService'
 import { AlertTriangle, Inbox, Check, X as XIcon, ChevronLeft, ChevronRight, ChevronDown, Filter } from 'lucide-react'
 
 // ── Design Tokens ──────────────────────────────────────────────────────────────
@@ -141,6 +142,112 @@ const Av = ({ name, size = 32, bg = M.maroonMid, color = M.maroon }) => {
   )
 }
 
+// ── Reschedule Modal ───────────────────────────────────────────────────────────
+const RescheduleModal = ({ appt, onClose, onConfirm }) => {
+  const [date, setDate] = useState('')
+  const [time, setTime] = useState('')
+  const [slots, setSlots] = useState([])
+  const [loadingSlots, setLoadingSlots] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [showConfirm, setShowConfirm] = useState(false)
+
+  const format12Hour = (timeStr) => {
+    if (!timeStr) return ''
+    const [hStr, mStr] = timeStr.split(':')
+    if (!hStr || !mStr) return timeStr
+    const h = parseInt(hStr, 10)
+    return `${h % 12 || 12}:${mStr} ${h < 12 ? 'AM' : 'PM'}`
+  }
+
+  useEffect(() => {
+    if (!date) return
+    setLoadingSlots(true)
+    getAvailableSlots(appt.transaction_type_id, date)
+      .then(res => setSlots(res.slots || []))
+      .catch(() => setSlots([]))
+      .finally(() => setLoadingSlots(false))
+  }, [date, appt.transaction_type_id])
+
+  const handleSave = async () => {
+    if (!date || !time) return
+    setSaving(true)
+    await onConfirm(appt.id, date, time)
+    setSaving(false)
+    setShowConfirm(false)
+  }
+
+  const d = new Date()
+  const today = new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10)
+
+  return (
+    <div style={{ position: 'fixed', inset: 0, zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.5)' }} onClick={onClose} />
+      
+      {/* Main Modal */}
+      {!showConfirm && (
+        <div className="animate-fade-up" style={{ position: 'relative', width: '600px', background: M.white, borderRadius: '16px', padding: '32px', boxShadow: '0 4px 24px rgba(0,0,0,0.1)' }}>
+          <h3 style={{ fontFamily: "'Fraunces', serif", fontSize: '24px', color: M.maroon, margin: '0 0 20px' }}>Reschedule Appointment</h3>
+          
+          <div style={{ marginBottom: '20px' }}>
+            <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: M.textMuted, marginBottom: '8px' }}>Select New Date</label>
+            <input type="date" min={today} value={date} onChange={e => { setDate(e.target.value); setTime('') }} 
+              style={{ width: '100%', padding: '12px', borderRadius: '8px', border: `1px solid ${M.border}`, fontFamily: "'IBM Plex Sans', sans-serif", fontSize: '15px', outline: 'none', color: M.text }} />
+          </div>
+
+          {date && (
+            <div style={{ marginBottom: '28px' }}>
+              <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: M.textMuted, marginBottom: '8px' }}>Select Time Slot</label>
+              {loadingSlots ? <div style={{ fontSize: '14px', color: M.textSub }}>Loading slots...</div> : (
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px', maxHeight: '240px', overflowY: 'auto', paddingRight: '4px' }}>
+                  {slots.length === 0 ? <div style={{ fontSize: '14px', color: M.textSub }}>No slots available</div> : slots.map(s => {
+                    const available = s.available
+                    const selected = time === s.time_slot
+                    return (
+                      <button key={s.time_slot} disabled={!available} onClick={() => setTime(s.time_slot)}
+                        style={{ padding: '10px', borderRadius: '8px', border: `1px solid ${selected ? M.maroon : M.border}`, background: selected ? M.maroon : available ? M.white : M.surface, color: selected ? M.white : available ? M.text : M.textMuted, cursor: available ? 'pointer' : 'not-allowed', fontFamily: "'IBM Plex Sans', sans-serif", fontSize: '14px', fontWeight: 600 }}>
+                        {format12Hour(s.time_slot)}
+                      </button>
+                    )
+                  })}
+                </div>
+              )}
+            </div>
+          )}
+
+          <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
+            <button onClick={onClose} style={{ padding: '10px 20px', borderRadius: '8px', border: `1px solid ${M.border}`, background: M.white, color: M.text, cursor: 'pointer', fontFamily: "'IBM Plex Sans', sans-serif", fontWeight: 600 }}>Cancel</button>
+            <button onClick={() => setShowConfirm(true)} disabled={!date || !time} style={{ padding: '10px 20px', borderRadius: '8px', border: 'none', background: M.maroon, color: M.white, cursor: (!date || !time) ? 'not-allowed' : 'pointer', fontFamily: "'IBM Plex Sans', sans-serif", fontWeight: 600 }}>
+              Next
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Confirmation Modal */}
+      {showConfirm && (
+        <div className="animate-fade-up" style={{ position: 'relative', width: '400px', background: M.white, borderRadius: '16px', padding: '32px', boxShadow: '0 4px 24px rgba(0,0,0,0.1)', textAlign: 'center' }}>
+          <div style={{ width: '48px', height: '48px', borderRadius: '50%', background: M.maroonLight, color: M.maroon, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
+            <AlertTriangle size={24} />
+          </div>
+          <h3 style={{ fontFamily: "'Fraunces', serif", fontSize: '20px', color: M.text, margin: '0 0 12px' }}>Confirm Reschedule</h3>
+          <p style={{ fontSize: '14px', color: M.textSub, margin: '0 0 24px', lineHeight: '1.5' }}>
+            You are about to reschedule this appointment to <strong>{new Date(date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</strong> at <strong>{format12Hour(time)}</strong>. Do you want to proceed?
+          </p>
+
+          <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
+            <button onClick={() => setShowConfirm(false)} disabled={saving} style={{ padding: '10px 20px', borderRadius: '8px', border: `1px solid ${M.border}`, background: M.white, color: M.text, cursor: saving ? 'not-allowed' : 'pointer', fontFamily: "'IBM Plex Sans', sans-serif", fontWeight: 600, flex: 1 }}>
+              Back
+            </button>
+            <button onClick={handleSave} disabled={saving} style={{ padding: '10px 20px', borderRadius: '8px', border: 'none', background: M.maroon, color: M.white, cursor: saving ? 'not-allowed' : 'pointer', fontFamily: "'IBM Plex Sans', sans-serif", fontWeight: 600, flex: 1 }}>
+              {saving ? 'Saving...' : 'Confirm'}
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // MAIN AdminAppointmentsPage
 // ─────────────────────────────────────────────────────────────────────────────
@@ -157,7 +264,19 @@ export default function AdminAppointmentsPage() {
   const [error, setError]             = useState('')
   const [statusFilter, setStatusFilter] = useState('all')
   const [page, setPage]               = useState(1)
+  const [rescheduleTarget, setRescheduleTarget] = useState(null)
   const PER_PAGE = 6
+
+  const handleRescheduleSubmit = async (appointmentId, newDate, newTime) => {
+    try {
+      await rescheduleAppointment(token, appointmentId, newDate, newTime)
+      setRescheduleTarget(null)
+      loadAppointments(selectedDate)
+      getDashboardStats(token).then(setStats).catch(console.error)
+    } catch (err) {
+      setError(err.message)
+    }
+  }
 
   const handleStatusChange = async (appointmentId, newStatus) => {
     try {
@@ -480,9 +599,10 @@ export default function AdminAppointmentsPage() {
                           Confirm
                         </button>
                       )}
-                      {(appt.status === 'confirmed' || appt.status === 'in_progress') && (
-                        <button onClick={() => handleStatusChange(appt.id, 'completed')} style={{ padding: '6px 12px', borderRadius: '7px', border: 'none', background: M.greenLight, color: M.green, fontSize: '11px', fontWeight: 700, cursor: 'pointer', fontFamily: "'IBM Plex Sans', sans-serif" }}>
-                          Complete
+
+                      {(appt.status === 'pending' || appt.status === 'confirmed') && (
+                        <button onClick={() => setRescheduleTarget(appt)} style={{ padding: '6px 12px', borderRadius: '7px', border: 'none', background: M.surface, color: M.text, fontSize: '11px', fontWeight: 700, cursor: 'pointer', fontFamily: "'IBM Plex Sans', sans-serif" }}>
+                          Reschedule
                         </button>
                       )}
                       {(appt.status === 'pending' || appt.status === 'confirmed') && (
@@ -533,6 +653,14 @@ export default function AdminAppointmentsPage() {
           </div>
         </div>
       </div>
+
+      {rescheduleTarget && (
+        <RescheduleModal 
+          appt={rescheduleTarget} 
+          onClose={() => setRescheduleTarget(null)} 
+          onConfirm={handleRescheduleSubmit} 
+        />
+      )}
     </div>
   )
 }

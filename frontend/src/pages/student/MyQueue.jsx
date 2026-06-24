@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/useAuth'
-import Navbar from '../../components/layout/Navbar'
+import StudentLayout from '../../components/layout/StudentLayout'
 import { getMyQueue, activateQueue, getTimeEstimate } from '../../services/queueService'  // ← M9
 import { getMyAppointments } from '../../services/appointmentService'
 import { Clock, Hourglass, PartyPopper, Ticket, Calendar, Inbox } from 'lucide-react'
@@ -75,17 +75,28 @@ export default function MyQueue() {
   const steps  = queueData?.steps || []
 
   return (
-    <div style={{ minHeight: '100vh', background: M.offWhite, fontFamily: "'DM Sans', sans-serif" }}>
-      <Navbar backTo="/student/dashboard" title="My Queue" />
-      <main style={{ maxWidth: '560px', margin: '0 auto', padding: '2rem 1.5rem' }}>
+    <StudentLayout activeTab="queue" mobileTitle="My Queue" backTo="/student/dashboard">
+      <style>{`
+        .myqueue-layout {
+          max-width: 560px;
+          margin: 0 auto;
+        }
+        .myqueue-tabs { display: flex; }
+        .desktop-header { display: none; }
+        
+        .tab-content-active { display: ${activeTab === 'active' ? 'block' : 'none'}; }
+        .tab-content-upcoming { display: ${activeTab === 'upcoming' ? 'block' : 'none'}; }
+      `}</style>
+
+      <div className="myqueue-layout">
         {error && (
-          <div style={{ padding: '10px 14px', borderRadius: '8px', background: M.maroonLight, color: M.maroon, fontSize: '13px', marginBottom: '1rem' }}>
+          <div className="error-banner" style={{ padding: '10px 14px', borderRadius: '8px', background: M.maroonLight, color: M.maroon, fontSize: '13px', marginBottom: '1rem' }}>
             {error}
           </div>
         )}
 
         {/* Navigation Tabs */}
-        <div style={{ display: 'flex', gap: '8px', marginBottom: '1.5rem', background: 'white', padding: '6px', borderRadius: '12px', border: `1px solid ${M.gray200}` }}>
+        <div className="myqueue-tabs" style={{ gap: '8px', marginBottom: '1.5rem', background: 'white', padding: '6px', borderRadius: '12px', border: `1px solid ${M.gray200}` }}>
           <button 
             onClick={() => setActiveTab('active')}
             style={{ flex: 1, padding: '10px', borderRadius: '8px', border: 'none', background: activeTab === 'active' ? M.maroonLight : 'transparent', color: activeTab === 'active' ? M.maroon : M.gray500, fontSize: '14px', fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s', fontFamily: "'DM Sans', sans-serif" }}
@@ -100,9 +111,9 @@ export default function MyQueue() {
           </button>
         </div>
 
-        {activeTab === 'active' ? (
-          /* ── ACTIVE QUEUE TAB ── */
-          loading ? (
+        <div className="tab-content-active">
+          <h2 className="desktop-header">Active Queue</h2>
+          {loading ? (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
               <div style={{ background: M.white, borderRadius: '16px', padding: '24px', border: `1px solid ${M.gray200}` }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '16px' }}>
@@ -239,10 +250,12 @@ export default function MyQueue() {
                 View Upcoming
               </button>
             </div>
-          )
-        ) : (
-          /* ── UPCOMING TAB ── */
-          loading ? (
+          )}
+        </div>
+
+        <div className="tab-content-upcoming">
+          <h2 className="desktop-header">Upcoming Appointments</h2>
+          {loading ? (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
               {[1, 2, 3].map(i => (
                 <div key={i} style={{ background: M.white, borderRadius: '14px', padding: '20px', border: `1px solid ${M.gray200}` }}>
@@ -309,8 +322,9 @@ export default function MyQueue() {
               </button>
             </div>
           )
-        )}
-      </main>
-    </div>
+        }
+        </div>
+      </div>
+    </StudentLayout>
   )
 }

@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/useAuth'
-import BottomNav from '../../components/layout/BottomNav'
+import StudentLayout from '../../components/layout/StudentLayout'
 import { getMyAppointments, cancelAppointment } from '../../services/appointmentService'
 import RescheduleModal from '../../components/RescheduleModal'
-import { Inbox, Calendar, Tag, FileText, AlertTriangle } from 'lucide-react'
+import { Inbox, Calendar, Tag, FileText, AlertTriangle, ChevronLeft, Clock, CheckCircle } from 'lucide-react'
 
 const M = { maroon: '#7B1A2A', maroonLight: '#F9F0F1', gold: '#B8900A', goldLight: '#FDF6E3', offWhite: '#F9F7F4', gray200: '#EAE7E2', gray500: '#706B65', text: '#1C1917', white: '#FFFFFF' }
 
@@ -66,57 +66,35 @@ export default function MyAppointments() {
   });
 
   return (
-    <div style={{ minHeight: '100vh', background: M.offWhite, fontFamily: "'IBM Plex Sans', sans-serif", paddingBottom: '88px' }}>
-      
-      {/* ── Top Header ── */}
-      <header style={{
-        background: `linear-gradient(135deg, ${M.maroon} 0%, #5C1320 100%)`,
-        padding: '20px 16px',
-        color: M.white,
-        position: 'sticky',
-        top: 0,
-        zIndex: 50,
-        display: 'flex',
-        alignItems: 'center',
-        gap: '12px',
-        boxShadow: '0 2px 8px rgba(123,26,42,0.2)',
-      }}>
-        <button onClick={() => navigate('/student/dashboard')} style={{
-          background: 'none', border: 'none', color: M.white, fontSize: '24px', cursor: 'pointer', padding: '0 8px 0 0', display: 'flex', alignItems: 'center', justifyContent: 'center'
-        }}>
-          ←
-        </button>
-        <h1 style={{ fontFamily: "'Fraunces', serif", fontSize: '20px', fontWeight: 700, margin: 0 }}>
-          My Appointments
-        </h1>
-      </header>
-
-      <main style={{ maxWidth: '480px', margin: '0 auto', padding: '20px 16px' }}>
+    <StudentLayout activeTab="appointments" mobileTitle="My Appointments" backTo="/student/dashboard">
+      <div style={{ maxWidth: '480px', margin: '0 auto', padding: '20px 16px' }}>
         {error && <div style={{ padding: '10px 14px', borderRadius: '8px', background: M.maroonLight, color: M.maroon, fontSize: '13px', marginBottom: '1rem' }}>{error}</div>}
 
+
         {/* ── Filter Tabs ── */}
-        <div style={{ display: 'flex', overflowX: 'auto', gap: '8px', marginBottom: '20px', paddingBottom: '4px', scrollbarWidth: 'none' }}>
+        <div style={{ display: 'flex', overflowX: 'auto', gap: '4px', marginBottom: '20px', paddingBottom: '4px', scrollbarWidth: 'none' }}>
           {['all', 'pending', 'confirmed', 'completed', 'cancelled'].map(f => (
             <button
               key={f}
               onClick={() => setFilter(f)}
               style={{
-                padding: '8px 16px',
+                padding: '6px 12px',
                 borderRadius: '100px',
                 border: `1px solid ${filter === f ? M.maroon : M.gray200}`,
                 background: filter === f ? M.maroon : M.white,
                 color: filter === f ? M.white : M.text,
-                fontSize: '13px',
+                fontSize: '12px',
                 fontWeight: 600,
                 cursor: 'pointer',
                 whiteSpace: 'nowrap',
                 transition: 'all 0.2s',
-                fontFamily: "'IBM Plex Sans', sans-serif",
-                minHeight: '44px',
+                fontFamily: "'DM Sans', sans-serif",
+                minHeight: '36px',
               }}
             >
               {f.charAt(0).toUpperCase() + f.slice(1)}
             </button>
+
           ))}
         </div>
 
@@ -140,7 +118,7 @@ export default function MyAppointments() {
             <p style={{ fontSize: '15px', fontWeight: 600, color: M.text, margin: '0 0 6px' }}>No appointments found</p>
             <p style={{ fontSize: '13px', color: M.gray500, margin: '0 0 1.5rem' }}>{filter === 'all' ? 'Book your first registrar transaction' : `You have no ${filter} appointments`}</p>
             {filter === 'all' && (
-              <button onClick={() => navigate('/student/book')} style={{ padding: '12px 24px', borderRadius: '10px', border: 'none', background: M.gold, color: M.maroon, fontSize: '14px', fontWeight: 700, cursor: 'pointer', fontFamily: "'IBM Plex Sans', sans-serif" }}>Book an Appointment</button>
+              <button onClick={() => navigate('/student/book')} style={{ padding: '12px 24px', borderRadius: '10px', border: 'none', background: M.gold, color: M.maroon, fontSize: '14px', fontWeight: 700, cursor: 'pointer', fontFamily: "'DM Sans', sans-serif" }}>Book an Appointment</button>
             )}
           </div>
         ) : (
@@ -180,13 +158,13 @@ export default function MyAppointments() {
                         onClick={() => setReschedulingAppt(appt)} 
                         disabled={cancelling === appt.id || !canReschedule(appt.appointment_date, appt.time_slot)}
                         title={!canReschedule(appt.appointment_date, appt.time_slot) ? "Cannot reschedule within 24 hours of appointment" : ""}
-                        style={{ flex: 1, minHeight: '44px', fontSize: '13px', fontWeight: 600, color: M.text, background: M.white, border: `1px solid ${M.gray200}`, borderRadius: '10px', cursor: !canReschedule(appt.appointment_date, appt.time_slot) ? 'not-allowed' : 'pointer', opacity: (!canReschedule(appt.appointment_date, appt.time_slot) || cancelling === appt.id) ? 0.5 : 1, fontFamily: "'IBM Plex Sans', sans-serif" }}>
+                        style={{ flex: 1, minHeight: '44px', fontSize: '13px', fontWeight: 600, color: M.text, background: M.white, border: `1px solid ${M.gray200}`, borderRadius: '10px', cursor: !canReschedule(appt.appointment_date, appt.time_slot) ? 'not-allowed' : 'pointer', opacity: (!canReschedule(appt.appointment_date, appt.time_slot) || cancelling === appt.id) ? 0.5 : 1, fontFamily: "'DM Sans', sans-serif" }}>
                         Reschedule
                       </button>
                       <button 
                         onClick={() => setConfirmCancelId(appt.id)} 
                         disabled={cancelling === appt.id}
-                        style={{ flex: 1, minHeight: '44px', fontSize: '13px', fontWeight: 600, color: M.maroon, background: 'transparent', border: `1px solid ${M.maroonBorder || 'rgba(123,26,42,0.2)'}`, borderRadius: '10px', cursor: 'pointer', opacity: cancelling === appt.id ? 0.5 : 1, fontFamily: "'IBM Plex Sans', sans-serif" }}>
+                        style={{ flex: 1, minHeight: '44px', fontSize: '13px', fontWeight: 600, color: M.maroon, background: 'transparent', border: `1px solid ${M.maroonBorder || 'rgba(123,26,42,0.2)'}`, borderRadius: '10px', cursor: 'pointer', opacity: cancelling === appt.id ? 0.5 : 1, fontFamily: "'DM Sans', sans-serif" }}>
                         {cancelling === appt.id ? 'Cancelling...' : 'Cancel'}
                       </button>
                     </div>
@@ -196,10 +174,7 @@ export default function MyAppointments() {
             })}
           </div>
         )}
-      </main>
-
-      {/* ── Bottom Nav ── */}
-      <BottomNav active="appointments" />
+      </div>
 
       {reschedulingAppt && (
         <RescheduleModal 
@@ -227,13 +202,13 @@ export default function MyAppointments() {
             <div style={{ display: 'flex', gap: '8px' }}>
               <button 
                 onClick={() => setConfirmCancelId(null)}
-                style={{ flex: 1, padding: '10px', borderRadius: '10px', border: `1px solid ${M.gray200}`, background: M.white, color: M.text, fontSize: '13px', fontWeight: 600, cursor: 'pointer', fontFamily: "'IBM Plex Sans', sans-serif" }}
+                style={{ flex: 1, padding: '10px', borderRadius: '10px', border: `1px solid ${M.gray200}`, background: M.white, color: M.text, fontSize: '13px', fontWeight: 600, cursor: 'pointer', fontFamily: "'DM Sans', sans-serif" }}
               >
                 Keep It
               </button>
               <button 
                 onClick={handleCancelConfirm}
-                style={{ flex: 1, padding: '10px', borderRadius: '10px', border: 'none', background: M.maroon, color: M.white, fontSize: '13px', fontWeight: 600, cursor: 'pointer', fontFamily: "'IBM Plex Sans', sans-serif" }}
+                style={{ flex: 1, padding: '10px', borderRadius: '10px', border: 'none', background: M.maroon, color: M.white, fontSize: '13px', fontWeight: 600, cursor: 'pointer', fontFamily: "'DM Sans', sans-serif" }}
               >
                 Yes, Cancel
               </button>
@@ -241,6 +216,6 @@ export default function MyAppointments() {
           </div>
         </div>
       )}
-    </div>
+    </StudentLayout>
   )
 }

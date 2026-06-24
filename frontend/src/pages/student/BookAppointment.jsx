@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/useAuth'
+import StudentLayout from '../../components/layout/StudentLayout'
 import { getTransactionTypes, getAvailableSlots, bookAppointment, uploadMedia } from '../../services/appointmentService'
-import { CheckCircle, Calendar, Users, CloudSun, Sun, Image as ImageIcon, FileText, Clock, MapPin, Mail, HelpCircle } from 'lucide-react'
+import { CheckCircle, Calendar, Users, CloudSun, Sun, Image as ImageIcon, FileText, Clock, MapPin, Mail, HelpCircle, ChevronLeft } from 'lucide-react'
 
 const M = {
   maroon:       '#7B1A2A',
@@ -97,7 +98,7 @@ function CalendarWidget({ selectedDate, onDateSelect, minDateStr, maxDateStr }) 
                 color: isSelected ? M.white : isDisabled ? M.textSub : M.text,
                 fontSize: '13px', fontWeight: isSelected ? 700 : 400,
                 cursor: isDisabled ? 'not-allowed' : 'pointer',
-                fontFamily: "'IBM Plex Sans', sans-serif",
+                fontFamily: "'DM Sans', sans-serif",
                 opacity: isDisabled ? 0.5 : 1,
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 transition: 'all 0.15s',
@@ -206,12 +207,12 @@ function SlotBtn({ slot, selected, onSelect, selectedDate }) {
       type="button"
       onClick={() => isAvailable && onSelect(slot.time_slot)}
       style={{
-        padding: '10px 6px', borderRadius: '8px', border: 'none',
+        padding: '10px 6px', borderRadius: '8px',
         background: bg,
         color: color,
         fontSize: '12px', fontWeight: 600,
         cursor: cursor,
-        fontFamily: "'IBM Plex Sans', sans-serif",
+        fontFamily: "'DM Sans', sans-serif",
         opacity: opacity,
         border: `1.5px solid ${border}`,
         transition: 'all 0.15s', textAlign: 'center',
@@ -313,7 +314,8 @@ export default function BookAppointment() {
 
   // ── Success Screen ──
   if (success) return (
-    <div style={{ minHeight: '100vh', background: M.offWhite, fontFamily: "'IBM Plex Sans', sans-serif", display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+    <StudentLayout activeTab="book" mobileTitle="Appointment Booked" backTo="/student/dashboard">
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '24px', textAlign: 'center' }}>
       <div style={{ background: M.white, borderRadius: '20px', border: `1px solid ${M.border}`, padding: '48px 40px', maxWidth: '440px', width: '100%', textAlign: 'center', boxShadow: '0 4px 24px rgba(0,0,0,0.06)' }}>
         <div style={{ width: '72px', height: '72px', borderRadius: '50%', background: M.greenLight, border: `2px solid ${M.greenBorder}`, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 24px', color: M.green }}><CheckCircle size={28} /></div>
         <h2 style={{ fontFamily: "'Fraunces', serif", fontSize: '26px', fontWeight: 700, color: M.maroon, margin: '0 0 8px' }}>Appointment Confirmed!</h2>
@@ -327,48 +329,23 @@ export default function BookAppointment() {
           </p>
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-          <button onClick={() => navigate('/student/appointments')} style={{ padding: '14px', borderRadius: '10px', border: 'none', background: M.maroon, color: M.white, fontSize: '14px', fontWeight: 700, cursor: 'pointer', fontFamily: "'IBM Plex Sans', sans-serif" }}>
+          <button onClick={() => navigate('/student/appointments')} style={{ padding: '14px', borderRadius: '10px', border: 'none', background: M.maroon, color: M.white, fontSize: '14px', fontWeight: 700, cursor: 'pointer', fontFamily: "'DM Sans', sans-serif" }}>
             View My Appointments
           </button>
-          <button onClick={() => navigate('/student/dashboard')} style={{ padding: '14px', borderRadius: '10px', border: `1.5px solid ${M.border}`, background: M.white, color: M.text, fontSize: '14px', fontWeight: 600, cursor: 'pointer', fontFamily: "'IBM Plex Sans', sans-serif" }}>
+          <button onClick={() => navigate('/student/dashboard')} style={{ padding: '14px', borderRadius: '10px', border: `1.5px solid ${M.border}`, background: M.white, color: M.text, fontSize: '14px', fontWeight: 600, cursor: 'pointer', fontFamily: "'DM Sans', sans-serif" }}>
             Back to Dashboard
           </button>
         </div>
       </div>
-    </div>
+      </div>
+    </StudentLayout>
   )
 
   return (
-    <div style={{ minHeight: '100vh', background: M.offWhite, fontFamily: "'IBM Plex Sans', sans-serif" }}>
-
-      {/* ── Top Nav Bar ── */}
-      <header style={{
-        position: 'sticky', top: 0, zIndex: 100,
-        background: M.maroon, borderBottom: 'none',
-        height: '56px', display: 'flex', alignItems: 'center', padding: '0 24px', gap: '16px',
-      }}>
-        <button
-          type="button"
-          onClick={() => navigate('/student/dashboard')}
-          style={{
-            display: 'flex', alignItems: 'center', gap: '6px',
-            border: 'none', background: 'transparent', cursor: 'pointer',
-            fontSize: '14px', fontWeight: 600, color: 'rgba(255,255,255,0.85)',
-            padding: '6px 12px', borderRadius: '8px',
-            fontFamily: "'IBM Plex Sans', sans-serif",
-            transition: 'all 0.15s',
-          }}
-          onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.12)'}
-          onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
-        >
-          ← Back
-        </button>
-        <div style={{ width: '1px', height: '20px', background: 'rgba(255,255,255,0.25)' }} />
-        <span style={{ fontFamily: "'Fraunces', serif", fontSize: '16px', fontWeight: 700, color: M.white }}>Book Appointment</span>
-      </header>
+    <StudentLayout activeTab="book" mobileTitle="Book Appointment" backTo="/student/dashboard">
 
       {/* ── Content ── */}
-      <main style={{ maxWidth: '660px', margin: '0 auto', padding: '48px 24px 80px', boxSizing: 'border-box' }}>
+      <div style={{ maxWidth: '660px', margin: '0 auto', padding: '48px 24px 80px', boxSizing: 'border-box' }}>
 
         <Stepper step={step} />
 
@@ -518,7 +495,7 @@ export default function BookAppointment() {
                       style={{
                         width: '100%', minHeight: '80px', padding: '12px', borderRadius: '10px',
                         border: `1.5px solid ${M.border}`, background: M.offWhite,
-                        fontSize: '13px', color: M.text, fontFamily: "'IBM Plex Sans', sans-serif",
+                        fontSize: '13px', color: M.text, fontFamily: "'DM Sans', sans-serif",
                         resize: 'vertical'
                       }}
                     />
@@ -553,7 +530,7 @@ export default function BookAppointment() {
                 style={{
                   padding: '12px 28px', borderRadius: '10px', border: `1.5px solid ${M.maroonBorder}`,
                   background: M.white, color: M.maroon, fontSize: '14px', fontWeight: 600,
-                  cursor: 'pointer', fontFamily: "'IBM Plex Sans', sans-serif",
+                  cursor: 'pointer', fontFamily: "'DM Sans', sans-serif",
                 }}>
                 Back
               </button>
@@ -565,7 +542,7 @@ export default function BookAppointment() {
                   background: selectedSlot ? M.maroon : M.borderStrong,
                   color: M.white, fontSize: '14px', fontWeight: 700,
                   cursor: selectedSlot ? 'pointer' : 'not-allowed',
-                  fontFamily: "'IBM Plex Sans', sans-serif",
+                  fontFamily: "'DM Sans', sans-serif",
                   transition: 'all 0.2s',
                 }}>
                 Next: Confirm →
@@ -678,7 +655,7 @@ export default function BookAppointment() {
                 style={{
                   padding: '12px 28px', borderRadius: '10px', border: `1.5px solid ${M.maroonBorder}`,
                   background: M.white, color: M.maroon, fontSize: '14px', fontWeight: 600,
-                  cursor: loading ? 'not-allowed' : 'pointer', fontFamily: "'IBM Plex Sans', sans-serif",
+                  cursor: loading ? 'not-allowed' : 'pointer', fontFamily: "'DM Sans', sans-serif",
                 }}>
                 Back
               </button>
@@ -690,7 +667,7 @@ export default function BookAppointment() {
                   background: (loading || isUploading) ? '#B8667A' : M.maroon,
                   color: M.white, fontSize: '14px', fontWeight: 700,
                   cursor: (loading || isUploading) ? 'not-allowed' : 'pointer',
-                  fontFamily: "'IBM Plex Sans', sans-serif",
+                  fontFamily: "'DM Sans', sans-serif",
                   display: 'flex', alignItems: 'center', gap: '8px',
                   minWidth: '140px', justifyContent: 'center',
                   transition: 'all 0.2s',
@@ -717,14 +694,14 @@ export default function BookAppointment() {
                 <button 
                   onClick={() => setConfirmingBook(false)}
                   disabled={loading}
-                  style={{ flex: 1, padding: '10px', borderRadius: '10px', border: `1px solid ${M.border}`, background: M.white, color: M.text, fontSize: '13px', fontWeight: 600, cursor: 'pointer', fontFamily: "'IBM Plex Sans', sans-serif", opacity: loading ? 0.5 : 1 }}
+                  style={{ flex: 1, padding: '10px', borderRadius: '10px', border: `1px solid ${M.border}`, background: M.white, color: M.text, fontSize: '13px', fontWeight: 600, cursor: 'pointer', fontFamily: "'DM Sans', sans-serif", opacity: loading ? 0.5 : 1 }}
                 >
                   Go Back
                 </button>
                 <button 
                   onClick={handleBook}
                   disabled={loading}
-                  style={{ flex: 1, padding: '10px', borderRadius: '10px', border: 'none', background: M.maroon, color: M.white, fontSize: '13px', fontWeight: 600, cursor: 'pointer', fontFamily: "'IBM Plex Sans', sans-serif", opacity: loading ? 0.5 : 1 }}
+                  style={{ flex: 1, padding: '10px', borderRadius: '10px', border: 'none', background: M.maroon, color: M.white, fontSize: '13px', fontWeight: 600, cursor: 'pointer', fontFamily: "'DM Sans', sans-serif", opacity: loading ? 0.5 : 1 }}
                 >
                   {loading ? 'Appointing...' : 'Yes, Appoint'}
                 </button>
@@ -732,7 +709,7 @@ export default function BookAppointment() {
             </div>
           </div>
         )}
-      </main>
-    </div>
+      </div>
+    </StudentLayout>
   )
 }

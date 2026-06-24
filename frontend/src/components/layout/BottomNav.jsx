@@ -13,7 +13,7 @@ export default function BottomNav({ active }) {
   const tabs = [
     { id: 'home',         label: 'Home',    icon: <Home size={20} />, path: '/student/dashboard' },
     { id: 'book',         label: 'Book',    icon: <Calendar size={20} />, path: '/student/book' },
-    { id: 'appointments', label: 'History', icon: <ClipboardList size={20} />, path: '/student/appointments' },
+    { id: 'appointments', label: 'Appointments', icon: <ClipboardList size={20} />, path: '/student/appointments' },
     { id: 'queue',        label: 'Queue',   icon: <Ticket size={20} />, path: '/student/queue' },
   ];
   return (
