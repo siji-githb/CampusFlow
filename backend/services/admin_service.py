@@ -368,3 +368,100 @@ def get_ai_insights():
         "completion_rate": completion_rate,
         "insight":         insight,
     }
+
+
+# ── Window Assignment ─────────────────────────────────────────────────────────
+
+import json as _json
+import threading
+
+_window_lock = threading.Lock()
+
+def _get_assignments(admin) -> dict:
+    """Read current window assignments JSON from office_config."""
+    res = admin.table("office_config").select("value").eq("key", "staff_window_assignments").execute()
+    if res.data:
+        return _json.loads(res.data[0]["value"] or "{}")
+    return {}
+
+
+def _save_assignments(admin, assignments: dict):
+    """Persist the window assignments JSON back to office_config."""
+    value = _json.dumps(assignments)
+    existing = admin.table("office_config").select("id").eq("key", "staff_window_assignments").execute()
+    if existing.data:
+        admin.table("office_config").update({"value": value}).eq("key", "staff_window_assignments").execute()
+    else:
+        admin.table("office_config").insert({"key": "staff_window_assignments", "value": value}).execute()
+
+
+def get_window_assignments():
+    """Return {user_id: window_number} map and configured num_windows."""
+    admin = get_admin()
+    try:
+        cfg = admin.table("office_config").select("key, value").in_("key", ["num_windows", "staff_window_assignments"]).execute()
+        num_windows = 3  # default
+        assignments = {}
+        for row in (cfg.data or []):
+            if row["key"] == "num_windows":
+                try:
+                    num_windows = int(row["value"])
+                except Exception:
+                    pass
+            elif row["key"] == "staff_window_assignments":
+                try:
+                    assignments = _json.loads(row["value"] or "{}")
+                except Exception:
+                    pass
+        return {"num_windows": num_windows, "assignments": assignments}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+def claim_window(user_id: str, window_num: int):
+    """Assign a window to a staff member. Enforces one-per-staff and max-window limit."""
+    admin = get_admin()
+    try:
+        # Get configured limit
+        cfg = admin.table("office_config").select("value").eq("key", "num_windows").execute()
+        num_windows = 3
+        if cfg.data:
+            try:
+                num_windows = int(cfg.data[0]["value"])
+            except Exception:
+                pass
+
+        if window_num < 1 or window_num > num_windows:
+            raise HTTPException(status_code=400, detail=f"Window {window_num} is not available. Active windows: 1–{num_windows}.")
+
+        with _window_lock:
+            assignments = _get_assignments(admin)
+
+            # Check if already taken by someone else
+            for uid, wnum in assignments.items():
+                if wnum == window_num and uid != user_id:
+                    raise HTTPException(status_code=409, detail=f"Window {window_num} is already occupied by another staff member.")
+
+            # Assign (overwrite any previous window this staff had)
+            assignments[user_id] = window_num
+            _save_assignments(admin, assignments)
+            
+        return {"message": f"Window {window_num} claimed successfully.", "window": window_num}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+def release_window(user_id: str):
+    """Remove a staff member's window assignment."""
+    admin = get_admin()
+    try:
+        with _window_lock:
+            assignments = _get_assignments(admin)
+            if user_id in assignments:
+                del assignments[user_id]
+                _save_assignments(admin, assignments)
+        return {"message": "Window released."}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))

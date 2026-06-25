@@ -11,6 +11,9 @@ from services.admin_service import (
     toggle_user_status,
     get_transaction_types,
     get_ai_insights,          # ← M12
+    get_window_assignments,   # ← Window Assignment
+    claim_window,
+    release_window,
 )
 from models.admin_models import OfficeConfigUpdate
 from models.appointment_models import ReleaseDateUpdate
@@ -54,6 +57,20 @@ def require_admin(authorization: str):
         raise
     except Exception:
         raise HTTPException(status_code=403, detail="Admin access required")
+
+
+def require_staff_or_admin(authorization: str):
+    user = get_current_user(authorization)
+    admin_client = create_client(settings.supabase_url, settings.supabase_service_key)
+    try:
+        profile = admin_client.table("users").select("role").eq("id", user.id).single().execute()
+        if profile.data["role"] not in ["staff", "admin"]:
+            raise HTTPException(status_code=403, detail="Staff or Admin access required")
+        return user
+    except HTTPException:
+        raise
+    except Exception:
+        raise HTTPException(status_code=403, detail="Staff or Admin access required")
 
 
 @router.get("/stats")
@@ -142,3 +159,29 @@ def ai_insights(authorization: str = Header(...)):
     """Today's appointment stats + AI-generated summary for the Reports tab."""
     require_admin(authorization)
     return get_ai_insights()
+
+
+# ── Window Assignment ─────────────────────────────────────────────────────────
+
+class ClaimWindowBody(BaseModel):
+    window: int
+
+@router.get("/window-assignments")
+def window_assignments(authorization: str = Header(...)):
+    """Get current window assignments and configured num_windows. Staff-accessible."""
+    require_staff_or_admin(authorization)
+    return get_window_assignments()
+
+
+@router.post("/claim-window")
+def claim_window_route(body: ClaimWindowBody, authorization: str = Header(...)):
+    """Staff claims a window. Rejects if taken or out of range."""
+    user = require_staff_or_admin(authorization)
+    return claim_window(user.id, body.window)
+
+
+@router.delete("/release-window")
+def release_window_route(authorization: str = Header(...)):
+    """Staff releases their window on logout."""
+    user = require_staff_or_admin(authorization)
+    return release_window(user.id)

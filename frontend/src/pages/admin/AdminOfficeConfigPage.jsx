@@ -27,7 +27,7 @@ const M = {
 const SETTINGS_CATEGORIES = {
   general: ['office_open_time', 'office_close_time', 'lunch_break_start', 'lunch_break_end'],
   appointments: ['slot_duration_minutes', 'booking_cutoff_days'],
-  staffing: ['staff_count'],
+  staffing: ['staff_count', 'num_windows'],
 }
 
 const LABELS = {
@@ -38,6 +38,7 @@ const LABELS = {
   slot_duration_minutes: { title: 'Slot Duration',         desc: 'Length of each appointment block in minutes' },
   booking_cutoff_days:   { title: 'Booking Cutoff',        desc: 'Minimum days required for advance booking' },
   staff_count:           { title: 'Staff Count',           desc: 'Number of active registrar staff serving queues' },
+  num_windows:           { title: 'Active Windows',         desc: 'Number of service windows open at the registrar (e.g. Window 1, Window 2...)' },
 }
 
 export default function AdminOfficeConfigPage() {

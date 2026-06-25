@@ -191,3 +191,33 @@ export const editStudentRecord = async (token, studentId, record) => {
   if (!res.ok) throw new Error(data.detail || 'Failed to update student record')
   return data
 }
+
+// ── Window Assignment ─────────────────────────────────────────────────────────
+
+export const getWindowAssignments = async (token) => {
+  const res = await fetch(`${API_URL}/admin/window-assignments`, { headers: authHeader(token) })
+  const data = await res.json()
+  if (!res.ok) throw new Error(data.detail || 'Failed to fetch window assignments')
+  return data // { num_windows: number, assignments: { userId: windowNum } }
+}
+
+export const claimWindow = async (token, windowNum) => {
+  const res = await fetch(`${API_URL}/admin/claim-window`, {
+    method: 'POST',
+    headers: authHeader(token),
+    body: JSON.stringify({ window: windowNum }),
+  })
+  const data = await res.json()
+  if (!res.ok) throw new Error(data.detail || 'Failed to claim window')
+  return data
+}
+
+export const releaseWindow = async (token) => {
+  const res = await fetch(`${API_URL}/admin/release-window`, {
+    method: 'DELETE',
+    headers: authHeader(token),
+  })
+  const data = await res.json()
+  if (!res.ok) throw new Error(data.detail || 'Failed to release window')
+  return data
+}

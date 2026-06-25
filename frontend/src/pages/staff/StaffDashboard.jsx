@@ -9,7 +9,8 @@ import StudentRecordsPage from './StudentRecordsPage'
 import { getTodaysQueue } from '../../services/queueService'
 import { getMessages, markMessageRead } from '../../services/messagesService'
 import { getAppointmentStats } from '../../services/appointmentService'
-import { Inbox, MessageSquare, BarChart2, Ticket, Calendar, ClipboardList, LogOut, Users, CheckSquare, Clock, CalendarClock } from 'lucide-react'
+import { Inbox, MessageSquare, BarChart2, Ticket, Calendar, ClipboardList, LogOut, Users, CheckSquare, Clock, CalendarClock, Monitor, MonitorX } from 'lucide-react'
+import { getWindowAssignments, claimWindow, releaseWindow } from '../../services/adminService'
 
 // ── Design Tokens ──────────────────────────────────────────────────────────────
 const M = {
@@ -97,20 +98,22 @@ function CompactQueuePreview({ queue, loading }) {
 }
 
 // ── Sidebar Item ───────────────────────────────────────────────────────────────
-const SideItem = ({ icon, label, active, onClick, badge }) => (
+const SideItem = ({ icon, label, active, onClick, badge, style, disabled }) => (
 
-  <button onClick={onClick} style={{
+  <button onClick={disabled ? undefined : onClick} style={{
     display: 'flex', alignItems: 'center', gap: '11px',
     width: '100%', padding: '10px 14px', borderRadius: '10px',
-    border: 'none', cursor: 'pointer', textAlign: 'left',
+    border: 'none', cursor: disabled ? 'not-allowed' : 'pointer', textAlign: 'left',
     background: active ? M.maroonMid : 'transparent',
     color: active ? M.maroon : M.textSub,
     fontSize: '13.5px', fontWeight: active ? 600 : 400,
     fontFamily: "'IBM Plex Sans', sans-serif",
     position: 'relative', transition: 'background 0.15s, color 0.15s',
+    ...style
   }}
-    onMouseEnter={e => { if (!active) { e.currentTarget.style.background = M.surface; e.currentTarget.style.color = M.text; } }}
-    onMouseLeave={e => { if (!active) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = M.textSub; } }}
+    disabled={disabled}
+    onMouseEnter={e => { if (!active && !disabled) { e.currentTarget.style.background = M.surface; e.currentTarget.style.color = M.text; } }}
+    onMouseLeave={e => { if (!active && !disabled) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = M.textSub; } }}
   >
     <span style={{ fontSize: '17px', width: '20px', textAlign: 'center', flexShrink: 0 }}>{icon}</span>
     <span style={{ flex: 1 }}>{label}</span>
@@ -201,6 +204,38 @@ export default function StaffDashboard() {
   const [loadingQueue, setLoadingQueue] = useState(true)
   const [apptStats, setApptStats] = useState({ today_appointments: 0, completed_today: 0, total_monthly: 0 })
 
+  // Window assignment state
+  const [numWindows, setNumWindows] = useState(3)
+  const [windowAssignments, setWindowAssignments] = useState({}) // { userId: windowNum }
+  const [myWindow, setMyWindow] = useState(null)
+  const [windowError, setWindowError] = useState('')
+  const [claimingWindow, setClaimingWindow] = useState(null)
+
+  const loadWindowData = async () => {
+    try {
+      const data = await getWindowAssignments(token)
+      setNumWindows(data.num_windows || 3)
+      setWindowAssignments(data.assignments || {})
+      setMyWindow(data.assignments?.[user?.id] || null)
+    } catch (e) { console.error('Window fetch error', e) }
+  }
+
+  const handleClaimWindow = async (winNum) => {
+    setClaimingWindow(winNum); setWindowError('')
+    try {
+      await claimWindow(token, winNum)
+      await loadWindowData()
+    } catch (e) { setWindowError(e.message) }
+    finally { setClaimingWindow(null) }
+  }
+
+  const handleReleaseWindow = async () => {
+    try {
+      await releaseWindow(token)
+      await loadWindowData()
+    } catch (e) { setWindowError(e.message) }
+  }
+
   const loadData = useCallback(async () => {
     if (!token) return
     try {
@@ -216,8 +251,10 @@ export default function StaffDashboard() {
 
   useEffect(() => {
     loadData()
+    loadWindowData()
     const t = setInterval(loadData, 30000)
-    return () => clearInterval(t)
+    const wt = setInterval(loadWindowData, 20000)
+    return () => { clearInterval(t); clearInterval(wt) }
   }, [loadData])
 
   // Calculate stats
@@ -285,9 +322,28 @@ export default function StaffDashboard() {
         <div style={{ fontSize: '10px', fontWeight: 700, color: M.textMuted, letterSpacing: '0.08em', textTransform: 'uppercase', padding: '0 14px', marginBottom: '6px' }}>Navigation</div>
         <nav style={{ display: 'flex', flexDirection: 'column', gap: '3px', flex: 1 }}>
           {navItems.map(item => (
-            <SideItem key={item.id} icon={item.icon} label={item.label} active={activeNav === item.id} onClick={() => setActiveNav(item.id)} badge={item.badge} />
+            <SideItem
+              key={item.id}
+              icon={item.icon}
+              label={item.label}
+              active={activeNav === item.id}
+              onClick={() => myWindow ? setActiveNav(item.id) : null}
+              badge={item.badge}
+              style={!myWindow ? { opacity: 0.4 } : {}}
+              disabled={!myWindow}
+            />
           ))}
         </nav>
+        {/* Window required hint in sidebar */}
+        {!myWindow && (
+          <div style={{
+            margin: '0 4px 8px', padding: '10px 12px', borderRadius: '10px',
+            background: M.goldLight, border: `1px solid ${M.goldBorder}`,
+            fontSize: '11px', color: M.gold, fontWeight: 600, lineHeight: 1.5,
+          }}>
+            ⚠ Claim a window to unlock navigation.
+          </div>
+        )}
       </aside>
 
       {/* ── Right Content ── */}
@@ -302,12 +358,37 @@ export default function StaffDashboard() {
           boxShadow: '0 1px 4px rgba(0,0,0,0.04)',
         }}>
           <div>
-            <span style={{ fontSize: '18px', fontFamily: "'Fraunces', serif", fontWeight: 700, color: M.maroon }}>Welcome back, {user?.first_name}. Here's what's happening today.</span>
+            <span style={{ fontSize: '18px', fontFamily: "'Fraunces', serif", fontWeight: 700, color: M.maroon }}>Welcome back, Staff. Here's what's happening today.</span>
           </div>
 
-          {/* Search + Avatar */}
+          {/* Window Badge + Avatar */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
 
+            {/* Active Window Badge */}
+            {myWindow ? (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px',
+                background: M.greenLight, border: `1.5px solid ${M.greenBorder}`,
+                borderRadius: '10px', padding: '6px 14px',
+              }}>
+                <Monitor size={16} color={M.green} />
+                <span style={{ fontSize: '13px', fontWeight: 700, color: M.green, fontFamily: "'IBM Plex Sans', sans-serif" }}>
+                  Window {myWindow}
+                </span>
+                <button
+                  onClick={handleReleaseWindow}
+                  title="Release window"
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: M.green, display: 'flex', alignItems: 'center', padding: '0 0 0 4px', opacity: 0.6 }}
+                  onMouseEnter={e => e.currentTarget.style.opacity = '1'}
+                  onMouseLeave={e => e.currentTarget.style.opacity = '0.6'}
+                >
+                  <MonitorX size={15} />
+                </button>
+              </div>
+            ) : (
+              <div style={{ fontSize: '12px', color: M.textMuted, fontWeight: 600, fontFamily: "'IBM Plex Sans', sans-serif" }}>
+                No window assigned
+              </div>
+            )}
 
             {/* Avatar dropdown */}
             <div style={{ position: 'relative' }}>
@@ -326,7 +407,16 @@ export default function StaffDashboard() {
                   <div style={{ fontSize: '13px', fontWeight: 600, color: M.text, marginBottom: '4px' }}>{user?.first_name} {user?.last_name}</div>
                   <div style={{ fontSize: '11px', color: M.textMuted, marginBottom: '12px', wordBreak: 'break-all' }}>{user?.email}</div>
                   <div style={{ height: '1px', background: M.border, marginBottom: '10px' }} />
-                  <button onClick={() => { logout(); navigate('/login') }} style={{
+                  <button onClick={async () => {
+                    if (myWindow) {
+                      try {
+                        await releaseWindow(token)
+                      } catch (e) {
+                        console.error('Failed to release window on logout', e)
+                      }
+                    }
+                    logout(); navigate('/login')
+                  }} style={{
                     width: '100%', padding: '9px 12px', borderRadius: '8px', border: 'none',
                     background: '#FEF2F2', color: '#DC2626', fontSize: '13px', fontWeight: 600,
                     cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', fontFamily: "'IBM Plex Sans', sans-serif",
@@ -340,7 +430,76 @@ export default function StaffDashboard() {
         </header>
 
         {/* ── Page Content ── */}
-        <main style={{ padding: '28px', flex: 1 }}>
+        <main style={{ padding: '28px', flex: 1, position: 'relative' }}>
+
+          {/* ──── WINDOW GATE OVERLAY ──── */}
+          {!myWindow && (
+            <div style={{
+              position: 'absolute', inset: 0, zIndex: 30,
+              background: 'rgba(242, 237, 232, 0.85)',
+              backdropFilter: 'blur(6px)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              padding: '28px',
+            }}>
+              <div style={{
+                background: M.white, borderRadius: '24px', padding: '40px 40px 36px',
+                border: `1.5px solid ${M.goldBorder}`,
+                boxShadow: '0 8px 40px rgba(0,0,0,0.1)',
+                width: '100%', maxWidth: '560px', textAlign: 'center',
+              }}>
+                <div style={{
+                  width: '64px', height: '64px', borderRadius: '50%',
+                  background: M.goldLight, border: `2px solid ${M.goldBorder}`,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  margin: '0 auto 20px',
+                }}>
+                  <Monitor size={28} color={M.gold} />
+                </div>
+                <p style={{ fontSize: '11px', fontWeight: 700, color: M.gold, letterSpacing: '0.12em', textTransform: 'uppercase', margin: '0 0 8px' }}>Action Required</p>
+                <h2 style={{ fontFamily: "'Fraunces', serif", fontSize: '26px', fontWeight: 800, color: M.text, margin: '0 0 10px' }}>Claim Your Service Window</h2>
+                <p style={{ fontSize: '14px', color: M.textSub, margin: '0 0 28px', lineHeight: 1.6 }}>
+                  You must be assigned to a window before you can access the queue, appointments, or any other features.
+                </p>
+                {windowError && (
+                  <div style={{ padding: '10px 14px', borderRadius: '8px', background: M.redLight, color: M.red, fontSize: '13px', marginBottom: '20px', border: `1px solid ${M.redBorder}` }}>
+                    {windowError}
+                  </div>
+                )}
+                <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', justifyContent: 'center' }}>
+                  {Array.from({ length: numWindows }, (_, i) => i + 1).map(winNum => {
+                    const occupiedByOther = Object.entries(windowAssignments).some(([uid, wn]) => wn === winNum && uid !== user?.id)
+                    const isClaiming = claimingWindow === winNum
+                    return (
+                      <button
+                        key={winNum}
+                        onClick={() => !occupiedByOther && handleClaimWindow(winNum)}
+                        disabled={occupiedByOther || !!claimingWindow}
+                        style={{
+                          display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                          gap: '8px', width: '110px', height: '100px', borderRadius: '16px',
+                          border: `2px solid ${occupiedByOther ? M.border : M.maroonBorder}`,
+                          background: occupiedByOther ? M.surface : M.maroonLight,
+                          cursor: occupiedByOther ? 'not-allowed' : 'pointer',
+                          transition: 'all 0.2s',
+                          fontFamily: "'IBM Plex Sans', sans-serif",
+                          opacity: occupiedByOther ? 0.6 : 1,
+                        }}
+                        onMouseEnter={e => { if (!occupiedByOther && !claimingWindow) { e.currentTarget.style.background = M.maroon; e.currentTarget.style.borderColor = M.maroon; e.currentTarget.querySelector('.win-label').style.color = '#fff'; e.currentTarget.querySelector('.win-icon').style.color = '#fff'; } }}
+                        onMouseLeave={e => { if (!occupiedByOther) { e.currentTarget.style.background = M.maroonLight; e.currentTarget.style.borderColor = M.maroonBorder; e.currentTarget.querySelector('.win-label').style.color = M.maroon; e.currentTarget.querySelector('.win-icon').style.color = M.maroon; } }}
+                      >
+                        <span className="win-icon" style={{ color: occupiedByOther ? M.textMuted : M.maroon, display: 'flex' }}>
+                          {occupiedByOther ? <MonitorX size={24} /> : <Monitor size={24} />}
+                        </span>
+                        <span className="win-label" style={{ fontSize: '13px', fontWeight: 700, color: occupiedByOther ? M.textMuted : M.maroon }}>
+                          {isClaiming ? 'Claiming…' : occupiedByOther ? 'Occupied' : `Window ${winNum}`}
+                        </span>
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* ──── OVERVIEW VIEW ──── */}
           {activeNav === 'overview' && (
