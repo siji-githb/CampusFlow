@@ -204,7 +204,7 @@ OPENAI_API_KEY=sk-...
 SECRET_KEY=your-jwt-secret-key
 ```
 
-> **** Environment(.env) files are listed inside of `.gitignore` to avoid exposing sensitive information.
+>  Environment(.env) files are listed inside of `.gitignore` to avoid exposing sensitive information.
 
 ---
 
