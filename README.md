@@ -225,7 +225,7 @@ startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
 The frontend is deployed on [Vercel](https://vercel.com). 
 
 Steps on how I deployed it:
-  Connect the repository, set the root directory to `frontend`, and Vercel will auto-detect the Vite build configuration.
+  Connected the repository, set the root directory to `frontend`, and Vercel will auto-detect the Vite build configuration.
 
 Allowed frontend origins are already whitelisted in the backend CORS configuration:
 - `https://campus-flow.vercel.app`
