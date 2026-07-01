@@ -149,10 +149,10 @@ CampusFlow/
 
 ---
 
-### Backend Setup
+### Backend Setup Terminal
 
 ```bash
-# 1. Navigate to the backend directory
+# 1. Navigate to the backend directory/folder
 cd backend
 
 # 2. Create and activate a virtual environment
@@ -174,10 +174,10 @@ Interactive API docs: `http://localhost:8000/docs`
 
 ---
 
-### Frontend Setup
+### Frontend Setup Terminal
 
 ```bash
-# 1. Navigate to the frontend directory
+# 1. Navigate to the frontend directory/folder
 cd frontend
 
 # 2. Install dependencies
@@ -193,7 +193,8 @@ The app will be available at `http://localhost:5173`.
 
 ## Environment Variables
 
-Create a `.env` file in the `backend/` directory with the following keys:
+Environment variables setup:
+Created `.env` file in the `backend/` directory with the following keys:
 
 ```env
 SUPABASE_URL=https://your-project.supabase.co
@@ -203,7 +204,7 @@ OPENAI_API_KEY=sk-...
 SECRET_KEY=your-jwt-secret-key
 ```
 
-> **Never commit your `.env` file.** It is listed in `.gitignore`.
+> **** Environment(.env) files are listed inside of `.gitignore` to avoid exposing sensitive information.
 
 ---
 
@@ -213,16 +214,18 @@ SECRET_KEY=your-jwt-secret-key
 
 The backend is configured for deployment on [Render](https://render.com) via `backend/render.yaml`.
 
+Commands used:
 ```yaml
 buildCommand: pip install -r requirements.txt
 startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
 ```
 
-Set the environment variables above in the Render dashboard under your service's **Environment** tab.
-
 ### Frontend — Vercel
 
-The frontend is deployed on [Vercel](https://vercel.com). Connect the repository, set the root directory to `frontend`, and Vercel will auto-detect the Vite build configuration.
+The frontend is deployed on [Vercel](https://vercel.com). 
+
+Steps on how I deployed it:
+  Connect the repository, set the root directory to `frontend`, and Vercel will auto-detect the Vite build configuration.
 
 Allowed frontend origins are already whitelisted in the backend CORS configuration:
 - `https://campus-flow.vercel.app`
@@ -250,10 +253,10 @@ CampusFlow integrates OpenAI to provide:
 
 1. **Student AI Chat** — A conversational assistant that answers questions about registrar transactions, required documents, and procedures. Responses are grounded in the specific transaction types configured in the system.
 
-2. **Admin AI Reports** — The Reports page generates a daily natural-language summary of appointment statistics (completion rate, no-shows, volume trends) to help administrators make informed decisions.
+2. **Admin AI Reports** — The Reports page generates a daily natural-language summary of appointment statistics (completion rate, no-shows, volume trends documents) to help administrators make informed decisions.
 
 ---
 
 ## License
 
-This project was developed as an academic capstone project. All rights reserved by the authors.
+This project was developed as an academic capstone project. All rights reserved by the authors of CampusFlow.
