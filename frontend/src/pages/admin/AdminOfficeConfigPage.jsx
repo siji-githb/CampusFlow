@@ -1,28 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '../../context/useAuth'
 import { getOfficeConfig, updateOfficeConfig } from '../../services/adminService'
-
-const M = {
-  maroon:       '#7B1A2A',
-  maroonLight:  '#F9F0F1',
-  maroonBorder: 'rgba(123,26,42,0.2)',
-  gold:         '#B8900A',
-  goldLight:    '#FDF6E3',
-  goldBorder:   'rgba(184,144,10,0.3)',
-  white:        '#FFFFFF',
-  offWhite:     '#F9F7F4',
-  surface:      '#F2EDE8',
-  border:       '#EAE7E2',
-  text:         '#1C1917',
-  textSub:      '#57534E',
-  textMuted:    '#A8A29E',
-  green:        '#15803D',
-  greenLight:   '#F0FDF4',
-  greenBorder:  '#BBF7D0',
-  red:          '#DC2626',
-  redLight:     '#FEF2F2',
-  redBorder:    '#FECACA',
-}
+import { Check, AlertTriangle } from 'lucide-react'
 
 const SETTINGS_CATEGORIES = {
   general: ['office_open_time', 'office_close_time', 'lunch_break_start', 'lunch_break_end'],
@@ -98,47 +77,22 @@ export default function AdminOfficeConfigPage() {
       const isTimeField = key.includes('time') || key.includes('lunch')
 
       return (
-        <div key={key} style={{
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          padding: '24px 28px', borderBottom: i < keys.length - 1 ? `1px solid ${M.border}` : 'none',
-          gap: '24px', flexWrap: 'wrap', transition: 'background 0.2s',
-          background: isChanged ? M.maroonLight : 'transparent'
-        }}>
-          <div style={{ flex: 1, minWidth: '200px' }}>
-            <p style={{ fontSize: '15px', fontWeight: 600, color: M.text, margin: '0 0 4px' }}>{LABELS[key]?.title || key}</p>
-            <p style={{ fontSize: '13px', color: M.textSub, margin: 0, lineHeight: 1.4 }}>{LABELS[key]?.desc}</p>
+        <div key={key} className={`flex items-center justify-between p-[24px_28px] gap-6 flex-wrap transition-colors duration-200 ${i < keys.length - 1 ? 'border-b border-border' : 'border-none'} ${isChanged ? 'bg-maroon-light' : 'bg-transparent'}`}>
+          <div className="flex-1 min-w-[200px]">
+            <p className="text-[15px] font-semibold text-text-main m-0 mb-1">{LABELS[key]?.title || key}</p>
+            <p className="text-[13px] text-text-sub m-0 leading-snug">{LABELS[key]?.desc}</p>
           </div>
-          <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+          <div className="flex gap-3 items-center">
             <input
               type={isTimeField ? 'time' : 'number'}
               value={edited[key] ?? ''}
               onChange={e => setEdited({ ...edited, [key]: e.target.value })}
-              style={{
-                width: isTimeField ? '130px' : '100px',
-                padding: '11px 16px', borderRadius: '10px',
-                border: `1.5px solid ${isChanged ? M.maroon : M.border}`,
-                background: M.white, fontSize: '14px', outline: 'none',
-                fontFamily: "'IBM Plex Sans', sans-serif", color: M.text,
-                textAlign: isTimeField ? 'left' : 'center',
-                boxShadow: isChanged ? '0 0 0 3px rgba(123,26,42,0.1)' : 'none',
-                transition: 'all 0.2s'
-              }}
-              onFocus={e => e.target.style.borderColor = M.maroon}
-              onBlur={e => { if (!isChanged) e.target.style.borderColor = M.border }}
+              className={`py-[11px] px-4 rounded-[10px] bg-white text-[14px] outline-none font-sans text-text-main transition-all duration-200 border-[1.5px] focus:border-maroon ${isTimeField ? 'w-[130px] text-left' : 'w-[100px] text-center'} ${isChanged ? 'border-maroon shadow-[0_0_0_3px_rgba(123,26,42,0.1)]' : 'border-border'}`}
             />
             <button
               onClick={() => handleSave(key)}
               disabled={saving === key || !isChanged}
-              style={{
-                padding: '11px 24px', borderRadius: '10px', border: 'none',
-                background: saving === key ? '#B8667A' : isChanged ? M.maroon : M.border,
-                color: isChanged ? M.white : M.textMuted,
-                fontSize: '14px', fontWeight: 700,
-                cursor: (saving === key || !isChanged) ? 'not-allowed' : 'pointer',
-                fontFamily: "'IBM Plex Sans', sans-serif",
-                transition: 'all 0.2s',
-                boxShadow: isChanged ? '0 4px 12px rgba(123,26,42,0.2)' : 'none'
-              }}>
+              className={`py-[11px] px-6 rounded-[10px] border-none text-[14px] font-bold font-sans transition-all duration-200 ${saving === key ? 'bg-[#B8667A] text-white cursor-not-allowed' : isChanged ? 'bg-maroon text-white cursor-pointer shadow-[0_4px_12px_rgba(123,26,42,0.2)]' : 'bg-border text-text-muted cursor-not-allowed'}`}>
               {saving === key ? 'Saving…' : 'Save'}
             </button>
           </div>
@@ -151,62 +105,54 @@ export default function AdminOfficeConfigPage() {
     <div>
       {/* Toast Notification */}
       {toast && (
-        <div style={{
-          position: 'fixed', top: '30px', left: '50%', transform: 'translateX(-50%)', zIndex: 9999,
-          background: toast.type === 'success' ? M.green : M.red,
-          color: M.white, padding: '14px 24px', borderRadius: '12px',
-          boxShadow: '0 10px 30px rgba(0,0,0,0.15)', fontSize: '14px', fontWeight: 600,
-          display: 'flex', alignItems: 'center', gap: '10px',
-          animation: 'slideDown 0.3s cubic-bezier(0.16, 1, 0.3, 1)'
-        }}>
-          <span>{toast.type === 'success' ? '✓' : '⚠'}</span>
+        <div className={`fixed top-[30px] left-1/2 -translate-x-1/2 z-9999 text-white py-3.5 px-6 rounded-xl shadow-[0_10px_30px_rgba(0,0,0,0.15)] text-[14px] font-semibold flex items-center gap-2.5 animate-slide-down ${toast.type === 'success' ? 'bg-success' : 'bg-danger'}`}>
+          <span>{toast.type === 'success' ? <Check size={16} /> : <AlertTriangle size={16} />}</span>
           {toast.msg}
         </div>
       )}
-      <style>{`@keyframes slideDown { from { transform: translate(-50%, -20px); opacity: 0; } to { transform: translate(-50%, 0); opacity: 1; } }`}</style>
 
       {/* Header */}
-      <div style={{ marginBottom: '32px' }}>
-        <h1 style={{ fontFamily: "'Fraunces', serif", fontSize: '32px', fontWeight: 700, color: M.maroon, margin: '0 0 6px' }}>Office Configuration</h1>
-        <p style={{ fontSize: '15px', color: M.textSub, margin: 0 }}>Manage operational hours, daily request caps, and appointment rules.</p>
+      <div className="mb-8">
+        <h1 className="font-serif text-[32px] font-bold text-maroon m-0 mb-1.5">Office Configuration</h1>
+        <p className="text-[15px] text-text-sub m-0">Manage operational hours, daily request caps, and appointment rules.</p>
       </div>
 
       {loading ? (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+        <div className="flex flex-col gap-6">
           {[1,2,3].map(section => (
             <section key={section}>
-              <div style={{ width: '150px', height: '14px', borderRadius: '4px', marginBottom: '12px', marginLeft: '4px' }} className="animate-shimmer" />
-              <div style={{ background: M.white, borderRadius: '16px', border: `1px solid ${M.border}`, overflow: 'hidden' }}>
+              <div className="w-[150px] h-3.5 rounded mb-3 ml-1 animate-pulse bg-border" />
+              <div className="bg-white rounded-2xl border border-border overflow-hidden">
                 {[1,2,3].map(i => (
-                  <div key={i} style={{ height: '80px', borderBottom: i < 3 ? `1px solid ${M.border}` : 'none' }} className="animate-shimmer" />
+                  <div key={i} className={`h-20 animate-pulse bg-surface ${i < 3 ? 'border-b border-border' : 'border-none'}`} />
                 ))}
               </div>
             </section>
           ))}
         </div>
       ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+        <div className="flex flex-col gap-6">
           
           {/* General Office Settings */}
           <section className="animate-fade-up" style={{ animationDelay: '0.1s' }}>
-            <h2 style={{ fontSize: '12px', fontWeight: 700, color: M.gold, textTransform: 'uppercase', letterSpacing: '0.1em', margin: '0 0 12px 4px' }}>General Operations</h2>
-            <div style={{ background: M.white, borderRadius: '16px', border: `1px solid ${M.border}`, overflow: 'hidden', boxShadow: '0 2px 8px rgba(0,0,0,0.03)' }}>
+            <h2 className="text-[12px] font-bold text-gold uppercase tracking-widest m-0 mb-3 ml-1">General Operations</h2>
+            <div className="bg-white rounded-2xl border border-border overflow-hidden shadow-[0_2px_8px_rgba(0,0,0,0.03)]">
               {renderGroup(SETTINGS_CATEGORIES.general)}
             </div>
           </section>
 
           {/* Appointment Settings */}
           <section className="animate-fade-up" style={{ animationDelay: '0.2s' }}>
-            <h2 style={{ fontSize: '12px', fontWeight: 700, color: M.gold, textTransform: 'uppercase', letterSpacing: '0.1em', margin: '0 0 12px 4px' }}>Appointments & Scheduling</h2>
-            <div style={{ background: M.white, borderRadius: '16px', border: `1px solid ${M.border}`, overflow: 'hidden', boxShadow: '0 2px 8px rgba(0,0,0,0.03)' }}>
+            <h2 className="text-[12px] font-bold text-gold uppercase tracking-widest m-0 mb-3 ml-1">Appointments & Scheduling</h2>
+            <div className="bg-white rounded-2xl border border-border overflow-hidden shadow-[0_2px_8px_rgba(0,0,0,0.03)]">
               {renderGroup(SETTINGS_CATEGORIES.appointments)}
             </div>
           </section>
 
           {/* Staffing */}
           <section className="animate-fade-up" style={{ animationDelay: '0.3s' }}>
-            <h2 style={{ fontSize: '12px', fontWeight: 700, color: M.gold, textTransform: 'uppercase', letterSpacing: '0.1em', margin: '0 0 12px 4px' }}>Staffing & Capacity</h2>
-            <div style={{ background: M.white, borderRadius: '16px', border: `1px solid ${M.border}`, overflow: 'hidden', boxShadow: '0 2px 8px rgba(0,0,0,0.03)' }}>
+            <h2 className="text-[12px] font-bold text-gold uppercase tracking-widest m-0 mb-3 ml-1">Staffing & Capacity</h2>
+            <div className="bg-white rounded-2xl border border-border overflow-hidden shadow-[0_2px_8px_rgba(0,0,0,0.03)]">
               {renderGroup(SETTINGS_CATEGORIES.staffing)}
             </div>
           </section>
@@ -216,46 +162,27 @@ export default function AdminOfficeConfigPage() {
 
       {/* Confirmation Modal */}
       {confirmSave && (
-        <div style={{
-          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-          background: 'rgba(0,0,0,0.5)', zIndex: 10000,
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          animation: 'fadeIn 0.2s ease'
-        }}>
-          <div style={{
-            background: M.white, borderRadius: '16px', padding: '32px', width: '90%', maxWidth: '400px',
-            boxShadow: '0 20px 40px rgba(0,0,0,0.2)', textAlign: 'center',
-            animation: 'slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1)'
-          }}>
-            <div style={{ fontSize: '40px', marginBottom: '16px' }}>⚙️</div>
-            <h3 style={{ margin: '0 0 12px', fontSize: '20px', fontWeight: 700, color: M.text }}>Confirm Changes</h3>
-            <p style={{ margin: '0 0 24px', fontSize: '15px', color: M.textSub, lineHeight: 1.5 }}>
+        <div className="fixed inset-0 bg-black/50 z-10000 flex items-center justify-center animate-fade-in">
+          <div className="bg-white rounded-2xl p-8 w-[90%] max-w-[400px] shadow-[0_20px_40px_rgba(0,0,0,0.2)] text-center animate-slide-up">
+            <div className="text-[40px] mb-4">⚙️</div>
+            <h3 className="m-0 mb-3 text-[20px] font-bold text-text-main">Confirm Changes</h3>
+            <p className="m-0 mb-6 text-[15px] text-text-sub leading-relaxed">
               Are you sure you want to save changes to <br/>
-              <strong style={{ color: M.maroon }}>{LABELS[confirmSave]?.title || confirmSave}</strong>?
+              <strong className="text-maroon">{LABELS[confirmSave]?.title || confirmSave}</strong>?
             </p>
-            <div style={{ display: 'flex', gap: '12px' }}>
+            <div className="flex gap-3">
               <button onClick={() => setConfirmSave(null)}
-                style={{ flex: 1, padding: '12px', borderRadius: '10px', background: M.surface, color: M.textSub, border: 'none', fontSize: '14px', fontWeight: 600, cursor: 'pointer', transition: 'background 0.2s' }}
-                onMouseEnter={e => e.target.style.background = M.border}
-                onMouseLeave={e => e.target.style.background = M.surface}
-              >
+                className="flex-1 p-3 rounded-[10px] bg-surface text-text-sub border-none text-[14px] font-semibold cursor-pointer transition-colors duration-200 hover:bg-border">
                 Cancel
               </button>
               <button onClick={executeSave}
-                style={{ flex: 1, padding: '12px', borderRadius: '10px', background: M.maroon, color: M.white, border: 'none', fontSize: '14px', fontWeight: 600, cursor: 'pointer', transition: 'background 0.2s', boxShadow: '0 4px 12px rgba(123,26,42,0.2)' }}
-                onMouseEnter={e => e.target.style.background = M.maroonDark}
-                onMouseLeave={e => e.target.style.background = M.maroon}
-              >
+                className="flex-1 p-3 rounded-[10px] bg-maroon text-white border-none text-[14px] font-semibold cursor-pointer transition-colors duration-200 hover:bg-maroon-dark shadow-[0_4px_12px_rgba(123,26,42,0.2)]">
                 Yes, Save
               </button>
             </div>
           </div>
         </div>
       )}
-      <style>{`
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-        @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
-      `}</style>
     </div>
   )
 }

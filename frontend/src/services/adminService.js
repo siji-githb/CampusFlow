@@ -194,8 +194,11 @@ export const editStudentRecord = async (token, studentId, record) => {
 
 // ── Window Assignment ─────────────────────────────────────────────────────────
 
-export const getWindowAssignments = async (token) => {
-  const res = await fetch(`${API_URL}/admin/window-assignments`, { headers: authHeader(token) })
+export const getWindowAssignments = async (token, ts = 0) => {
+  const res = await fetch(`${API_URL}/admin/window-assignments?ts=${ts}`, { 
+    headers: authHeader(token),
+    cache: 'no-store'
+  })
   const data = await res.json()
   if (!res.ok) throw new Error(data.detail || 'Failed to fetch window assignments')
   return data // { num_windows: number, assignments: { userId: windowNum } }

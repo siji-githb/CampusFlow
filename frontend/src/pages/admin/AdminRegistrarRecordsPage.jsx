@@ -3,52 +3,22 @@ import { useAuth } from '../../context/useAuth'
 import { getRegistrarRecords } from '../../services/adminService'
 import { ChevronDown, FileDown, RefreshCw, AlertTriangle, Search, X as XIcon, FolderOpen, Printer, Check, Clipboard } from 'lucide-react'
 
-// ── Design Tokens ──────────────────────────────────────────────────────────────
-const M = {
-  maroon: '#7B1A2A',
-  maroonDark: '#5C1320',
-  maroonLight: '#F9F0F1',
-  maroonMid: 'rgba(123,26,42,0.08)',
-  maroonBorder: 'rgba(123,26,42,0.2)',
-  gold: '#B8900A',
-  goldLight: '#FDF6E3',
-  goldBorder: 'rgba(184,144,10,0.3)',
-  white: '#FFFFFF',
-  offWhite: '#F9F7F4',
-  surface: '#F2EDE8',
-  border: '#EAE7E2',
-  text: '#1C1917',
-  textSub: '#57534E',
-  textMuted: '#A8A29E',
-  green: '#15803D',
-  greenLight: '#F0FDF4',
-  greenBorder: '#BBF7D0',
-  blue: '#1D4ED8',
-  blueLight: '#EFF6FF',
-  blueBorder: '#BFDBFE',
-  red: '#DC2626',
-  redLight: '#FEF2F2',
-  redBorder: '#FECACA',
-  purple: '#6D28D9',
-  purpleLight: '#F5F3FF',
-}
-
 const DOC_COLORS = ['#7B1A2A', '#B8900A', '#1D4ED8', '#15803D', '#6D28D9', '#EA580C']
 
 // ── Status config ──────────────────────────────────────────────────────────────
 const STATUS_CFG = {
-  completed: { label: 'Completed', bg: M.greenLight, color: M.green, border: M.greenBorder },
-  released: { label: 'Released', bg: M.blueLight, color: M.blue, border: M.blueBorder },
-  processing: { label: 'Processing', bg: M.goldLight, color: M.gold, border: M.goldBorder },
-  pending: { label: 'Pending', bg: M.maroonLight, color: M.maroon, border: M.maroonBorder },
-  cancelled: { label: 'Cancelled', bg: M.redLight, color: M.red, border: M.redBorder },
-  archived: { label: 'Archived', bg: M.surface, color: M.textMuted, border: M.border },
+  completed: { label: 'Completed', bg: 'bg-success-light', color: 'text-success', border: 'border-success-border' },
+  released: { label: 'Released', bg: 'bg-info-light', color: 'text-info', border: 'border-info-border' },
+  processing: { label: 'Processing', bg: 'bg-gold-light', color: 'text-gold', border: 'border-gold-border' },
+  pending: { label: 'Pending', bg: 'bg-maroon-light', color: 'text-maroon', border: 'border-maroon-border' },
+  cancelled: { label: 'Cancelled', bg: 'bg-danger-light', color: 'text-danger', border: 'border-danger-border' },
+  archived: { label: 'Archived', bg: 'bg-surface', color: 'text-text-muted', border: 'border-border' },
 }
 
 const StatusBadge = ({ status }) => {
   const cfg = STATUS_CFG[status] || STATUS_CFG.pending
   return (
-    <span style={{ fontSize: '10px', fontWeight: 700, padding: '4px 10px', borderRadius: '100px', background: cfg.bg, color: cfg.color, border: `1px solid ${cfg.border}`, letterSpacing: '0.04em', whiteSpace: 'nowrap' }}>
+    <span className={`text-[10px] font-bold py-1 px-2.5 rounded-full border tracking-[0.04em] whitespace-nowrap ${cfg.bg} ${cfg.color} ${cfg.border}`}>
       {cfg.label}
     </span>
   )
@@ -60,8 +30,8 @@ const Ring = ({ pct, color, size = 44 }) => {
   const circ = 2 * Math.PI * r
   const dash = circ * Math.min(pct, 100) / 100
   return (
-    <svg width={size} height={size} style={{ transform: 'rotate(-90deg)', flexShrink: 0 }}>
-      <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke={M.border} strokeWidth={5} />
+    <svg width={size} height={size} className="-rotate-90 shrink-0">
+      <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="#EAE7E2" strokeWidth={5} />
       <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke={color} strokeWidth={5}
         strokeDasharray={`${dash} ${circ}`} strokeLinecap="round" />
     </svg>
@@ -157,96 +127,86 @@ export default function AdminRegistrarRecordsPage() {
   return (
     <div>
       {/* ── Header ── */}
-      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '24px', flexWrap: 'wrap', gap: '12px' }}>
+      <div className="flex items-start justify-between mb-6 flex-wrap gap-3">
         <div>
-          <h1 style={{ fontFamily: "'Fraunces', serif", fontSize: '30px', fontWeight: 700, color: M.maroon, margin: '0 0 6px' }}>Registrar Records</h1>
-          <p style={{ fontSize: '14px', color: M.textMuted, margin: 0 }}>Document issuance history and student record management.</p>
+          <h1 className="font-serif text-[30px] font-bold text-maroon m-0 mb-1.5">Registrar Records</h1>
+          <p className="text-[14px] text-text-muted m-0">Document issuance history and student record management.</p>
         </div>
-        <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <span style={{ fontSize: '12px', fontWeight: 700, color: M.textMuted, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Timeframe:</span>
-            <div style={{ position: 'relative' }}>
+        <div className="flex gap-3 items-center">
+          <div className="flex items-center gap-2">
+            <span className="text-[12px] font-bold text-text-muted uppercase tracking-[0.06em]">Timeframe:</span>
+            <div className="relative">
               <select
                 value={months}
                 onChange={e => setMonths(Number(e.target.value))}
-                style={{ padding: '9px 32px 9px 14px', borderRadius: '9px', border: `1px solid ${M.border}`, background: M.white, fontSize: '13px', color: M.text, outline: 'none', cursor: 'pointer', fontFamily: "'IBM Plex Sans', sans-serif", appearance: 'none', fontWeight: 600 }}>
+                className="py-[9px] pr-8 pl-3.5 rounded-[9px] border border-border bg-white text-[13px] text-text-main outline-none cursor-pointer font-sans appearance-none font-semibold">
                 <option value={1}>1 Month</option>
                 <option value={3}>3 Months</option>
                 <option value={6}>6 Months</option>
                 <option value={12}>12 Months</option>
               </select>
-              <span style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', display: 'flex', alignItems: 'center', color: M.textMuted }}><ChevronDown size={14} /></span>
+              <span className="absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none flex items-center text-text-muted"><ChevronDown size={14} /></span>
             </div>
           </div>
           <button onClick={() => exportCSV(csvRows, 'registrar_records.csv')}
-            style={{ padding: '9px 18px', borderRadius: '9px', border: `1px solid ${M.border}`, background: M.white, color: M.text, fontSize: '13px', fontWeight: 600, cursor: 'pointer', fontFamily: "'IBM Plex Sans', sans-serif", display: 'flex', alignItems: 'center', gap: '7px' }}>
+            className="py-[9px] px-4.5 rounded-[9px] border border-border bg-white text-text-main text-[13px] font-semibold cursor-pointer font-sans flex items-center gap-2 hover:bg-off-white transition-colors">
             <FileDown size={15} /> Export CSV
           </button>
           <button onClick={load}
-            style={{ padding: '9px 18px', borderRadius: '9px', border: 'none', background: M.maroon, color: M.white, fontSize: '13px', fontWeight: 700, cursor: 'pointer', fontFamily: "'IBM Plex Sans', sans-serif", display: 'flex', alignItems: 'center', gap: '7px' }}>
+            className="py-[9px] px-4.5 rounded-[9px] border-none bg-maroon text-white text-[13px] font-bold cursor-pointer font-sans flex items-center gap-2 hover:bg-maroon-dark transition-colors">
             <RefreshCw size={15} /> Refresh
           </button>
         </div>
       </div>
 
       {error && (
-        <div style={{ padding: '12px 16px', borderRadius: '10px', background: M.redLight, color: M.red, border: `1px solid ${M.redBorder}`, marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}><AlertTriangle size={16} /> {error}</div>
+        <div className="p-[12px_16px] rounded-[10px] bg-danger-light text-danger border border-danger-border mb-5 flex items-center gap-2"><AlertTriangle size={16} /> {error}</div>
       )}
 
       {/* ── Stat Cards ── */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px', marginBottom: '24px' }}>
+      <div className="grid grid-cols-4 gap-4 mb-6">
         {[
-          { label: 'Total Records', value: totalRecords.toLocaleString(), color: M.maroon, sub: `For ${months} ${months === 1 ? 'month' : 'months'}` },
-          { label: 'Completed/Released', value: completedRecs.toLocaleString(), color: M.green, sub: `${totalRecords > 0 ? Math.round((completedRecs / totalRecords) * 100) : 0}% fulfillment rate` },
-          { label: 'Pending/Processing', value: pendingRecs.toLocaleString(), color: M.gold, sub: 'Requires action' },
-          { label: 'Archived', value: archivedRecs.toLocaleString(), color: M.textSub, sub: 'Historical records' },
+          { label: 'Total Records', value: totalRecords.toLocaleString(), color: 'text-maroon', sub: `For ${months} ${months === 1 ? 'month' : 'months'}` },
+          { label: 'Completed/Released', value: completedRecs.toLocaleString(), color: 'text-success', sub: `${totalRecords > 0 ? Math.round((completedRecs / totalRecords) * 100) : 0}% fulfillment rate` },
+          { label: 'Pending/Processing', value: pendingRecs.toLocaleString(), color: 'text-gold', sub: 'Requires action' },
+          { label: 'Archived', value: archivedRecs.toLocaleString(), color: 'text-text-sub', sub: 'Historical records' },
         ].map((c, i) => (
-          <div key={i} className="animate-fade-up" style={{ animationDelay: `${0.1 * (i + 1)}s`, background: M.white, borderRadius: '16px', padding: '22px', border: `1px solid ${M.border}`, boxShadow: '0 1px 4px rgba(0,0,0,0.04)' }}>
-            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '12px' }}>
-              <div style={{ fontSize: '11px', fontWeight: 600, color: M.textMuted, textTransform: 'uppercase', letterSpacing: '0.06em' }}>{c.label}</div>
+          <div key={i} className="animate-fade-up bg-white rounded-2xl p-5 border border-border shadow-sm" style={{ animationDelay: `${0.1 * (i + 1)}s` }}>
+            <div className="flex items-start justify-between mb-3">
+              <div className="text-[11px] font-semibold text-text-muted uppercase tracking-[0.06em]">{c.label}</div>
             </div>
-            <div style={{ fontFamily: "'Fraunces', serif", fontSize: '34px', fontWeight: 800, color: c.color, lineHeight: 1, marginBottom: '6px', minHeight: '34px' }}>
-              {loading ? <div className="animate-shimmer" style={{ width: '60px', height: '34px', background: M.border, borderRadius: '8px' }} /> : c.value}
+            <div className={`font-serif text-[34px] font-bold leading-none mb-1.5 min-h-[34px] ${c.color}`}>
+              {loading ? <div className="animate-pulse w-[60px] h-[34px] bg-border rounded-lg" /> : c.value}
             </div>
-            <div style={{ fontSize: '12px', color: M.textMuted }}>{c.sub}</div>
+            <div className="text-[12px] text-text-muted">{c.sub}</div>
           </div>
         ))}
       </div>
 
       {/* ── Main Grid: Table + Breakdown ── */}
-      <div className="animate-fade-up" style={{ animationDelay: '0.5s', display: 'grid', gridTemplateColumns: '1fr 220px', gap: '20px' }}>
+      <div className="animate-fade-up grid grid-cols-[1fr_220px] gap-5" style={{ animationDelay: '0.5s' }}>
 
         {/* Left: Records Table */}
         <div>
           {/* Search + Type tabs */}
-          <div style={{ marginBottom: '16px' }}>
+          <div className="mb-4">
             {/* Search */}
-            <div style={{ position: 'relative', marginBottom: '12px' }}>
+            <div className="relative mb-3">
               <input
                 value={search} onChange={e => { setSearch(e.target.value); setPage(1) }}
                 placeholder="Search by student name, record ID, or student ID…"
-                style={{ width: '100%', padding: '10px 16px 10px 38px', borderRadius: '10px', border: `1px solid ${M.border}`, background: M.white, fontSize: '13px', color: M.text, outline: 'none', fontFamily: "'IBM Plex Sans', sans-serif", boxSizing: 'border-box' }}
-                onFocus={e => e.target.style.borderColor = M.maroon}
-                onBlur={e => e.target.style.borderColor = M.border}
+                className="w-full py-2.5 pr-4 pl-9.5 rounded-[10px] border border-border bg-white text-[13px] text-text-main outline-none font-sans box-border focus:border-maroon transition-colors"
               />
-              <span style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', display: 'flex', alignItems: 'center', color: M.textMuted }}><Search size={16} /></span>
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 flex items-center text-text-muted"><Search size={16} /></span>
               {search && (
-                <button onClick={() => setSearch('')} style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: M.textMuted, display: 'flex', alignItems: 'center', padding: '2px 6px' }}><XIcon size={16} /></button>
+                <button onClick={() => setSearch('')} className="absolute right-2.5 top-1/2 -translate-y-1/2 bg-transparent border-none cursor-pointer text-text-muted flex items-center p-0.5"><XIcon size={16} /></button>
               )}
             </div>
 
             {/* Document type tabs */}
-            <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+            <div className="flex gap-1.5 flex-wrap">
               {['all', ...typeNames].map((type, i) => (
-                <button key={type} onClick={() => { setActiveType(type); setPage(1) }} style={{
-                  padding: '6px 14px', borderRadius: '100px',
-                  border: `1px solid ${activeType === type ? M.maroon : M.border}`,
-                  background: activeType === type ? M.maroon : M.white,
-                  color: activeType === type ? M.white : M.textSub,
-                  fontSize: '12px', fontWeight: activeType === type ? 700 : 400,
-                  cursor: 'pointer', fontFamily: "'IBM Plex Sans', sans-serif",
-                  transition: 'all 0.15s',
-                }}>
+                <button key={type} onClick={() => { setActiveType(type); setPage(1) }} className={`py-1.5 px-3.5 rounded-full border text-[12px] cursor-pointer font-sans transition-all duration-150 ${activeType === type ? 'border-maroon bg-maroon text-white font-bold' : 'border-border bg-white text-text-sub font-normal hover:bg-off-white'}`}>
                   {type === 'all' ? 'All Types' : type}
                 </button>
               ))}
@@ -254,37 +214,32 @@ export default function AdminRegistrarRecordsPage() {
           </div>
 
           {/* Table */}
-          <div style={{ background: M.white, borderRadius: '16px', border: `1px solid ${M.border}`, overflow: 'hidden', boxShadow: '0 1px 4px rgba(0,0,0,0.04)' }}>
+          <div className="bg-white rounded-2xl border border-border overflow-hidden shadow-sm">
             {/* Column headers */}
-            <div style={{ display: 'grid', gridTemplateColumns: '110px 1.4fr 1.2fr 100px 100px 110px 40px', padding: '12px 20px', background: M.surface, borderBottom: `1px solid ${M.border}` }}>
+            <div className="grid grid-cols-[110px_1.4fr_1.2fr_100px_100px_110px_40px] p-[12px_20px] bg-surface border-b border-border">
               {['Record ID', 'Student', 'Document Type', 'Requested', 'Processed', 'Status', ''].map(h => (
-                <span key={h} style={{ fontSize: '10px', fontWeight: 700, color: M.textMuted, textTransform: 'uppercase', letterSpacing: '0.06em' }}>{h}</span>
+                <span key={h} className="text-[10px] font-bold text-text-muted uppercase tracking-[0.06em]">{h}</span>
               ))}
             </div>
 
             {/* Rows */}
             {loading ? (
               [1, 2, 3, 4, 5].map((n, idx) => (
-                <div key={n} style={{
-                  display: 'grid', gridTemplateColumns: '110px 1.4fr 1.2fr 100px 100px 110px 40px',
-                  padding: '14px 20px', alignItems: 'center',
-                  borderBottom: idx === 4 ? 'none' : `1px solid ${M.border}`,
-                  background: idx % 2 === 0 ? M.white : '#FDFCFB',
-                }}>
-                  <div className="animate-shimmer" style={{ height: '16px', width: '60px', borderRadius: '4px' }} />
-                  <div className="animate-shimmer" style={{ height: '24px', width: '70%', borderRadius: '4px' }} />
-                  <div className="animate-shimmer" style={{ height: '16px', width: '80%', borderRadius: '4px' }} />
-                  <div className="animate-shimmer" style={{ height: '16px', width: '60px', borderRadius: '4px' }} />
-                  <div className="animate-shimmer" style={{ height: '16px', width: '60px', borderRadius: '4px' }} />
-                  <div className="animate-shimmer" style={{ height: '24px', width: '70px', borderRadius: '100px' }} />
+                <div key={n} className={`grid grid-cols-[110px_1.4fr_1.2fr_100px_100px_110px_40px] p-[14px_20px] items-center ${idx === 4 ? 'border-none' : 'border-b border-border'} ${idx % 2 === 0 ? 'bg-white' : 'bg-[#FDFCFB]'}`}>
+                  <div className="animate-pulse h-4 w-[60px] rounded bg-border" />
+                  <div className="animate-pulse h-6 w-[70%] rounded bg-border" />
+                  <div className="animate-pulse h-4 w-[80%] rounded bg-border" />
+                  <div className="animate-pulse h-4 w-[60px] rounded bg-border" />
+                  <div className="animate-pulse h-4 w-[60px] rounded bg-border" />
+                  <div className="animate-pulse h-6 w-[70px] rounded-full bg-border" />
                   <div />
                 </div>
               ))
             ) : paginated.length === 0 ? (
-              <div style={{ padding: '56px 24px', textAlign: 'center' }}>
-                <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '12px', color: M.textMuted }}><FolderOpen size={48} /></div>
-                <p style={{ fontSize: '15px', fontWeight: 600, color: M.text, margin: '0 0 6px' }}>No records found</p>
-                <p style={{ fontSize: '13px', color: M.textMuted, margin: 0 }}>Try adjusting your search or filters.</p>
+              <div className="p-[56px_24px] text-center">
+                <div className="flex justify-center mb-3 text-text-muted"><FolderOpen size={48} /></div>
+                <p className="text-[15px] font-semibold text-text-main m-0 mb-1.5">No records found</p>
+                <p className="text-[13px] text-text-muted m-0">Try adjusting your search or filters.</p>
               </div>
             ) : (
               paginated.map((rec, idx) => {
@@ -294,39 +249,31 @@ export default function AdminRegistrarRecordsPage() {
 
                 return (
                   <div key={rec.id}>
-                    <div style={{
-                      display: 'grid', gridTemplateColumns: '110px 1.4fr 1.2fr 100px 100px 110px 40px',
-                      padding: '14px 20px', alignItems: 'center',
-                      borderBottom: isLast && !isExpanded ? 'none' : `1px solid ${M.border}`,
-                      background: isExpanded ? M.maroonLight : idx % 2 === 0 ? M.white : '#FDFCFB',
-                      cursor: 'pointer', transition: 'background 0.1s',
-                    }}
+                    <div className={`grid grid-cols-[110px_1.4fr_1.2fr_100px_100px_110px_40px] p-[14px_20px] items-center cursor-pointer transition-colors duration-100 ${isLast && !isExpanded ? 'border-none' : 'border-b border-border'} ${isExpanded ? 'bg-maroon-light' : idx % 2 === 0 ? 'bg-white hover:bg-off-white' : 'bg-[#FDFCFB] hover:bg-off-white'}`}
                       onClick={() => setExpandedId(isExpanded ? null : rec.id)}
-                      onMouseEnter={e => { if (!isExpanded) e.currentTarget.style.background = M.offWhite }}
-                      onMouseLeave={e => { if (!isExpanded) e.currentTarget.style.background = idx % 2 === 0 ? M.white : '#FDFCFB' }}
                     >
-                      <span style={{ fontFamily: 'monospace', fontSize: '12px', fontWeight: 700, color: M.maroon }}>{rec.id}</span>
+                      <span className="font-mono text-[12px] font-bold text-maroon">{rec.id}</span>
 
-                      <div style={{ minWidth: 0 }}>
-                        <div style={{ fontSize: '13px', fontWeight: 600, color: M.text, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{rec.student}</div>
-                        <div style={{ fontSize: '10px', color: M.textMuted, fontFamily: 'monospace', marginTop: '1px' }}>{rec.studentId}</div>
+                      <div className="min-w-0">
+                        <div className="text-[13px] font-semibold text-text-main whitespace-nowrap overflow-hidden text-ellipsis">{rec.student}</div>
+                        <div className="text-[10px] text-text-muted font-mono mt-px">{rec.studentId}</div>
                       </div>
 
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '7px' }}>
-                        <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: typeColor, flexShrink: 0 }} />
-                        <span style={{ fontSize: '12px', color: M.textSub, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{rec.type}</span>
+                      <div className="flex items-center gap-2">
+                        <div className="w-2 h-2 rounded-full shrink-0" style={{ background: typeColor }} />
+                        <span className="text-[12px] text-text-sub overflow-hidden text-ellipsis whitespace-nowrap">{rec.type}</span>
                       </div>
 
-                      <span style={{ fontSize: '12px', color: M.textMuted }}>{rec.requested}</span>
-                      <span style={{ fontSize: '12px', color: M.textMuted }}>{rec.processed}</span>
+                      <span className="text-[12px] text-text-muted">{rec.requested}</span>
+                      <span className="text-[12px] text-text-muted">{rec.processed}</span>
                       <StatusBadge status={rec.status} />
-                      <span style={{ color: M.textMuted, transition: 'transform 0.2s', transform: isExpanded ? 'rotate(180deg)' : 'none', display: 'flex', justifyContent: 'center' }}><ChevronDown size={18} /></span>
+                      <span className={`text-text-muted transition-transform duration-200 flex justify-center ${isExpanded ? 'rotate-180' : 'rotate-0'}`}><ChevronDown size={18} /></span>
                     </div>
 
                     {/* Expanded row detail */}
                     {isExpanded && (
-                      <div style={{ padding: '16px 24px', background: M.maroonLight, borderBottom: isLast ? 'none' : `1px solid ${M.border}` }}>
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px' }}>
+                      <div className={`p-[16px_24px] bg-maroon-light ${isLast ? 'border-none' : 'border-b border-border'}`}>
+                        <div className="grid grid-cols-4 gap-4">
                           {[
                             { l: 'Record ID', v: rec.id, mono: true },
                             { l: 'Student ID', v: rec.studentId, mono: true },
@@ -334,26 +281,26 @@ export default function AdminRegistrarRecordsPage() {
                             { l: 'Current Status', v: STATUS_CFG[rec.status]?.label || rec.status },
                           ].map((d, i) => (
                             <div key={i}>
-                              <div style={{ fontSize: '10px', fontWeight: 700, color: M.maroon, opacity: 0.7, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '4px' }}>{d.l}</div>
-                              <div style={{ fontSize: '14px', fontWeight: 600, color: M.maroon, fontFamily: d.mono ? 'monospace' : 'inherit' }}>{d.v}</div>
+                              <div className="text-[10px] font-bold text-maroon/70 uppercase tracking-[0.06em] mb-1">{d.l}</div>
+                              <div className={`text-[14px] font-semibold text-maroon ${d.mono ? 'font-mono' : 'font-sans'}`}>{d.v}</div>
                             </div>
                           ))}
                         </div>
-                        <div style={{ display: 'flex', gap: '8px', marginTop: '14px', paddingTop: '14px', borderTop: `1px solid ${M.maroonBorder}` }}>
-                          <button onClick={() => setViewingRecord(rec)} style={{ padding: '7px 16px', borderRadius: '8px', border: 'none', background: M.maroon, color: M.white, fontSize: '12px', fontWeight: 700, cursor: 'pointer', fontFamily: "'IBM Plex Sans', sans-serif" }}>
+                        <div className="flex gap-2 mt-3.5 pt-3.5 border-t border-maroon-border">
+                          <button onClick={() => setViewingRecord(rec)} className="py-[7px] px-4 rounded-lg border-none bg-maroon text-white text-[12px] font-bold cursor-pointer font-sans hover:bg-maroon-dark transition-colors">
                             View Full Record
                           </button>
                           {(rec.status === 'completed' || rec.status === 'released') && (
-                            <button style={{ padding: '7px 16px', borderRadius: '8px', border: `1px solid ${M.maroonBorder}`, background: 'transparent', color: M.maroon, fontSize: '12px', fontWeight: 600, cursor: 'pointer', fontFamily: "'IBM Plex Sans', sans-serif", display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            <button className="py-[7px] px-4 rounded-lg border border-maroon-border bg-transparent text-maroon text-[12px] font-semibold cursor-pointer font-sans flex items-center gap-1.5 hover:bg-maroon/5 transition-colors">
                               <Printer size={14} /> Print Record
                             </button>
                           )}
                           {(rec.status === 'pending' || rec.status === 'processing') && (
-                            <button style={{ padding: '7px 16px', borderRadius: '8px', border: `1px solid ${M.greenBorder}`, background: M.greenLight, color: M.green, fontSize: '12px', fontWeight: 600, cursor: 'pointer', fontFamily: "'IBM Plex Sans', sans-serif", display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            <button className="py-[7px] px-4 rounded-lg border border-success-border bg-success-light text-success text-[12px] font-semibold cursor-pointer font-sans flex items-center gap-1.5 hover:bg-success/10 transition-colors">
                               <Check size={14} /> Mark as Released
                             </button>
                           )}
-                          <button style={{ padding: '7px 16px', borderRadius: '8px', border: `1px solid ${M.maroonBorder}`, background: 'transparent', color: M.maroon, fontSize: '12px', fontWeight: 600, cursor: 'pointer', fontFamily: "'IBM Plex Sans', sans-serif", display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <button className="py-[7px] px-4 rounded-lg border border-maroon-border bg-transparent text-maroon text-[12px] font-semibold cursor-pointer font-sans flex items-center gap-1.5 hover:bg-maroon/5 transition-colors">
                             <Clipboard size={14} /> Add Note
                           </button>
                         </div>
@@ -366,13 +313,13 @@ export default function AdminRegistrarRecordsPage() {
 
             {/* Pagination footer */}
             {filtered.length > 0 && (
-              <div style={{ padding: '12px 20px', borderTop: `1px solid ${M.border}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: M.surface }}>
-                <span style={{ fontSize: '12px', color: M.textMuted }}>
+              <div className="p-[12px_20px] border-t border-border flex items-center justify-between bg-surface">
+                <span className="text-[12px] text-text-muted">
                   Showing {Math.min((page - 1) * PER_PAGE + 1, filtered.length)}–{Math.min(page * PER_PAGE, filtered.length)} of {filtered.length} records
                 </span>
-                <div style={{ display: 'flex', gap: '4px' }}>
+                <div className="flex gap-1">
                   <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}
-                    style={{ padding: '5px 11px', borderRadius: '7px', border: `1px solid ${M.border}`, background: M.white, fontSize: '12px', fontWeight: 600, cursor: page === 1 ? 'not-allowed' : 'pointer', color: page === 1 ? M.textMuted : M.text, fontFamily: "'IBM Plex Sans', sans-serif" }}>
+                    className={`py-1 px-[11px] rounded-md border border-border bg-white text-[12px] font-semibold font-sans ${page === 1 ? 'cursor-not-allowed text-text-muted' : 'cursor-pointer text-text-main hover:bg-off-white'}`}>
                     Prev
                   </button>
                   {Array.from({ length: Math.min(totalPages, 7) }, (_, i) => {
@@ -381,18 +328,13 @@ export default function AdminRegistrarRecordsPage() {
                         : page >= totalPages - 3 ? totalPages - 6 + i
                           : page - 3 + i
                     return (
-                      <button key={p} onClick={() => setPage(p)} style={{
-                        width: '30px', height: '30px', borderRadius: '7px',
-                        border: `1px solid ${page === p ? M.maroon : M.border}`,
-                        background: page === p ? M.maroon : M.white,
-                        color: page === p ? M.white : M.text,
-                        fontSize: '12px', fontWeight: 600, cursor: 'pointer',
-                        fontFamily: "'IBM Plex Sans', sans-serif",
-                      }}>{p}</button>
+                      <button key={p} onClick={() => setPage(p)} className={`w-[30px] h-[30px] rounded-md text-[12px] font-semibold cursor-pointer font-sans border ${page === p ? 'border-maroon bg-maroon text-white' : 'border-border bg-white text-text-main hover:bg-off-white'}`}>
+                        {p}
+                      </button>
                     )
                   })}
                   <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages}
-                    style={{ padding: '5px 11px', borderRadius: '7px', border: `1px solid ${M.border}`, background: M.white, fontSize: '12px', fontWeight: 600, cursor: page === totalPages ? 'not-allowed' : 'pointer', color: page === totalPages ? M.textMuted : M.text, fontFamily: "'IBM Plex Sans', sans-serif" }}>
+                    className={`py-1 px-[11px] rounded-md border border-border bg-white text-[12px] font-semibold font-sans ${page === totalPages ? 'cursor-not-allowed text-text-muted' : 'cursor-pointer text-text-main hover:bg-off-white'}`}>
                     Next
                   </button>
                 </div>
@@ -402,16 +344,16 @@ export default function AdminRegistrarRecordsPage() {
         </div>
 
         {/* Right: Sidebar */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+        <div className="flex flex-col gap-4">
 
           {/* Status Filter Panel */}
-          <div style={{ background: M.white, borderRadius: '16px', border: `1px solid ${M.border}`, padding: '20px', boxShadow: '0 1px 4px rgba(0,0,0,0.04)' }}>
-            <p style={{ fontSize: '11px', fontWeight: 700, color: M.gold, textTransform: 'uppercase', letterSpacing: '0.1em', margin: '0 0 12px' }}>Filter by Status</p>
-            <div style={{ position: 'relative' }}>
+          <div className="bg-white rounded-2xl border border-border p-5 shadow-sm">
+            <p className="text-[11px] font-bold text-gold uppercase tracking-widest m-0 mb-3">Filter by Status</p>
+            <div className="relative">
               <select
                 value={statusFilter}
                 onChange={e => { setStatusFilter(e.target.value); setPage(1) }}
-                style={{ width: '100%', padding: '9px 32px 9px 14px', borderRadius: '9px', border: `1px solid ${M.border}`, background: M.surface, fontSize: '13px', color: M.text, outline: 'none', cursor: 'pointer', fontFamily: "'IBM Plex Sans', sans-serif", appearance: 'none', fontWeight: 600 }}>
+                className="w-full py-[9px] pr-8 pl-3.5 rounded-[9px] border border-border bg-surface text-[13px] text-text-main outline-none cursor-pointer font-sans appearance-none font-semibold focus:border-maroon transition-colors">
                 {['all', 'completed', 'released', 'processing', 'pending', 'archived'].map(s => {
                   const count = s === 'all' ? records.length : records.filter(r => r.status === s).length
                   const label = s === 'all' ? 'All Statuses' : (STATUS_CFG[s]?.label || s)
@@ -422,30 +364,30 @@ export default function AdminRegistrarRecordsPage() {
                   )
                 })}
               </select>
-              <span style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', display: 'flex', alignItems: 'center', color: M.textMuted }}><ChevronDown size={14} /></span>
+              <span className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none flex items-center text-text-muted"><ChevronDown size={14} /></span>
             </div>
           </div>
 
           {/* Document Type Breakdown */}
-          <div style={{ background: M.white, borderRadius: '16px', border: `1px solid ${M.border}`, padding: '20px', boxShadow: '0 1px 4px rgba(0,0,0,0.04)' }}>
-            <p style={{ fontSize: '11px', fontWeight: 700, color: M.gold, textTransform: 'uppercase', letterSpacing: '0.1em', margin: '0 0 14px' }}>Document Types</p>
+          <div className="bg-white rounded-2xl border border-border p-5 shadow-sm">
+            <p className="text-[11px] font-bold text-gold uppercase tracking-widest m-0 mb-3.5">Document Types</p>
             {loading ? (
-              <div style={{ color: M.textMuted, fontSize: '13px', padding: '20px 0', textAlign: 'center' }}>Loading…</div>
+              <div className="text-text-muted text-[13px] py-5 text-center">Loading…</div>
             ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+              <div className="flex flex-col gap-3.5">
                 {typeBreakdown.map((t, i) => (
                   <div key={i}>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '5px' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <div className="flex items-center justify-between mb-1">
+                      <div className="flex items-center gap-2">
                         <Ring pct={t.pct} color={t.color} size={32} />
-                        <span style={{ fontSize: '12px', fontWeight: 600, color: M.text, lineHeight: 1.3 }}>{t.name}</span>
+                        <span className="text-[12px] font-semibold text-text-main leading-snug">{t.name}</span>
                       </div>
-                      <span style={{ fontSize: '12px', fontWeight: 700, color: t.color }}>{t.pct}%</span>
+                      <span className="text-[12px] font-bold" style={{ color: t.color }}>{t.pct}%</span>
                     </div>
-                    <div style={{ width: '100%', height: '4px', background: M.surface, borderRadius: '2px' }}>
-                      <div style={{ height: '4px', borderRadius: '2px', background: t.color, width: `${t.pct}%`, transition: 'width 0.6s ease' }} />
+                    <div className="w-full h-1 bg-surface rounded-full">
+                      <div className="h-1 rounded-full transition-[width] duration-600 ease-in-out" style={{ background: t.color, width: `${t.pct}%` }} />
                     </div>
-                    <div style={{ fontSize: '10px', color: M.textMuted, marginTop: '3px' }}>{t.count.toLocaleString()} records</div>
+                    <div className="text-[10px] text-text-muted mt-1">{t.count.toLocaleString()} records</div>
                   </div>
                 ))}
               </div>
@@ -456,68 +398,68 @@ export default function AdminRegistrarRecordsPage() {
 
       {/* ── View Record Modal ── */}
       {viewingRecord && (
-        <div style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(4px)' }}>
-          <div style={{ background: M.white, borderRadius: '24px', width: '100%', maxWidth: '600px', boxShadow: '0 20px 40px rgba(0,0,0,0.1)', overflow: 'hidden' }}>
+        <div className="fixed inset-0 z-9999 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+          <div className="bg-white rounded-3xl w-full max-w-[600px] shadow-[0_20px_40px_rgba(0,0,0,0.1)] overflow-hidden">
              {/* Header */}
-             <div style={{ padding: '24px 32px', background: M.maroonLight, borderBottom: `1px solid ${M.border}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+             <div className="p-[24px_32px] bg-maroon-light border-b border-border flex justify-between items-center">
                <div>
-                 <h2 style={{ fontFamily: "'Fraunces', serif", fontSize: '24px', fontWeight: 700, color: M.maroon, margin: '0 0 4px' }}>Record Details</h2>
-                 <p style={{ fontSize: '13px', color: M.maroon, opacity: 0.8, margin: 0 }}>{viewingRecord.id}</p>
+                 <h2 className="font-serif text-[24px] font-bold text-maroon m-0 mb-1">Record Details</h2>
+                 <p className="text-[13px] text-maroon/80 m-0">{viewingRecord.id}</p>
                </div>
-               <button onClick={() => setViewingRecord(null)} style={{ background: 'none', border: 'none', display: 'flex', alignItems: 'center', color: M.maroon, cursor: 'pointer', opacity: 0.6 }}><XIcon size={24} /></button>
+               <button onClick={() => setViewingRecord(null)} className="bg-transparent border-none flex items-center text-maroon cursor-pointer opacity-60 hover:opacity-100 transition-opacity"><XIcon size={24} /></button>
              </div>
              
              {/* Body */}
-             <div style={{ padding: '32px', display: 'flex', flexDirection: 'column', gap: '28px' }}>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
+             <div className="p-8 flex flex-col gap-7">
+                <div className="grid grid-cols-2 gap-6">
                   {/* Student Info */}
                   <div>
-                    <h3 style={{ fontSize: '11px', fontWeight: 700, color: M.textMuted, textTransform: 'uppercase', letterSpacing: '0.06em', margin: '0 0 12px' }}>Student Information</h3>
-                    <div style={{ fontSize: '16px', fontWeight: 600, color: M.text }}>{viewingRecord.student}</div>
-                    <div style={{ fontSize: '13px', color: M.textSub, fontFamily: 'monospace', marginTop: '4px' }}>ID: {viewingRecord.studentId}</div>
-                    <div style={{ fontSize: '13px', color: M.textSub, marginTop: '4px' }}>Course: BS Information Technology</div>
-                    <div style={{ fontSize: '13px', color: M.textSub, marginTop: '4px' }}>Year Level: 3rd Year</div>
+                    <h3 className="text-[11px] font-bold text-text-muted uppercase tracking-[0.06em] m-0 mb-3">Student Information</h3>
+                    <div className="text-[16px] font-semibold text-text-main">{viewingRecord.student}</div>
+                    <div className="text-[13px] text-text-sub font-mono mt-1">ID: {viewingRecord.studentId}</div>
+                    <div className="text-[13px] text-text-sub mt-1">Course: BS Information Technology</div>
+                    <div className="text-[13px] text-text-sub mt-1">Year Level: 3rd Year</div>
                   </div>
                   {/* Document Info */}
                   <div>
-                    <h3 style={{ fontSize: '11px', fontWeight: 700, color: M.textMuted, textTransform: 'uppercase', letterSpacing: '0.06em', margin: '0 0 12px' }}>Document Details</h3>
-                    <div style={{ fontSize: '15px', fontWeight: 600, color: M.text }}>{viewingRecord.type}</div>
-                    <div style={{ fontSize: '13px', color: M.textSub, marginTop: '4px' }}>Copies Requested: {viewingRecord.copies}</div>
-                    <div style={{ fontSize: '13px', color: M.textSub, marginTop: '4px' }}>Purpose: Employment / Reference</div>
+                    <h3 className="text-[11px] font-bold text-text-muted uppercase tracking-[0.06em] m-0 mb-3">Document Details</h3>
+                    <div className="text-[15px] font-semibold text-text-main">{viewingRecord.type}</div>
+                    <div className="text-[13px] text-text-sub mt-1">Copies Requested: {viewingRecord.copies}</div>
+                    <div className="text-[13px] text-text-sub mt-1">Purpose: Employment / Reference</div>
                   </div>
                 </div>
 
-                <hr style={{ border: 'none', borderTop: `1px solid ${M.border}`, margin: 0 }} />
+                <hr className="border-none border-t border-border m-0" />
 
                 {/* Timeline */}
                 <div>
-                   <h3 style={{ fontSize: '11px', fontWeight: 700, color: M.textMuted, textTransform: 'uppercase', letterSpacing: '0.06em', margin: '0 0 16px' }}>Processing Timeline</h3>
-                   <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', position: 'relative' }}>
+                   <h3 className="text-[11px] font-bold text-text-muted uppercase tracking-[0.06em] m-0 mb-4">Processing Timeline</h3>
+                   <div className="flex flex-col gap-5 relative">
                      {/* Connecting Line */}
-                     <div style={{ position: 'absolute', left: '7px', top: '10px', bottom: '10px', width: '2px', background: M.border }} />
+                     <div className="absolute left-[7px] top-[10px] bottom-[10px] w-0.5 bg-border" />
                      
-                     <div style={{ display: 'flex', gap: '16px', position: 'relative' }}>
-                       <div style={{ width: '16px', height: '16px', borderRadius: '50%', background: M.white, border: `3px solid ${M.maroon}`, zIndex: 1, marginTop: '2px' }} />
+                     <div className="flex gap-4 relative">
+                       <div className="w-4 h-4 rounded-full bg-white border-[3px] border-maroon z-10 mt-0.5" />
                        <div>
-                         <div style={{ fontSize: '13px', fontWeight: 700, color: M.text }}>Request Submitted</div>
-                         <div style={{ fontSize: '12px', color: M.textMuted, marginTop: '2px' }}>{viewingRecord.requested} • Verified via Student Portal</div>
+                         <div className="text-[13px] font-bold text-text-main">Request Submitted</div>
+                         <div className="text-[12px] text-text-muted mt-0.5">{viewingRecord.requested} • Verified via Student Portal</div>
                        </div>
                      </div>
                      
-                     <div style={{ display: 'flex', gap: '16px', position: 'relative' }}>
-                       <div style={{ width: '16px', height: '16px', borderRadius: '50%', background: M.white, border: `3px solid ${M.gold}`, zIndex: 1, marginTop: '2px' }} />
+                     <div className="flex gap-4 relative">
+                       <div className="w-4 h-4 rounded-full bg-white border-[3px] border-gold z-10 mt-0.5" />
                        <div>
-                         <div style={{ fontSize: '13px', fontWeight: 700, color: M.text }}>Processing Started</div>
-                         <div style={{ fontSize: '12px', color: M.textMuted, marginTop: '2px' }}>Reviewing clearance and generating document.</div>
+                         <div className="text-[13px] font-bold text-text-main">Processing Started</div>
+                         <div className="text-[12px] text-text-muted mt-0.5">Reviewing clearance and generating document.</div>
                        </div>
                      </div>
 
                      {(viewingRecord.status === 'completed' || viewingRecord.status === 'released') && (
-                       <div style={{ display: 'flex', gap: '16px', position: 'relative' }}>
-                         <div style={{ width: '16px', height: '16px', borderRadius: '50%', background: M.white, border: `3px solid ${M.green}`, zIndex: 1, marginTop: '2px' }} />
+                       <div className="flex gap-4 relative">
+                         <div className="w-4 h-4 rounded-full bg-white border-[3px] border-success z-10 mt-0.5" />
                          <div>
-                           <div style={{ fontSize: '13px', fontWeight: 700, color: M.green }}>Ready for Release</div>
-                           <div style={{ fontSize: '12px', color: M.textMuted, marginTop: '2px' }}>{viewingRecord.processed} • Available at Window 2</div>
+                           <div className="text-[13px] font-bold text-success">Ready for Release</div>
+                           <div className="text-[12px] text-text-muted mt-0.5">{viewingRecord.processed} • Available at Window 2</div>
                          </div>
                        </div>
                      )}
@@ -526,12 +468,12 @@ export default function AdminRegistrarRecordsPage() {
              </div>
              
              {/* Footer */}
-             <div style={{ padding: '20px 32px', background: M.surface, borderTop: `1px solid ${M.border}`, display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
-               <button onClick={() => setViewingRecord(null)} style={{ padding: '10px 20px', borderRadius: '10px', border: `1px solid ${M.border}`, background: M.white, color: M.text, fontSize: '13px', fontWeight: 600, cursor: 'pointer', fontFamily: "'IBM Plex Sans', sans-serif", transition: 'background 0.1s' }} onMouseEnter={e => e.target.style.background = M.offWhite} onMouseLeave={e => e.target.style.background = M.white}>
+             <div className="p-[20px_32px] bg-surface border-t border-border flex justify-end gap-3">
+               <button onClick={() => setViewingRecord(null)} className="py-2.5 px-5 rounded-[10px] border border-border bg-white text-text-main text-[13px] font-semibold cursor-pointer font-sans transition-colors hover:bg-off-white">
                  Close
                </button>
                {(viewingRecord.status === 'completed' || viewingRecord.status === 'released') && (
-                 <button style={{ padding: '10px 20px', borderRadius: '10px', border: 'none', background: M.maroon, color: M.white, fontSize: '13px', fontWeight: 700, cursor: 'pointer', fontFamily: "'IBM Plex Sans', sans-serif", display: 'flex', alignItems: 'center', gap: '8px' }}>
+                 <button className="py-2.5 px-5 rounded-[10px] border-none bg-maroon text-white text-[13px] font-bold cursor-pointer font-sans flex items-center gap-2 hover:bg-maroon-dark transition-colors">
                    <Printer size={15} /> Print Record
                  </button>
                )}

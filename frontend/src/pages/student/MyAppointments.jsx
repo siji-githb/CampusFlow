@@ -6,12 +6,10 @@ import { getMyAppointments, cancelAppointment } from '../../services/appointment
 import RescheduleModal from '../../components/RescheduleModal'
 import { Inbox, Calendar, Tag, FileText, AlertTriangle, ChevronLeft, Clock, CheckCircle } from 'lucide-react'
 
-const M = { maroon: '#7B1A2A', maroonLight: '#F9F0F1', gold: '#B8900A', goldLight: '#FDF6E3', offWhite: '#F9F7F4', gray200: '#EAE7E2', gray500: '#706B65', text: '#1C1917', white: '#FFFFFF' }
-
 const STATUS = {
   confirmed: { label: 'Confirmed', bg: '#F0FDF4', color: '#15803D', border: '#BBF7D0' },
   pending: { label: 'Pending', bg: '#FEFCE8', color: '#854D0E', border: '#FEF08A' },
-  cancelled: { label: 'Cancelled', bg: M.maroonLight, color: M.maroon, border: '#FECACA' },
+  cancelled: { label: 'Cancelled', bg: '#F9F0F1', color: '#7B1A2A', border: '#FECACA' },
   completed: { label: 'Completed', bg: '#EFF6FF', color: '#1D4ED8', border: '#BFDBFE' },
   no_show: { label: 'No Show', bg: '#F9FAFB', color: '#6B7280', border: '#E5E7EB' },
 }
@@ -67,104 +65,91 @@ export default function MyAppointments() {
 
   return (
     <StudentLayout activeTab="appointments" mobileTitle="My Appointments" backTo="/student/dashboard">
-      <div style={{ maxWidth: '480px', margin: '0 auto', padding: '20px 16px' }}>
-        {error && <div style={{ padding: '10px 14px', borderRadius: '8px', background: M.maroonLight, color: M.maroon, fontSize: '13px', marginBottom: '1rem' }}>{error}</div>}
-
+      <div className="max-w-[480px] mx-auto py-5 px-4">
+        {error && <div className="py-2.5 px-3.5 rounded-lg bg-maroon-light text-maroon text-[13px] mb-4 font-medium">{error}</div>}
 
         {/* ── Filter Tabs ── */}
-        <div style={{ display: 'flex', overflowX: 'auto', gap: '4px', marginBottom: '20px', paddingBottom: '4px', scrollbarWidth: 'none' }}>
+        <div className="flex overflow-x-auto gap-1 mb-5 pb-1 hide-scrollbar">
           {['all', 'pending', 'confirmed', 'completed', 'cancelled'].map(f => (
             <button
               key={f}
               onClick={() => setFilter(f)}
-              style={{
-                padding: '6px 12px',
-                borderRadius: '100px',
-                border: `1px solid ${filter === f ? M.maroon : M.gray200}`,
-                background: filter === f ? M.maroon : M.white,
-                color: filter === f ? M.white : M.text,
-                fontSize: '12px',
-                fontWeight: 600,
-                cursor: 'pointer',
-                whiteSpace: 'nowrap',
-                transition: 'all 0.2s',
-                fontFamily: "'DM Sans', sans-serif",
-                minHeight: '36px',
-              }}
+              className={`py-1.5 px-3 rounded-full border border-solid text-[12px] font-semibold cursor-pointer whitespace-nowrap transition-all duration-200 font-sans min-h-[36px] ${
+                filter === f ? 'bg-maroon text-white border-maroon' : 'bg-white text-text-main border-border'
+              }`}
             >
               {f.charAt(0).toUpperCase() + f.slice(1)}
             </button>
-
           ))}
         </div>
 
         {loading ? (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          <div className="flex flex-col gap-3">
             {[1, 2, 3].map(i => (
-              <div key={i} style={{ background: M.white, borderRadius: '16px', padding: '16px', boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
-                  <div className="animate-shimmer" style={{ width: '120px', height: '18px', borderRadius: '4px' }} />
-                  <div className="animate-shimmer" style={{ width: '60px', height: '18px', borderRadius: '100px' }} />
+              <div key={i} className="bg-white rounded-2xl p-4 shadow-[0_2px_8px_rgba(0,0,0,0.06)] border border-border">
+                <div className="flex justify-between items-center mb-2.5">
+                  <div className="animate-pulse w-[120px] h-[18px] rounded bg-border" />
+                  <div className="animate-pulse w-[60px] h-[18px] rounded-full bg-border" />
                 </div>
-                <div className="animate-shimmer" style={{ width: '160px', height: '14px', borderRadius: '4px', marginBottom: '6px' }} />
-                <div className="animate-shimmer" style={{ width: '100px', height: '14px', borderRadius: '4px', marginBottom: '16px' }} />
-                <div className="animate-shimmer" style={{ width: '100%', height: '32px', borderRadius: '8px' }} />
+                <div className="animate-pulse w-[160px] h-[14px] rounded bg-border mb-1.5" />
+                <div className="animate-pulse w-[100px] h-[14px] rounded bg-border mb-4" />
+                <div className="animate-pulse w-full h-8 rounded-lg bg-border" />
               </div>
             ))}
           </div>
         ) : filteredAppointments.length === 0 ? (
-          <div className="animate-fade-up" style={{ textAlign: 'center', padding: '4rem 2rem', background: M.white, borderRadius: '16px', border: `1px solid ${M.gray200}` }}>
-            <div style={{ color: M.gold, marginBottom: '1rem', display: 'flex', justifyContent: 'center' }}><Inbox size={48} /></div>
-            <p style={{ fontSize: '15px', fontWeight: 600, color: M.text, margin: '0 0 6px' }}>No appointments found</p>
-            <p style={{ fontSize: '13px', color: M.gray500, margin: '0 0 1.5rem' }}>{filter === 'all' ? 'Book your first registrar transaction' : `You have no ${filter} appointments`}</p>
+          <div className="animate-fade-up text-center py-16 px-8 bg-white rounded-2xl border border-border shadow-sm">
+            <div className="text-gold mb-4 flex justify-center"><Inbox size={48} /></div>
+            <p className="text-[15px] font-semibold text-text-main m-0 mb-1.5">No appointments found</p>
+            <p className="text-[13px] text-text-sub m-0 mb-6">{filter === 'all' ? 'Book your first registrar transaction' : `You have no ${filter} appointments`}</p>
             {filter === 'all' && (
-              <button onClick={() => navigate('/student/book')} style={{ padding: '12px 24px', borderRadius: '10px', border: 'none', background: M.gold, color: M.maroon, fontSize: '14px', fontWeight: 700, cursor: 'pointer', fontFamily: "'DM Sans', sans-serif" }}>Book an Appointment</button>
+              <button onClick={() => navigate('/student/book')} className="py-3 px-6 rounded-[10px] border-none bg-gold text-maroon text-[14px] font-bold cursor-pointer font-sans shadow-sm transition-transform active:scale-95">Book an Appointment</button>
             )}
           </div>
         ) : (
-          <div className="animate-fade-up" style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          <div className="animate-fade-up flex flex-col gap-3">
             {filteredAppointments.map(appt => {
               const s = STATUS[appt.status] || STATUS.pending
               return (
-                <div key={appt.id} style={{ background: M.white, borderRadius: '16px', padding: '16px', boxShadow: '0 2px 8px rgba(0,0,0,0.06), 0 0 0 1px rgba(0,0,0,0.04)' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '10px' }}>
-                    <h3 style={{ fontSize: '15px', fontWeight: 600, color: M.text, margin: 0, fontFamily: "'Fraunces', serif" }}>{appt.transaction_types?.name || 'Transaction'}</h3>
-                    <span style={{ fontSize: '11px', fontWeight: 600, padding: '3px 10px', borderRadius: '100px', background: s.bg, color: s.color, border: `1px solid ${s.border}`, whiteSpace: 'nowrap' }}>{s.label}</span>
+                <div key={appt.id} className="bg-white rounded-2xl p-4 shadow-[0_2px_8px_rgba(0,0,0,0.06),0_0_0_1px_rgba(0,0,0,0.04)] transition-all hover:shadow-[0_4px_12px_rgba(0,0,0,0.08)]">
+                  <div className="flex justify-between items-start mb-2.5">
+                    <h3 className="font-serif text-[15px] font-semibold text-text-main m-0">{appt.transaction_types?.name || 'Transaction'}</h3>
+                    <span className="text-[11px] font-semibold py-1 px-2.5 rounded-full whitespace-nowrap" style={{ background: s.bg, color: s.color, border: `1px solid ${s.border}` }}>{s.label}</span>
                   </div>
-                  <div style={{ fontSize: '13px', color: M.gray500, marginBottom: '12px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                    <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><Calendar size={13} color={M.gold} /> {appt.appointment_date} at {(() => {
+                  <div className="text-[13px] text-text-sub mb-3 flex flex-col gap-1.5">
+                    <span className="flex items-center gap-1.5"><Calendar size={13} className="text-gold" /> {appt.appointment_date} at {(() => {
                       const [hStr, mStr] = appt.time_slot.split(':')
                       const h = parseInt(hStr, 10)
                       const suffix = h < 12 ? 'AM' : 'PM'
                       const h12 = h % 12 || 12
                       return `${h12}:${mStr} ${suffix}`
                     })()}</span>
-                    <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><Tag size={13} color={M.gold} /> Priority: <span style={{ textTransform: 'capitalize', marginLeft: '4px' }}>{appt.priority_class}</span></span>
-                    {appt.notes && <span style={{ display: 'flex', alignItems: 'flex-start', gap: '6px' }}><FileText size={13} color={M.gold} style={{ flexShrink: 0, marginTop: '2px' }} /> <span>{appt.notes}</span></span>}
+                    <span className="flex items-center gap-1.5"><Tag size={13} className="text-gold" /> Priority: <span className="capitalize ml-1">{appt.priority_class}</span></span>
+                    {appt.notes && <span className="flex items-start gap-1.5"><FileText size={13} className="text-gold shrink-0 mt-0.5" /> <span>{appt.notes}</span></span>}
                   </div>
                   {appt.transaction_types?.processing_steps && (
-                    <div style={{ padding: '12px 0 4px', borderTop: `1px solid ${M.gray200}` }}>
-                      <p style={{ fontSize: '10px', fontWeight: 700, color: M.gold, margin: '0 0 8px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Processing Steps</p>
-                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                    <div className="pt-3 pb-1 border-t border-border">
+                      <p className="text-[10px] font-bold text-gold m-0 mb-2 uppercase tracking-[0.04em]">Processing Steps</p>
+                      <div className="flex flex-wrap gap-1.5">
                         {appt.transaction_types.processing_steps.map((step, i) => (
-                          <span key={i} style={{ fontSize: '11px', background: '#F2EDE8', color: M.textSub, padding: '4px 10px', borderRadius: '100px', fontWeight: 500 }}>{i + 1}. {step}</span>
+                          <span key={i} className="text-[11px] bg-surface text-text-sub py-1 px-2.5 rounded-full font-medium">{i + 1}. {step}</span>
                         ))}
                       </div>
                     </div>
                   )}
                   {(appt.status === 'confirmed' || appt.status === 'pending') && (
-                    <div style={{ display: 'flex', gap: '8px', marginTop: '16px' }}>
+                    <div className="flex gap-2 mt-4">
                       <button 
                         onClick={() => setReschedulingAppt(appt)} 
                         disabled={cancelling === appt.id || !canReschedule(appt.appointment_date, appt.time_slot)}
                         title={!canReschedule(appt.appointment_date, appt.time_slot) ? "Cannot reschedule within 24 hours of appointment" : ""}
-                        style={{ flex: 1, minHeight: '44px', fontSize: '13px', fontWeight: 600, color: M.text, background: M.white, border: `1px solid ${M.gray200}`, borderRadius: '10px', cursor: !canReschedule(appt.appointment_date, appt.time_slot) ? 'not-allowed' : 'pointer', opacity: (!canReschedule(appt.appointment_date, appt.time_slot) || cancelling === appt.id) ? 0.5 : 1, fontFamily: "'DM Sans', sans-serif" }}>
+                        className={`flex-1 min-h-[44px] text-[13px] font-semibold text-text-main bg-white border border-border rounded-[10px] font-sans ${(!canReschedule(appt.appointment_date, appt.time_slot) || cancelling === appt.id) ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:bg-off-white'}`}>
                         Reschedule
                       </button>
                       <button 
                         onClick={() => setConfirmCancelId(appt.id)} 
                         disabled={cancelling === appt.id}
-                        style={{ flex: 1, minHeight: '44px', fontSize: '13px', fontWeight: 600, color: M.maroon, background: 'transparent', border: `1px solid ${M.maroonBorder || 'rgba(123,26,42,0.2)'}`, borderRadius: '10px', cursor: 'pointer', opacity: cancelling === appt.id ? 0.5 : 1, fontFamily: "'DM Sans', sans-serif" }}>
+                        className={`flex-1 min-h-[44px] text-[13px] font-semibold text-maroon bg-transparent border border-maroon-border rounded-[10px] font-sans ${cancelling === appt.id ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:bg-maroon-light'}`}>
                         {cancelling === appt.id ? 'Cancelling...' : 'Cancel'}
                       </button>
                     </div>
@@ -189,26 +174,26 @@ export default function MyAppointments() {
       )}
 
       {confirmCancelId && (
-        <div style={{ position: 'fixed', inset: 0, zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)' }} onClick={() => setConfirmCancelId(null)} />
-          <div className="animate-fade-up" style={{ position: 'relative', width: '90%', maxWidth: '320px', background: M.white, borderRadius: '20px', padding: '24px', textAlign: 'center', boxShadow: '0 10px 40px rgba(0,0,0,0.2)' }}>
-            <div style={{ width: '48px', height: '48px', borderRadius: '50%', background: M.maroonLight, color: M.maroon, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
+        <div className="fixed inset-0 z-[100] flex items-center justify-center">
+          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setConfirmCancelId(null)} />
+          <div className="animate-fade-up relative w-[90%] max-w-[320px] bg-white rounded-[20px] p-6 text-center shadow-[0_10px_40px_rgba(0,0,0,0.2)]">
+            <div className="w-12 h-12 rounded-full bg-maroon-light text-maroon flex items-center justify-center mx-auto mb-4">
               <AlertTriangle size={24} />
             </div>
-            <h3 style={{ fontFamily: "'Fraunces', serif", fontSize: '18px', fontWeight: 700, color: M.text, margin: '0 0 8px' }}>Cancel Appointment?</h3>
-            <p style={{ fontSize: '13px', color: M.textSub, margin: '0 0 24px', lineHeight: 1.4 }}>
+            <h3 className="font-serif text-[18px] font-bold text-text-main m-0 mb-2">Cancel Appointment?</h3>
+            <p className="text-[13px] text-text-sub m-0 mb-6 leading-[1.4]">
               Are you sure you want to cancel this appointment? This action cannot be undone.
             </p>
-            <div style={{ display: 'flex', gap: '8px' }}>
+            <div className="flex gap-2">
               <button 
                 onClick={() => setConfirmCancelId(null)}
-                style={{ flex: 1, padding: '10px', borderRadius: '10px', border: `1px solid ${M.gray200}`, background: M.white, color: M.text, fontSize: '13px', fontWeight: 600, cursor: 'pointer', fontFamily: "'DM Sans', sans-serif" }}
+                className="flex-1 p-2.5 rounded-[10px] border border-border bg-white text-text-main text-[13px] font-semibold cursor-pointer font-sans hover:bg-off-white"
               >
                 Keep It
               </button>
               <button 
                 onClick={handleCancelConfirm}
-                style={{ flex: 1, padding: '10px', borderRadius: '10px', border: 'none', background: M.maroon, color: M.white, fontSize: '13px', fontWeight: 600, cursor: 'pointer', fontFamily: "'DM Sans', sans-serif" }}
+                className="flex-1 p-2.5 rounded-[10px] border-none bg-maroon text-white text-[13px] font-semibold cursor-pointer font-sans hover:bg-maroon-dark"
               >
                 Yes, Cancel
               </button>

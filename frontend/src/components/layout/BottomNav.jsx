@@ -47,7 +47,7 @@ export default function BottomNav({ active }) {
         }}>
           <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '3px' }}>{tab.icon}</span>
           <span style={{ fontSize: '10px', fontWeight: active === tab.id ? 600 : 400,
-            fontFamily: "'IBM Plex Sans', sans-serif" }}>{tab.label}</span>
+            fontFamily: "'Poppins', sans-serif" }}>{tab.label}</span>
         </button>
       ))}
       </nav>

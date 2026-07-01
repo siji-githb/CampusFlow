@@ -3,39 +3,11 @@ import { useAuth } from '../../context/useAuth'
 import { getAllUsers, updateUserRole, getDashboardStats, toggleUserStatus } from '../../services/adminService'
 import { GraduationCap, Briefcase, Shield, AlertTriangle, Check, Search, X as XIcon, Users, Pencil, MoreVertical, Ban, CheckCircle } from 'lucide-react'
 
-// ── Design Tokens ──────────────────────────────────────────────────────────────
-const M = {
-  maroon:       '#7B1A2A',
-  maroonDark:   '#5C1320',
-  maroonLight:  '#F9F0F1',
-  maroonMid:    'rgba(123,26,42,0.08)',
-  maroonBorder: 'rgba(123,26,42,0.2)',
-  gold:         '#B8900A',
-  goldLight:    '#FDF6E3',
-  goldBorder:   'rgba(184,144,10,0.3)',
-  white:        '#FFFFFF',
-  offWhite:     '#F9F7F4',
-  surface:      '#F2EDE8',
-  border:       '#EAE7E2',
-  text:         '#1C1917',
-  textSub:      '#57534E',
-  textMuted:    '#A8A29E',
-  green:        '#15803D',
-  greenLight:   '#F0FDF4',
-  greenBorder:  '#BBF7D0',
-  blue:         '#1D4ED8',
-  blueLight:    '#EFF6FF',
-  blueBorder:   '#BFDBFE',
-  red:          '#DC2626',
-  redLight:     '#FEF2F2',
-  redBorder:    '#FECACA',
-}
-
 // ── Role config ────────────────────────────────────────────────────────────────
 const ROLE_CFG = {
-  student: { label: 'Student', bg: M.blueLight,   color: M.blue,   border: M.blueBorder   },
-  staff:   { label: 'Staff',   bg: M.goldLight,   color: M.gold,   border: M.goldBorder   },
-  admin:   { label: 'Admin',   bg: M.maroonLight, color: M.maroon, border: M.maroonBorder },
+  student: { label: 'Student', bg: 'bg-info-light', color: 'text-info', border: 'border-info-border' },
+  staff:   { label: 'Staff',   bg: 'bg-gold-light', color: 'text-gold', border: 'border-gold-border' },
+  admin:   { label: 'Admin',   bg: 'bg-maroon-light', color: 'text-maroon', border: 'border-maroon-border' },
 }
 
 // ── Priority class from user profile ──────────────────────────────────────────
@@ -57,12 +29,9 @@ const Avatar = ({ name, role, size = 38 }) => {
   const cfg = ROLE_CFG[role] || ROLE_CFG.student
   
   return (
-    <div style={{
-      width: size, height: size, borderRadius: '50%',
-      background: cfg.bg, color: cfg.color, border: `1px solid ${cfg.border}`,
-      fontSize: size * 0.37, fontWeight: 700,
-      display: 'flex', alignItems: 'center', justifyContent: 'center',
-      flexShrink: 0, letterSpacing: '0.02em',
+    <div className={`rounded-full border flex items-center justify-center shrink-0 font-bold tracking-[0.02em] ${cfg.bg} ${cfg.color} ${cfg.border}`} style={{
+      width: size, height: size,
+      fontSize: size * 0.37,
     }}>{initials}</div>
   )
 }
@@ -71,19 +40,19 @@ const Avatar = ({ name, role, size = 38 }) => {
 const RoleBadge = ({ role }) => {
   const cfg = ROLE_CFG[role] || ROLE_CFG.student
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-      <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: cfg.color }} />
-      <span style={{ fontSize: '13px', fontWeight: 600, color: M.text }}>{cfg.label}</span>
+    <div className="flex items-center gap-1.5">
+      <div className={`w-1.5 h-1.5 rounded-full ${cfg.color.replace('text-', 'bg-')}`} />
+      <span className="text-[13px] font-semibold text-text-main">{cfg.label}</span>
     </div>
   )
 }
 
 // ── Priority Badge ─────────────────────────────────────────────────────────────
 const PriorityBadge = ({ label }) => {
-  if (!label || label === 'N/A') return <span style={{ fontSize: '12px', color: M.textMuted }}>N/A</span>
-  const COLOR = { Graduating: M.maroon, PWD: M.gold, Regular: M.textSub, Irregular: M.blue, Transferee: M.green }
-  const color = COLOR[label] || M.textSub
-  return <span style={{ fontSize: '12px', fontWeight: 600, color }}>{label}</span>
+  if (!label || label === 'N/A') return <span className="text-[12px] text-text-muted">N/A</span>
+  const colorMap = { Graduating: 'text-maroon', PWD: 'text-gold', Regular: 'text-text-sub', Irregular: 'text-info', Transferee: 'text-success' }
+  const color = colorMap[label] || 'text-text-sub'
+  return <span className={`text-[12px] font-semibold ${color}`}>{label}</span>
 }
 
 // ── Edit Role Modal ────────────────────────────────────────────────────────────
@@ -91,36 +60,25 @@ function EditRoleModal({ user, onSave, onClose, saving }) {
   const [role, setRole] = useState(user.role)
   return (
     <>
-      <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', zIndex: 200 }} />
-      <div style={{
-        position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
-        zIndex: 210, width: '420px', background: M.white, borderRadius: '20px',
-        padding: '28px', boxShadow: '0 20px 60px rgba(0,0,0,0.2)',
-      }}>
+      <div onClick={onClose} className="fixed inset-0 bg-black/40 z-200" />
+      <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-210 w-[420px] bg-white rounded-2xl p-7 shadow-[0_20px_60px_rgba(0,0,0,0.2)]">
         {/* Header */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '24px' }}>
+        <div className="flex items-center gap-3.5 mb-6">
           <Avatar name={`${user.first_name} ${user.last_name}`} role={user.role} size={44} />
           <div>
-            <div style={{ fontFamily: "'Fraunces', serif", fontSize: '18px', fontWeight: 700, color: M.text }}>{user.first_name} {user.last_name}</div>
-            <div style={{ fontSize: '12px', color: M.textMuted }}>{user.email}</div>
+            <div className="font-serif text-[18px] font-bold text-text-main">{user.first_name} {user.last_name}</div>
+            <div className="text-[12px] text-text-muted">{user.email}</div>
           </div>
         </div>
 
-        <label style={{ fontSize: '12px', fontWeight: 700, color: M.textMuted, textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: '8px' }}>Assign Role</label>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px', marginBottom: '24px' }}>
+        <label className="text-[12px] font-bold text-text-muted uppercase tracking-[0.06em] block mb-2">Assign Role</label>
+        <div className="grid grid-cols-3 gap-2.5 mb-6">
           {['student', 'staff', 'admin'].map(r => {
             const cfg = ROLE_CFG[r]
             const active = role === r
             return (
-              <button key={r} onClick={() => setRole(r)} style={{
-                padding: '14px 10px', borderRadius: '12px', border: `2px solid ${active ? cfg.color : M.border}`,
-                background: active ? cfg.bg : M.offWhite,
-                color: active ? cfg.color : M.textSub,
-                fontSize: '13px', fontWeight: active ? 700 : 400, cursor: 'pointer',
-                textTransform: 'capitalize', fontFamily: "'IBM Plex Sans', sans-serif",
-                transition: 'all 0.15s',
-              }}>
-                <div style={{ marginBottom: '4px', display: 'flex', justifyContent: 'center' }}>
+              <button key={r} onClick={() => setRole(r)} className={`p-[14px_10px] rounded-xl border-2 text-[13px] font-sans capitalize transition-all duration-150 cursor-pointer ${active ? `${cfg.bg} ${cfg.color} font-bold` : 'bg-off-white text-text-sub font-normal border-border'} ${active && r === 'student' ? 'border-info' : active && r === 'staff' ? 'border-gold' : active && r === 'admin' ? 'border-maroon' : ''}`}>
+                <div className="mb-1 flex justify-center">
                   {r === 'student' ? <GraduationCap size={24} /> : r === 'staff' ? <Briefcase size={24} /> : <Shield size={24} />}
                 </div>
                 {cfg.label}
@@ -129,12 +87,12 @@ function EditRoleModal({ user, onSave, onClose, saving }) {
           })}
         </div>
 
-        <div style={{ display: 'flex', gap: '10px' }}>
-          <button onClick={onClose} style={{ flex: 1, padding: '11px', borderRadius: '10px', border: `1px solid ${M.border}`, background: M.offWhite, color: M.text, fontSize: '14px', fontWeight: 600, cursor: 'pointer', fontFamily: "'IBM Plex Sans', sans-serif" }}>
+        <div className="flex gap-2.5">
+          <button onClick={onClose} className="flex-1 py-2.5 px-3 rounded-[10px] border border-border bg-off-white text-text-main text-[14px] font-semibold cursor-pointer font-sans hover:bg-surface transition-colors">
             Cancel
           </button>
           <button onClick={() => onSave(user.id, role)} disabled={saving || role === user.role}
-            style={{ flex: 2, padding: '11px', borderRadius: '10px', border: 'none', background: (saving || role === user.role) ? M.border : M.maroon, color: (saving || role === user.role) ? M.textMuted : M.white, fontSize: '14px', fontWeight: 700, cursor: (saving || role === user.role) ? 'not-allowed' : 'pointer', fontFamily: "'IBM Plex Sans', sans-serif" }}>
+            className={`flex-2 py-2.5 px-3 rounded-[10px] border-none text-[14px] font-bold font-sans transition-colors ${saving || role === user.role ? 'bg-border text-text-muted cursor-not-allowed' : 'bg-maroon text-white cursor-pointer hover:bg-maroon-dark'}`}>
             {saving ? 'Saving…' : 'Save Changes'}
           </button>
         </div>
@@ -244,118 +202,92 @@ export default function AdminUserManagementPage() {
   return (
     <div>
       {/* ── Header ── */}
-      <div style={{ marginBottom: '26px' }}>
-        <h1 style={{ fontFamily: "'Fraunces', serif", fontSize: '30px', fontWeight: 700, color: M.maroon, margin: '0 0 6px' }}>User Management</h1>
-        <p style={{ fontSize: '14px', color: M.textMuted, margin: 0 }}>Manage all student, staff, and administration accounts.</p>
+      <div className="mb-6">
+        <h1 className="font-serif text-[30px] font-bold text-maroon m-0 mb-1.5">User Management</h1>
+        <p className="text-[14px] text-text-muted m-0">Manage all student, staff, and administration accounts.</p>
       </div>
 
       {/* Alerts */}
-      {error   && <div style={{ padding: '12px 16px', borderRadius: '10px', background: M.redLight,   color: M.red,   border: `1px solid ${M.redBorder}`,   marginBottom: '20px', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '8px' }}><AlertTriangle size={16} /> {error}</div>}
-      {success && <div style={{ padding: '12px 16px', borderRadius: '10px', background: M.greenLight, color: M.green, border: `1px solid ${M.greenBorder}`, marginBottom: '20px', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '8px' }}><Check size={16} /> {success}</div>}
+      {error   && <div className="p-[12px_16px] rounded-[10px] bg-danger-light text-danger border border-danger-border mb-5 text-[13px] flex items-center gap-2"><AlertTriangle size={16} /> {error}</div>}
+      {success && <div className="p-[12px_16px] rounded-[10px] bg-success-light text-success border border-success-border mb-5 text-[13px] flex items-center gap-2"><Check size={16} /> {success}</div>}
 
       {/* ── Stat Cards ── */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px', marginBottom: '28px' }}>
+      <div className="grid grid-cols-4 gap-4 mb-7">
         {[
-          { label: 'All Users',        value: statsLoading ? '—' : counts.all.toLocaleString(),     dark: false, color: M.maroon },
-          { label: 'Active Students',  value: statsLoading ? '—' : counts.student.toLocaleString(), dark: false, color: M.blue   },
-          { label: 'Registrar Staff',  value: statsLoading ? '—' : counts.staff.toLocaleString(),   dark: false, color: M.gold   },
-          { label: 'Admin Accounts',   value: statsLoading ? '—' : counts.admin.toLocaleString(),   dark: true,  color: M.white  },
+          { label: 'All Users',        value: statsLoading ? '—' : counts.all.toLocaleString(),     dark: false, color: 'text-maroon' },
+          { label: 'Active Students',  value: statsLoading ? '—' : counts.student.toLocaleString(), dark: false, color: 'text-info'   },
+          { label: 'Registrar Staff',  value: statsLoading ? '—' : counts.staff.toLocaleString(),   dark: false, color: 'text-gold'   },
+          { label: 'Admin Accounts',   value: statsLoading ? '—' : counts.admin.toLocaleString(),   dark: true,  color: 'text-white'  },
         ].map((c, i) => (
-          <div key={i} className="animate-fade-up" style={{
-            animationDelay: `${0.1 * (i + 1)}s`,
-            borderRadius: '16px', padding: '22px 20px',
-            background: c.dark ? M.maroon : M.white,
-            border: c.dark ? 'none' : `1px solid ${M.border}`,
-            boxShadow: c.dark ? '0 4px 16px rgba(123,26,42,0.22)' : '0 1px 4px rgba(0,0,0,0.04)',
-            position: 'relative', overflow: 'hidden',
-          }}>
-            {c.dark && <div style={{ position: 'absolute', right: -16, top: -16, width: '72px', height: '72px', borderRadius: '50%', background: 'rgba(255,255,255,0.08)' }} />}
-            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '12px' }}>
-              <div style={{ fontSize: '11px', fontWeight: 600, color: c.dark ? 'rgba(255,255,255,0.6)' : M.textMuted, textTransform: 'uppercase', letterSpacing: '0.06em' }}>{c.label}</div>
+          <div key={i} className={`animate-fade-up rounded-2xl p-[22px_20px] relative overflow-hidden shadow-[0_1px_4px_rgba(0,0,0,0.04)] ${c.dark ? 'bg-maroon shadow-[0_4px_16px_rgba(123,26,42,0.22)] border-none' : 'bg-white border border-border'}`} style={{ animationDelay: `${0.1 * (i + 1)}s` }}>
+            {c.dark && <div className="absolute -right-4 -top-4 w-[72px] h-[72px] rounded-full bg-white/10" />}
+            <div className="flex items-start justify-between mb-3">
+              <div className={`text-[11px] font-semibold uppercase tracking-[0.06em] ${c.dark ? 'text-white/60' : 'text-text-muted'}`}>{c.label}</div>
             </div>
-            <div style={{ fontFamily: "'Fraunces', serif", fontSize: '36px', fontWeight: 800, color: c.dark ? M.white : c.color, lineHeight: 1, margin: 0, minHeight: '36px' }}>
-              {statsLoading ? <div className="animate-shimmer" style={{ width: '60px', height: '36px', background: c.dark ? 'rgba(255,255,255,0.2)' : M.border, borderRadius: '8px' }} /> : c.value}
+            <div className={`font-serif text-[36px] font-bold leading-none m-0 min-h-[36px] ${c.dark ? 'text-white' : c.color}`}>
+              {statsLoading ? <div className={`animate-pulse w-[60px] h-[36px] rounded-lg ${c.dark ? 'bg-white/20' : 'bg-border'}`} /> : c.value}
             </div>
           </div>
         ))}
       </div>
 
       {/* ── Controls: Tabs + Search + Actions ── */}
-      <div className="animate-fade-up" style={{ animationDelay: '0.5s', background: M.white, borderRadius: '16px', border: `1px solid ${M.border}`, boxShadow: '0 1px 4px rgba(0,0,0,0.04)', overflow: 'hidden' }}>
+      <div className="animate-fade-up bg-white rounded-2xl border border-border shadow-[0_1px_4px_rgba(0,0,0,0.04)] overflow-hidden" style={{ animationDelay: '0.5s' }}>
 
         {/* Tab bar + search row */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 20px', borderBottom: `1px solid ${M.border}`, flexWrap: 'wrap', gap: '8px' }}>
+        <div className="flex items-center justify-between px-5 border-b border-border flex-wrap gap-2">
           {/* Tabs */}
-          <div style={{ display: 'flex', gap: '4px' }}>
+          <div className="flex gap-1">
             {TABS.map(t => (
-              <button key={t.key} onClick={() => { setActiveTab(t.key); setPage(1) }} style={{
-                padding: '14px 16px', background: 'none', border: 'none',
-                borderBottom: activeTab === t.key ? `2px solid ${M.maroon}` : '2px solid transparent',
-                color: activeTab === t.key ? M.maroon : M.textMuted,
-                fontSize: '13px', fontWeight: activeTab === t.key ? 700 : 400,
-                cursor: 'pointer', fontFamily: "'IBM Plex Sans', sans-serif",
-                transition: 'all 0.15s', whiteSpace: 'nowrap',
-                display: 'flex', alignItems: 'center', gap: '6px',
-              }}>
+              <button key={t.key} onClick={() => { setActiveTab(t.key); setPage(1) }} className={`py-3.5 px-4 bg-transparent border-none border-b-2 text-[13px] cursor-pointer font-sans transition-colors duration-150 whitespace-nowrap flex items-center gap-1.5 ${activeTab === t.key ? 'border-maroon text-maroon font-bold' : 'border-transparent text-text-muted font-normal hover:text-maroon/80'}`}>
                 {t.label}
-                <span style={{
-                  fontSize: '11px', fontWeight: 700, padding: '1px 7px', borderRadius: '100px',
-                  background: activeTab === t.key ? M.maroonLight : M.surface,
-                  color: activeTab === t.key ? M.maroon : M.textMuted,
-                }}>{counts[t.key]}</span>
+                <span className={`text-[11px] font-bold py-px px-[7px] rounded-full ${activeTab === t.key ? 'bg-maroon-light text-maroon' : 'bg-surface text-text-muted'}`}>{counts[t.key]}</span>
               </button>
             ))}
           </div>
 
           {/* Search + Export */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 0' }}>
-            <div style={{ position: 'relative' }}>
+          <div className="flex items-center gap-2 py-2.5">
+            <div className="relative">
               <input
                 value={search} onChange={e => { setSearch(e.target.value); setPage(1) }}
                 placeholder="Search by name, ID, email…"
-                style={{ padding: '8px 14px 8px 34px', borderRadius: '9px', border: `1px solid ${M.border}`, background: M.offWhite, fontSize: '13px', color: M.text, outline: 'none', width: '220px', fontFamily: "'IBM Plex Sans', sans-serif" }}
-                onFocus={e => e.target.style.borderColor = M.maroon}
-                onBlur={e => e.target.style.borderColor = M.border}
+                className="py-2 pr-3.5 pl-8.5 rounded-[9px] border border-border bg-off-white text-[13px] text-text-main outline-none w-[220px] font-sans focus:border-maroon transition-colors"
               />
-              <span style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', display: 'flex', alignItems: 'center', color: M.textMuted }}><Search size={14} /></span>
+              <span className="absolute left-2.5 top-1/2 -translate-y-1/2 flex items-center text-text-muted"><Search size={14} /></span>
               {search && (
-                <button onClick={() => setSearch('')} style={{ position: 'absolute', right: '8px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: M.textMuted, display: 'flex', alignItems: 'center', padding: '0 2px' }}><XIcon size={14} /></button>
+                <button onClick={() => setSearch('')} className="absolute right-2 top-1/2 -translate-y-1/2 bg-transparent border-none cursor-pointer text-text-muted flex items-center p-0.5"><XIcon size={14} /></button>
               )}
             </div>
           </div>
         </div>
 
         {/* Table header */}
-        <div style={{ display: 'grid', gridTemplateColumns: '110px 1.6fr 1.4fr 120px 100px', padding: '11px 24px', background: M.surface, borderBottom: `1px solid ${M.border}` }}>
+        <div className="grid grid-cols-[110px_1.6fr_1.4fr_120px_100px] p-[11px_24px] bg-surface border-b border-border">
           {['ID', 'NAME', 'EMAIL', 'ROLE', 'ACTIONS'].map(h => (
-            <span key={h} style={{ fontSize: '10px', fontWeight: 700, color: M.textMuted, textTransform: 'uppercase', letterSpacing: '0.07em' }}>{h}</span>
+            <span key={h} className="text-[10px] font-bold text-text-muted uppercase tracking-[0.07em]">{h}</span>
           ))}
         </div>
 
         {/* Rows */}
         {loading ? (
           [1, 2, 3, 4, 5].map((n, idx) => (
-            <div key={n} style={{
-              display: 'grid', gridTemplateColumns: '110px 1.6fr 1.4fr 120px 100px',
-              padding: '14px 24px', alignItems: 'center',
-              borderBottom: idx === 4 ? 'none' : `1px solid ${M.border}`,
-              background: idx % 2 === 0 ? M.white : '#FDFCFB',
-            }}>
-              <div className="animate-shimmer" style={{ height: '16px', width: '70px', borderRadius: '4px' }} />
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <div className="animate-shimmer" style={{ width: '36px', height: '36px', borderRadius: '50%' }} />
-                <div className="animate-shimmer" style={{ height: '20px', width: '60%', borderRadius: '4px' }} />
+            <div key={n} className={`grid grid-cols-[110px_1.6fr_1.4fr_120px_100px] p-[14px_24px] items-center ${idx === 4 ? 'border-none' : 'border-b border-border'} ${idx % 2 === 0 ? 'bg-white' : 'bg-[#FDFCFB]'}`}>
+              <div className="animate-pulse h-4 w-[70px] rounded bg-border" />
+              <div className="flex items-center gap-3">
+                <div className="animate-pulse w-9 h-9 rounded-full bg-border" />
+                <div className="animate-pulse h-5 w-[60%] rounded bg-border" />
               </div>
-              <div className="animate-shimmer" style={{ height: '16px', width: '80%', borderRadius: '4px' }} />
-              <div className="animate-shimmer" style={{ height: '24px', width: '60px', borderRadius: '100px' }} />
-              <div className="animate-shimmer" style={{ height: '24px', width: '30px', borderRadius: '4px' }} />
+              <div className="animate-pulse h-4 w-[80%] rounded bg-border" />
+              <div className="animate-pulse h-6 w-[60px] rounded-full bg-border" />
+              <div className="animate-pulse h-6 w-[30px] rounded bg-border" />
             </div>
           ))
         ) : paginated.length === 0 ? (
-          <div style={{ padding: '56px 24px', textAlign: 'center' }}>
-            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '12px', color: M.textMuted }}><Users size={48} /></div>
-            <p style={{ fontSize: '15px', fontWeight: 600, color: M.text, margin: '0 0 6px' }}>No users found</p>
-            <p style={{ fontSize: '13px', color: M.textMuted, margin: 0 }}>
+          <div className="p-[56px_24px] text-center">
+            <div className="flex justify-center mb-3 text-text-muted"><Users size={48} /></div>
+            <p className="text-[15px] font-semibold text-text-main m-0 mb-1.5">No users found</p>
+            <p className="text-[13px] text-text-muted m-0">
               {search ? 'Try adjusting your search query.' : 'No accounts registered yet.'}
             </p>
           </div>
@@ -363,86 +295,48 @@ export default function AdminUserManagementPage() {
           paginated.map((user, idx) => {
             const name     = `${user.first_name} ${user.last_name}`
             const uid      = user.student_id || user.staff_id || `UID-${user.id?.slice(0, 8)}`
-            const priority = getPriorityClass(user)
             const isLast   = idx === paginated.length - 1
 
             return (
-              <div key={user.id} style={{
-                display: 'grid', gridTemplateColumns: '110px 1.6fr 1.4fr 120px 100px',
-                padding: '16px 24px', alignItems: 'center',
-                borderBottom: isLast ? 'none' : `1px solid ${M.border}`,
-                background: idx % 2 === 0 ? M.white : '#FDFCFB',
-                transition: 'background 0.1s',
-                opacity: user.is_active === false ? 0.6 : 1,
-              }}
-                onMouseEnter={e => e.currentTarget.style.background = M.offWhite}
-                onMouseLeave={e => e.currentTarget.style.background = idx % 2 === 0 ? M.white : '#FDFCFB'}
-              >
+              <div key={user.id} className={`grid grid-cols-[110px_1.6fr_1.4fr_120px_100px] p-[16px_24px] items-center transition-colors duration-100 hover:bg-off-white ${isLast ? 'border-none' : 'border-b border-border'} ${idx % 2 === 0 ? 'bg-white' : 'bg-[#FDFCFB]'} ${user.is_active === false ? 'opacity-60' : 'opacity-100'}`}>
                 {/* ID */}
-                <div style={{ fontSize: '12px', color: M.textMuted, fontFamily: 'monospace' }}>{uid}</div>
+                <div className="text-[12px] text-text-muted font-mono">{uid}</div>
 
                 {/* Name */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
+                <div className="flex items-center gap-2.5 min-w-0">
                   <Avatar name={name} role={user.role} size={34} />
-                  <div style={{ fontSize: '14px', fontWeight: 600, color: M.text, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{name}</div>
+                  <div className="text-[14px] font-semibold text-text-main whitespace-nowrap overflow-hidden text-ellipsis">{name}</div>
                 </div>
 
                 {/* Email */}
-                <div style={{ fontSize: '13px', color: M.textSub, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{user.email}</div>
+                <div className="text-[13px] text-text-sub whitespace-nowrap overflow-hidden text-ellipsis">{user.email}</div>
 
                 {/* Role */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                <div className="flex flex-col gap-1">
                   <RoleBadge role={user.role} />
-                  {user.is_active === false && <span style={{ fontSize: '10px', fontWeight: 700, color: M.red, background: M.redLight, padding: '2px 6px', borderRadius: '4px', width: 'fit-content', border: `1px solid ${M.redBorder}` }}>SUSPENDED</span>}
+                  {user.is_active === false && <span className="text-[10px] font-bold text-danger bg-danger-light py-0.5 px-1.5 rounded w-fit border border-danger-border">SUSPENDED</span>}
                 </div>
 
                 {/* Actions */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', position: 'relative' }}>
+                <div className="flex items-center gap-1.5 relative">
                   <button
                     onClick={() => setEditUser(user)}
                     title="Update role"
-                    style={{
-                      width: '32px', height: '32px', borderRadius: '8px',
-                      border: `1px solid ${M.border}`, background: M.offWhite, color: M.textSub,
-                      cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      transition: 'all 0.12s',
-                    }}
-                    onMouseEnter={e => { e.currentTarget.style.background = M.maroonLight; e.currentTarget.style.borderColor = M.maroonBorder; e.currentTarget.style.color = M.maroon }}
-                    onMouseLeave={e => { e.currentTarget.style.background = M.offWhite; e.currentTarget.style.borderColor = M.border; e.currentTarget.style.color = M.textSub }}
+                    className="w-8 h-8 rounded-lg border border-border bg-off-white text-text-sub cursor-pointer flex items-center justify-center transition-all duration-150 hover:bg-maroon-light hover:border-maroon-border hover:text-maroon"
                   ><Pencil size={14} /></button>
                   <button
                     onClick={() => setDropdownOpen(dropdownOpen === user.id ? null : user.id)}
                     title="More options"
-                    style={{
-                      width: '32px', height: '32px', borderRadius: '8px',
-                      border: `1px solid ${dropdownOpen === user.id ? M.border : 'transparent'}`,
-                      background: dropdownOpen === user.id ? M.surface : 'transparent',
-                      cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      transition: 'all 0.12s', color: M.textSub,
-                    }}
-                    onMouseEnter={e => { e.currentTarget.style.background = M.surface }}
-                    onMouseLeave={e => { if(dropdownOpen !== user.id) e.currentTarget.style.background = 'transparent' }}
+                    className={`w-8 h-8 rounded-lg border cursor-pointer flex items-center justify-center transition-all duration-150 text-text-sub ${dropdownOpen === user.id ? 'border-border bg-surface' : 'border-transparent bg-transparent hover:bg-surface'}`}
                   ><MoreVertical size={16} /></button>
                   
                   {dropdownOpen === user.id && (
-                    <div style={{
-                      position: 'absolute', top: '100%', right: '0', marginTop: '4px',
-                      background: M.white, border: `1px solid ${M.border}`, borderRadius: '10px',
-                      boxShadow: '0 4px 12px rgba(0,0,0,0.08)', padding: '6px', zIndex: 10,
-                      minWidth: '130px'
-                    }}>
+                    <div className="absolute top-full right-0 mt-1 bg-white border border-border rounded-[10px] shadow-[0_4px_12px_rgba(0,0,0,0.08)] p-1.5 z-10 min-w-[130px]">
                       <button
                         onClick={() => handleToggleStatus(user.id, user.is_active !== false)}
-                        style={{
-                          width: '100%', padding: '8px 12px', border: 'none', background: 'transparent',
-                          textAlign: 'left', fontSize: '13px', color: user.is_active !== false ? M.red : M.green, cursor: 'pointer',
-                          borderRadius: '6px', display: 'flex', alignItems: 'center', gap: '8px', transition: '0.1s',
-                          fontFamily: "'IBM Plex Sans', sans-serif", fontWeight: 600
-                        }}
-                        onMouseEnter={e => e.currentTarget.style.background = user.is_active !== false ? M.redLight : M.greenLight}
-                        onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                        className={`w-full py-2 px-3 border-none bg-transparent text-left text-[13px] cursor-pointer rounded-md flex items-center gap-2 transition-colors duration-100 font-sans font-semibold ${user.is_active !== false ? 'text-danger hover:bg-danger-light' : 'text-success hover:bg-success-light'}`}
                       >
-                        <span style={{ display: 'flex', alignItems: 'center' }}>{user.is_active !== false ? <Ban size={14} /> : <CheckCircle size={14} />}</span> 
+                        <span className="flex items-center">{user.is_active !== false ? <Ban size={14} /> : <CheckCircle size={14} />}</span> 
                         {user.is_active !== false ? 'Suspend User' : 'Reactivate User'}
                       </button>
                     </div>
@@ -455,13 +349,13 @@ export default function AdminUserManagementPage() {
 
         {/* Pagination footer */}
         {filtered.length > 0 && (
-          <div style={{ padding: '13px 24px', borderTop: `1px solid ${M.border}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: M.surface }}>
-            <span style={{ fontSize: '12px', color: M.textMuted }}>
+          <div className="p-[13px_24px] border-t border-border flex items-center justify-between bg-surface">
+            <span className="text-[12px] text-text-muted">
               Showing {filtered.length === 0 ? 0 : (page - 1) * PER_PAGE + 1}–{Math.min(page * PER_PAGE, filtered.length)} of {filtered.length} entries
             </span>
-            <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
+            <div className="flex gap-1 items-center">
               <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}
-                style={{ padding: '5px 12px', borderRadius: '7px', border: `1px solid ${M.border}`, background: M.white, fontSize: '12px', fontWeight: 600, cursor: page === 1 ? 'not-allowed' : 'pointer', color: page === 1 ? M.textMuted : M.text, fontFamily: "'IBM Plex Sans', sans-serif" }}>
+                className={`py-1 px-3 rounded-md border border-border bg-white text-[12px] font-semibold font-sans ${page === 1 ? 'cursor-not-allowed text-text-muted' : 'cursor-pointer text-text-main hover:bg-off-white'}`}>
                 Prev
               </button>
               {Array.from({ length: Math.min(totalPages, 7) }, (_, i) => {
@@ -471,18 +365,13 @@ export default function AdminUserManagementPage() {
                   : page - 3 + i
                 if (p < 1 || p > totalPages) return null
                 return (
-                  <button key={p} onClick={() => setPage(p)} style={{
-                    width: '30px', height: '30px', borderRadius: '7px',
-                    border: `1px solid ${page === p ? M.maroon : M.border}`,
-                    background: page === p ? M.maroon : M.white,
-                    color: page === p ? M.white : M.text,
-                    fontSize: '12px', fontWeight: 600, cursor: 'pointer',
-                    fontFamily: "'IBM Plex Sans', sans-serif",
-                  }}>{p}</button>
+                  <button key={p} onClick={() => setPage(p)} className={`w-[30px] h-[30px] rounded-md text-[12px] font-semibold cursor-pointer font-sans border ${page === p ? 'border-maroon bg-maroon text-white' : 'border-border bg-white text-text-main hover:bg-off-white'}`}>
+                    {p}
+                  </button>
                 )
               })}
               <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages}
-                style={{ padding: '5px 12px', borderRadius: '7px', border: `1px solid ${M.border}`, background: M.white, fontSize: '12px', fontWeight: 600, cursor: page === totalPages ? 'not-allowed' : 'pointer', color: page === totalPages ? M.textMuted : M.text, fontFamily: "'IBM Plex Sans', sans-serif" }}>
+                className={`py-1 px-3 rounded-md border border-border bg-white text-[12px] font-semibold font-sans ${page === totalPages ? 'cursor-not-allowed text-text-muted' : 'cursor-pointer text-text-main hover:bg-off-white'}`}>
                 Next
               </button>
             </div>

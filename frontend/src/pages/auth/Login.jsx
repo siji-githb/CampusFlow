@@ -5,7 +5,6 @@ import { loginUser } from '../../services/authService'
 import { Eye, EyeOff } from 'lucide-react'
 import crmcLogo from '../../assets/crmc-logo.webp'
 
-// ── Responsive hook ──
 function useWindowWidth() {
   const [width, setWidth] = useState(() => window.innerWidth)
   useEffect(() => {
@@ -16,40 +15,18 @@ function useWindowWidth() {
   return width
 }
 
-const M = {
-  maroon:       '#7B1A2A',
-  maroonDark:   '#5C1320',
-  maroonLight:  '#F9F0F1',
-  maroonBorder: 'rgba(123,26,42,0.2)',
-  gold:         '#B8900A',
-  goldLight:    '#FDF6E3',
-  goldBorder:   'rgba(184,144,10,0.3)',
-  white:        '#FFFFFF',
-  offWhite:     '#F9F7F4',
-  border:       '#E5E1DC',
-  text:         '#1C1917',
-  textSub:      '#504B46',
-  textMuted:    '#9C9690',
-  green:        '#166534',
-  greenLight:   '#F0FDF4',
-  greenBorder:  '#BBF7D0',
-  red:          '#DC2626',
-  redLight:     '#FEF2F2',
-  redBorder:    '#FECACA',
-}
-
 export default function Login() {
-  const navigate        = useNavigate()
-  const location        = useLocation()
-  const { login }       = useAuth()
-  const width           = useWindowWidth()
-  const isMobile        = width < 768
+  const navigate = useNavigate()
+  const location = useLocation()
+  const { login } = useAuth()
+  const width = useWindowWidth()
+  const isMobile = width < 768
   const [form, setForm] = useState({ email: localStorage.getItem('rememberedEmail') || '', password: '' })
-  const [error, setError]     = useState('')
+  const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
   const [rememberMe, setRememberMe] = useState(!!localStorage.getItem('rememberedEmail'))
-  const successMessage        = location.state?.message
+  const successMessage = location.state?.message
 
   const handleChange = (e) => { setForm({ ...form, [e.target.name]: e.target.value }); setError('') }
 
@@ -71,249 +48,170 @@ export default function Login() {
     finally { setLoading(false) }
   }
 
-  const inp = () => ({
-    width: '100%',
-    padding: isMobile ? '13px 14px' : '11px 14px',
-    borderRadius: '8px',
-    border: `1.5px solid ${M.border}`,
-    background: M.offWhite,
-    color: M.text,
-    fontSize: isMobile ? '15px' : '14px',
-    outline: 'none',
-    boxSizing: 'border-box',
-    fontFamily: "'IBM Plex Sans', sans-serif",
-    transition: 'border-color .15s',
-    minHeight: isMobile ? '52px' : 'auto',
-  })
+  const inpClass = `w-full rounded-lg border-[1.5px] border-border bg-off-white text-text-main outline-none box-border font-sans transition-colors duration-150 focus:border-maroon focus:ring-0 ${isMobile ? 'py-[13px] px-[14px] text-[15px] min-h-[52px]' : 'py-[11px] px-[14px] text-[14px]'}`
 
-  /* ───────── Mobile layout ───────── */
   if (isMobile) {
     return (
-      <div style={{
-        minHeight: '100vh',
-        background: M.offWhite,
-        fontFamily: "'IBM Plex Sans', sans-serif",
-        maxWidth: '480px',
-        margin: '0 auto',
-        paddingBottom: '96px',
-      }}>
+      <div className="min-h-screen bg-off-white font-sans max-w-[480px] mx-auto pb-24">
+        <div className="bg-linear-to-br from-maroon to-maroon-dark pt-9 px-5 pb-14 relative overflow-hidden text-center">
+          <div className="absolute inset-0 pointer-events-none opacity-5 bg-[radial-gradient(circle,#F0C040_1px,transparent_1px)] bg-size-[24px_24px]" />
+          <div className="absolute -top-10 -right-10 w-40 h-40 rounded-full bg-[radial-gradient(circle,rgba(184,144,10,0.18)_0%,transparent_70%)] pointer-events-none" />
+          <div className="absolute -bottom-12 left-1/2 -translate-x-1/2 w-[600px] h-24 rounded-full bg-off-white pointer-events-none" />
 
-        {/* Hero banner */}
-        <div style={{
-          background: `linear-gradient(160deg, ${M.maroon} 0%, ${M.maroonDark} 100%)`,
-          padding: '36px 20px 56px',
-          position: 'relative',
-          overflow: 'hidden',
-          textAlign: 'center',
-        }}>
-          {/* Dot grid */}
-          <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', opacity: 0.05, backgroundImage: 'radial-gradient(circle, #F0C040 1px, transparent 1px)', backgroundSize: '24px 24px' }} />
-          {/* Gold blob */}
-          <div style={{ position: 'absolute', top: '-40px', right: '-40px', width: '160px', height: '160px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(184,144,10,0.18) 0%, transparent 70%)', pointerEvents: 'none' }} />
-          {/* White arc */}
-          <div style={{ position: 'absolute', bottom: '-48px', left: '50%', transform: 'translateX(-50%)', width: '600px', height: '96px', borderRadius: '50%', background: M.offWhite, pointerEvents: 'none' }} />
-
-          <div style={{ position: 'relative' }}>
-            <div style={{ textAlign: 'left', marginBottom: '16px' }}>
-              <Link to="/" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '12px', color: 'rgba(255,255,255,0.5)', textDecoration: 'none' }}>
+          <div className="relative">
+            <div className="text-left mb-4">
+              <Link to="/" className="inline-flex items-center gap-1 text-[12px] text-white/50 no-underline">
                 ← Back to home
               </Link>
             </div>
-            <img src={crmcLogo} alt="CRMC" style={{ width: '64px', height: '64px', borderRadius: '50%', border: '2px solid rgba(184,144,10,0.45)', boxShadow: '0 0 32px rgba(184,144,10,0.18)', marginBottom: '14px' }} />
-            <div style={{ fontFamily: "'Fraunces', serif", fontWeight: 700, fontSize: '13px', color: M.gold, marginBottom: '6px' }}>CampusFlow</div>
-            <h1 style={{ fontFamily: "'Fraunces', serif", fontSize: 'clamp(26px, 7vw, 32px)', fontWeight: 700, color: M.white, margin: '0 0 8px', lineHeight: 1.1 }}>
+            <img src={crmcLogo} alt="CRMC" className="w-16 h-16 rounded-full border-2 border-gold/45 shadow-[0_0_32px_rgba(184,144,10,0.18)] mb-3.5 mx-auto" />
+            <div className="font-serif font-bold text-[13px] text-gold mb-1.5">CampusFlow</div>
+            <h1 className="font-serif text-[clamp(26px,7vw,32px)] font-bold text-white m-0 mb-2 leading-[1.1]">
               Welcome back
             </h1>
-            <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.55)', margin: 0, lineHeight: 1.6 }}>
+            <p className="text-[13px] text-white/55 m-0 leading-relaxed">
               Sign in to manage your registrar appointments
             </p>
           </div>
         </div>
 
-        {/* Form card */}
-        <main style={{ padding: '0 16px', maxWidth: '480px', margin: '0 auto' }}>
-          <div style={{ background: M.white, borderRadius: '20px', boxShadow: '0 8px 24px rgba(0,0,0,0.10), 0 0 0 1px rgba(0,0,0,0.04)', padding: '24px 20px', marginTop: '-20px', position: 'relative' }}>
-
+        <main className="px-4 max-w-[480px] mx-auto">
+          <div className="bg-white rounded-[20px] shadow-[0_8px_24px_rgba(0,0,0,0.10),0_0_0_1px_rgba(0,0,0,0.04)] py-6 px-5 -mt-5 relative">
             {successMessage && (
-              <div style={{ padding: '12px 14px', borderRadius: '10px', background: M.greenLight, border: `1px solid ${M.greenBorder}`, color: M.green, fontSize: '13px', marginBottom: '16px', display: 'flex', gap: '8px', alignItems: 'flex-start' }}>
+              <div className="py-3 px-3.5 rounded-lg bg-success-light border border-success-border text-success text-[13px] mb-4 flex gap-2 items-start">
                 <span>✓</span> {successMessage}
               </div>
             )}
             {error && (
-              <div style={{ padding: '12px 14px', borderRadius: '10px', background: M.redLight, border: `1px solid ${M.redBorder}`, color: M.red, fontSize: '13px', marginBottom: '16px', display: 'flex', gap: '8px', alignItems: 'flex-start' }}>
+              <div className="py-3 px-3.5 rounded-lg bg-danger-light border border-danger-border text-danger text-[13px] mb-4 flex gap-2 items-start">
                 <span>⚠</span> {error}
               </div>
             )}
 
             <form onSubmit={handleSubmit}>
-              <div style={{ marginBottom: '16px' }}>
-                <label style={{ display: 'block', fontSize: '11px', fontWeight: 600, color: M.textSub, marginBottom: '6px', letterSpacing: '0.06em', textTransform: 'uppercase' }}>Email Address</label>
-                <input type="email" name="email" value={form.email} onChange={handleChange} required placeholder="you@email.com" style={inp()}
-                  onFocus={e => e.target.style.borderColor = M.maroon}
-                  onBlur={e => e.target.style.borderColor = M.border} />
+              <div className="mb-4">
+                <label className="block text-[11px] font-semibold text-text-sub mb-1.5 tracking-[0.06em] uppercase">Email Address</label>
+                <input type="email" name="email" value={form.email} onChange={handleChange} required placeholder="you@email.com" className={inpClass} />
               </div>
-              <div style={{ marginBottom: '24px' }}>
-                <label style={{ display: 'block', fontSize: '11px', fontWeight: 600, color: M.textSub, marginBottom: '6px', letterSpacing: '0.06em', textTransform: 'uppercase' }}>Password</label>
-                <div style={{ position: 'relative' }}>
-                  <input type={showPassword ? "text" : "password"} name="password" value={form.password} onChange={handleChange} required placeholder="••••••••" style={{ ...inp(), paddingRight: '48px' }}
-                    onFocus={e => e.target.style.borderColor = M.maroon}
-                    onBlur={e => e.target.style.borderColor = M.border} />
-                  <button type="button" onClick={() => setShowPassword(!showPassword)} style={{ position: 'absolute', right: '14px', top: '50%', transform: 'translateY(-50%)', background: 'transparent', border: 'none', padding: 0, color: M.textMuted, cursor: 'pointer', display: 'flex' }}>
-                    {showPassword ? (
-                      <Eye size={18} />
-                    ) : (
-                      <EyeOff size={18} />
-                    )}
+              <div className="mb-6">
+                <label className="block text-[11px] font-semibold text-text-sub mb-1.5 tracking-[0.06em] uppercase">Password</label>
+                <div className="relative">
+                  <input type={showPassword ? "text" : "password"} name="password" value={form.password} onChange={handleChange} required placeholder="••••••••" className={`${inpClass} pr-12`} />
+                  <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3.5 top-1/2 -translate-y-1/2 bg-transparent border-none p-0 text-text-muted cursor-pointer flex">
+                    {showPassword ? <Eye size={18} /> : <EyeOff size={18} />}
                   </button>
                 </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '12px' }}>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}>
-                    <input type="checkbox" checked={rememberMe} onChange={e => setRememberMe(e.target.checked)} style={{ accentColor: M.maroon, width: '14px', height: '14px', cursor: 'pointer', margin: 0 }} />
-                    <span style={{ fontSize: '12px', color: M.textSub, fontWeight: 500 }}>Remember me</span>
+                <div className="flex justify-between items-center mt-3">
+                  <label className="flex items-center gap-1.5 cursor-pointer">
+                    <input type="checkbox" checked={rememberMe} onChange={e => setRememberMe(e.target.checked)} className="accent-maroon w-3.5 h-3.5 cursor-pointer m-0" />
+                    <span className="text-[12px] text-text-sub font-medium">Remember me</span>
                   </label>
-                  <Link to="/forgot-password" style={{ fontSize: '12px', color: M.maroon, textDecoration: 'none', fontWeight: 600 }}>Forgot password?</Link>
+                  <Link to="/forgot-password" className="text-[12px] text-maroon no-underline font-semibold">Forgot password?</Link>
                 </div>
               </div>
-              <button type="submit" disabled={loading} style={{
-                width: '100%', minHeight: '52px', padding: '14px 24px',
-                borderRadius: '10px', border: 'none',
-                background: loading ? '#B8667A' : M.maroon, color: M.white,
-                fontSize: '15px', fontWeight: 700,
-                cursor: loading ? 'not-allowed' : 'pointer',
-                fontFamily: "'IBM Plex Sans', sans-serif",
-                boxShadow: '0 4px 20px rgba(123,26,42,0.25)',
-                transition: 'background 0.15s',
-              }}>
+              <button type="submit" disabled={loading} className={`w-full min-h-[52px] py-3.5 px-6 rounded-lg border-none text-[15px] font-bold font-sans shadow-[0_4px_20px_rgba(123,26,42,0.25)] transition-colors duration-150 ${loading ? 'bg-[#B8667A] text-white cursor-not-allowed' : 'bg-maroon text-white cursor-pointer hover:bg-maroon-dark'}`}>
                 {loading ? <span className="spinner" /> : 'Sign In →'}
               </button>
             </form>
 
-            <p style={{ fontSize: '13px', color: M.textMuted, marginTop: '20px', textAlign: 'center' }}>
+            <p className="text-[13px] text-text-muted mt-5 text-center">
               Don't have an account?{' '}
-              <Link to="/register" style={{ color: M.maroon, textDecoration: 'none', fontWeight: 600 }}>Register here</Link>
+              <Link to="/register" className="text-maroon no-underline font-semibold">Register here</Link>
             </p>
           </div>
 
-          {/* Perks strip */}
-          <div style={{ marginTop: '20px', background: M.white, borderRadius: '16px', boxShadow: '0 2px 8px rgba(0,0,0,0.06), 0 0 0 1px rgba(0,0,0,0.04)', overflow: 'hidden' }}>
+          <div className="mt-5 bg-white rounded-2xl shadow-[0_2px_8px_rgba(0,0,0,0.06),0_0_0_1px_rgba(0,0,0,0.04)] overflow-hidden">
             {['Book appointments online', 'Real-time queue tracking', 'AI-guided step-by-step'].map((perk, i, arr) => (
-              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '14px 16px', borderBottom: i < arr.length - 1 ? `1px solid ${M.border}` : 'none' }}>
-                <div style={{ width: '22px', height: '22px', borderRadius: '50%', flexShrink: 0, background: M.goldLight, border: `1px solid ${M.goldBorder}`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <span style={{ color: M.gold, fontSize: '10px', fontWeight: 700 }}>✓</span>
+              <div key={i} className={`flex items-center gap-3 py-3.5 px-4 ${i < arr.length - 1 ? 'border-b border-border' : 'border-none'}`}>
+                <div className="w-[22px] h-[22px] rounded-full shrink-0 bg-gold-light border border-gold-border flex items-center justify-center">
+                  <span className="text-gold text-[10px] font-bold">✓</span>
                 </div>
-                <span style={{ fontSize: '13px', color: M.textSub }}>{perk}</span>
+                <span className="text-[13px] text-text-sub">{perk}</span>
               </div>
             ))}
           </div>
         </main>
-
-
       </div>
     )
   }
 
-  /* ───────── Desktop layout ───────── */
   return (
-    <div style={{ minHeight: '100vh', background: M.offWhite, display: 'flex', fontFamily: "'IBM Plex Sans', sans-serif" }}>
+    <div className="min-h-screen bg-off-white flex font-sans">
+      <div className="w-[400px] bg-maroon flex flex-col items-center justify-center py-12 px-10 relative overflow-hidden shrink-0">
+        <div className="absolute -top-16 -right-16 w-[200px] h-[200px] rounded-full border border-[rgba(240,192,64,0.15)]" />
+        <div className="absolute -bottom-20 -left-20 w-[260px] h-[260px] rounded-full border border-[rgba(240,192,64,0.1)]" />
 
-      {/* Left — maroon panel */}
-      <div style={{
-        width: '400px', background: M.maroon,
-        display: 'flex', flexDirection: 'column',
-        alignItems: 'center', justifyContent: 'center',
-        padding: '3rem 2.5rem', position: 'relative', overflow: 'hidden',
-        flexShrink: 0,
-      }}>
-        <div style={{ position: 'absolute', top: '-60px', right: '-60px', width: '200px', height: '200px', borderRadius: '50%', border: '1px solid rgba(240,192,64,0.15)' }} />
-        <div style={{ position: 'absolute', bottom: '-80px', left: '-80px', width: '260px', height: '260px', borderRadius: '50%', border: '1px solid rgba(240,192,64,0.1)' }} />
-
-        <img src={crmcLogo} alt="CRMC" style={{ width: '80px', height: '80px', borderRadius: '50%', border: '3px solid rgba(240,192,64,0.4)', boxShadow: '0 0 40px rgba(240,192,64,0.15)', marginBottom: '1.5rem', position: 'relative' }} />
-        <h2 style={{ fontFamily: "'Fraunces', serif", fontSize: '1.3rem', fontWeight: 700, color: 'white', textAlign: 'center', margin: '0 0 8px' }}>
+        <img src={crmcLogo} alt="CRMC" className="w-20 h-20 rounded-full border-4 border-gold/40 shadow-[0_0_40px_rgba(240,192,64,0.15)] mb-6 relative" />
+        <h2 className="font-serif text-xl font-bold text-white text-center m-0 mb-2">
           Cebu Roosevelt<br />Memorial Colleges
         </h2>
-        <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.45)', textAlign: 'center', margin: '0 0 2.5rem', lineHeight: 1.6 }}>
+        <p className="text-[12px] text-white/45 text-center m-0 mb-10 leading-relaxed">
           College of Computer Studies<br />BSIT Capstone 2026
         </p>
-        <div style={{ width: '100%', borderTop: '1px solid rgba(255,255,255,0.08)', paddingTop: '1.5rem' }}>
+        <div className="w-full border-t border-white/10 pt-6">
           {['Book appointments online', 'Real-time queue tracking', 'AI-guided step-by-step'].map((item, i) => (
-            <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '8px 0', borderBottom: i < 2 ? '1px solid rgba(255,255,255,0.06)' : 'none' }}>
-              <div style={{ width: '18px', height: '18px', borderRadius: '50%', background: 'rgba(240,192,64,0.15)', border: '1px solid rgba(240,192,64,0.35)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                <span style={{ color: '#F0C040', fontSize: '9px' }}>✓</span>
+            <div key={i} className={`flex items-center gap-2.5 py-2 ${i < 2 ? 'border-b border-white/5' : 'border-none'}`}>
+              <div className="w-[18px] h-[18px] rounded-full bg-[rgba(240,192,64,0.15)] border border-[rgba(240,192,64,0.35)] flex items-center justify-center shrink-0">
+                <span className="text-[#F0C040] text-[9px]">✓</span>
               </div>
-              <span style={{ fontSize: '12px', color: 'rgba(255,255,255,0.55)' }}>{item}</span>
+              <span className="text-[12px] text-white/55">{item}</span>
             </div>
           ))}
         </div>
       </div>
 
-      {/* Right — form */}
-      <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '2rem' }}>
-        <div style={{ width: '100%', maxWidth: '380px' }}>
-          <Link to="/" style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', fontSize: '12px', color: M.textMuted, textDecoration: 'none', marginBottom: '2rem' }}>
+      <div className="flex-1 flex items-center justify-center p-8">
+        <div className="w-full max-w-[380px]">
+          <Link to="/" className="inline-flex items-center gap-1.5 text-[12px] text-text-muted no-underline mb-8">
             ← Back to home
           </Link>
-          <h1 style={{ fontFamily: "'Fraunces', serif", fontSize: '1.85rem', fontWeight: 700, color: M.maroon, margin: '0 0 6px' }}>
+          <h1 className="font-serif text-[1.85rem] font-bold text-maroon m-0 mb-1.5">
             Welcome back
           </h1>
-          <p style={{ fontSize: '13px', color: M.textMuted, margin: '0 0 2rem' }}>
+          <p className="text-[13px] text-text-muted m-0 mb-8">
             Sign in to manage your registrar appointments
           </p>
 
           {successMessage && (
-            <div style={{ padding: '10px 14px', borderRadius: '8px', background: M.greenLight, border: `1px solid ${M.greenBorder}`, color: M.green, fontSize: '13px', marginBottom: '1rem' }}>
+            <div className="py-2.5 px-3.5 rounded-lg bg-success-light border border-success-border text-success text-[13px] mb-4">
               {successMessage}
             </div>
           )}
           {error && (
-            <div style={{ padding: '10px 14px', borderRadius: '8px', background: M.maroonLight, border: '1px solid #FECACA', color: M.maroon, fontSize: '13px', marginBottom: '1rem' }}>
+            <div className="py-2.5 px-3.5 rounded-lg bg-danger-light border border-danger-border text-danger text-[13px] mb-4">
               {error}
             </div>
           )}
 
           <form onSubmit={handleSubmit}>
-            <div style={{ marginBottom: '1rem' }}>
-              <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: M.textSub, marginBottom: '5px', letterSpacing: '0.03em' }}>Email Address</label>
-              <input type="email" name="email" value={form.email} onChange={handleChange} required placeholder="you@email.com" style={inp()}
-                onFocus={e => e.target.style.borderColor = M.maroon}
-                onBlur={e => e.target.style.borderColor = M.border} />
+            <div className="mb-4">
+              <label className="block text-[12px] font-semibold text-text-sub mb-1.5 tracking-wider">Email Address</label>
+              <input type="email" name="email" value={form.email} onChange={handleChange} required placeholder="you@email.com" className={inpClass} />
             </div>
-            <div style={{ marginBottom: '1.5rem' }}>
-              <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: M.textSub, marginBottom: '5px', letterSpacing: '0.03em' }}>Password</label>
-              <div style={{ position: 'relative' }}>
-                <input type={showPassword ? "text" : "password"} name="password" value={form.password} onChange={handleChange} required placeholder="••••••••" style={{ ...inp(), paddingRight: '44px' }}
-                  onFocus={e => e.target.style.borderColor = M.maroon}
-                  onBlur={e => e.target.style.borderColor = M.border} />
-                <button type="button" onClick={() => setShowPassword(!showPassword)} style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', background: 'transparent', border: 'none', padding: 0, color: M.textMuted, cursor: 'pointer', display: 'flex' }}>
-                  {showPassword ? (
-                    <Eye size={18} />
-                  ) : (
-                    <EyeOff size={18} />
-                  )}
+            <div className="mb-6">
+              <label className="block text-[12px] font-semibold text-text-sub mb-1.5 tracking-wider">Password</label>
+              <div className="relative">
+                <input type={showPassword ? "text" : "password"} name="password" value={form.password} onChange={handleChange} required placeholder="••••••••" className={`${inpClass} pr-11`} />
+                <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 bg-transparent border-none p-0 text-text-muted cursor-pointer flex">
+                  {showPassword ? <Eye size={18} /> : <EyeOff size={18} />}
                 </button>
               </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '12px' }}>
-                <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}>
-                  <input type="checkbox" checked={rememberMe} onChange={e => setRememberMe(e.target.checked)} style={{ accentColor: M.maroon, width: '14px', height: '14px', cursor: 'pointer', margin: 0 }} />
-                  <span style={{ fontSize: '12px', color: M.textSub, fontWeight: 500 }}>Remember me</span>
+              <div className="flex justify-between items-center mt-3">
+                <label className="flex items-center gap-1.5 cursor-pointer">
+                  <input type="checkbox" checked={rememberMe} onChange={e => setRememberMe(e.target.checked)} className="accent-maroon w-3.5 h-3.5 cursor-pointer m-0" />
+                  <span className="text-[12px] text-text-sub font-medium">Remember me</span>
                 </label>
-                <Link to="/forgot-password" style={{ fontSize: '12px', color: M.maroon, textDecoration: 'none', fontWeight: 600 }}>Forgot password?</Link>
+                <Link to="/forgot-password" className="text-[12px] text-maroon no-underline font-semibold">Forgot password?</Link>
               </div>
             </div>
-            <button type="submit" disabled={loading} style={{
-              width: '100%', padding: '13px', borderRadius: '8px', border: 'none',
-              background: loading ? '#B8667A' : M.maroon, color: 'white',
-              fontSize: '14px', fontWeight: 700,
-              cursor: loading ? 'not-allowed' : 'pointer',
-              fontFamily: "'IBM Plex Sans', sans-serif",
-              boxShadow: '0 3px 14px rgba(123,26,42,0.25)',
-            }}>
+            <button type="submit" disabled={loading} className={`w-full py-3 rounded-lg border-none text-[14px] font-bold font-sans shadow-[0_3px_14px_rgba(123,26,42,0.25)] transition-colors duration-150 ${loading ? 'bg-[#B8667A] text-white cursor-not-allowed' : 'bg-maroon text-white cursor-pointer hover:bg-maroon-dark'}`}>
               {loading ? <span className="spinner" /> : 'Sign In →'}
             </button>
           </form>
 
-          <p style={{ fontSize: '13px', color: M.textMuted, marginTop: '1.5rem', textAlign: 'center' }}>
+          <p className="text-[13px] text-text-muted mt-6 text-center">
             Don't have an account?{' '}
-            <Link to="/register" style={{ color: M.maroon, textDecoration: 'none', fontWeight: 600 }}>Register here</Link>
+            <Link to="/register" className="text-maroon no-underline font-semibold">Register here</Link>
           </p>
         </div>
       </div>

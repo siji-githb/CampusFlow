@@ -51,7 +51,7 @@ export default function AppRouter() {
         } />
 
         <Route path="/unauthorized" element={
-          <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: "'IBM Plex Sans', sans-serif" }}>
+          <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: "'Poppins', sans-serif" }}>
             <div style={{ textAlign: 'center' }}>
               <h1 style={{ fontSize: '24px', fontWeight: 700, color: '#7B1A2A', marginBottom: '8px' }}>Access Denied</h1>
               <p style={{ color: '#57534E' }}>You don't have permission to view this page.</p>

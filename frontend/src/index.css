@@ -1,8 +1,41 @@
-@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800&family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400..700;1,400..700&family=Poppins:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400;1,500;1,600&display=swap');
 @import "tailwindcss";
 
+@theme {
+  --color-maroon: #7B1A2A;
+  --color-maroon-dark: #5C1320;
+  --color-maroon-light: #F9F0F1;
+  --color-maroon-mid: rgba(123,26,42,0.08);
+  --color-maroon-border: rgba(123,26,42,0.2);
+  --color-gold: #B8900A;
+  --color-gold-light: #FDF6E3;
+  --color-gold-border: rgba(184,144,10,0.3);
+  --color-off-white: #F9F7F4;
+  --color-surface: #F2EDE8;
+  --color-border: #EAE7E2;
+  --color-text-main: #1C1917;
+  --color-text-sub: #57534E;
+  --color-text-muted: #A8A29E;
+  --color-success: #15803D;
+  --color-success-light: #F0FDF4;
+  --color-success-border: #BBF7D0;
+  --color-danger: #DC2626;
+  --color-danger-light: #FEF2F2;
+  --color-danger-border: #FECACA;
+  --color-blue: #1D4ED8;
+  --color-blue-light: #EFF6FF;
+  --color-blue-border: #BFDBFE;
+  --color-orange: #C2410C;
+  --color-orange-light: #FFF7ED;
+  --color-orange-border: #FED7AA;
+  
+  --font-sans: 'Poppins', sans-serif;
+  --font-serif: 'Lora', serif;
+  --font-mono: 'Poppins', sans-serif;
+}
+
 * {
-  font-family: 'DM Sans', sans-serif;
+  font-family: 'Poppins', sans-serif;
 }
 
 /* --- Global Loading Animations --- */

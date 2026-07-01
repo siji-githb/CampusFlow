@@ -3,34 +3,11 @@ import { useAuth } from '../../context/useAuth'
 import { getAuditLog } from '../../services/adminService'
 import { FileDown, AlertTriangle, Search, Shield } from 'lucide-react'
 
-const M = {
-  maroon:       '#7B1A2A',
-  maroonDark:   '#5C1320',
-  maroonLight:  '#F9F0F1',
-  maroonBorder: 'rgba(123,26,42,0.2)',
-  gold:         '#B8900A',
-  goldLight:    '#FDF6E3',
-  goldBorder:   'rgba(184,144,10,0.3)',
-  white:        '#FFFFFF',
-  offWhite:     '#F9F7F4',
-  surface:      '#F2EDE8',
-  border:       '#EAE7E2',
-  text:         '#1C1917',
-  textSub:      '#57534E',
-  textMuted:    '#A8A29E',
-  green:        '#15803D',
-  greenLight:   '#F0FDF4',
-  greenBorder:  '#BBF7D0',
-  blue:         '#1D4ED8',
-  blueLight:    '#EFF6FF',
-  blueBorder:   '#BFDBFE',
-}
-
 const ACTION_COLORS = {
-  created: { bg: M.greenLight, color: M.green },
-  updated: { bg: M.blueLight, color: M.blue },
-  deleted: { bg: M.maroonLight, color: M.maroon },
-  default: { bg: M.surface, color: M.textSub },
+  created: { bg: 'bg-success-light', color: 'text-success' },
+  updated: { bg: 'bg-info-light', color: 'text-info' },
+  deleted: { bg: 'bg-maroon-light', color: 'text-maroon' },
+  default: { bg: 'bg-surface', color: 'text-text-sub' },
 }
 
 const getActionStyle = (actionStr) => {
@@ -92,40 +69,38 @@ export default function AdminAuditLogPage() {
   return (
     <div>
       {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '32px', flexWrap: 'wrap', gap: '16px' }}>
+      <div className="flex items-start justify-between mb-8 flex-wrap gap-4">
         <div>
-          <h1 style={{ fontFamily: "'Fraunces', serif", fontSize: '32px', fontWeight: 700, color: M.maroon, margin: '0 0 6px' }}>Audit Log</h1>
-          <p style={{ fontSize: '15px', color: M.textSub, margin: 0 }}>System-wide action history for security and compliance tracking.</p>
+          <h1 className="font-serif text-[32px] font-bold text-maroon m-0 mb-1.5">Audit Log</h1>
+          <p className="text-[15px] text-text-sub m-0">System-wide action history for security and compliance tracking.</p>
         </div>
         <button onClick={exportCSV} disabled={filtered.length === 0}
-          style={{ padding: '10px 20px', borderRadius: '10px', border: `1px solid ${M.border}`, background: M.white, color: M.text, fontSize: '14px', fontWeight: 600, cursor: filtered.length ? 'pointer' : 'not-allowed', fontFamily: "'IBM Plex Sans', sans-serif", display: 'flex', alignItems: 'center', gap: '8px', boxShadow: '0 2px 6px rgba(0,0,0,0.04)' }}>
+          className={`py-2.5 px-5 rounded-[10px] border border-border bg-white text-text-main text-[14px] font-semibold font-sans flex items-center gap-2 shadow-sm ${filtered.length ? 'cursor-pointer hover:bg-off-white' : 'cursor-not-allowed opacity-70'}`}>
           <FileDown size={16} /> Export Report
         </button>
       </div>
 
-      {error && <div style={{ padding: '14px 18px', borderRadius: '12px', background: M.redLight, color: M.red, border: `1px solid ${M.redBorder}`, marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '8px' }}><AlertTriangle size={18} /> {error}</div>}
+      {error && <div className="p-[14px_18px] rounded-xl bg-danger-light text-danger border border-danger-border mb-6 flex items-center gap-2"><AlertTriangle size={18} /> {error}</div>}
 
-      <div className="animate-fade-up" style={{ animationDelay: '0.1s', background: M.white, borderRadius: '16px', border: `1px solid ${M.border}`, overflow: 'hidden', boxShadow: '0 2px 12px rgba(0,0,0,0.03)' }}>
+      <div className="animate-fade-up bg-white rounded-2xl border border-border overflow-hidden shadow-[0_2px_12px_rgba(0,0,0,0.03)]" style={{ animationDelay: '0.1s' }}>
         
         {/* Toolbar */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 24px', borderBottom: `1px solid ${M.border}`, background: M.offWhite }}>
-          <div style={{ position: 'relative' }}>
+        <div className="flex items-center justify-between p-[16px_24px] border-b border-border bg-off-white">
+          <div className="relative">
             <input
               value={search} onChange={e => { setSearch(e.target.value); setPage(1) }}
               placeholder="Search actions, users, or tables…"
-              style={{ width: '300px', padding: '10px 14px 10px 38px', borderRadius: '10px', border: `1px solid ${M.border}`, background: M.white, fontSize: '14px', color: M.text, outline: 'none', fontFamily: "'IBM Plex Sans', sans-serif" }}
-              onFocus={e => e.target.style.borderColor = M.maroon}
-              onBlur={e => e.target.style.borderColor = M.border}
+              className="w-[300px] py-2.5 pr-3.5 pl-9.5 rounded-[10px] border border-border bg-white text-[14px] text-text-main outline-none font-sans focus:border-maroon transition-colors"
             />
-            <span style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', display: 'flex', alignItems: 'center', color: M.textMuted }}><Search size={16} /></span>
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 flex items-center text-text-muted"><Search size={16} /></span>
           </div>
-          <span style={{ fontSize: '13px', color: M.textMuted, fontWeight: 600 }}>Total: {filtered.length} entries</span>
+          <span className="text-[13px] text-text-muted font-semibold">Total: {filtered.length} entries</span>
         </div>
 
         {/* Table Headers */}
-        <div style={{ display: 'grid', gridTemplateColumns: '120px 1.3fr 1.5fr 120px 80px 1.8fr 80px', gap: '12px', padding: '14px 28px', background: M.white, borderBottom: `2px solid ${M.surface}` }}>
+        <div className="grid grid-cols-[120px_1.3fr_1.5fr_120px_80px_1.8fr_80px] gap-3 p-[14px_28px] bg-white border-b-2 border-surface">
           {['Date & Time', 'User Name', 'Action', 'Target', 'Status', 'Changes', 'Severity'].map(h => (
-            <span key={h} style={{ fontSize: '10px', fontWeight: 700, color: M.textMuted, textTransform: 'uppercase', letterSpacing: '0.08em' }}>{h}</span>
+            <span key={h} className="text-[10px] font-bold text-text-muted uppercase tracking-[0.08em]">{h}</span>
           ))}
         </div>
 
@@ -133,82 +108,73 @@ export default function AdminAuditLogPage() {
         {loading ? (
           <div>
             {[1,2,3,4,5,6,7].map(i => (
-              <div key={i} style={{
-                display: 'grid', gridTemplateColumns: '120px 1.3fr 1.5fr 120px 80px 1.8fr 80px', gap: '12px',
-                padding: '14px 28px', alignItems: 'center',
-                borderBottom: i < 7 ? `1px solid ${M.border}` : 'none'
-              }}>
-                <div className="animate-shimmer" style={{ height: '16px', width: '80px', borderRadius: '4px' }} />
-                <div className="animate-shimmer" style={{ height: '16px', width: '60%', borderRadius: '4px' }} />
-                <div className="animate-shimmer" style={{ height: '16px', width: '70%', borderRadius: '4px' }} />
-                <div className="animate-shimmer" style={{ height: '16px', width: '50px', borderRadius: '4px' }} />
-                <div className="animate-shimmer" style={{ height: '16px', width: '40px', borderRadius: '4px' }} />
-                <div className="animate-shimmer" style={{ height: '16px', width: '80%', borderRadius: '4px' }} />
-                <div className="animate-shimmer" style={{ height: '16px', width: '40px', borderRadius: '4px' }} />
+              <div key={i} className={`grid grid-cols-[120px_1.3fr_1.5fr_120px_80px_1.8fr_80px] gap-3 p-[14px_28px] items-center ${i < 7 ? 'border-b border-border' : 'border-none'}`}>
+                <div className="animate-pulse h-4 w-[80px] rounded bg-border" />
+                <div className="animate-pulse h-4 w-[60%] rounded bg-border" />
+                <div className="animate-pulse h-4 w-[70%] rounded bg-border" />
+                <div className="animate-pulse h-4 w-[50px] rounded bg-border" />
+                <div className="animate-pulse h-4 w-[40px] rounded bg-border" />
+                <div className="animate-pulse h-4 w-[80%] rounded bg-border" />
+                <div className="animate-pulse h-4 w-[40px] rounded bg-border" />
               </div>
             ))}
           </div>
         ) : paginated.length === 0 ? (
-          <div style={{ padding: '80px', textAlign: 'center' }}>
-            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '16px', color: M.textMuted }}><Shield size={48} /></div>
-            <p style={{ fontSize: '16px', fontWeight: 600, color: M.text, margin: '0 0 6px' }}>No audit entries found</p>
-            <p style={{ fontSize: '14px', color: M.textMuted, margin: 0 }}>{search ? 'Try adjusting your search criteria.' : 'System actions will appear here.'}</p>
+          <div className="p-20 text-center">
+            <div className="flex justify-center mb-4 text-text-muted"><Shield size={48} /></div>
+            <p className="text-[16px] font-semibold text-text-main m-0 mb-1.5">No audit entries found</p>
+            <p className="text-[14px] text-text-muted m-0">{search ? 'Try adjusting your search criteria.' : 'System actions will appear here.'}</p>
           </div>
         ) : (
           <div>
             {paginated.map((log, i) => {
               const style = getActionStyle(log.action)
-              const statusColor = log.status === 'Success' ? M.green : M.red
+              const statusColor = log.status === 'Success' ? 'text-success' : 'text-danger'
+              const statusBg = log.status === 'Success' ? 'bg-success' : 'bg-danger'
+              
               const sevColors = {
-                Info: { bg: M.surface, color: M.textSub },
-                Warning: { bg: M.goldLight, color: M.gold },
-                Critical: { bg: M.maroonLight, color: M.maroon }
+                Info: { bg: 'bg-surface', color: 'text-text-sub' },
+                Warning: { bg: 'bg-gold-light', color: 'text-gold' },
+                Critical: { bg: 'bg-maroon-light', color: 'text-maroon' }
               }
               const sev = sevColors[log.severity] || sevColors.Info
 
               return (
-                <div key={log.id} style={{
-                  display: 'grid', gridTemplateColumns: '120px 1.3fr 1.5fr 120px 80px 1.8fr 80px', alignItems: 'center', gap: '12px',
-                  padding: '16px 28px', borderBottom: i < paginated.length - 1 ? `1px solid ${M.border}` : 'none',
-                  background: i % 2 === 0 ? M.white : '#FDFCFB', transition: 'background 0.15s'
-                }}
-                  onMouseEnter={e => e.currentTarget.style.background = M.offWhite}
-                  onMouseLeave={e => e.currentTarget.style.background = i % 2 === 0 ? M.white : '#FDFCFB'}
-                >
-                  <span style={{ fontSize: '12px', color: M.textSub, fontFamily: "'IBM Plex Sans', monospace" }}>
+                <div key={log.id} className={`grid grid-cols-[120px_1.3fr_1.5fr_120px_80px_1.8fr_80px] items-center gap-3 p-[16px_28px] transition-colors duration-150 hover:bg-off-white ${i < paginated.length - 1 ? 'border-b border-border' : 'border-none'} ${i % 2 === 0 ? 'bg-white' : 'bg-[#FDFCFB]'}`}>
+                  <span className="text-[12px] text-text-sub font-mono">
                     {new Date(log.created_at).toLocaleString('en-PH', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
                   </span>
                   
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0 }}>
-                    <div style={{ width: '24px', height: '24px', borderRadius: '50%', background: M.maroonLight, color: M.maroon, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px', fontWeight: 700, flexShrink: 0, border: `1px solid ${M.maroonBorder}` }}>
+                  <div className="flex items-center gap-2 min-w-0">
+                    <div className="w-6 h-6 rounded-full bg-maroon-light text-maroon flex items-center justify-center text-[10px] font-bold shrink-0 border border-maroon-border">
                       {log.users ? log.users.first_name[0].toUpperCase() : 'S'}
                     </div>
-                    <span style={{ fontSize: '13px', fontWeight: 600, color: M.text, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    <span className="text-[13px] font-semibold text-text-main whitespace-nowrap overflow-hidden text-ellipsis">
                       {log.users ? `${log.users.first_name} ${log.users.last_name}` : 'System Auto'}
                     </span>
                   </div>
 
-                  <div style={{ display: 'flex', alignItems: 'center', minWidth: 0 }}>
-                    <span style={{ fontSize: '11px', fontWeight: 700, padding: '3px 8px', borderRadius: '6px', background: style.bg, color: style.color, textTransform: 'uppercase', letterSpacing: '0.04em', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                  <div className="flex items-center min-w-0">
+                    <span className={`text-[11px] font-bold py-[3px] px-2 rounded-md uppercase tracking-[0.04em] whitespace-nowrap overflow-hidden text-ellipsis ${style.bg} ${style.color}`}>
                       {log.action}
                     </span>
                   </div>
 
-                  <div style={{ minWidth: 0 }}>
-                    <div style={{ fontSize: '12px', fontWeight: 600, color: M.textSub, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{log.table_name || 'System / Config'}</div>
-                    <div style={{ fontSize: '11px', color: M.textMuted, fontFamily: 'monospace' }}>{log.record_id || '—'}</div>
+                  <div className="min-w-0">
+                    <div className="text-[12px] font-semibold text-text-sub whitespace-nowrap overflow-hidden text-ellipsis">{log.table_name || 'System / Config'}</div>
+                    <div className="text-[11px] text-text-muted font-mono">{log.record_id || '—'}</div>
                   </div>
 
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-                    <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: statusColor }}></div>
-                    <span style={{ fontSize: '12px', fontWeight: 600, color: statusColor }}>{log.status || 'Success'}</span>
+                  <div className="flex items-center gap-1.5">
+                    <div className={`w-1.5 h-1.5 rounded-full ${statusBg}`}></div>
+                    <span className={`text-[12px] font-semibold ${statusColor}`}>{log.status || 'Success'}</span>
                   </div>
 
-                  <div style={{ fontSize: '12px', color: M.text, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={log.changes}>
+                  <div className="text-[12px] text-text-main whitespace-nowrap overflow-hidden text-ellipsis" title={log.changes}>
                     {log.changes || '—'}
                   </div>
 
-                  <span style={{ fontSize: '11px', fontWeight: 700, padding: '3px 8px', borderRadius: '6px', background: sev.bg, color: sev.color, textAlign: 'center' }}>
+                  <span className={`text-[11px] font-bold py-[3px] px-2 rounded-md text-center ${sev.bg} ${sev.color}`}>
                     {log.severity || 'Info'}
                   </span>
                 </div>
@@ -219,17 +185,17 @@ export default function AdminAuditLogPage() {
 
         {/* Pagination Footer */}
         {filtered.length > 0 && (
-          <div style={{ padding: '14px 24px', borderTop: `1px solid ${M.border}`, background: M.offWhite, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <span style={{ fontSize: '13px', color: M.textMuted }}>
+          <div className="p-[14px_24px] border-t border-border bg-off-white flex items-center justify-between">
+            <span className="text-[13px] text-text-muted">
               Showing {Math.min((page - 1) * PER_PAGE + 1, filtered.length)}–{Math.min(page * PER_PAGE, filtered.length)} of {filtered.length} entries
             </span>
-            <div style={{ display: 'flex', gap: '6px' }}>
+            <div className="flex gap-1.5">
               <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}
-                style={{ padding: '6px 14px', borderRadius: '8px', border: `1px solid ${M.border}`, background: M.white, fontSize: '13px', fontWeight: 600, cursor: page === 1 ? 'not-allowed' : 'pointer', color: page === 1 ? M.textMuted : M.text, fontFamily: "'IBM Plex Sans', sans-serif" }}>
+                className={`py-1.5 px-3.5 rounded-lg border border-border bg-white text-[13px] font-semibold font-sans ${page === 1 ? 'cursor-not-allowed text-text-muted' : 'cursor-pointer text-text-main hover:bg-surface'}`}>
                 Previous
               </button>
               <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages}
-                style={{ padding: '6px 14px', borderRadius: '8px', border: `1px solid ${M.border}`, background: M.white, fontSize: '13px', fontWeight: 600, cursor: page === totalPages ? 'not-allowed' : 'pointer', color: page === totalPages ? M.textMuted : M.text, fontFamily: "'IBM Plex Sans', sans-serif" }}>
+                className={`py-1.5 px-3.5 rounded-lg border border-border bg-white text-[13px] font-semibold font-sans ${page === totalPages ? 'cursor-not-allowed text-text-muted' : 'cursor-pointer text-text-main hover:bg-surface'}`}>
                 Next
               </button>
             </div>

@@ -3,40 +3,12 @@ import { useAuth } from '../../context/useAuth'
 import { getTodaysQueue, confirmStep, getLiveQueueStats } from '../../services/queueService'
 import { RefreshCw, AlertTriangle, Inbox } from 'lucide-react'
 
-// ── Design Tokens (shared with AdminDashboard) ─────────────────────────────────
-const M = {
-  maroon:       '#7B1A2A',
-  maroonDark:   '#5C1320',
-  maroonLight:  '#F9F0F1',
-  maroonMid:    'rgba(123,26,42,0.08)',
-  maroonBorder: 'rgba(123,26,42,0.2)',
-  gold:         '#B8900A',
-  goldLight:    '#FDF6E3',
-  goldBorder:   'rgba(184,144,10,0.3)',
-  white:        '#FFFFFF',
-  offWhite:     '#F9F7F4',
-  surface:      '#F2EDE8',
-  border:       '#EAE7E2',
-  text:         '#1C1917',
-  textSub:      '#57534E',
-  textMuted:    '#A8A29E',
-  green:        '#15803D',
-  greenLight:   '#F0FDF4',
-  greenBorder:  '#BBF7D0',
-  blue:         '#1D4ED8',
-  blueLight:    '#EFF6FF',
-  blueBorder:   '#BFDBFE',
-  red:          '#DC2626',
-  redLight:     '#FEF2F2',
-  redBorder:    '#FECACA',
-}
-
 // ── Priority config ────────────────────────────────────────────────────────────
 const PRIORITY_CFG = {
-  high:    { label: 'HIGH',     bg: M.redLight,   color: M.red,    border: M.redBorder  },
-  normal:  { label: 'NORMAL',   bg: M.goldLight,  color: M.gold,   border: M.goldBorder },
-  low:     { label: 'LOW',      bg: M.blueLight,  color: M.blue,   border: M.blueBorder },
-  resolved:{ label: 'RESOLVED', bg: M.greenLight, color: M.green,  border: M.greenBorder},
+  high:    { label: 'HIGH',     bg: 'bg-danger-light',   color: 'text-danger',    border: 'border-danger-border'  },
+  normal:  { label: 'NORMAL',   bg: 'bg-gold-light',  color: 'text-gold',   border: 'border-gold-border' },
+  low:     { label: 'LOW',      bg: 'bg-info-light',  color: 'text-info',   border: 'border-info-border' },
+  resolved:{ label: 'RESOLVED', bg: 'bg-success-light', color: 'text-success',  border: 'border-success-border'},
 }
 const getPriority = (ticket) => {
   const pc = ticket.appointments?.priority_class
@@ -45,13 +17,11 @@ const getPriority = (ticket) => {
   return 'normal'
 }
 
-
-
 // ── Priority Badge ─────────────────────────────────────────────────────────────
 const PriorityBadge = ({ level }) => {
   const cfg = PRIORITY_CFG[level] || PRIORITY_CFG.normal
   return (
-    <span style={{ fontSize: '10px', fontWeight: 700, padding: '3px 10px', borderRadius: '100px', background: cfg.bg, color: cfg.color, border: `1px solid ${cfg.border}`, letterSpacing: '0.05em' }}>
+    <span className={`text-[10px] font-bold py-[3px] px-2.5 rounded-full border ${cfg.bg} ${cfg.color} ${cfg.border} tracking-wider`}>
       {cfg.label}
     </span>
   )
@@ -108,8 +78,6 @@ export default function AdminLiveQueuePage() {
   const waiting   = queue.filter(q => q.ticket.status === 'pending')
   const completed = queue.filter(q => q.ticket.status === 'completed')
 
-
-
   // "Up Next" — pending tickets
   const upNext = waiting.slice(0, showAll ? 50 : 5)
 
@@ -122,108 +90,95 @@ export default function AdminLiveQueuePage() {
   return (
     <div>
       {/* ── Page Header ── */}
-      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '28px', flexWrap: 'wrap', gap: '12px' }}>
+      <div className="flex items-start justify-between mb-7 flex-wrap gap-3">
         <div>
-          <h1 style={{ fontFamily: "'Fraunces', serif", fontSize: '30px', fontWeight: 700, color: M.maroon, margin: '0 0 5px' }}>Live Operations Dashboard</h1>
-          <p style={{ fontSize: '14px', color: M.textMuted, margin: 0 }}>Real-time monitoring of registrar queues and service windows.</p>
+          <h1 className="font-serif text-[30px] font-bold text-maroon m-0 mb-1.5">Live Operations Dashboard</h1>
+          <p className="text-[14px] text-text-muted m-0">Real-time monitoring of registrar queues and service windows.</p>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '7px', padding: '8px 14px', borderRadius: '100px', background: M.greenLight, border: `1px solid ${M.greenBorder}` }}>
-            <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: M.green, boxShadow: `0 0 6px ${M.green}` }} />
-            <span style={{ fontSize: '12px', fontWeight: 600, color: M.green }}>System Online & Active</span>
+        <div className="flex items-center gap-2.5">
+          <div className="flex items-center gap-2 py-2 px-3.5 rounded-full bg-success-light border border-success-border">
+            <div className="w-2 h-2 rounded-full bg-success shadow-[0_0_6px_#15803D]" />
+            <span className="text-[12px] font-semibold text-success">System Online & Active</span>
           </div>
-          <button onClick={fetchQueue} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: M.text }} title="Refresh">
+          <button onClick={fetchQueue} className="bg-transparent border-none cursor-pointer p-1 flex items-center justify-center text-text-main" title="Refresh">
             <RefreshCw size={18} />
           </button>
-          <div style={{ background: M.maroon, color: M.white, padding: '8px 16px', borderRadius: '9px', fontFamily: "'Fraunces', serif", fontSize: '15px', fontWeight: 700 }}>
+          <div className="bg-maroon text-white py-2 px-4 rounded-[9px] font-serif text-[15px] font-bold">
             {currentTime}
           </div>
         </div>
       </div>
 
       {error && (
-        <div style={{ padding: '12px 16px', borderRadius: '10px', background: M.redLight, color: M.red, border: `1px solid ${M.redBorder}`, marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+        <div className="p-[12px_16px] rounded-[10px] bg-danger-light text-danger border border-danger-border mb-6 flex items-center gap-1.5">
           <AlertTriangle size={15} /> {error}
         </div>
       )}
 
       {/* ── Stat Cards ── */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px', marginBottom: '28px' }}>
+      <div className="grid grid-cols-3 gap-4 mb-7">
         {/* Total in Queue */}
-        <div className="animate-fade-up" style={{ animationDelay: '0.1s', background: M.white, borderRadius: '16px', padding: '20px 22px', border: `1px solid ${M.border}`, boxShadow: '0 1px 4px rgba(0,0,0,0.04)' }}>
-          <div style={{ fontSize: '11px', fontWeight: 600, color: M.textMuted, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '10px' }}>Total in Queue</div>
-          <div style={{ fontFamily: "'Fraunces', serif", fontSize: '36px', fontWeight: 800, color: M.maroon, lineHeight: 1, marginBottom: '6px', minHeight: '36px' }}>
-            {loading ? <div className="animate-shimmer" style={{ width: '60px', height: '36px', background: M.border, borderRadius: '8px' }} /> : waiting.length}
+        <div className="animate-fade-up bg-white rounded-2xl p-[20px_22px] border border-border shadow-sm" style={{ animationDelay: '0.1s' }}>
+          <div className="text-[11px] font-semibold text-text-muted uppercase tracking-[0.06em] mb-2.5">Total in Queue</div>
+          <div className="font-serif text-[36px] font-bold text-maroon leading-none mb-1.5 min-h-[36px]">
+            {loading ? <div className="animate-pulse w-[60px] h-[36px] bg-border rounded-lg" /> : waiting.length}
           </div>
         </div>
 
         {/* Avg Wait Time */}
-        <div className="animate-fade-up" style={{ animationDelay: '0.2s', background: M.white, borderRadius: '16px', padding: '20px 22px', border: `1px solid ${M.border}`, boxShadow: '0 1px 4px rgba(0,0,0,0.04)' }}>
-          <div style={{ fontSize: '11px', fontWeight: 600, color: M.textMuted, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '10px' }}>Avg. Wait Time</div>
-          <div style={{ fontFamily: "'Fraunces', serif", fontSize: '36px', fontWeight: 800, color: M.maroon, lineHeight: 1, marginBottom: '6px', minHeight: '36px' }}>
-            {loading ? <div className="animate-shimmer" style={{ width: '80px', height: '36px', background: M.border, borderRadius: '8px' }} /> : <>{avgWait}m&nbsp;<span style={{ fontSize: '22px' }}>{queueStats?.avg_wait_seconds || 0}s</span></>}
+        <div className="animate-fade-up bg-white rounded-2xl p-[20px_22px] border border-border shadow-sm" style={{ animationDelay: '0.2s' }}>
+          <div className="text-[11px] font-semibold text-text-muted uppercase tracking-[0.06em] mb-2.5">Avg. Wait Time</div>
+          <div className="font-serif text-[36px] font-bold text-maroon leading-none mb-1.5 min-h-[36px]">
+            {loading ? <div className="animate-pulse w-[80px] h-[36px] bg-border rounded-lg" /> : <>{avgWait}m&nbsp;<span className="text-[22px]">{queueStats?.avg_wait_seconds || 0}s</span></>}
           </div>
         </div>
 
         {/* Peak Forecast */}
-        <div className="animate-fade-up" style={{ animationDelay: '0.3s', background: M.maroon, borderRadius: '16px', padding: '20px 22px', boxShadow: '0 4px 16px rgba(123,26,42,0.25)', position: 'relative', overflow: 'hidden' }}>
-          <div style={{ position: 'absolute', right: -16, top: -16, width: '80px', height: '80px', borderRadius: '50%', background: 'rgba(255,255,255,0.08)' }} />
-          <div style={{ fontSize: '11px', fontWeight: 600, color: 'rgba(255,255,255,0.65)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '10px' }}>Peak Forecast</div>
-          <div style={{ fontFamily: "'Fraunces', serif", fontSize: '28px', fontWeight: 800, color: M.white, lineHeight: 1, marginBottom: '6px', minHeight: '28px' }}>
-            {loading ? <div className="animate-shimmer" style={{ width: '90px', height: '28px', background: 'rgba(255,255,255,0.2)', borderRadius: '8px' }} /> : peakHour}
+        <div className="animate-fade-up bg-maroon rounded-2xl p-[20px_22px] shadow-[0_4px_16px_rgba(123,26,42,0.25)] relative overflow-hidden" style={{ animationDelay: '0.3s' }}>
+          <div className="absolute -right-4 -top-4 w-20 h-20 rounded-full bg-white/10" />
+          <div className="text-[11px] font-semibold text-white/65 uppercase tracking-[0.06em] mb-2.5 relative z-10">Peak Forecast</div>
+          <div className="font-serif text-[28px] font-bold text-white leading-none mb-1.5 min-h-[28px] relative z-10">
+            {loading ? <div className="animate-pulse w-[90px] h-[28px] bg-white/20 rounded-lg" /> : peakHour}
           </div>
         </div>
       </div>
 
       {/* ── Up Next (Live Queue) ── */}
       <div className="animate-fade-up" style={{ animationDelay: '0.4s' }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
-          <h2 style={{ fontFamily: "'Fraunces', serif", fontSize: '18px', fontWeight: 700, color: M.text, margin: 0 }}>
-            Up Next <span style={{ color: M.textMuted, fontWeight: 400, fontSize: '16px' }}>(Live Queue)</span>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="font-serif text-[18px] font-bold text-text-main m-0">
+            Up Next <span className="text-text-muted font-normal text-[16px]">(Live Queue)</span>
           </h2>
-          <button onClick={() => setShowAll(!showAll)} style={{
-            background: 'none', border: 'none', cursor: 'pointer',
-            fontSize: '13px', fontWeight: 600, color: M.maroon,
-            fontFamily: "'IBM Plex Sans', sans-serif", display: 'flex', alignItems: 'center', gap: '4px',
-          }}>
+          <button onClick={() => setShowAll(!showAll)} className="bg-transparent border-none cursor-pointer text-[13px] font-semibold text-maroon font-sans flex items-center gap-1">
             {showAll ? 'Show Less' : 'View Full Queue'} →
           </button>
         </div>
 
         {/* Table header */}
-        <div style={{
-          display: 'grid', gridTemplateColumns: '110px 1.5fr 1.5fr 90px 110px 140px',
-          padding: '11px 20px', borderRadius: '12px 12px 0 0',
-          background: M.surface, border: `1px solid ${M.border}`, borderBottom: 'none',
-        }}>
+        <div className="grid grid-cols-[110px_1.5fr_1.5fr_90px_110px_140px] py-3 px-5 rounded-t-xl bg-surface border border-border border-b-0">
           {['Queue No.', 'Student Name', 'Transaction', 'Wait Time', 'Priority', 'Action'].map(h => (
-            <span key={h} style={{ fontSize: '10px', fontWeight: 700, color: M.textMuted, textTransform: 'uppercase', letterSpacing: '0.06em' }}>{h}</span>
+            <span key={h} className="text-[10px] font-bold text-text-muted uppercase tracking-[0.06em]">{h}</span>
           ))}
         </div>
 
         {/* Table rows */}
-        <div style={{ border: `1px solid ${M.border}`, borderRadius: '0 0 16px 16px', overflow: 'hidden', background: M.white }}>
+        <div className="border border-border rounded-b-2xl overflow-hidden bg-white">
           {loading ? (
             [1, 2, 3].map((n, idx) => (
-              <div key={n} style={{
-                display: 'grid', gridTemplateColumns: '110px 1.5fr 1.5fr 90px 110px 140px',
-                padding: '16px 20px', alignItems: 'center',
-                borderBottom: idx === 2 ? 'none' : `1px solid ${M.border}`,
-                background: idx % 2 === 0 ? M.white : '#FDFCFB',
-              }}>
-                <div className="animate-shimmer" style={{ height: '20px', width: '50px', borderRadius: '4px' }} />
-                <div className="animate-shimmer" style={{ height: '18px', width: '60%', borderRadius: '4px' }} />
-                <div className="animate-shimmer" style={{ height: '16px', width: '80%', borderRadius: '4px' }} />
-                <div className="animate-shimmer" style={{ height: '16px', width: '30px', borderRadius: '4px' }} />
-                <div className="animate-shimmer" style={{ height: '24px', width: '70px', borderRadius: '100px' }} />
-                <div className="animate-shimmer" style={{ height: '30px', width: '80px', borderRadius: '8px' }} />
+              <div key={n} className={`grid grid-cols-[110px_1.5fr_1.5fr_90px_110px_140px] p-[16px_20px] items-center ${idx === 2 ? 'border-none' : 'border-b border-border'} ${idx % 2 === 0 ? 'bg-white' : 'bg-[#FDFCFB]'}`}>
+                <div className="animate-pulse h-5 w-[50px] rounded bg-border" />
+                <div className="animate-pulse h-[18px] w-[60%] rounded bg-border" />
+                <div className="animate-pulse h-4 w-[80%] rounded bg-border" />
+                <div className="animate-pulse h-4 w-[30px] rounded bg-border" />
+                <div className="animate-pulse h-6 w-[70px] rounded-full bg-border" />
+                <div className="animate-pulse h-[30px] w-[80px] rounded-lg bg-border" />
               </div>
             ))
           ) : upNext.length === 0 ? (
-            <div style={{ padding: '40px', textAlign: 'center' }}>
-              <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '10px', color: M.textMuted }}><Inbox size={40} /></div>
-              <p style={{ fontSize: '14px', fontWeight: 600, color: M.text, margin: '0 0 4px' }}>Queue is clear</p>
-              <p style={{ fontSize: '13px', color: M.textMuted, margin: 0 }}>No students are currently waiting.</p>
+            <div className="p-10 text-center">
+              <div className="flex justify-center mb-2.5 text-text-muted"><Inbox size={40} /></div>
+              <p className="text-[14px] font-semibold text-text-main m-0 mb-1">Queue is clear</p>
+              <p className="text-[13px] text-text-muted m-0">No students are currently waiting.</p>
             </div>
           ) : (
             upNext.map(({ ticket }, idx) => {
@@ -235,26 +190,16 @@ export default function AdminLiveQueuePage() {
               const isLast   = idx === upNext.length - 1
 
               return (
-                <div key={ticket.id} style={{
-                  display: 'grid', gridTemplateColumns: '110px 1.5fr 1.5fr 90px 110px 140px',
-                  padding: '16px 20px', alignItems: 'center',
-                  borderBottom: isLast ? 'none' : `1px solid ${M.border}`,
-                  background: idx % 2 === 0 ? M.white : '#FDFCFB',
-                  transition: 'background 0.12s',
-                }}>
-                  <span style={{ fontFamily: "'Fraunces', serif", fontSize: '16px', fontWeight: 700, color: M.maroon }}>{ticket.queue_number}</span>
-                  <span style={{ fontSize: '14px', fontWeight: 600, color: M.text }}>{name}</span>
-                  <span style={{ fontSize: '13px', color: M.textSub }}>{txName}</span>
-                  <span style={{ fontSize: '13px', fontWeight: 600, color: M.textSub }}>{waitMin}</span>
-                  <PriorityBadge level={priority} />
+                <div key={ticket.id} className={`grid grid-cols-[110px_1.5fr_1.5fr_90px_110px_140px] p-[16px_20px] items-center transition-colors duration-150 ${isLast ? 'border-none' : 'border-b border-border'} ${idx % 2 === 0 ? 'bg-white' : 'bg-[#FDFCFB]'}`}>
+                  <span className="font-serif text-[16px] font-bold text-maroon">{ticket.queue_number}</span>
+                  <span className="text-[14px] font-semibold text-text-main">{name}</span>
+                  <span className="text-[13px] text-text-sub">{txName}</span>
+                  <span className="text-[13px] font-semibold text-text-sub">{waitMin}</span>
+                  <div className="flex items-center"><PriorityBadge level={priority} /></div>
                   <button
                     onClick={() => handleConfirm(ticket.id, ticket.current_step)}
-                    style={{
-                      padding: '7px 14px', borderRadius: '8px',
-                      border: `1px solid ${M.maroonBorder}`, background: M.maroonLight,
-                      color: M.maroon, fontSize: '12px', fontWeight: 700, cursor: 'pointer',
-                      fontFamily: "'IBM Plex Sans', sans-serif", whiteSpace: 'nowrap',
-                    }}>
+                    className="py-2 px-3.5 rounded-lg border border-maroon-border bg-maroon-light text-maroon text-[12px] font-bold cursor-pointer font-sans whitespace-nowrap hover:bg-maroon hover:text-white transition-colors"
+                  >
                     Call Now
                   </button>
                 </div>
@@ -265,19 +210,19 @@ export default function AdminLiveQueuePage() {
 
         {/* Completed section */}
         {completed.length > 0 && (
-          <div style={{ marginTop: '24px' }}>
-            <p style={{ fontSize: '11px', fontWeight: 700, color: M.textMuted, textTransform: 'uppercase', letterSpacing: '0.06em', margin: '0 0 12px' }}>
+          <div className="mt-6">
+            <p className="text-[11px] font-bold text-text-muted uppercase tracking-[0.06em] m-0 mb-3">
               Completed Today — {completed.length} tickets
             </p>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+            <div className="flex flex-col gap-1.5">
               {completed.map(({ ticket }) => (
-                <div key={ticket.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 20px', borderRadius: '10px', background: M.white, border: `1px solid ${M.border}` }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-                    <span style={{ fontFamily: "'Fraunces', serif", fontWeight: 700, color: M.textMuted, fontSize: '15px' }}>{ticket.queue_number}</span>
-                    <span style={{ fontSize: '13px', color: M.textSub }}>{ticket.users?.last_name}, {ticket.users?.first_name}</span>
-                    <span style={{ fontSize: '12px', color: M.textMuted }}>{ticket.appointments?.transaction_types?.name}</span>
+                <div key={ticket.id} className="flex items-center justify-between p-[12px_20px] rounded-[10px] bg-white border border-border">
+                  <div className="flex items-center gap-3.5">
+                    <span className="font-serif font-bold text-text-muted text-[15px]">{ticket.queue_number}</span>
+                    <span className="text-[13px] text-text-sub">{ticket.users?.last_name}, {ticket.users?.first_name}</span>
+                    <span className="text-[12px] text-text-muted">{ticket.appointments?.transaction_types?.name}</span>
                   </div>
-                  <span style={{ fontSize: '11px', fontWeight: 700, padding: '3px 10px', borderRadius: '100px', background: M.greenLight, color: M.green, border: `1px solid ${M.greenBorder}` }}>Completed</span>
+                  <span className="text-[11px] font-bold py-[3px] px-2.5 rounded-full bg-success-light text-success border border-success-border">Completed</span>
                 </div>
               ))}
             </div>

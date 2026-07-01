@@ -2,14 +2,6 @@ import { useState, useEffect, useRef } from 'react'
 import { getStudentRecords, uploadStudentRecords, addStudentRecord, deleteStudentRecord, editStudentRecord } from '../../services/adminService'
 import { FileSpreadsheet, Edit, Trash2 } from 'lucide-react'
 
-const M = {
-  maroon: '#7B1A2A', maroonDark: '#5C1320', maroonLight: '#F9F0F1', maroonBorder: 'rgba(123,26,42,0.15)',
-  gold: '#B8900A', goldLight: '#FDF6E3', goldBorder: 'rgba(184,144,10,0.25)',
-  white: '#FFFFFF', offWhite: '#F9F7F4', border: '#EAE7E2', text: '#1C1917', textSub: '#57534E', textMuted: '#A8A29E',
-  green: '#15803D', greenLight: '#F0FDF4',
-  red: '#DC2626', redLight: '#FEF2F2',
-}
-
 export default function StudentRecordsPage() {
   const [records, setRecords] = useState([])
   const [loading, setLoading] = useState(true)
@@ -109,59 +101,26 @@ export default function StudentRecordsPage() {
     }
   }
 
-  const inp = {
-    padding: '10px 14px', borderRadius: '8px', border: `1px solid ${M.border}`,
-    fontSize: '13px', outline: 'none', background: M.white, color: M.text, width: '100%',
-    transition: 'border-color 0.2s',
-  }
-
   return (
-    <div style={{ padding: '24px', maxWidth: '1000px', margin: '0 auto', fontFamily: "'IBM Plex Sans', sans-serif" }}>
-
-      <style>{`
-          @keyframes slideUp {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-          }
-          @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
-          }
-          .table-row {
-            transition: background-color 0.2s, transform 0.2s;
-            animation: slideUp 0.4s ease-out forwards;
-            opacity: 0;
-          }
-          .table-row:hover {
-            background-color: ${M.maroonLight} !important;
-          }
-          .action-btn {
-            background: none; border: none; cursor: pointer; padding: 4px 8px; border-radius: 4px;
-            font-size: 12px; font-weight: 600; transition: all 0.2s;
-          }
-          .action-btn.edit { color: ${M.blue}; }
-          .action-btn.edit:hover { background: ${M.blueLight}; }
-          .action-btn.delete { color: ${M.red}; }
-          .action-btn.delete:hover { background: ${M.redLight}; }
-        `}</style>
-
+    <div className="p-6 max-w-[1000px] mx-auto font-sans">
+      
       {/* Edit Modal */}
       {editingRecord && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center', animation: 'fadeIn 0.2s ease-out' }}>
-          <div style={{ background: M.white, padding: '24px', borderRadius: '16px', width: '100%', maxWidth: '400px', boxShadow: '0 8px 32px rgba(0,0,0,0.1)', animation: 'slideUp 0.3s ease-out' }}>
-            <h3 style={{ fontSize: '18px', fontWeight: 700, color: M.maroon, margin: '0 0 16px', fontFamily: "'Fraunces', serif" }}>Edit Record: {editingRecord}</h3>
-            <form onSubmit={handleEditSubmit} style={{ display: 'grid', gap: '12px' }}>
+        <div className="fixed inset-0 bg-black/50 z-[100] flex items-center justify-center animate-fade-up">
+          <div className="bg-white p-6 rounded-2xl w-full max-w-[400px] shadow-[0_8px_32px_rgba(0,0,0,0.1)] animate-fade-up">
+            <h3 className="text-[18px] font-bold text-maroon m-0 mb-4 font-serif">Edit Record: {editingRecord}</h3>
+            <form onSubmit={handleEditSubmit} className="grid gap-3">
               <div>
-                <label style={{ fontSize: '11px', fontWeight: 600, color: M.textSub, marginBottom: '4px', display: 'block' }}>First Name</label>
-                <input type="text" required value={editForm.first_name} onChange={e => setEditForm({ ...editForm, first_name: e.target.value })} style={inp} />
+                <label className="text-[11px] font-semibold text-text-sub mb-1 block">First Name</label>
+                <input type="text" required value={editForm.first_name} onChange={e => setEditForm({ ...editForm, first_name: e.target.value })} className="px-3.5 py-2.5 rounded-lg border border-border text-[13px] outline-none bg-white text-text-main w-full transition-colors focus:border-maroon" />
               </div>
               <div>
-                <label style={{ fontSize: '11px', fontWeight: 600, color: M.textSub, marginBottom: '4px', display: 'block' }}>Last Name</label>
-                <input type="text" required value={editForm.last_name} onChange={e => setEditForm({ ...editForm, last_name: e.target.value })} style={inp} />
+                <label className="text-[11px] font-semibold text-text-sub mb-1 block">Last Name</label>
+                <input type="text" required value={editForm.last_name} onChange={e => setEditForm({ ...editForm, last_name: e.target.value })} className="px-3.5 py-2.5 rounded-lg border border-border text-[13px] outline-none bg-white text-text-main w-full transition-colors focus:border-maroon" />
               </div>
               <div>
-                <label style={{ fontSize: '11px', fontWeight: 600, color: M.textSub, marginBottom: '4px', display: 'block' }}>Course</label>
-                <select required value={editForm.course} onChange={e => setEditForm({ ...editForm, course: e.target.value })} style={{ ...inp, appearance: 'none' }}>
+                <label className="text-[11px] font-semibold text-text-sub mb-1 block">Course</label>
+                <select required value={editForm.course} onChange={e => setEditForm({ ...editForm, course: e.target.value })} className="px-3.5 py-2.5 rounded-lg border border-border text-[13px] outline-none bg-white text-text-main w-full transition-colors appearance-none focus:border-maroon">
                   <option value="" disabled>Select Course...</option>
                   <option value="Bachelor of Science in Information Technology">Bachelor of Science in Information Technology</option>
                   <option value="Bachelor of Science in Business Administration">Bachelor of Science in Business Administration</option>
@@ -172,47 +131,47 @@ export default function StudentRecordsPage() {
                   <option value="Bachelor of Science in Tourism Management">Bachelor of Science in Tourism Management</option>
                 </select>
               </div>
-              <div style={{ display: 'flex', gap: '8px', marginTop: '12px' }}>
-                <button type="button" onClick={() => setEditingRecord(null)} style={{ flex: 1, padding: '10px', borderRadius: '8px', border: `1px solid ${M.border}`, background: M.offWhite, color: M.textSub, fontWeight: 600, cursor: 'pointer' }}>Cancel</button>
-                <button type="submit" style={{ flex: 1, padding: '10px', borderRadius: '8px', border: 'none', background: M.maroon, color: M.white, fontWeight: 600, cursor: 'pointer' }}>Save Changes</button>
+              <div className="flex gap-2 mt-3">
+                <button type="button" onClick={() => setEditingRecord(null)} className="flex-1 p-2.5 rounded-lg border border-border bg-off-white text-text-sub font-semibold cursor-pointer hover:bg-border transition-colors">Cancel</button>
+                <button type="submit" className="flex-1 p-2.5 rounded-lg border-none bg-maroon text-white font-semibold cursor-pointer hover:bg-maroon-dark transition-colors">Save Changes</button>
               </div>
             </form>
           </div>
         </div>
       )}
 
-      {error && <div style={{ padding: '12px 16px', background: M.maroonLight, color: M.maroon, borderRadius: '8px', marginBottom: '16px', fontSize: '14px', animation: 'fadeIn 0.3s' }}>{error}</div>}
-      {success && <div style={{ padding: '12px 16px', background: M.greenLight, color: M.green, borderRadius: '8px', marginBottom: '16px', fontSize: '14px', animation: 'fadeIn 0.3s' }}>{success}</div>}
+      {error && <div className="px-4 py-3 bg-danger-light text-danger rounded-lg mb-4 text-sm animate-fade-up">{error}</div>}
+      {success && <div className="px-4 py-3 bg-success-light text-success rounded-lg mb-4 text-sm animate-fade-up">{success}</div>}
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px', marginBottom: '24px', animation: 'slideUp 0.4s ease-out' }}>
+      <div className="grid grid-cols-2 gap-6 mb-6 animate-fade-up">
 
         {/* Upload Excel */}
-        <div style={{ background: M.white, padding: '24px', borderRadius: '16px', boxShadow: '0 4px 12px rgba(0,0,0,0.05)', border: `1px solid ${M.border}` }}>
-          <h3 style={{ fontSize: '16px', fontWeight: 600, color: M.text, margin: '0 0 16px', fontFamily: "'Fraunces', serif" }}>Bulk Import via Excel</h3>
-          <p style={{ fontSize: '13px', color: M.textSub, marginBottom: '20px' }}>Upload an `.xlsx` file containing headers: <strong>Student ID, First Name, Last Name, Course</strong>.</p>
+        <div className="bg-white p-6 rounded-2xl shadow-[0_4px_12px_rgba(0,0,0,0.05)] border border-border">
+          <h3 className="text-base font-semibold text-text-main m-0 mb-4 font-serif">Bulk Import via Excel</h3>
+          <p className="text-[13px] text-text-sub mb-5">Upload an `.xlsx` file containing headers: <strong>Student ID, First Name, Last Name, Course</strong>.</p>
 
-          <div style={{ border: `2px dashed ${M.maroonBorder}`, background: M.maroonLight, padding: '32px', borderRadius: '12px', textAlign: 'center', cursor: 'pointer', transition: 'background 0.2s' }} onClick={() => fileInputRef.current?.click()}>
-            <input type="file" accept=".xlsx" ref={fileInputRef} onChange={handleFileUpload} style={{ display: 'none' }} />
-            <div style={{ marginBottom: '8px', display: 'flex', justifyContent: 'center' }}><FileSpreadsheet size={24} color={M.maroon} /></div>
-            <div style={{ fontSize: '14px', fontWeight: 600, color: M.maroon }}>{uploading ? 'Uploading...' : 'Click to select Excel file'}</div>
+          <div className="border-2 border-dashed border-maroon-border bg-maroon-light p-8 rounded-xl text-center cursor-pointer transition-colors hover:bg-maroon-mid/30" onClick={() => fileInputRef.current?.click()}>
+            <input type="file" accept=".xlsx" ref={fileInputRef} onChange={handleFileUpload} className="hidden" />
+            <div className="mb-2 flex justify-center"><FileSpreadsheet size={24} className="text-maroon" /></div>
+            <div className="text-sm font-semibold text-maroon">{uploading ? 'Uploading...' : 'Click to select Excel file'}</div>
           </div>
         </div>
 
         {/* Manual Add */}
-        <div style={{ background: M.white, padding: '24px', borderRadius: '16px', boxShadow: '0 4px 12px rgba(0,0,0,0.05)', border: `1px solid ${M.border}` }}>
-          <h3 style={{ fontSize: '16px', fontWeight: 600, color: M.text, margin: '0 0 16px', fontFamily: "'Fraunces', serif" }}>Manually Add Student</h3>
-          <form onSubmit={handleManualAdd} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-            <div style={{ gridColumn: '1 / -1' }}>
-              <input type="text" placeholder="Student ID (9 to 13 digits)" pattern="^\d{9,13}$" title="Format: 9 to 13 numbers" required value={form.student_id} onChange={e => setForm({ ...form, student_id: e.target.value })} style={inp} onFocus={e => e.target.style.borderColor = M.maroon} onBlur={e => e.target.style.borderColor = M.border} />
+        <div className="bg-white p-6 rounded-2xl shadow-[0_4px_12px_rgba(0,0,0,0.05)] border border-border">
+          <h3 className="text-base font-semibold text-text-main m-0 mb-4 font-serif">Manually Add Student</h3>
+          <form onSubmit={handleManualAdd} className="grid grid-cols-2 gap-3">
+            <div className="col-span-2">
+              <input type="text" placeholder="Student ID (9 to 13 digits)" pattern="^\d{9,13}$" title="Format: 9 to 13 numbers" required value={form.student_id} onChange={e => setForm({ ...form, student_id: e.target.value })} className="px-3.5 py-2.5 rounded-lg border border-border text-[13px] outline-none bg-white text-text-main w-full transition-colors focus:border-maroon" />
             </div>
             <div>
-              <input type="text" placeholder="First Name" required value={form.first_name} onChange={e => setForm({ ...form, first_name: e.target.value })} style={inp} onFocus={e => e.target.style.borderColor = M.maroon} onBlur={e => e.target.style.borderColor = M.border} />
+              <input type="text" placeholder="First Name" required value={form.first_name} onChange={e => setForm({ ...form, first_name: e.target.value })} className="px-3.5 py-2.5 rounded-lg border border-border text-[13px] outline-none bg-white text-text-main w-full transition-colors focus:border-maroon" />
             </div>
             <div>
-              <input type="text" placeholder="Last Name" required value={form.last_name} onChange={e => setForm({ ...form, last_name: e.target.value })} style={inp} onFocus={e => e.target.style.borderColor = M.maroon} onBlur={e => e.target.style.borderColor = M.border} />
+              <input type="text" placeholder="Last Name" required value={form.last_name} onChange={e => setForm({ ...form, last_name: e.target.value })} className="px-3.5 py-2.5 rounded-lg border border-border text-[13px] outline-none bg-white text-text-main w-full transition-colors focus:border-maroon" />
             </div>
-            <div style={{ gridColumn: '1 / -1' }}>
-              <select required value={form.course} onChange={e => setForm({ ...form, course: e.target.value })} style={{ ...inp, appearance: 'none', color: form.course ? M.text : M.textMuted }} onFocus={e => e.target.style.borderColor = M.maroon} onBlur={e => e.target.style.borderColor = M.border}>
+            <div className="col-span-2">
+              <select required value={form.course} onChange={e => setForm({ ...form, course: e.target.value })} className={`px-3.5 py-2.5 rounded-lg border border-border text-[13px] outline-none bg-white w-full transition-colors appearance-none focus:border-maroon ${form.course ? 'text-text-main' : 'text-text-muted'}`}>
                 <option value="" disabled>Select Course...</option>
                 <option value="Bachelor of Science in Information Technology">Bachelor of Science in Information Technology</option>
                 <option value="Bachelor of Science in Computer Science">Bachelor of Science in Computer Science</option>
@@ -225,8 +184,8 @@ export default function StudentRecordsPage() {
                 <option value="Bachelor of Science in Nursing">Bachelor of Science in Nursing</option>
               </select>
             </div>
-            <div style={{ gridColumn: '1 / -1', marginTop: '8px' }}>
-              <button type="submit" style={{ width: '100%', background: M.gold, color: M.white, border: 'none', padding: '12px', borderRadius: '8px', fontWeight: 600, cursor: 'pointer', fontFamily: "'IBM Plex Sans', sans-serif", transition: 'transform 0.1s' }} onMouseDown={e => e.target.style.transform = 'scale(0.98)'} onMouseUp={e => e.target.style.transform = 'scale(1)'}>
+            <div className="col-span-2 mt-2">
+              <button type="submit" className="w-full bg-gold text-white border-none p-3 rounded-lg font-semibold cursor-pointer font-sans transition-transform active:scale-95 hover:opacity-90">
                 Add Student
               </button>
             </div>
@@ -235,52 +194,52 @@ export default function StudentRecordsPage() {
       </div>
 
       {/* Records Table */}
-      <div style={{ background: M.white, borderRadius: '16px', boxShadow: '0 4px 12px rgba(0,0,0,0.05)', border: `1px solid ${M.border}`, overflow: 'hidden', animation: 'slideUp 0.6s ease-out' }}>
-        <div style={{ padding: '20px 24px', borderBottom: `1px solid ${M.border}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <h3 style={{ fontSize: '16px', fontWeight: 600, color: M.text, margin: 0, fontFamily: "'Fraunces', serif" }}>School Directory</h3>
-          <span style={{ fontSize: '12px', color: M.textSub, background: M.offWhite, padding: '4px 10px', borderRadius: '100px', fontWeight: 600 }}>{records.length} Records</span>
+      <div className="bg-white rounded-2xl shadow-[0_4px_12px_rgba(0,0,0,0.05)] border border-border overflow-hidden animate-fade-up" style={{ animationDelay: '0.2s' }}>
+        <div className="px-6 py-5 border-b border-border flex justify-between items-center">
+          <h3 className="text-base font-semibold text-text-main m-0 font-serif">School Directory</h3>
+          <span className="text-xs text-text-sub bg-off-white px-2.5 py-1 rounded-full font-semibold">{records.length} Records</span>
         </div>
 
-        <div style={{ overflowX: 'auto' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px', textAlign: 'left' }}>
+        <div className="overflow-x-auto">
+          <table className="w-full border-collapse text-[13px] text-left">
             <thead>
-              <tr style={{ background: M.offWhite, color: M.textSub, fontWeight: 600, borderBottom: `1px solid ${M.border}` }}>
-                <th style={{ padding: '12px 24px' }}>Student ID</th>
-                <th style={{ padding: '12px 24px' }}>Name</th>
-                <th style={{ padding: '12px 24px' }}>Course</th>
-                <th style={{ padding: '12px 24px' }}>Date Added</th>
-                <th style={{ padding: '12px 24px', textAlign: 'right' }}>Actions</th>
+              <tr className="bg-off-white text-text-sub font-semibold border-b border-border">
+                <th className="px-6 py-3">Student ID</th>
+                <th className="px-6 py-3">Name</th>
+                <th className="px-6 py-3">Course</th>
+                <th className="px-6 py-3">Date Added</th>
+                <th className="px-6 py-3 text-right">Actions</th>
               </tr>
             </thead>
             <tbody>
               {loading ? (
                 Array.from({ length: 4 }).map((_, i) => (
-                  <tr key={i} style={{ borderBottom: `1px solid ${M.border}` }}>
-                    <td colSpan={5} style={{ padding: '16px 24px' }}>
-                      <div style={{ display: 'flex', gap: '20px', alignItems: 'center' }}>
-                        <div className="animate-shimmer" style={{ height: '20px', width: '20%', borderRadius: '4px', background: '#E2E8F0' }} />
-                        <div className="animate-shimmer" style={{ height: '20px', width: '30%', borderRadius: '4px', background: '#E2E8F0' }} />
-                        <div className="animate-shimmer" style={{ height: '20px', width: '15%', borderRadius: '4px', background: '#E2E8F0' }} />
-                        <div className="animate-shimmer" style={{ height: '20px', width: '15%', borderRadius: '4px', background: '#E2E8F0' }} />
-                        <div className="animate-shimmer" style={{ height: '20px', width: '10%', borderRadius: '4px', background: '#E2E8F0', marginLeft: 'auto' }} />
+                  <tr key={i} className="border-b border-border">
+                    <td colSpan={5} className="px-6 py-4">
+                      <div className="flex gap-5 items-center">
+                        <div className="animate-pulse h-5 w-[20%] rounded bg-border" />
+                        <div className="animate-pulse h-5 w-[30%] rounded bg-border" />
+                        <div className="animate-pulse h-5 w-[15%] rounded bg-border" />
+                        <div className="animate-pulse h-5 w-[15%] rounded bg-border" />
+                        <div className="animate-pulse h-5 w-[10%] rounded bg-border ml-auto" />
                       </div>
                     </td>
                   </tr>
                 ))
               ) : records.length === 0 ? (
-                <tr><td colSpan={5} style={{ padding: '24px', textAlign: 'center', color: M.textMuted }}>No student records found. Upload an Excel file to get started.</td></tr>
+                <tr><td colSpan={5} className="p-6 text-center text-text-muted">No student records found. Upload an Excel file to get started.</td></tr>
               ) : (
                 records.map((record, index) => (
-                  <tr key={record.student_id} className="table-row" style={{ borderBottom: `1px solid ${M.border}`, animationDelay: `${index * 0.05}s` }}>
-                    <td style={{ padding: '12px 24px', fontWeight: 500, color: M.maroon }}>{record.student_id}</td>
-                    <td style={{ padding: '12px 24px', color: M.text }}>{record.first_name} {record.last_name}</td>
-                    <td style={{ padding: '12px 24px', color: M.textSub }}>{record.course}</td>
-                    <td style={{ padding: '12px 24px', color: M.textMuted, fontSize: '12px' }}>{new Date(record.created_at).toLocaleDateString()}</td>
-                    <td style={{ padding: '12px 24px', textAlign: 'right', display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
-                      <button className="action-btn edit" style={{ display: 'flex', alignItems: 'center', gap: '4px' }} onClick={() => startEdit(record)}>
+                  <tr key={record.student_id} className="group border-b border-border transition-colors hover:bg-maroon-light/50 animate-fade-up" style={{ animationDelay: `${index * 0.05}s`, opacity: 0, animationFillMode: 'forwards' }}>
+                    <td className="px-6 py-3 font-medium text-maroon">{record.student_id}</td>
+                    <td className="px-6 py-3 text-text-main">{record.first_name} {record.last_name}</td>
+                    <td className="px-6 py-3 text-text-sub">{record.course}</td>
+                    <td className="px-6 py-3 text-text-muted text-xs">{new Date(record.created_at).toLocaleDateString()}</td>
+                    <td className="px-6 py-3 text-right flex gap-2 justify-end">
+                      <button className="bg-transparent border-none cursor-pointer px-2 py-1 rounded text-xs font-semibold text-blue transition-colors hover:bg-blue-light flex items-center gap-1" onClick={() => startEdit(record)}>
                         <Edit size={14} /> Edit
                       </button>
-                      <button className="action-btn delete" style={{ display: 'flex', alignItems: 'center', gap: '4px' }} onClick={() => handleDelete(record.student_id)} disabled={isDeleting === record.student_id}>
+                      <button className="bg-transparent border-none cursor-pointer px-2 py-1 rounded text-xs font-semibold text-danger transition-colors hover:bg-danger-light flex items-center gap-1" onClick={() => handleDelete(record.student_id)} disabled={isDeleting === record.student_id}>
                         <Trash2 size={14} /> {isDeleting === record.student_id ? '...' : 'Delete'}
                       </button>
                     </td>

@@ -4,42 +4,14 @@ import { getDashboardStats, getAllAppointments, updateAppointmentStatus } from '
 import { rescheduleAppointment, getAvailableSlots } from '../../services/appointmentService'
 import { AlertTriangle, Inbox, Check, X as XIcon, ChevronLeft, ChevronRight, ChevronDown, Filter } from 'lucide-react'
 
-// ── Design Tokens ──────────────────────────────────────────────────────────────
-const M = {
-  maroon:       '#7B1A2A',
-  maroonDark:   '#5C1320',
-  maroonLight:  '#F9F0F1',
-  maroonMid:    'rgba(123,26,42,0.08)',
-  maroonBorder: 'rgba(123,26,42,0.2)',
-  gold:         '#B8900A',
-  goldLight:    '#FDF6E3',
-  goldBorder:   'rgba(184,144,10,0.3)',
-  white:        '#FFFFFF',
-  offWhite:     '#F9F7F4',
-  surface:      '#F2EDE8',
-  border:       '#EAE7E2',
-  text:         '#1C1917',
-  textSub:      '#57534E',
-  textMuted:    '#A8A29E',
-  green:        '#15803D',
-  greenLight:   '#F0FDF4',
-  greenBorder:  '#BBF7D0',
-  blue:         '#1D4ED8',
-  blueLight:    '#EFF6FF',
-  blueBorder:   '#BFDBFE',
-  red:          '#DC2626',
-  redLight:     '#FEF2F2',
-  redBorder:    '#FECACA',
-}
-
 // ── Status Config ──────────────────────────────────────────────────────────────
 const STATUS_CFG = {
-  confirmed:  { label: 'Confirmed',  bg: M.blueLight,  color: M.blue,   border: M.blueBorder  },
-  completed:  { label: 'Completed',  bg: M.greenLight, color: M.green,  border: M.greenBorder },
-  cancelled:  { label: 'Cancelled',  bg: M.redLight,   color: M.red,    border: M.redBorder   },
-  pending:    { label: 'Scheduled',  bg: M.goldLight,  color: M.gold,   border: M.goldBorder  },
-  no_show:    { label: 'No Show',    bg: M.surface,    color: M.textMuted, border: M.border   },
-  in_progress:{ label: 'Initiated',  bg: M.maroonLight,color: M.maroon, border: M.maroonBorder},
+  confirmed:  { label: 'Confirmed',  bg: 'bg-info-light',  color: 'text-info',   border: 'border-info-border'  },
+  completed:  { label: 'Completed',  bg: 'bg-success-light', color: 'text-success',  border: 'border-success-border' },
+  cancelled:  { label: 'Cancelled',  bg: 'bg-danger-light',   color: 'text-danger',    border: 'border-danger-border'   },
+  pending:    { label: 'Scheduled',  bg: 'bg-gold-light',  color: 'text-gold',   border: 'border-gold-border'  },
+  no_show:    { label: 'No Show',    bg: 'bg-surface',    color: 'text-text-muted', border: 'border-border'   },
+  in_progress:{ label: 'Initiated',  bg: 'bg-maroon-light',color: 'text-maroon', border: 'border-maroon-border'},
 }
 
 // ── Mini Calendar ──────────────────────────────────────────────────────────────
@@ -73,48 +45,50 @@ function MiniCalendar({ selectedDate, onSelect }) {
   const nextMonth = () => setView(v => v.month === 11 ? { year: v.year + 1, month: 0  } : { year: v.year, month: v.month + 1 })
 
   return (
-    <div style={{ background: M.white, borderRadius: '14px', border: `1px solid ${M.border}`, padding: '16px', boxShadow: '0 1px 4px rgba(0,0,0,0.04)' }}>
+    <div className="bg-white rounded-[14px] border border-border p-4 shadow-sm">
       {/* Month Nav */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
-        <button onClick={prevMonth} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px 8px', borderRadius: '6px', color: M.textSub, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-          onMouseEnter={e => e.currentTarget.style.background = M.surface}
-          onMouseLeave={e => e.currentTarget.style.background = 'none'}
-        ><ChevronLeft size={16} /></button>
-        <span style={{ fontFamily: "'Fraunces', serif", fontSize: '15px', fontWeight: 700, color: M.text }}>
+      <div className="flex items-center justify-between mb-3.5">
+        <button onClick={prevMonth} className="bg-transparent border-none cursor-pointer p-[4px_8px] rounded-md text-text-sub flex items-center justify-center hover:bg-surface transition-colors">
+          <ChevronLeft size={16} />
+        </button>
+        <span className="font-serif text-[15px] font-bold text-text-main">
           {MONTHS[month]} {year}
         </span>
-        <button onClick={nextMonth} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px 8px', borderRadius: '6px', color: M.textSub, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-          onMouseEnter={e => e.currentTarget.style.background = M.surface}
-          onMouseLeave={e => e.currentTarget.style.background = 'none'}
-        ><ChevronRight size={16} /></button>
+        <button onClick={nextMonth} className="bg-transparent border-none cursor-pointer p-[4px_8px] rounded-md text-text-sub flex items-center justify-center hover:bg-surface transition-colors">
+          <ChevronRight size={16} />
+        </button>
       </div>
 
       {/* Day headers */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', marginBottom: '6px' }}>
+      <div className="grid grid-cols-7 mb-1.5">
         {DAYS.map(d => (
-          <div key={d} style={{ textAlign: 'center', fontSize: '10px', fontWeight: 700, color: M.textMuted, paddingBottom: '6px' }}>{d}</div>
+          <div key={d} className="text-center text-[10px] font-bold text-text-muted pb-1.5">{d}</div>
         ))}
       </div>
 
       {/* Cells */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '2px' }}>
+      <div className="grid grid-cols-7 gap-0.5">
         {cells.map((day, i) => {
           if (!day) return <div key={i} />
           const dateStr = `${year}-${String(month + 1).padStart(2,'0')}-${String(day).padStart(2,'0')}`
           const isToday = dateStr === todayStr
           const isSel   = dateStr === selStr
           const isSun   = (i % 7 === 6)
+          
+          let btnClass = "w-full aspect-square rounded-lg border-none text-[12px] cursor-pointer transition-colors "
+          
+          if (isSel) {
+            btnClass += "bg-maroon text-white font-bold"
+          } else if (isToday) {
+            btnClass += "bg-maroon-light text-maroon font-bold hover:bg-surface"
+          } else {
+            btnClass += `bg-transparent font-normal hover:bg-surface ${isSun ? 'text-danger' : 'text-text-main'}`
+          }
+
           return (
-            <button key={i} onClick={() => onSelect(dateStr)} style={{
-              width: '100%', aspectRatio: '1', borderRadius: '8px', border: 'none',
-              background: isSel ? M.maroon : isToday ? M.maroonLight : 'transparent',
-              color: isSel ? M.white : isToday ? M.maroon : isSun ? M.red : M.text,
-              fontSize: '12px', fontWeight: isSel || isToday ? 700 : 400,
-              cursor: 'pointer', transition: 'all 0.12s',
-            }}
-              onMouseEnter={e => { if (!isSel) e.currentTarget.style.background = M.surface }}
-              onMouseLeave={e => { if (!isSel) e.currentTarget.style.background = isToday ? M.maroonLight : 'transparent' }}
-            >{day}</button>
+            <button key={i} onClick={() => onSelect(dateStr)} className={btnClass}>
+              {day}
+            </button>
           )
         })}
       </div>
@@ -126,17 +100,18 @@ function MiniCalendar({ selectedDate, onSelect }) {
 const StatusBadge = ({ status }) => {
   const cfg = STATUS_CFG[status] || STATUS_CFG.pending
   return (
-    <span style={{ fontSize: '10px', fontWeight: 700, padding: '4px 10px', borderRadius: '100px', background: cfg.bg, color: cfg.color, border: `1px solid ${cfg.border}`, letterSpacing: '0.04em', whiteSpace: 'nowrap' }}>
+    <span className={`text-[10px] font-bold py-1 px-2.5 rounded-full border tracking-[0.04em] whitespace-nowrap ${cfg.bg} ${cfg.color} ${cfg.border}`}>
       {cfg.label}
     </span>
   )
 }
 
 // ── Avatar Initials ────────────────────────────────────────────────────────────
-const Av = ({ name, size = 32, bg = M.maroonMid, color = M.maroon }) => {
+const Av = ({ name, size = 32, bg = 'bg-maroon-mid', color = 'text-maroon' }) => {
   const initials = name ? name.split(' ').slice(0, 2).map(w => w[0]?.toUpperCase()).join('') : '?'
   return (
-    <div style={{ width: size, height: size, borderRadius: '50%', background: bg, color, fontSize: size * 0.38, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, border: `1px solid ${M.maroonBorder}` }}>
+    <div className={`rounded-full flex items-center justify-center shrink-0 border border-maroon-border font-bold ${bg} ${color}`}
+      style={{ width: size, height: size, fontSize: size * 0.38 }}>
       {initials}
     </div>
   )
@@ -180,31 +155,31 @@ const RescheduleModal = ({ appt, onClose, onConfirm }) => {
   const today = new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10)
 
   return (
-    <div style={{ position: 'fixed', inset: 0, zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.5)' }} onClick={onClose} />
+    <div className="fixed inset-0 z-50 flex items-center justify-center">
+      <div className="absolute inset-0 bg-black/50" onClick={onClose} />
       
       {/* Main Modal */}
       {!showConfirm && (
-        <div className="animate-fade-up" style={{ position: 'relative', width: '600px', background: M.white, borderRadius: '16px', padding: '32px', boxShadow: '0 4px 24px rgba(0,0,0,0.1)' }}>
-          <h3 style={{ fontFamily: "'Fraunces', serif", fontSize: '24px', color: M.maroon, margin: '0 0 20px' }}>Reschedule Appointment</h3>
+        <div className="animate-fade-up relative w-[600px] bg-white rounded-2xl p-8 shadow-[0_4px_24px_rgba(0,0,0,0.1)]">
+          <h3 className="font-serif text-[24px] text-maroon m-0 mb-5">Reschedule Appointment</h3>
           
-          <div style={{ marginBottom: '20px' }}>
-            <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: M.textMuted, marginBottom: '8px' }}>Select New Date</label>
+          <div className="mb-5">
+            <label className="block text-[13px] font-semibold text-text-muted mb-2">Select New Date</label>
             <input type="date" min={today} value={date} onChange={e => { setDate(e.target.value); setTime('') }} 
-              style={{ width: '100%', padding: '12px', borderRadius: '8px', border: `1px solid ${M.border}`, fontFamily: "'IBM Plex Sans', sans-serif", fontSize: '15px', outline: 'none', color: M.text }} />
+              className="w-full p-3 rounded-lg border border-border font-sans text-[15px] outline-none text-text-main" />
           </div>
 
           {date && (
-            <div style={{ marginBottom: '28px' }}>
-              <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: M.textMuted, marginBottom: '8px' }}>Select Time Slot</label>
-              {loadingSlots ? <div style={{ fontSize: '14px', color: M.textSub }}>Loading slots...</div> : (
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px', maxHeight: '240px', overflowY: 'auto', paddingRight: '4px' }}>
-                  {slots.length === 0 ? <div style={{ fontSize: '14px', color: M.textSub }}>No slots available</div> : slots.map(s => {
+            <div className="mb-7">
+              <label className="block text-[13px] font-semibold text-text-muted mb-2">Select Time Slot</label>
+              {loadingSlots ? <div className="text-[14px] text-text-sub">Loading slots...</div> : (
+                <div className="grid grid-cols-3 gap-2.5 max-h-[240px] overflow-y-auto pr-1">
+                  {slots.length === 0 ? <div className="text-[14px] text-text-sub">No slots available</div> : slots.map(s => {
                     const available = s.available
                     const selected = time === s.time_slot
                     return (
                       <button key={s.time_slot} disabled={!available} onClick={() => setTime(s.time_slot)}
-                        style={{ padding: '10px', borderRadius: '8px', border: `1px solid ${selected ? M.maroon : M.border}`, background: selected ? M.maroon : available ? M.white : M.surface, color: selected ? M.white : available ? M.text : M.textMuted, cursor: available ? 'pointer' : 'not-allowed', fontFamily: "'IBM Plex Sans', sans-serif", fontSize: '14px', fontWeight: 600 }}>
+                        className={`p-2.5 rounded-lg border font-sans text-[14px] font-semibold ${selected ? 'border-maroon bg-maroon text-white' : available ? 'border-border bg-white text-text-main cursor-pointer' : 'border-border bg-surface text-text-muted cursor-not-allowed'}`}>
                         {format12Hour(s.time_slot)}
                       </button>
                     )
@@ -214,9 +189,9 @@ const RescheduleModal = ({ appt, onClose, onConfirm }) => {
             </div>
           )}
 
-          <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
-            <button onClick={onClose} style={{ padding: '10px 20px', borderRadius: '8px', border: `1px solid ${M.border}`, background: M.white, color: M.text, cursor: 'pointer', fontFamily: "'IBM Plex Sans', sans-serif", fontWeight: 600 }}>Cancel</button>
-            <button onClick={() => setShowConfirm(true)} disabled={!date || !time} style={{ padding: '10px 20px', borderRadius: '8px', border: 'none', background: M.maroon, color: M.white, cursor: (!date || !time) ? 'not-allowed' : 'pointer', fontFamily: "'IBM Plex Sans', sans-serif", fontWeight: 600 }}>
+          <div className="flex gap-3 justify-end">
+            <button onClick={onClose} className="py-2.5 px-5 rounded-lg border border-border bg-white text-text-main cursor-pointer font-sans font-semibold">Cancel</button>
+            <button onClick={() => setShowConfirm(true)} disabled={!date || !time} className={`py-2.5 px-5 rounded-lg border-none bg-maroon text-white font-sans font-semibold ${(!date || !time) ? 'cursor-not-allowed opacity-70' : 'cursor-pointer'}`}>
               Next
             </button>
           </div>
@@ -225,20 +200,20 @@ const RescheduleModal = ({ appt, onClose, onConfirm }) => {
 
       {/* Confirmation Modal */}
       {showConfirm && (
-        <div className="animate-fade-up" style={{ position: 'relative', width: '400px', background: M.white, borderRadius: '16px', padding: '32px', boxShadow: '0 4px 24px rgba(0,0,0,0.1)', textAlign: 'center' }}>
-          <div style={{ width: '48px', height: '48px', borderRadius: '50%', background: M.maroonLight, color: M.maroon, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
+        <div className="animate-fade-up relative w-[400px] bg-white rounded-2xl p-8 shadow-[0_4px_24px_rgba(0,0,0,0.1)] text-center">
+          <div className="w-12 h-12 rounded-full bg-maroon-light text-maroon flex items-center justify-center mx-auto mb-4">
             <AlertTriangle size={24} />
           </div>
-          <h3 style={{ fontFamily: "'Fraunces', serif", fontSize: '20px', color: M.text, margin: '0 0 12px' }}>Confirm Reschedule</h3>
-          <p style={{ fontSize: '14px', color: M.textSub, margin: '0 0 24px', lineHeight: '1.5' }}>
+          <h3 className="font-serif text-[20px] text-text-main m-0 mb-3">Confirm Reschedule</h3>
+          <p className="text-[14px] text-text-sub m-0 mb-6 leading-relaxed">
             You are about to reschedule this appointment to <strong>{new Date(date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</strong> at <strong>{format12Hour(time)}</strong>. Do you want to proceed?
           </p>
 
-          <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
-            <button onClick={() => setShowConfirm(false)} disabled={saving} style={{ padding: '10px 20px', borderRadius: '8px', border: `1px solid ${M.border}`, background: M.white, color: M.text, cursor: saving ? 'not-allowed' : 'pointer', fontFamily: "'IBM Plex Sans', sans-serif", fontWeight: 600, flex: 1 }}>
+          <div className="flex gap-3 justify-center">
+            <button onClick={() => setShowConfirm(false)} disabled={saving} className={`py-2.5 px-5 rounded-lg border border-border bg-white text-text-main font-sans font-semibold flex-1 ${saving ? 'cursor-not-allowed opacity-70' : 'cursor-pointer'}`}>
               Back
             </button>
-            <button onClick={handleSave} disabled={saving} style={{ padding: '10px 20px', borderRadius: '8px', border: 'none', background: M.maroon, color: M.white, cursor: saving ? 'not-allowed' : 'pointer', fontFamily: "'IBM Plex Sans', sans-serif", fontWeight: 600, flex: 1 }}>
+            <button onClick={handleSave} disabled={saving} className={`py-2.5 px-5 rounded-lg border-none bg-maroon text-white font-sans font-semibold flex-1 ${saving ? 'cursor-not-allowed opacity-70' : 'cursor-pointer'}`}>
               {saving ? 'Saving...' : 'Confirm'}
             </button>
           </div>
@@ -352,22 +327,22 @@ export default function AdminAppointmentsPage() {
   return (
     <div>
       {/* ── Page Header ── */}
-      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '28px', flexWrap: 'wrap', gap: '12px' }}>
+      <div className="flex items-start justify-between mb-7 flex-wrap gap-3">
         <div>
-          <h1 style={{ fontFamily: "'Fraunces', serif", fontSize: '30px', fontWeight: 700, color: M.maroon, margin: '0 0 6px' }}>Appointments Management</h1>
-          <p style={{ fontSize: '14px', color: M.textMuted, margin: 0 }}>Manage and track student administrative requests.</p>
+          <h1 className="font-serif text-[30px] font-bold text-maroon m-0 mb-1.5">Appointments Management</h1>
+          <p className="text-[14px] text-text-muted m-0">Manage and track student administrative requests.</p>
         </div>
-        <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+        <div className="flex gap-2.5 items-center">
           {/* Filter pill */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <span style={{ fontSize: '12px', fontWeight: 600, color: M.textMuted, display: 'flex', alignItems: 'center', gap: '4px' }}>
+          <div className="flex items-center gap-2">
+            <span className="text-[12px] font-semibold text-text-muted flex items-center gap-1">
               <Filter size={14} /> STATUS
             </span>
-            <div style={{ position: 'relative' }}>
+            <div className="relative">
               <select
                 value={statusFilter}
                 onChange={e => { setStatusFilter(e.target.value); setPage(1) }}
-                style={{ appearance: 'none', padding: '9px 32px 9px 14px', borderRadius: '9px', border: `1px solid ${M.border}`, background: M.white, fontSize: '13px', color: M.text, outline: 'none', cursor: 'pointer', fontFamily: "'IBM Plex Sans', sans-serif" }}>
+                className="appearance-none py-[9px] pr-8 pl-3.5 rounded-[9px] border border-border bg-white text-[13px] text-text-main outline-none cursor-pointer font-sans">
                 <option value="all">All Statuses</option>
                 <option value="pending">Scheduled</option>
                 <option value="confirmed">Confirmed</option>
@@ -376,7 +351,7 @@ export default function AdminAppointmentsPage() {
                 <option value="cancelled">Cancelled</option>
                 <option value="no_show">No Show</option>
               </select>
-              <span style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', display: 'flex', alignItems: 'center', color: M.textMuted }}><ChevronDown size={14} /></span>
+              <span className="absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none flex items-center text-text-muted"><ChevronDown size={14} /></span>
             </div>
           </div>
 
@@ -385,90 +360,82 @@ export default function AdminAppointmentsPage() {
       </div>
 
       {error && (
-        <div style={{ padding: '12px 16px', borderRadius: '10px', background: M.redLight, color: M.red, border: `1px solid ${M.redBorder}`, marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '8px' }}><AlertTriangle size={16} /> {error}</div>
+        <div className="p-3 px-4 rounded-[10px] bg-danger-light text-danger border border-danger-border mb-6 flex items-center gap-2"><AlertTriangle size={16} /> {error}</div>
       )}
 
       {/* ── Stat Cards ── */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px', marginBottom: '28px' }}>
+      <div className="grid grid-cols-4 gap-4 mb-7">
 
         {/* Today's Total */}
-        <div className="animate-fade-up" style={{ animationDelay: '0.1s', background: M.white, borderRadius: '16px', padding: '20px 22px', border: `1px solid ${M.border}`, boxShadow: '0 1px 4px rgba(0,0,0,0.04)' }}>
-          <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '12px' }}>
-            <div style={{ fontSize: '11px', fontWeight: 600, color: M.textMuted, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Today's Total</div>
+        <div className="animate-fade-up bg-white rounded-2xl p-5 px-[22px] border border-border shadow-sm" style={{ animationDelay: '0.1s' }}>
+          <div className="flex items-start justify-between mb-3">
+            <div className="text-[11px] font-semibold text-text-muted uppercase tracking-[0.06em]">Today's Total</div>
           </div>
-          <div style={{ fontFamily: "'Fraunces', serif", fontSize: '36px', fontWeight: 800, color: M.maroon, lineHeight: 1, marginBottom: '6px', minHeight: '36px' }}>
-            {loading ? <div className="animate-shimmer" style={{ width: '60px', height: '36px', background: M.border, borderRadius: '8px' }} /> : stats?.today?.total ?? 0}
+          <div className="font-serif text-[36px] font-bold text-maroon leading-none mb-1.5 min-h-[36px]">
+            {loading ? <div className="animate-pulse w-[60px] h-[36px] bg-border rounded-lg" /> : stats?.today?.total ?? 0}
           </div>
-          <div style={{ fontSize: '12px', color: M.textMuted }}>
+          <div className="text-[12px] text-text-muted">
             Scheduled
           </div>
         </div>
 
         {/* Upcoming */}
-        <div className="animate-fade-up" style={{ animationDelay: '0.2s', background: M.white, borderRadius: '16px', padding: '20px 22px', border: `1px solid ${M.border}`, boxShadow: '0 1px 4px rgba(0,0,0,0.04)' }}>
-          <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '12px' }}>
-            <div style={{ fontSize: '11px', fontWeight: 600, color: M.textMuted, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Active Queue</div>
+        <div className="animate-fade-up bg-white rounded-2xl p-5 px-[22px] border border-border shadow-sm" style={{ animationDelay: '0.2s' }}>
+          <div className="flex items-start justify-between mb-3">
+            <div className="text-[11px] font-semibold text-text-muted uppercase tracking-[0.06em]">Active Queue</div>
           </div>
-          <div style={{ fontFamily: "'Fraunces', serif", fontSize: '36px', fontWeight: 800, color: M.maroon, lineHeight: 1, marginBottom: '6px', minHeight: '36px' }}>
-            {loading ? <div className="animate-shimmer" style={{ width: '60px', height: '36px', background: M.border, borderRadius: '8px' }} /> : stats?.active_queue ?? 0}
+          <div className="font-serif text-[36px] font-bold text-maroon leading-none mb-1.5 min-h-[36px]">
+            {loading ? <div className="animate-pulse w-[60px] h-[36px] bg-border rounded-lg" /> : stats?.active_queue ?? 0}
           </div>
-          <div style={{ fontSize: '12px', color: M.textMuted }}>In progress</div>
+          <div className="text-[12px] text-text-muted">In progress</div>
         </div>
 
         {/* Completed */}
-        <div className="animate-fade-up" style={{ animationDelay: '0.3s', background: M.white, borderRadius: '16px', padding: '20px 22px', border: `1px solid ${M.border}`, boxShadow: '0 1px 4px rgba(0,0,0,0.04)' }}>
-          <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '12px' }}>
-            <div style={{ fontSize: '11px', fontWeight: 600, color: M.textMuted, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Completed</div>
+        <div className="animate-fade-up bg-white rounded-2xl p-5 px-[22px] border border-border shadow-sm" style={{ animationDelay: '0.3s' }}>
+          <div className="flex items-start justify-between mb-3">
+            <div className="text-[11px] font-semibold text-text-muted uppercase tracking-[0.06em]">Completed</div>
           </div>
-          <div style={{ fontFamily: "'Fraunces', serif", fontSize: '36px', fontWeight: 800, color: M.green, lineHeight: 1, marginBottom: '6px', minHeight: '36px' }}>
-            {loading ? <div className="animate-shimmer" style={{ width: '60px', height: '36px', background: M.border, borderRadius: '8px' }} /> : stats?.today?.completed ?? 0}
+          <div className="font-serif text-[36px] font-bold text-success leading-none mb-1.5 min-h-[36px]">
+            {loading ? <div className="animate-pulse w-[60px] h-[36px] bg-border rounded-lg" /> : stats?.today?.completed ?? 0}
           </div>
-          <div style={{ fontSize: '12px', color: M.textMuted }}>
+          <div className="text-[12px] text-text-muted">
             Today
           </div>
         </div>
 
         {/* Fulfillment Rate */}
-        <div className="animate-fade-up" style={{ animationDelay: '0.4s', background: M.white, borderRadius: '16px', padding: '20px 22px', border: `1px solid ${M.border}`, boxShadow: '0 1px 4px rgba(0,0,0,0.04)' }}>
-          <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '12px' }}>
-            <div style={{ fontSize: '11px', fontWeight: 600, color: M.textMuted, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Completion Rate</div>
+        <div className="animate-fade-up bg-white rounded-2xl p-5 px-[22px] border border-border shadow-sm" style={{ animationDelay: '0.4s' }}>
+          <div className="flex items-start justify-between mb-3">
+            <div className="text-[11px] font-semibold text-text-muted uppercase tracking-[0.06em]">Completion Rate</div>
           </div>
-          <div style={{ fontFamily: "'Fraunces', serif", fontSize: '36px', fontWeight: 800, color: M.maroon, lineHeight: 1, marginBottom: '10px', minHeight: '36px' }}>
-            {loading ? <div className="animate-shimmer" style={{ width: '80px', height: '36px', background: M.border, borderRadius: '8px' }} /> : (() => {
+          <div className="font-serif text-[36px] font-bold text-maroon leading-none mb-2.5 min-h-[36px]">
+            {loading ? <div className="animate-pulse w-[80px] h-[36px] bg-border rounded-lg" /> : (() => {
               const total = stats?.today?.total || 0
               const comp  = stats?.today?.completed || 0
               return total > 0 ? `${Math.round((comp / total) * 100)}%` : '0%'
             })()}
           </div>
-          <div style={{ fontSize: '12px', color: M.textMuted }}>Of total scheduled</div>
+          <div className="text-[12px] text-text-muted">Of total scheduled</div>
         </div>
       </div>
 
       {/* ── Main Body: Calendar + Schedule ── */}
-      <div style={{ display: 'grid', gridTemplateColumns: '240px 1fr', gap: '20px' }}>
+      <div className="grid grid-cols-[240px_1fr] gap-5">
 
         {/* Left: Calendar + Quick Actions */}
-        <div className="animate-fade-up" style={{ animationDelay: '0.5s', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+        <div className="animate-fade-up flex flex-col gap-4" style={{ animationDelay: '0.5s' }}>
           <MiniCalendar selectedDate={selectedDate} onSelect={setSelectedDate} />
 
           {/* Quick Actions */}
-          <div style={{ background: M.white, borderRadius: '14px', border: `1px solid ${M.border}`, padding: '16px', boxShadow: '0 1px 4px rgba(0,0,0,0.04)' }}>
-            <p style={{ fontSize: '11px', fontWeight: 700, color: M.textMuted, textTransform: 'uppercase', letterSpacing: '0.06em', margin: '0 0 12px' }}>Quick Actions</p>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          <div className="bg-white rounded-[14px] border border-border p-4 shadow-sm">
+            <p className="text-[11px] font-bold text-text-muted uppercase tracking-[0.06em] m-0 mb-3">Quick Actions</p>
+            <div className="flex flex-col gap-2">
               {[
                 { label: 'Block Time Slot', action: () => {} },
                 { label: 'Add Internal Note', action: () => {} },
                 { label: 'Export Schedule', action: () => {} },
               ].map((item, i) => (
-                <button key={i} onClick={item.action} style={{
-                  padding: '9px 12px', borderRadius: '9px', border: `1px solid ${M.border}`,
-                  background: M.offWhite, color: M.text, fontSize: '13px', fontWeight: 600,
-                  cursor: 'pointer', textAlign: 'center', fontFamily: "'IBM Plex Sans', sans-serif",
-                  transition: 'all 0.12s',
-                }}
-                  onMouseEnter={e => { e.currentTarget.style.background = M.maroonLight; e.currentTarget.style.borderColor = M.maroonBorder; e.currentTarget.style.color = M.maroon }}
-                  onMouseLeave={e => { e.currentTarget.style.background = M.offWhite; e.currentTarget.style.borderColor = M.border; e.currentTarget.style.color = M.text }}
-                >
+                <button key={i} onClick={item.action} className="py-[9px] px-3 rounded-[9px] border border-border bg-off-white text-text-main text-[13px] font-semibold cursor-pointer text-center font-sans transition-all hover:bg-maroon-light hover:border-maroon-border hover:text-maroon">
                   {item.label}
                 </button>
               ))}
@@ -477,17 +444,17 @@ export default function AdminAppointmentsPage() {
 
           {/* Selected Date Summary */}
           {!loading && stats && (
-            <div style={{ background: M.maroonLight, borderRadius: '14px', border: `1px solid ${M.maroonBorder}`, padding: '16px' }}>
-              <p style={{ fontSize: '11px', fontWeight: 700, color: M.maroon, textTransform: 'uppercase', letterSpacing: '0.06em', margin: '0 0 12px' }}>Day Summary</p>
+            <div className="bg-maroon-light rounded-[14px] border border-maroon-border p-4">
+              <p className="text-[11px] font-bold text-maroon uppercase tracking-[0.06em] m-0 mb-3">Day Summary</p>
               {[
-                { l: 'Confirmed',   v: stats?.today?.confirmed || 0, c: M.blue  },
-                { l: 'Completed',   v: stats?.today?.completed || 0, c: M.green },
-                { l: 'Cancelled',   v: stats?.today?.cancelled || 0, c: M.red   },
-                { l: 'No Show',     v: stats?.today?.no_show || 0,   c: M.textMuted },
+                { l: 'Confirmed',   v: stats?.today?.confirmed || 0, c: 'text-info'  },
+                { l: 'Completed',   v: stats?.today?.completed || 0, c: 'text-success' },
+                { l: 'Cancelled',   v: stats?.today?.cancelled || 0, c: 'text-danger'   },
+                { l: 'No Show',     v: stats?.today?.no_show || 0,   c: 'text-text-muted' },
               ].map((s, i) => (
-                <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                  <span style={{ fontSize: '12px', color: M.maroon, opacity: 0.8 }}>{s.l}</span>
-                  <span style={{ fontFamily: "'Fraunces', serif", fontSize: '16px', fontWeight: 700, color: s.c }}>{s.v}</span>
+                <div key={i} className="flex justify-between items-center mb-2">
+                  <span className="text-[12px] text-maroon/80">{s.l}</span>
+                  <span className={`font-serif text-[16px] font-bold ${s.c}`}>{s.v}</span>
                 </div>
               ))}
             </div>
@@ -496,12 +463,12 @@ export default function AdminAppointmentsPage() {
 
         {/* Right: Today's Schedule table */}
         <div className="animate-fade-up" style={{ animationDelay: '0.6s' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px', flexWrap: 'wrap', gap: '8px' }}>
+          <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
             <div>
-              <h2 style={{ fontFamily: "'Fraunces', serif", fontSize: '20px', fontWeight: 700, color: M.text, margin: '0 0 3px' }}>
+              <h2 className="font-serif text-[20px] font-bold text-text-main m-0 mb-1">
                 {isToday ? "Today's Schedule" : formatDateLabel(selectedDate)}
               </h2>
-              <p style={{ fontSize: '12px', color: M.textMuted, margin: 0 }}>
+              <p className="text-[12px] text-text-muted m-0">
                 {filtered.length} appointment{filtered.length !== 1 ? 's' : ''} {statusFilter !== 'all' ? `· ${STATUS_CFG[statusFilter]?.label || statusFilter}` : ''}
               </p>
             </div>
@@ -509,40 +476,35 @@ export default function AdminAppointmentsPage() {
           </div>
 
           {/* Table */}
-          <div style={{ background: M.white, borderRadius: '16px', border: `1px solid ${M.border}`, overflow: 'hidden', boxShadow: '0 1px 4px rgba(0,0,0,0.04)' }}>
+          <div className="bg-white rounded-2xl border border-border overflow-hidden shadow-sm">
             {/* Header */}
-            <div style={{ display: 'grid', gridTemplateColumns: '90px 1.5fr 1.5fr 110px 150px', padding: '12px 20px', background: M.surface, borderBottom: `1px solid ${M.border}` }}>
+            <div className="grid grid-cols-[90px_1.5fr_1.5fr_110px_150px] p-[12px_20px] bg-surface border-b border-border">
               {['Time', 'Student', 'Transaction', 'Status', 'Action'].map(h => (
-                <span key={h} style={{ fontSize: '10px', fontWeight: 700, color: M.textMuted, textTransform: 'uppercase', letterSpacing: '0.06em' }}>{h}</span>
+                <span key={h} className="text-[10px] font-bold text-text-muted uppercase tracking-[0.06em]">{h}</span>
               ))}
             </div>
 
             {/* Rows */}
             {apptLoading ? (
               [1, 2, 3, 4, 5].map((n, idx) => (
-                <div key={n} style={{
-                  display: 'grid', gridTemplateColumns: '90px 1.5fr 1.5fr 110px 150px',
-                  padding: '16px 20px', alignItems: 'center',
-                  borderBottom: idx === 4 ? 'none' : `1px solid ${M.border}`,
-                  background: idx % 2 === 0 ? M.white : '#FDFCFB',
-                }}>
-                  <div className="animate-shimmer" style={{ height: '24px', width: '50px', borderRadius: '4px' }} />
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <div className="animate-shimmer" style={{ width: '34px', height: '34px', borderRadius: '50%' }} />
-                    <div className="animate-shimmer" style={{ height: '18px', width: '60%', borderRadius: '4px' }} />
+                <div key={n} className={`grid grid-cols-[90px_1.5fr_1.5fr_110px_150px] p-[16px_20px] items-center ${idx === 4 ? 'border-none' : 'border-b border-border'} ${idx % 2 === 0 ? 'bg-white' : 'bg-[#FDFCFB]'}`}>
+                  <div className="animate-pulse h-6 w-[50px] rounded bg-border" />
+                  <div className="flex items-center gap-2.5">
+                    <div className="animate-pulse w-[34px] h-[34px] rounded-full bg-border" />
+                    <div className="animate-pulse h-[18px] w-[60%] rounded bg-border" />
                   </div>
-                  <div className="animate-shimmer" style={{ height: '16px', width: '70%', borderRadius: '4px' }} />
-                  <div className="animate-shimmer" style={{ height: '22px', width: '70px', borderRadius: '100px' }} />
-                  <div className="animate-shimmer" style={{ height: '26px', width: '60px', borderRadius: '6px' }} />
+                  <div className="animate-pulse h-4 w-[70%] rounded bg-border" />
+                  <div className="animate-pulse h-[22px] w-[70px] rounded-full bg-border" />
+                  <div className="animate-pulse h-[26px] w-[60px] rounded-md bg-border" />
                 </div>
               ))
             ) : paginated.length === 0 ? (
-              <div style={{ padding: '56px 24px', textAlign: 'center' }}>
-                <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '12px', color: M.textMuted }}><Inbox size={48} /></div>
-                <p style={{ fontSize: '15px', fontWeight: 600, color: M.text, margin: '0 0 6px' }}>
+              <div className="p-[56px_24px] text-center">
+                <div className="flex justify-center mb-3 text-text-muted"><Inbox size={48} /></div>
+                <p className="text-[15px] font-semibold text-text-main m-0 mb-1.5">
                   No appointments {isToday ? 'today' : `on ${selectedDate}`}
                 </p>
-                <p style={{ fontSize: '13px', color: M.textMuted, margin: 0 }}>
+                <p className="text-[13px] text-text-muted m-0">
                   {statusFilter !== 'all' ? 'Try changing the status filter.' : 'This date has no scheduled appointments yet.'}
                 </p>
               </div>
@@ -555,66 +517,57 @@ export default function AdminAppointmentsPage() {
                 const time    = formatTime(appt.time_slot)
 
                 return (
-                  <div key={appt.id} style={{
-                    display: 'grid', gridTemplateColumns: '90px 1.5fr 1.5fr 110px 150px',
-                    padding: '16px 20px', alignItems: 'center',
-                    borderBottom: isLast ? 'none' : `1px solid ${M.border}`,
-                    background: idx % 2 === 0 ? M.white : '#FDFCFB',
-                    transition: 'background 0.1s',
-                  }}
-                    onMouseEnter={e => e.currentTarget.style.background = M.offWhite}
-                    onMouseLeave={e => e.currentTarget.style.background = idx % 2 === 0 ? M.white : '#FDFCFB'}
-                  >
+                  <div key={appt.id} className={`grid grid-cols-[90px_1.5fr_1.5fr_110px_150px] p-[16px_20px] items-center transition-colors duration-100 hover:bg-off-white ${isLast ? 'border-none' : 'border-b border-border'} ${idx % 2 === 0 ? 'bg-white' : 'bg-[#FDFCFB]'}`}>
                     {/* Time */}
                     <div>
-                      <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: '13px', fontWeight: 700, color: M.text }}>{time}</div>
-                      <div style={{ fontSize: '10px', color: M.textMuted, marginTop: '2px' }}>
+                      <div className="font-sans text-[13px] font-bold text-text-main">{time}</div>
+                      <div className="text-[10px] text-text-muted mt-0.5">
                         {appt.slot_duration_minutes ? `${appt.slot_duration_minutes}min` : ''}
                       </div>
                     </div>
 
                     {/* Student */}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
+                    <div className="flex items-center gap-2.5 min-w-0">
                       <Av name={name} size={34} />
-                      <div style={{ minWidth: 0 }}>
-                        <div style={{ fontSize: '14px', fontWeight: 600, color: M.text, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{name}</div>
+                      <div className="min-w-0">
+                        <div className="text-[14px] font-semibold text-text-main whitespace-nowrap overflow-hidden text-ellipsis">{name}</div>
                         {student?.student_id && (
-                          <div style={{ fontSize: '11px', color: M.textMuted, fontFamily: 'monospace' }}>{student.student_id}</div>
+                          <div className="text-[11px] text-text-muted font-mono">{student.student_id}</div>
                         )}
                       </div>
                     </div>
 
                     {/* Transaction */}
-                    <div style={{ fontSize: '13px', color: M.textSub, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{txName}</div>
+                    <div className="text-[13px] text-text-sub overflow-hidden text-ellipsis whitespace-nowrap">{txName}</div>
 
                     {/* Status */}
-                    <div style={{ display: 'flex', alignItems: 'center' }}>
+                    <div className="flex items-center">
                       <StatusBadge status={appt.status} />
                     </div>
 
                     {/* Action */}
-                    <div style={{ display: 'flex', gap: '6px' }}>
+                    <div className="flex gap-1.5">
                       {appt.status === 'pending' && (
-                        <button onClick={() => handleStatusChange(appt.id, 'confirmed')} style={{ padding: '6px 12px', borderRadius: '7px', border: 'none', background: M.maroonLight, color: M.maroon, fontSize: '11px', fontWeight: 700, cursor: 'pointer', fontFamily: "'IBM Plex Sans', sans-serif" }}>
+                        <button onClick={() => handleStatusChange(appt.id, 'confirmed')} className="py-1.5 px-3 rounded-md border-none bg-maroon-light text-maroon text-[11px] font-bold cursor-pointer font-sans">
                           Confirm
                         </button>
                       )}
 
                       {(appt.status === 'pending' || appt.status === 'confirmed') && (
-                        <button onClick={() => setRescheduleTarget(appt)} style={{ padding: '6px 12px', borderRadius: '7px', border: 'none', background: M.surface, color: M.text, fontSize: '11px', fontWeight: 700, cursor: 'pointer', fontFamily: "'IBM Plex Sans', sans-serif" }}>
+                        <button onClick={() => setRescheduleTarget(appt)} className="py-1.5 px-3 rounded-md border-none bg-surface text-text-main text-[11px] font-bold cursor-pointer font-sans">
                           Reschedule
                         </button>
                       )}
                       {(appt.status === 'pending' || appt.status === 'confirmed') && (
-                        <button onClick={() => handleStatusChange(appt.id, 'cancelled')} style={{ padding: '6px 12px', borderRadius: '7px', border: 'none', background: M.redLight, color: M.red, fontSize: '11px', fontWeight: 700, cursor: 'pointer', fontFamily: "'IBM Plex Sans', sans-serif" }}>
+                        <button onClick={() => handleStatusChange(appt.id, 'cancelled')} className="py-1.5 px-3 rounded-md border-none bg-danger-light text-danger text-[11px] font-bold cursor-pointer font-sans">
                           Cancel
                         </button>
                       )}
                       {appt.status === 'completed' && (
-                        <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: M.greenLight, color: M.green, display: 'flex', alignItems: 'center', justifyContent: 'center', border: `1px solid ${M.greenBorder}` }}><Check size={16} /></div>
+                        <div className="w-7 h-7 rounded-full bg-success-light text-success flex items-center justify-center border border-success-border"><Check size={16} /></div>
                       )}
                       {appt.status === 'cancelled' && (
-                        <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: M.redLight, color: M.red, display: 'flex', alignItems: 'center', justifyContent: 'center', border: `1px solid ${M.redBorder}` }}><XIcon size={16} /></div>
+                        <div className="w-7 h-7 rounded-full bg-danger-light text-danger flex items-center justify-center border border-danger-border"><XIcon size={16} /></div>
                       )}
                     </div>
                   </div>
@@ -624,27 +577,22 @@ export default function AdminAppointmentsPage() {
 
             {/* Footer pagination */}
             {filtered.length > 0 && (
-              <div style={{ padding: '12px 20px', borderTop: `1px solid ${M.border}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: M.surface }}>
-                <span style={{ fontSize: '12px', color: M.textMuted }}>
+              <div className="p-[12px_20px] border-t border-border flex items-center justify-between bg-surface">
+                <span className="text-[12px] text-text-muted">
                   Showing {Math.min((page - 1) * PER_PAGE + 1, filtered.length)}–{Math.min(page * PER_PAGE, filtered.length)} of {filtered.length} appointments
                 </span>
-                <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
+                <div className="flex gap-1 items-center">
                   <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}
-                    style={{ padding: '5px 10px', borderRadius: '7px', border: `1px solid ${M.border}`, background: M.white, fontSize: '12px', fontWeight: 600, cursor: page === 1 ? 'not-allowed' : 'pointer', color: page === 1 ? M.textMuted : M.text, fontFamily: "'IBM Plex Sans', sans-serif" }}>
+                    className={`py-1.5 px-2.5 rounded-md border border-border bg-white text-[12px] font-semibold font-sans ${page === 1 ? 'cursor-not-allowed text-text-muted' : 'cursor-pointer text-text-main'}`}>
                     Prev
                   </button>
                   {Array.from({ length: totalPages }, (_, i) => (
-                    <button key={i} onClick={() => setPage(i + 1)} style={{
-                      width: '30px', height: '30px', borderRadius: '7px',
-                      border: `1px solid ${page === i + 1 ? M.maroon : M.border}`,
-                      background: page === i + 1 ? M.maroon : M.white,
-                      color: page === i + 1 ? M.white : M.text,
-                      fontSize: '12px', fontWeight: 600, cursor: 'pointer',
-                      fontFamily: "'IBM Plex Sans', sans-serif",
-                    }}>{i + 1}</button>
+                    <button key={i} onClick={() => setPage(i + 1)} className={`w-[30px] h-[30px] rounded-md text-[12px] font-semibold cursor-pointer font-sans border ${page === i + 1 ? 'border-maroon bg-maroon text-white' : 'border-border bg-white text-text-main'}`}>
+                      {i + 1}
+                    </button>
                   ))}
                   <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages}
-                    style={{ padding: '5px 10px', borderRadius: '7px', border: `1px solid ${M.border}`, background: M.white, fontSize: '12px', fontWeight: 600, cursor: page === totalPages ? 'not-allowed' : 'pointer', color: page === totalPages ? M.textMuted : M.text, fontFamily: "'IBM Plex Sans', sans-serif" }}>
+                    className={`py-1.5 px-2.5 rounded-md border border-border bg-white text-[12px] font-semibold font-sans ${page === totalPages ? 'cursor-not-allowed text-text-muted' : 'cursor-pointer text-text-main'}`}>
                     Next
                   </button>
                 </div>

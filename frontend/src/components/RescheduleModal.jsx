@@ -32,7 +32,7 @@ function SlotBtn({ slot, selected, onSelect, selectedDate }) {
   else if (isFull) { bg = M.maroonLight; color = M.maroon; border = M.maroonLight; opacity = 1; cursor = 'not-allowed'; text = 'Full'; }
   return (
     <button type="button" onClick={() => isAvailable && onSelect(slot.time_slot)}
-      style={{ padding: '10px 6px', borderRadius: '8px', background: bg, color, fontSize: '12px', fontWeight: 600, cursor, fontFamily: "'IBM Plex Sans', sans-serif", opacity, border: `1.5px solid ${border}`, transition: 'all 0.15s', textAlign: 'center' }}
+      style={{ padding: '10px 6px', borderRadius: '8px', background: bg, color, fontSize: '12px', fontWeight: 600, cursor, fontFamily: "'Poppins', sans-serif", opacity, border: `1.5px solid ${border}`, transition: 'all 0.15s', textAlign: 'center' }}
     >{text}</button>
   )
 }
@@ -105,14 +105,14 @@ export default function RescheduleModal({ token, appointment, onClose, onSuccess
       <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)' }} onClick={onClose} />
       <div className="animate-fade-up" style={{ position: 'relative', width: '100%', maxWidth: '480px', background: M.white, borderRadius: '24px 24px 0 0', padding: '24px', maxHeight: '90vh', overflowY: 'auto' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-          <h2 style={{ fontFamily: "'Fraunces', serif", fontSize: '20px', fontWeight: 700, margin: 0, color: M.maroon }}>Reschedule Appointment</h2>
+          <h2 style={{ fontFamily: "'Lora', serif", fontSize: '20px', fontWeight: 700, margin: 0, color: M.maroon }}>Reschedule Appointment</h2>
           <button onClick={onClose} style={{ background: 'none', border: 'none', fontSize: '24px', cursor: 'pointer', color: M.textSub }}>×</button>
         </div>
 
         {error && <div style={{ padding: '12px', background: M.maroonLight, color: M.maroon, borderRadius: '8px', fontSize: '13px', marginBottom: '16px' }}>{error}</div>}
 
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-          <h3 style={{ fontFamily: "'Fraunces', serif", fontSize: '18px', fontWeight: 700, margin: 0 }}>{MONTHS[month]} {year}</h3>
+          <h3 style={{ fontFamily: "'Lora', serif", fontSize: '18px', fontWeight: 700, margin: 0 }}>{MONTHS[month]} {year}</h3>
           <div style={{ display: 'flex', gap: '4px' }}>
             <button onClick={() => setCurrentMonth(new Date(year, month - 1, 1))} style={{ width: '32px', height: '32px', borderRadius: '8px', border: `1px solid ${M.border}`, background: M.white, cursor: 'pointer' }}>‹</button>
             <button onClick={() => setCurrentMonth(new Date(year, month + 1, 1))} style={{ width: '32px', height: '32px', borderRadius: '8px', border: `1px solid ${M.border}`, background: M.white, cursor: 'pointer' }}>›</button>
@@ -161,7 +161,7 @@ export default function RescheduleModal({ token, appointment, onClose, onSuccess
                 style={{
                   width: '100%', minHeight: '80px', padding: '12px', borderRadius: '10px',
                   border: `1.5px solid ${M.border}`, background: M.white,
-                  fontSize: '13px', color: M.text, fontFamily: "'IBM Plex Sans', sans-serif",
+                  fontSize: '13px', color: M.text, fontFamily: "'Poppins', sans-serif",
                   resize: 'vertical'
                 }}
               />
@@ -189,7 +189,7 @@ export default function RescheduleModal({ token, appointment, onClose, onSuccess
         )}
 
         <button onClick={handleConfirmClick} disabled={!selectedSlot || loading}
-          style={{ width: '100%', padding: '14px', borderRadius: '12px', border: 'none', background: selectedSlot ? M.gold : M.gray200, color: selectedSlot ? M.maroon : M.textMuted, fontSize: '15px', fontWeight: 700, cursor: selectedSlot && !loading ? 'pointer' : 'not-allowed', transition: 'all 0.2s', fontFamily: "'IBM Plex Sans', sans-serif" }}>
+          style={{ width: '100%', padding: '14px', borderRadius: '12px', border: 'none', background: selectedSlot ? M.gold : M.gray200, color: selectedSlot ? M.maroon : M.textMuted, fontSize: '15px', fontWeight: 700, cursor: selectedSlot && !loading ? 'pointer' : 'not-allowed', transition: 'all 0.2s', fontFamily: "'Poppins', sans-serif" }}>
           Confirm Reschedule
         </button>
       </div>
@@ -201,7 +201,7 @@ export default function RescheduleModal({ token, appointment, onClose, onSuccess
             <div style={{ width: '48px', height: '48px', borderRadius: '50%', background: M.goldLight, color: M.gold, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
               <HelpCircle size={24} />
             </div>
-            <h3 style={{ fontFamily: "'Fraunces', serif", fontSize: '18px', fontWeight: 700, color: M.text, margin: '0 0 8px' }}>Confirm Reschedule?</h3>
+            <h3 style={{ fontFamily: "'Lora', serif", fontSize: '18px', fontWeight: 700, color: M.text, margin: '0 0 8px' }}>Confirm Reschedule?</h3>
             <p style={{ fontSize: '13px', color: M.textSub, margin: '0 0 24px', lineHeight: 1.4 }}>
               Are you sure you want to change your appointment to <strong>{selectedDate}</strong> at <strong>{selectedSlot ? (() => {
                   const [hStr, mStr] = selectedSlot.split(':')
@@ -213,14 +213,14 @@ export default function RescheduleModal({ token, appointment, onClose, onSuccess
               <button 
                 onClick={() => setConfirmingReschedule(false)}
                 disabled={loading}
-                style={{ flex: 1, padding: '10px', borderRadius: '10px', border: `1px solid ${M.border}`, background: M.white, color: M.text, fontSize: '13px', fontWeight: 600, cursor: 'pointer', fontFamily: "'IBM Plex Sans', sans-serif", opacity: loading ? 0.5 : 1 }}
+                style={{ flex: 1, padding: '10px', borderRadius: '10px', border: `1px solid ${M.border}`, background: M.white, color: M.text, fontSize: '13px', fontWeight: 600, cursor: 'pointer', fontFamily: "'Poppins', sans-serif", opacity: loading ? 0.5 : 1 }}
               >
                 Go Back
               </button>
               <button 
                 onClick={handleConfirmExecute}
                 disabled={loading || isUploading}
-                style={{ flex: 1, padding: '10px', borderRadius: '10px', border: 'none', background: M.gold, color: M.maroon, fontSize: '13px', fontWeight: 600, cursor: 'pointer', fontFamily: "'IBM Plex Sans', sans-serif", opacity: loading || isUploading ? 0.5 : 1 }}
+                style={{ flex: 1, padding: '10px', borderRadius: '10px', border: 'none', background: M.gold, color: M.maroon, fontSize: '13px', fontWeight: 600, cursor: 'pointer', fontFamily: "'Poppins', sans-serif", opacity: loading || isUploading ? 0.5 : 1 }}
               >
                 {isUploading ? 'Uploading...' : loading ? 'Saving...' : 'Yes, Save'}
               </button>

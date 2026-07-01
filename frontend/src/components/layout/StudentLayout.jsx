@@ -4,7 +4,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/useAuth';
 import crmcLogo from '../../assets/crmc-logo.webp';
 import BottomNav from './BottomNav';
-import { LogOut, ClipboardList, Ticket, Home, Calendar, Bot } from 'lucide-react';
+import { LogOut, ClipboardList, Ticket, Home, Calendar, Bot, Bell } from 'lucide-react';
 import Navbar from './Navbar';
 
 // eslint-disable-next-line react-refresh/only-export-components
@@ -75,7 +75,7 @@ const SideNavItem = ({ icon, label, path, active, navigate, collapsed }) => (
       background: active ? M.maroonMid : 'transparent',
       color: active ? M.maroon : M.textSub,
       fontSize: '14px', fontWeight: active ? 600 : 500,
-      fontFamily: "'IBM Plex Sans', sans-serif",
+      fontFamily: "'Poppins', sans-serif",
       position: 'relative',
       overflow: 'hidden',
       transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
@@ -188,7 +188,7 @@ export function ProfileDropdown() {
                     onClick={() => { setProfileOpen(false); navigate('/student/appointments'); }}
                     style={{
                       display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 12px', borderRadius: '10px', border: 'none',
-                      background: 'transparent', cursor: 'pointer', textAlign: 'left', fontFamily: "'IBM Plex Sans', sans-serif", fontSize: '14px', fontWeight: 600, color: M.text,
+                      background: 'transparent', cursor: 'pointer', textAlign: 'left', fontFamily: "'Poppins', sans-serif", fontSize: '14px', fontWeight: 600, color: M.text,
                       transition: 'background 0.2s'
                     }}
                     onMouseEnter={e => e.currentTarget.style.background = M.offWhite}
@@ -200,7 +200,7 @@ export function ProfileDropdown() {
                     onClick={() => { setProfileOpen(false); navigate('/student/queue'); }}
                     style={{
                       display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 12px', borderRadius: '10px', border: 'none',
-                      background: 'transparent', cursor: 'pointer', textAlign: 'left', fontFamily: "'IBM Plex Sans', sans-serif", fontSize: '14px', fontWeight: 600, color: M.text,
+                      background: 'transparent', cursor: 'pointer', textAlign: 'left', fontFamily: "'Poppins', sans-serif", fontSize: '14px', fontWeight: 600, color: M.text,
                       transition: 'background 0.2s'
                     }}
                     onMouseEnter={e => e.currentTarget.style.background = M.offWhite}
@@ -217,7 +217,7 @@ export function ProfileDropdown() {
                     border: 'none', background: M.redLight, color: M.red,
                     fontSize: '14px', fontWeight: 600, cursor: 'pointer',
                     display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
-                    fontFamily: "'IBM Plex Sans', sans-serif",
+                    fontFamily: "'Poppins', sans-serif",
                     transition: 'all 0.2s',
                   }}
                   onMouseEnter={e => e.currentTarget.style.opacity = '0.85'}
@@ -284,7 +284,7 @@ export function ProfileDropdown() {
                     onClick={() => { setProfileOpen(false); navigate('/student/appointments'); }}
                     style={{
                       display: 'flex', alignItems: 'center', gap: '12px', padding: '14px 16px', borderRadius: '12px', border: 'none',
-                      background: M.offWhite, cursor: 'pointer', textAlign: 'left', fontFamily: "'IBM Plex Sans', sans-serif", fontSize: '14px', fontWeight: 600, color: M.text
+                      background: M.offWhite, cursor: 'pointer', textAlign: 'left', fontFamily: "'Poppins', sans-serif", fontSize: '14px', fontWeight: 600, color: M.text
                     }}
                   >
                     <ClipboardList size={16} /> My Appointments
@@ -293,7 +293,7 @@ export function ProfileDropdown() {
                     onClick={() => { setProfileOpen(false); navigate('/student/queue'); }}
                     style={{
                       display: 'flex', alignItems: 'center', gap: '12px', padding: '14px 16px', borderRadius: '12px', border: 'none',
-                      background: M.offWhite, cursor: 'pointer', textAlign: 'left', fontFamily: "'IBM Plex Sans', sans-serif", fontSize: '14px', fontWeight: 600, color: M.text
+                      background: M.offWhite, cursor: 'pointer', textAlign: 'left', fontFamily: "'Poppins', sans-serif", fontSize: '14px', fontWeight: 600, color: M.text
                     }}
                   >
                     <Ticket size={16} /> Active Queue Ticket
@@ -306,7 +306,7 @@ export function ProfileDropdown() {
                     border: 'none', background: M.redLight, color: M.red,
                     fontSize: '15px', fontWeight: 700, cursor: 'pointer',
                     display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
-                    fontFamily: "'IBM Plex Sans', sans-serif", marginTop: '12px'
+                    fontFamily: "'Poppins', sans-serif", marginTop: '12px'
                   }}
                 >
                   <LogOut size={16} /> Log Out
@@ -331,7 +331,7 @@ export default function StudentLayout({ children, activeTab, mobileTitle, backTo
 
   if (isDesktop) {
     return (
-      <div style={{ minHeight: '100vh', display: 'flex', background: M.offWhite, fontFamily: "'IBM Plex Sans', sans-serif" }}>
+      <div style={{ minHeight: '100vh', display: 'flex', background: M.offWhite, fontFamily: "'Poppins', sans-serif" }}>
 
         {/* ── Left Sidebar ── */}
         <aside style={{
@@ -348,7 +348,7 @@ export default function StudentLayout({ children, activeTab, mobileTitle, backTo
             <img src={crmcLogo} alt="CRMC Logo" style={{ width: '38px', height: '38px', borderRadius: '50%' }} />
             {!sidebarCollapsed && (
               <div style={{ whiteSpace: 'nowrap', overflow: 'hidden' }}>
-                <div style={{ fontFamily: "'Fraunces', serif", fontSize: '17px', fontWeight: 700, color: M.maroon, letterSpacing: '-0.01em' }}>CampusFlow</div>
+                <div style={{ fontFamily: "'Lora', serif", fontSize: '17px', fontWeight: 700, color: M.maroon, letterSpacing: '-0.01em' }}>CampusFlow</div>
                 <div style={{ fontSize: '10px', fontWeight: 600, color: M.textMuted, letterSpacing: '0.06em', textTransform: 'uppercase', marginTop: '1px' }}>Student Portal</div>
               </div>
             )}
@@ -412,15 +412,22 @@ export default function StudentLayout({ children, activeTab, mobileTitle, backTo
           <header style={{
             background: M.white, borderBottom: `1px solid ${M.border}`,
             padding: '0 40px', height: '70px',
-            display: 'flex', alignItems: 'center', justifyContent: 'flex-end',
+            display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '24px',
             position: 'sticky', top: 0, zIndex: 40,
           }}>
+            <button style={{
+              background: 'transparent', border: 'none', cursor: 'pointer',
+              color: M.textSub, display: 'flex', alignItems: 'center', justifyContent: 'center',
+              padding: '4px', transition: 'color 0.2s'
+            }} onMouseEnter={e => e.currentTarget.style.color = M.maroon} onMouseLeave={e => e.currentTarget.style.color = M.textSub}>
+              <Bell size={22} />
+            </button>
             <ProfileDropdown />
           </header>
 
           {/* Body */}
           <main style={{ padding: '40px', flex: 1, maxWidth: '1200px', margin: '0 auto', width: '100%' }}>
-            {mobileTitle && <h1 style={{ fontFamily: "'Fraunces', serif", fontSize: '28px', color: M.maroon, margin: '0 0 24px 0' }}>{mobileTitle}</h1>}
+            {mobileTitle && <h1 style={{ fontFamily: "'Lora', serif", fontSize: '28px', color: M.maroon, margin: '0 0 24px 0' }}>{mobileTitle}</h1>}
             {children}
           </main>
         </div>
@@ -429,7 +436,7 @@ export default function StudentLayout({ children, activeTab, mobileTitle, backTo
   } else {
     // Mobile view fallback
     return (
-      <div style={{ minHeight: '100vh', background: M.offWhite, fontFamily: "'IBM Plex Sans', sans-serif" }}>
+      <div style={{ minHeight: '100vh', background: M.offWhite, fontFamily: "'Poppins', sans-serif" }}>
         {mobileTitle && <Navbar backTo={backTo} title={mobileTitle} />}
         {children}
         {activeTab && <BottomNav active={activeTab} />}

@@ -2,10 +2,10 @@ import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/useAuth';
 import crmcLogo from '../../assets/crmc-logo.webp';
-import StudentLayout, { M, useWindowWidth, ProfileDropdown } from '../../components/layout/StudentLayout';
+import StudentLayout, { useWindowWidth, ProfileDropdown } from '../../components/layout/StudentLayout';
 import { getMyAppointments } from '../../services/appointmentService';
 import { getMyQueue, getTimeEstimate } from '../../services/queueService';
-import { LogOut, ClipboardList, Ticket, Home, Calendar, Bot, Clock } from 'lucide-react';
+import { LogOut, ClipboardList, Ticket, Home, Calendar, Bot, Clock, Bell } from 'lucide-react';
 
 // ── Status Styles ──
 const STATUS_STYLES = {
@@ -95,16 +95,10 @@ const DraggableBot = ({ navigate }) => {
       onPointerUp={onPointerUp}
       onPointerCancel={onPointerUp}
       onClick={onClick}
-      className="floating-ai-button"
-      style={{ 
-        position: 'fixed', left: position.x + 'px', top: position.y + 'px', width: '56px', height: '56px', 
-        borderRadius: '50%', backgroundColor: M.maroon, color: M.white, border: 'none', 
-        boxShadow: '0 4px 16px rgba(123,26,42,0.3)', display: 'flex', alignItems: 'center', 
-        justifyContent: 'center', cursor: 'pointer', zIndex: 90, 
-        touchAction: 'none', transition: isDragging ? 'none' : 'box-shadow 0.2s'
-      }}
+      className={`fixed w-14 h-14 rounded-full bg-maroon text-white border-none shadow-[0_4px_16px_rgba(123,26,42,0.3)] flex items-center justify-center cursor-pointer z-90 touch-none hover:scale-110 hover:-translate-y-0.5 hover:shadow-[0_8px_24px_rgba(123,26,42,0.45)] ${isDragging ? 'transition-none' : 'transition-all duration-300 ease-out-back'}`}
+      style={{ left: position.x + 'px', top: position.y + 'px' }}
     >
-      <Bot size={26} style={{ pointerEvents: 'none' }} />
+      <Bot size={26} className="pointer-events-none" />
     </button>
   );
 };
@@ -192,131 +186,76 @@ export default function StudentDashboard() {
       {/* Dashboard Body */}
       {isDesktop ? (
         <>
-        <main style={{ padding: '40px', flex: 1, maxWidth: '1200px', margin: '0 auto', width: '100%' }}>
+        <main className="p-10 flex-1 max-w-[1200px] mx-auto w-full">
           {/* Hero greeting card */}
           <div 
-              className="animate-fade-up"
-              style={{
-                animationDelay: '0.1s',
-                background: `linear-gradient(135deg, ${M.maroon} 0%, ${M.maroonDark} 100%)`,
-                borderRadius: '24px', padding: '40px 48px', marginBottom: '32px',
-                position: 'relative', overflow: 'hidden',
-                boxShadow: '0 20px 40px -15px rgba(123, 26, 42, 0.3)',
-              }}
+              className="animate-fade-up bg-linear-to-br from-maroon to-maroon-dark rounded-3xl py-10 px-12 mb-8 relative overflow-hidden shadow-[0_20px_40px_-15px_rgba(123,26,42,0.3)]"
+              style={{ animationDelay: '0.1s' }}
             >
               {/* Blurred abstract glows */}
-              <div style={{
-                position: 'absolute', right: '-10%', top: '-30%',
-                width: '300px', height: '300px', borderRadius: '50%',
-                background: `radial-gradient(circle, rgba(184,144,10,0.18) 0%, transparent 70%)`,
-                filter: 'blur(40px)', pointerEvents: 'none',
-                animation: 'floatBubble 8s ease-in-out infinite'
-              }} />
-              <div style={{
-                position: 'absolute', right: '15%', bottom: '-45%',
-                width: '250px', height: '250px', borderRadius: '50%',
-                background: `radial-gradient(circle, rgba(255,255,255,0.06) 0%, transparent 70%)`,
-                filter: 'blur(30px)', pointerEvents: 'none',
-                animation: 'floatBubble 6s ease-in-out infinite alternate'
-              }} />
+              <div className="absolute right-[-10%] top-[-30%] w-[300px] h-[300px] rounded-full pointer-events-none animate-float-bubble blur-2xl" style={{ background: `radial-gradient(circle, rgba(184,144,10,0.18) 0%, transparent 70%)` }} />
+              <div className="absolute right-[15%] bottom-[-45%] w-[250px] h-[250px] rounded-full pointer-events-none animate-float-bubble-alt blur-[30px]" style={{ background: `radial-gradient(circle, rgba(255,255,255,0.06) 0%, transparent 70%)` }} />
               
-              <div style={{ position: 'relative', zIndex: 1 }}>
-                <span style={{ 
-                  display: 'inline-block',
-                  fontSize: '11px', fontWeight: 700, 
-                  color: M.gold, textTransform: 'uppercase', 
-                  letterSpacing: '0.12em', marginBottom: '12px',
-                  background: 'rgba(184, 144, 10, 0.15)',
-                  padding: '4px 10px', borderRadius: '20px',
-                  border: `1.5px solid rgba(184, 144, 10, 0.25)`
-                }}>
+              <div className="relative z-1">
+                <span className="inline-block text-[11px] font-bold text-gold uppercase tracking-[0.12em] mb-3 bg-gold/15 px-2.5 py-1 rounded-[20px] border-[1.5px] border-gold/25">
                   Student Portal Active
                 </span>
-                <h1 style={{ 
-                  fontFamily: "'Fraunces', serif", 
-                  fontSize: 'clamp(28px, 3.5vw, 42px)', 
-                  fontWeight: 700, color: M.white, 
-                  margin: '0 0 12px', lineHeight: 1.15 
-                }}>
+                <h1 className="font-serif text-[clamp(28px,3.5vw,42px)] font-bold text-white m-0 mb-3 leading-[1.15]">
                   {getGreeting()}, {user?.first_name || 'Student'}!
                 </h1>
-                <p style={{ fontSize: '15px', color: 'rgba(255,255,255,0.65)', margin: 0, maxWidth: '580px', lineHeight: 1.6 }}>
+                <p className="text-[15px] text-white/65 m-0 max-w-[580px] leading-[1.6]">
                   Manage your academic documents, track live queue ticket status, or chat with our virtual guide—all from your personalized dashboard.
                 </p>
               </div>
             </div>
 
             {/* Cards section */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '24px', marginBottom: '32px' }}>
+            <div className="flex flex-col gap-6 mb-8">
 
               {/* Compact action + queue row */}
               <div
-                className="animate-fade-up"
-                style={{ animationDelay: '0.2s', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}
+                className="animate-fade-up grid grid-cols-2 gap-5"
+                style={{ animationDelay: '0.2s' }}
               >
                 {/* Book Appointment card */}
                 <button
                   onClick={() => navigate('/student/book')}
-                  style={{
-                    background: M.white, borderRadius: '20px', padding: '22px 24px',
-                    border: `1px solid ${M.border}`, cursor: 'pointer', textAlign: 'left',
-                    boxShadow: '0 4px 16px rgba(0,0,0,0.02)',
-                    display: 'flex', alignItems: 'center', gap: '16px',
-                    transition: 'all 0.2s', fontFamily: "'IBM Plex Sans', sans-serif",
-                  }}
-                  onMouseEnter={e => { e.currentTarget.style.borderColor = M.maroonBorder; e.currentTarget.style.boxShadow = '0 6px 20px rgba(123,26,42,0.08)'; }}
-                  onMouseLeave={e => { e.currentTarget.style.borderColor = M.border; e.currentTarget.style.boxShadow = '0 4px 16px rgba(0,0,0,0.02)'; }}
+                  className="bg-white rounded-[20px] py-[22px] px-6 border border-border cursor-pointer text-left shadow-[0_4px_16px_rgba(0,0,0,0.02)] flex items-center gap-4 transition-all duration-200 font-sans hover:border-maroon-border hover:shadow-[0_6px_20px_rgba(123,26,42,0.08)] group"
                 >
-                  <div style={{
-                    width: '44px', height: '44px', borderRadius: '12px', color: M.maroon,
-                    background: M.maroonMid, display: 'flex',
-                    alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-                  }}><Calendar size={22} /></div>
+                  <div className="w-11 h-11 rounded-xl text-maroon bg-maroon-mid flex items-center justify-center shrink-0">
+                    <Calendar size={22} />
+                  </div>
                   <div>
-                    <div style={{ fontSize: '15px', fontWeight: 700, color: M.maroon, fontFamily: "'Fraunces', serif" }}>Book Appointment</div>
-                    <div style={{ fontSize: '12px', color: M.textSub, marginTop: '3px' }}>Schedule a visit with campus offices</div>
+                    <div className="text-[15px] font-bold text-maroon font-serif">Book Appointment</div>
+                    <div className="text-xs text-text-sub mt-[3px]">Schedule a visit with campus offices</div>
                   </div>
                 </button>
 
                 {/* My Queue compact card */}
-                <div
-                  style={{
-                    background: M.white, borderRadius: '20px', padding: '22px 24px',
-                    border: `1px solid ${M.border}`,
-                    boxShadow: '0 4px 16px rgba(0,0,0,0.02)',
-                    display: 'flex', alignItems: 'center', gap: '16px',
-                  }}
-                >
-                  <div style={{
-                    width: '44px', height: '44px', borderRadius: '12px', color: M.gold,
-                    background: M.goldMid, display: 'flex',
-                    alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-                  }}><Ticket size={22} /></div>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px' }}>
-                      <span style={{ fontSize: '10px', fontWeight: 700, color: M.textMuted, letterSpacing: '0.1em', textTransform: 'uppercase' }}>My Queue</span>
+                <div className="bg-white rounded-[20px] py-[22px] px-6 border border-border shadow-[0_4px_16px_rgba(0,0,0,0.02)] flex items-center gap-4">
+                  <div className="w-11 h-11 rounded-xl text-gold bg-gold-mid flex items-center justify-center shrink-0">
+                    <Ticket size={22} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-[10px] font-bold text-text-muted tracking-widest uppercase">My Queue</span>
                       {liveTicket && (
-                        <span style={{
-                          display: 'flex', alignItems: 'center', gap: '4px',
-                          fontSize: '10px', fontWeight: 600, color: M.gold,
-                          background: M.goldLight, padding: '2px 8px', borderRadius: '10px',
-                          border: `1px solid ${M.goldBorder}`,
-                        }}>
-                          <span className="pulse-indicator" /> Live
+                        <span className="flex items-center gap-1 text-[10px] font-semibold text-gold bg-gold-light px-2 py-0.5 rounded-[10px] border border-gold-border">
+                          <span className="w-[7px] h-[7px] rounded-full bg-gold inline-block animate-pulse-live" /> Live
                         </span>
                       )}
                     </div>
                     {loading ? (
-                      <div className="animate-shimmer" style={{ height: '20px', borderRadius: '6px', width: '60%' }} />
+                      <div className="animate-pulse h-5 rounded-md w-[60%] bg-border" />
                     ) : liveTicket ? (
                       <div>
-                        <div style={{ fontSize: '15px', fontWeight: 700, color: M.maroon, fontFamily: "'Fraunces', serif" }}>{liveTicket.queue_number}</div>
-                        <div style={{ fontSize: '12px', color: M.textSub, marginTop: '2px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        <div className="text-[15px] font-bold text-maroon font-serif">{liveTicket.queue_number}</div>
+                        <div className="text-xs text-text-sub mt-0.5 whitespace-nowrap overflow-hidden text-ellipsis">
                           {liveTicket.transaction_type || 'Registrar'} · Est. {liveTicket.est_wait_mins} min wait
                         </div>
                       </div>
                     ) : (
-                      <div style={{ fontSize: '13px', color: M.textMuted }}>No active queue ticket</div>
+                      <div className="text-[13px] text-text-muted">No active queue ticket</div>
                     )}
                   </div>
                 </div>
@@ -324,105 +263,84 @@ export default function StudentDashboard() {
             </div>
 
             {/* Main Content Grid: Upcoming Appointments + Live Queue */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr', gap: '24px', marginBottom: '32px', alignItems: 'start' }}>
+            <div className="grid grid-cols-[1.5fr_1fr] gap-6 mb-8 items-start">
               
               {/* Upcoming Appointments */}
               <div 
-              className="animate-fade-up"
-              style={{ 
-                animationDelay: '0.3s',
-                background: M.white, borderRadius: '20px', padding: '28px', 
-                boxShadow: '0 8px 30px rgba(0,0,0,0.02), 0 0 0 1px rgba(123, 26, 42, 0.04)' 
-              }}
+              className="animate-fade-up bg-white rounded-[20px] p-7 shadow-[0_8px_30px_rgba(0,0,0,0.02),0_0_0_1px_rgba(123,26,42,0.04)]"
+              style={{ animationDelay: '0.3s' }}
             >
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+              <div className="flex justify-between items-center mb-6">
                 <div>
-                  <p style={{ fontSize: '11px', fontWeight: 700, color: M.gold, letterSpacing: '0.12em', textTransform: 'uppercase', margin: '0 0 4px' }}>
+                  <p className="text-[11px] font-bold text-gold tracking-[0.12em] uppercase m-0 mb-1">
                     Schedule Overview
                   </p>
-                  <h2 style={{ fontFamily: "'Fraunces', serif", fontSize: '20px', fontWeight: 700, color: M.text, margin: 0 }}>
+                  <h2 className="font-serif text-[20px] font-bold text-text-main m-0">
                     Upcoming Appointments
                   </h2>
                 </div>
                 <button 
                   onClick={() => navigate('/student/appointments')} 
-                  style={{
-                    fontSize: '13px', fontWeight: 600, color: M.maroon, background: M.maroonLight,
-                    border: `1.5px solid ${M.maroonBorder}`, borderRadius: '10px',
-                    padding: '8px 16px', cursor: 'pointer', fontFamily: "'IBM Plex Sans', sans-serif",
-                    transition: 'all 0.2s',
-                  }}
-                  onMouseEnter={e => { e.currentTarget.style.background = M.maroon; e.currentTarget.style.color = M.white; }}
-                  onMouseLeave={e => { e.currentTarget.style.background = M.maroonLight; e.currentTarget.style.color = M.maroon; }}
+                  className="text-[13px] font-semibold text-maroon bg-maroon-light border-[1.5px] border-maroon-border rounded-[10px] py-2 px-4 cursor-pointer font-sans transition-all duration-200 hover:bg-maroon hover:text-white"
                 >
                   View History →
                 </button>
               </div>
 
               {loading ? (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                <div className="flex flex-col gap-3">
                   {[1, 2, 3].map(i => (
-                    <div key={i} style={{ padding: '16px 20px', borderRadius: '16px', border: `1px solid ${M.border}`, background: M.offWhite, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                        <div className="animate-shimmer" style={{ width: '46px', height: '46px', borderRadius: '12px' }} />
+                    <div key={i} className="p-4 rounded-2xl border border-border bg-off-white flex justify-between items-center">
+                      <div className="flex items-center gap-4">
+                        <div className="animate-pulse w-[46px] h-[46px] rounded-xl bg-border" />
                         <div>
-                          <div className="animate-shimmer" style={{ width: '120px', height: '14px', borderRadius: '4px', marginBottom: '8px' }} />
-                          <div className="animate-shimmer" style={{ width: '180px', height: '12px', borderRadius: '4px' }} />
+                          <div className="animate-pulse w-[120px] h-[14px] rounded bg-border mb-2" />
+                          <div className="animate-pulse w-[180px] h-[12px] rounded bg-border" />
                         </div>
                       </div>
-                      <div className="animate-shimmer" style={{ width: '80px', height: '24px', borderRadius: '100px' }} />
+                      <div className="animate-pulse w-[80px] h-6 rounded-full bg-border" />
                     </div>
                   ))}
                 </div>
               ) : appointments.length > 0 ? (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                <div className="flex flex-col gap-3">
                   {appointments.map(apt => (
                     <div 
                       key={apt.id} 
-                      className="hover-card"
-                      style={{
-                        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                        padding: '16px 20px', borderRadius: '16px', border: `1px solid ${M.border}`,
-                        background: M.offWhite,
-                      }}
+                      className="flex justify-between items-center p-4 rounded-2xl border border-border bg-off-white transition-all duration-400 ease-out hover:-translate-y-1 hover:shadow-[0_12px_30px_-4px_rgba(123,26,42,0.08),0_4px_12px_-2px_rgba(0,0,0,0.02)] hover:border-maroon-border"
                     >
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                        <div style={{ 
-                          width: '46px', height: '46px', borderRadius: '12px', color: M.maroon,
-                          background: M.white, border: `1.5px solid ${M.border}`, 
-                          display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 
-                        }}>
+                      <div className="flex items-center gap-4">
+                        <div className="w-[46px] h-[46px] rounded-xl text-maroon bg-white border-[1.5px] border-border flex items-center justify-center shrink-0">
                           <ClipboardList size={22} />
                         </div>
                         <div>
-                          <div style={{ fontSize: '15px', fontWeight: 600, color: M.text }}>{apt.type}</div>
-                          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', alignItems: 'center', marginTop: '6px' }}>
-                            <span style={{ fontSize: '12px', color: M.textSub, background: M.white, border: `1px solid ${M.border}`, padding: '2px 8px', borderRadius: '6px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                          <div className="text-[15px] font-semibold text-text-main">{apt.type}</div>
+                          <div className="flex flex-wrap gap-2 items-center mt-1.5">
+                            <span className="text-xs text-text-sub bg-white border border-border py-0.5 px-2 rounded-md flex items-center gap-1">
                               <Calendar size={12} /> {apt.date}
                             </span>
-                            <span style={{ fontSize: '12px', color: M.textSub, background: M.white, border: `1px solid ${M.border}`, padding: '2px 8px', borderRadius: '6px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                            <span className="text-xs text-text-sub bg-white border border-border py-0.5 px-2 rounded-md flex items-center gap-1">
                               <Clock size={12} /> {apt.time}
                             </span>
-                            <span style={{ fontSize: '12px', color: M.textMuted }}>
+                            <span className="text-xs text-text-muted">
                               · &nbsp;{apt.step}
                             </span>
                           </div>
                         </div>
                       </div>
-                      <span style={{
-                        fontSize: '11px', fontWeight: 700, padding: '6px 14px',
-                        borderRadius: '100px', whiteSpace: 'nowrap',
-                        textTransform: 'uppercase', letterSpacing: '0.04em',
-                        background: STATUS_STYLES[apt.status].bg, color: STATUS_STYLES[apt.status].color,
-                        border: `1.5px solid ${STATUS_STYLES[apt.status].border}`,
-                      }}>
+                      <span className="text-[11px] font-bold py-1.5 px-3.5 rounded-full whitespace-nowrap uppercase tracking-[0.04em]"
+                        style={{
+                          background: STATUS_STYLES[apt.status].bg, color: STATUS_STYLES[apt.status].color,
+                          border: `1.5px solid ${STATUS_STYLES[apt.status].border}`,
+                        }}
+                      >
                         {apt.status}
                       </span>
                     </div>
                   ))}
                 </div>
               ) : (
-                <div style={{ textAlign: 'center', padding: '32px', color: M.textMuted, background: M.offWhite, borderRadius: '16px', border: `1px dashed ${M.border}` }}>
+                <div className="text-center p-8 text-text-muted bg-off-white rounded-2xl border border-dashed border-border">
                   No upcoming appointments.
                 </div>
               )}
@@ -430,296 +348,221 @@ export default function StudentDashboard() {
 
               {/* Large Live Queue Block (Desktop) */}
               <div className="animate-fade-up" style={{ animationDelay: '0.3s' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '12px' }}>
+                <div className="flex justify-between items-end mb-3">
                   <div>
-                    <p style={{ fontSize: '11px', fontWeight: 600, color: M.gold, letterSpacing: '0.1em', textTransform: 'uppercase', margin: '0 0 2px' }}>Live Queue</p>
-                    <h2 style={{ fontFamily: "'Fraunces', serif", fontSize: '18px', fontWeight: 700, color: M.text, margin: 0 }}>Active Registrar Queue</h2>
+                    <p className="text-[11px] font-semibold text-gold tracking-widest uppercase m-0 mb-0.5">Live Queue</p>
+                    <h2 className="font-serif text-[18px] font-bold text-text-main m-0">Active Registrar Queue</h2>
                   </div>
                 </div>
 
                 {loading ? (
-                  <div style={{ background: M.surface, borderRadius: '16px', padding: '24px 20px', border: `1px solid ${M.border}`, textAlign: 'center' }}>
-                    <div className="animate-shimmer" style={{ width: '120px', height: '14px', borderRadius: '4px', margin: '0 auto 12px' }} />
-                    <div className="animate-shimmer" style={{ width: '80px', height: '64px', borderRadius: '8px', margin: '0 auto 16px' }} />
-                    <div style={{ display: 'flex', justifyContent: 'center', gap: '16px', background: M.white, padding: '12px', borderRadius: '10px', margin: '0 auto 16px', width: '100%' }}>
-                      <div className="animate-shimmer" style={{ flex: 1, height: '32px', borderRadius: '4px' }} />
-                      <div style={{ width: '1px', background: M.border }} />
-                      <div className="animate-shimmer" style={{ flex: 1, height: '32px', borderRadius: '4px' }} />
+                  <div className="bg-surface rounded-2xl py-6 px-5 border border-border text-center">
+                    <div className="animate-pulse w-[120px] h-[14px] rounded bg-border mx-auto mb-3" />
+                    <div className="animate-pulse w-[80px] h-16 rounded-lg bg-border mx-auto mb-4" />
+                    <div className="flex justify-center gap-4 bg-white p-3 rounded-[10px] mx-auto mb-4 w-full">
+                      <div className="animate-pulse flex-1 h-8 rounded bg-border" />
+                      <div className="w-px bg-border" />
+                      <div className="animate-pulse flex-1 h-8 rounded bg-border" />
                     </div>
-                    <div className="animate-shimmer" style={{ width: '100%', height: '44px', borderRadius: '10px' }} />
+                    <div className="animate-pulse w-full h-11 rounded-[10px] bg-border" />
                   </div>
                 ) : liveTicket ? (
-                  <div style={{ background: M.surface, borderRadius: '16px', padding: '24px 20px', boxShadow: '0 4px 12px rgba(0,0,0,0.03), 0 0 0 1px rgba(123, 26, 42, 0.04)', textAlign: 'center' }}>
-                    <p style={{ fontSize: '11px', fontWeight: 600, color: M.textSub, letterSpacing: '0.12em', textTransform: 'uppercase', margin: '0 0 8px' }}>Your Queue Number</p>
-                    <div style={{ fontFamily: "'Fraunces', serif", fontSize: '56px', fontWeight: 700, color: M.maroon, lineHeight: 1, margin: '0 0 12px', letterSpacing: '-0.02em' }}>
+                  <div className="bg-surface rounded-2xl py-6 px-5 shadow-[0_4px_12px_rgba(0,0,0,0.03),0_0_0_1px_rgba(123,26,42,0.04)] text-center">
+                    <p className="text-[11px] font-semibold text-text-sub tracking-[0.12em] uppercase m-0 mb-2">Your Queue Number</p>
+                    <div className="font-serif text-[56px] font-bold text-maroon leading-none m-0 mb-3 tracking-[-0.02em]">
                       {liveTicket.queue_number}
                     </div>
-                    <div style={{ 
-                      display: 'flex', justifyContent: 'center', gap: '16px', 
-                      background: M.white, padding: '12px', borderRadius: '10px',
-                      border: `1px solid rgba(123,26,42,0.03)`, margin: '0 auto 16px', width: '100%'
-                    }}>
-                      <div style={{ flex: 1 }}>
-                        <span style={{ fontSize: '10px', color: M.textMuted, display: 'block' }}>Serving</span>
-                        <strong style={{ fontSize: '13px', color: M.text }}>{liveTicket.currently_serving}</strong>
+                    <div className="flex justify-center gap-4 bg-white p-3 rounded-[10px] border border-maroon/5 mx-auto mb-4 w-full">
+                      <div className="flex-1">
+                        <span className="text-[10px] text-text-muted block">Serving</span>
+                        <strong className="text-[13px] text-text-main">{liveTicket.currently_serving}</strong>
                       </div>
-                      <div style={{ width: '1px', background: M.border }} />
-                      <div style={{ flex: 1 }}>
-                        <span style={{ fontSize: '10px', color: M.textMuted, display: 'block' }}>Est. Wait</span>
-                        <strong style={{ fontSize: '13px', color: M.text }}>{liveTicket.est_wait_mins} min</strong>
+                      <div className="w-px bg-border" />
+                      <div className="flex-1">
+                        <span className="text-[10px] text-text-muted block">Est. Wait</span>
+                        <strong className="text-[13px] text-text-main">{liveTicket.est_wait_mins} min</strong>
                       </div>
                     </div>
-                    <button style={{ 
-                      width: '100%', minHeight: '44px', padding: '10px', 
-                      borderRadius: '10px', border: `1px solid ${M.redBorder}`, 
-                      background: M.redLight, color: M.red, 
-                      fontSize: '13px', fontWeight: 600, cursor: 'pointer', fontFamily: "'IBM Plex Sans', sans-serif" 
-                    }}>
+                    <button className="w-full min-h-[44px] p-2.5 rounded-[10px] border border-danger-border bg-danger-light text-danger text-[13px] font-semibold cursor-pointer font-sans transition-colors hover:bg-danger/10">
                       Cancel Queue Ticket
                     </button>
                   </div>
                 ) : (
-                  <div style={{ textAlign: 'center', padding: '40px 20px', color: M.textMuted, flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', background: M.offWhite, borderRadius: '16px', border: `1px dashed ${M.border}` }}>
-                    <div style={{ color: M.textMuted, marginBottom: '14px' }}><Ticket size={48} /></div>
-                    <p style={{ fontSize: '14px', margin: 0, fontWeight: 500 }}>No Active Queue Ticket</p>
-                    <p style={{ fontSize: '12px', margin: '4px 0 0', color: M.textMuted }}>Get a ticket to start your transaction</p>
+                  <div className="text-center py-10 px-5 text-text-muted flex-1 flex flex-col justify-center items-center bg-off-white rounded-2xl border border-dashed border-border">
+                    <div className="text-text-muted mb-3.5"><Ticket size={48} /></div>
+                    <p className="text-sm m-0 font-medium text-text-main">No Active Queue Ticket</p>
+                    <p className="text-xs mt-1 mb-0 text-text-muted">Get a ticket to start your transaction</p>
                   </div>
                 )}
               </div>
             </div>
           </main>
-
-        <style>{`
-          @keyframes pulseLive {
-            0% { box-shadow: 0 0 0 0 rgba(184, 144, 10, 0.4); }
-            70% { box-shadow: 0 0 0 8px rgba(184, 144, 10, 0); }
-            100% { box-shadow: 0 0 0 0 rgba(184, 144, 10, 0); }
-          }
-          @keyframes floatBubble {
-            0% { transform: translateY(0) scale(1); }
-            50% { transform: translateY(-10px) scale(1.05); }
-            100% { transform: translateY(0) scale(1); }
-          }
-          @keyframes dropdownFadeIn {
-            from { opacity: 0; transform: translateY(8px) scale(0.98); }
-            to { opacity: 1; transform: translateY(0) scale(1); }
-          }
-          .sidebar-item:hover {
-            background: #F2EDE8 !important;
-            color: #1C1917 !important;
-          }
-          .sidebar-item:hover .sidebar-icon {
-            transform: scale(1.1);
-          }
-          .sidebar-item:hover .sidebar-label {
-            transform: translateX(2px);
-          }
-          .profile-dropdown-menu {
-            animation: dropdownFadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-          }
-          .hover-card {
-            transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.4s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-          }
-          .hover-card:hover {
-            transform: translateY(-4px);
-            box-shadow: 0 12px 30px -4px rgba(123, 26, 42, 0.08), 0 4px 12px -2px rgba(0, 0, 0, 0.02) !important;
-            border-color: rgba(123, 26, 42, 0.15) !important;
-          }
-          .hover-action-btn {
-            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1) !important;
-          }
-          .hover-action-btn:hover {
-            transform: translateY(-2px);
-            background: #FFFFFF !important;
-            border-color: rgba(123, 26, 42, 0.15) !important;
-            box-shadow: 0 10px 20px -5px rgba(123, 26, 42, 0.05);
-          }
-          .pulse-indicator {
-            width: 7px;
-            height: 7px;
-            border-radius: 50%;
-            background-color: #B8900A;
-            display: inline-block;
-            margin-right: 6px;
-            animation: pulseLive 2s infinite;
-          }
-          `}</style>
         </>
       ) : (
-        <div style={{ paddingBottom: '88px' }}>
+        <div className="pb-[88px]">
           {/* ── Hero Banner ── */}
           <div 
-        className="animate-fade-up"
-        style={{
-          animationDelay: '0.1s',
-          background: `linear-gradient(135deg, ${M.maroon} 0%, ${M.maroonDark} 100%)`,
-          padding: '24px 20px 32px', position: 'relative', overflow: 'hidden',
-          boxShadow: '0 8px 20px rgba(123, 26, 42, 0.15)',
-        }}
+        className="animate-fade-up bg-linear-to-br from-maroon to-maroon-dark pt-6 px-5 pb-8 relative overflow-hidden shadow-[0_8px_20px_rgba(123,26,42,0.15)]"
+        style={{ animationDelay: '0.1s' }}
       >
-        <div style={{
-          position: 'absolute', right: '-15%', top: '-20%',
-          width: '200px', height: '200px', borderRadius: '50%',
-          background: `radial-gradient(circle, rgba(184,144,10,0.15) 0%, transparent 70%)`,
-          filter: 'blur(30px)', pointerEvents: 'none',
-        }} />
+        <div className="absolute right-[-15%] top-[-20%] w-[200px] h-[200px] rounded-full pointer-events-none blur-[30px]" style={{ background: `radial-gradient(circle, rgba(184,144,10,0.15) 0%, transparent 70%)` }} />
         
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', position: 'relative' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <img src={crmcLogo} alt="CRMC Logo" style={{ width: '32px', height: '32px', borderRadius: '50%' }} />
+        <div className="flex justify-between items-center mb-6 relative">
+          <div className="flex items-center gap-2.5">
+            <img src={crmcLogo} alt="CRMC Logo" className="w-8 h-8 rounded-full" />
             <div>
-              <div style={{ fontFamily: "'Fraunces', serif", fontSize: '15px', fontWeight: 700, color: M.gold }}>CampusFlow</div>
-              <div style={{ fontSize: '10px', color: 'rgba(255,255,255,0.5)', letterSpacing: '0.04em' }}>Student Portal</div>
+              <div className="font-serif text-[15px] font-bold text-gold">CampusFlow</div>
+              <div className="text-[10px] text-white/50 tracking-[0.04em]">Student Portal</div>
             </div>
           </div>
-          <ProfileDropdown />
+          <div className="flex items-center gap-4">
+            <button className="bg-transparent border-none text-white cursor-pointer hover:text-gold transition-colors p-1 flex items-center justify-center">
+              <Bell size={22} />
+            </button>
+            <ProfileDropdown />
+          </div>
         </div>
-        <div style={{ position: 'relative' }}>
-          <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.55)', margin: '0 0 4px' }}>{getGreeting()},</p>
-          <h1 style={{ fontFamily: "'Fraunces', serif", fontSize: 'clamp(22px, 5vw, 32px)', fontWeight: 700, color: M.white, margin: '0 0 8px', lineHeight: 1.15 }}>
+        <div className="relative">
+          <p className="text-[13px] text-white/55 m-0 mb-1">{getGreeting()},</p>
+          <h1 className="font-serif text-[clamp(22px,5vw,32px)] font-bold text-white m-0 mb-2 leading-[1.15]">
             {user?.first_name || 'Student'}!
           </h1>
-          <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.5)', margin: 0, lineHeight: 1.5 }}>
+          <p className="text-[13px] text-white/50 m-0 leading-normal">
             Welcome to your CRMC Student Portal. Here is your campus overview for today.
           </p>
         </div>
       </div>
 
       {/* ── Main Scrollable Content ── */}
-      <main style={{ padding: '0 16px', maxWidth: '480px', margin: '0 auto' }}>
+      <main className="px-4 max-w-[480px] mx-auto">
 
         {/* Quick Action Cards */}
         <div 
-          className="animate-fade-up"
-          style={{ animationDelay: '0.1s', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginTop: '-20px', position: 'relative', marginBottom: '24px' }}
+          className="animate-fade-up grid grid-cols-2 gap-3 -mt-5 relative mb-6"
+          style={{ animationDelay: '0.1s' }}
         >
-          <div style={{ background: M.white, borderRadius: '16px', boxShadow: '0 4px 12px rgba(0,0,0,0.04), 0 0 0 1px rgba(123, 26, 42, 0.04)', padding: '16px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+          <div className="bg-white rounded-2xl shadow-[0_4px_12px_rgba(0,0,0,0.04),0_0_0_1px_rgba(123,26,42,0.04)] p-4 flex flex-col justify-between">
             <div>
-              <div style={{ color: M.maroon, marginBottom: '10px' }}><Calendar size={28} /></div>
-              <div style={{ fontSize: '14px', fontWeight: 600, color: M.text, marginBottom: '4px' }}>Book Appoinment</div>
-              <div style={{ fontSize: '11px', color: M.textMuted, marginBottom: '14px', lineHeight: 1.4 }}>Schedule document processing</div>
+              <div className="text-maroon mb-2.5"><Calendar size={28} /></div>
+              <div className="text-[14px] font-semibold text-text-main mb-1">Book Appoinment</div>
+              <div className="text-[11px] text-text-muted mb-3.5 leading-[1.4]">Schedule document processing</div>
             </div>
-            <button onClick={() => navigate('/student/book')} style={{ width: '100%', minHeight: '40px', padding: '10px', borderRadius: '10px', border: 'none', background: M.maroon, color: M.white, fontSize: '13px', fontWeight: 600, cursor: 'pointer', fontFamily: "'IBM Plex Sans', sans-serif" }}>Appoint Now</button>
+            <button onClick={() => navigate('/student/book')} className="w-full min-h-[40px] p-2.5 rounded-[10px] border-none bg-maroon text-white text-[13px] font-semibold cursor-pointer font-sans transition-transform active:scale-95">Appoint Now</button>
           </div>
-          <div style={{ background: M.white, borderRadius: '16px', boxShadow: '0 4px 12px rgba(0,0,0,0.04), 0 0 0 1px rgba(123, 26, 42, 0.04)', padding: '16px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+          <div className="bg-white rounded-2xl shadow-[0_4px_12px_rgba(0,0,0,0.04),0_0_0_1px_rgba(123,26,42,0.04)] p-4 flex flex-col justify-between">
             <div>
-              <div style={{ color: M.gold, marginBottom: '10px' }}><Ticket size={28} /></div>
-              <div style={{ fontSize: '14px', fontWeight: 600, color: M.text, marginBottom: '4px' }}>My Queue</div>
-              <div style={{ fontSize: '11px', color: M.textMuted, marginBottom: '14px', lineHeight: 1.4 }}>Check ticket & line estimates</div>
+              <div className="text-gold mb-2.5"><Ticket size={28} /></div>
+              <div className="text-[14px] font-semibold text-text-main mb-1">My Queue</div>
+              <div className="text-[11px] text-text-muted mb-3.5 leading-[1.4]">Check ticket & line estimates</div>
             </div>
-            <button onClick={() => navigate('/student/queue')} style={{ width: '100%', minHeight: '40px', padding: '10px', borderRadius: '10px', border: 'none', background: M.gold, color: M.white, fontSize: '13px', fontWeight: 600, cursor: 'pointer', fontFamily: "'IBM Plex Sans', sans-serif" }}>View Ticket</button>
+            <button onClick={() => navigate('/student/queue')} className="w-full min-h-[40px] p-2.5 rounded-[10px] border-none bg-gold text-white text-[13px] font-semibold cursor-pointer font-sans transition-transform active:scale-95">View Ticket</button>
           </div>
         </div>
 
         {/* Live Queue Section */}
         {loading ? (
-          <div style={{ background: M.surface, borderRadius: '16px', padding: '24px 20px', border: `1px solid ${M.border}`, textAlign: 'center', marginBottom: '24px' }}>
-            <div className="animate-shimmer" style={{ width: '120px', height: '14px', borderRadius: '4px', margin: '0 auto 12px' }} />
-            <div className="animate-shimmer" style={{ width: '80px', height: '64px', borderRadius: '8px', margin: '0 auto 16px' }} />
-            <div style={{ display: 'flex', justifyContent: 'center', gap: '16px', background: M.white, padding: '12px', borderRadius: '10px', margin: '0 auto 16px', width: '90%' }}>
-              <div className="animate-shimmer" style={{ flex: 1, height: '32px', borderRadius: '4px' }} />
-              <div style={{ width: '1px', background: M.border }} />
-              <div className="animate-shimmer" style={{ flex: 1, height: '32px', borderRadius: '4px' }} />
+          <div className="bg-surface rounded-2xl py-6 px-5 border border-border text-center mb-6">
+            <div className="animate-pulse w-[120px] h-[14px] rounded bg-border mx-auto mb-3" />
+            <div className="animate-pulse w-[80px] h-16 rounded-lg bg-border mx-auto mb-4" />
+            <div className="flex justify-center gap-4 bg-white p-3 rounded-[10px] mx-auto mb-4 w-[90%]">
+              <div className="animate-pulse flex-1 h-8 rounded bg-border" />
+              <div className="w-px bg-border" />
+              <div className="animate-pulse flex-1 h-8 rounded bg-border" />
             </div>
-            <div className="animate-shimmer" style={{ width: '100%', height: '44px', borderRadius: '10px' }} />
+            <div className="animate-pulse w-full h-11 rounded-[10px] bg-border" />
           </div>
         ) : liveTicket ? (
-          <div className="animate-fade-up" style={{ animationDelay: '0.2s', marginBottom: '24px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '12px' }}>
+          <div className="animate-fade-up mb-6" style={{ animationDelay: '0.2s' }}>
+            <div className="flex justify-between items-end mb-3">
               <div>
-                <p style={{ fontSize: '11px', fontWeight: 600, color: M.gold, letterSpacing: '0.1em', textTransform: 'uppercase', margin: '0 0 2px' }}>Live Queue</p>
-                <h2 style={{ fontFamily: "'Fraunces', serif", fontSize: '18px', fontWeight: 700, color: M.text, margin: 0 }}>Active Registrar Queue</h2>
+                <p className="text-[11px] font-semibold text-gold tracking-widest uppercase m-0 mb-0.5">Live Queue</p>
+                <h2 className="font-serif text-[18px] font-bold text-text-main m-0">Active Registrar Queue</h2>
               </div>
             </div>
-            <div style={{ background: M.surface, borderRadius: '16px', padding: '24px 20px', boxShadow: '0 4px 12px rgba(0,0,0,0.03), 0 0 0 1px rgba(123, 26, 42, 0.04)', textAlign: 'center' }}>
-              <p style={{ fontSize: '11px', fontWeight: 600, color: M.textSub, letterSpacing: '0.12em', textTransform: 'uppercase', margin: '0 0 8px' }}>Your Queue Number</p>
-              <div style={{ fontFamily: "'Fraunces', serif", fontSize: 'clamp(42px, 10vw, 56px)', fontWeight: 700, color: M.maroon, lineHeight: 1, margin: '0 0 12px', letterSpacing: '-0.02em' }}>
+            <div className="bg-surface rounded-2xl py-6 px-5 shadow-[0_4px_12px_rgba(0,0,0,0.03),0_0_0_1px_rgba(123,26,42,0.04)] text-center">
+              <p className="text-[11px] font-semibold text-text-sub tracking-[0.12em] uppercase m-0 mb-2">Your Queue Number</p>
+              <div className="font-serif text-[clamp(42px,10vw,56px)] font-bold text-maroon leading-none m-0 mb-3 tracking-[-0.02em]">
                 {liveTicket.queue_number}
               </div>
-              <div style={{ 
-                display: 'flex', justifyContent: 'center', gap: '16px', 
-                background: M.white, padding: '8px 12px', borderRadius: '10px',
-                border: `1px solid rgba(123,26,42,0.03)`, margin: '0 auto 16px', width: '90%'
-              }}>
+              <div className="flex justify-center gap-4 bg-white py-2 px-3 rounded-[10px] border border-maroon/5 mx-auto mb-4 w-[90%]">
                 <div>
-                  <span style={{ fontSize: '10px', color: M.textMuted, display: 'block' }}>Serving</span>
-                  <strong style={{ fontSize: '13px', color: M.text }}>{liveTicket.currently_serving}</strong>
+                  <span className="text-[10px] text-text-muted block">Serving</span>
+                  <strong className="text-[13px] text-text-main">{liveTicket.currently_serving}</strong>
                 </div>
-                <div style={{ width: '1px', background: M.border }} />
+                <div className="w-px bg-border" />
                 <div>
-                  <span style={{ fontSize: '10px', color: M.textMuted, display: 'block' }}>Est. Wait</span>
-                  <strong style={{ fontSize: '13px', color: M.text }}>{liveTicket.est_wait_mins} min</strong>
+                  <span className="text-[10px] text-text-muted block">Est. Wait</span>
+                  <strong className="text-[13px] text-text-main">{liveTicket.est_wait_mins} min</strong>
                 </div>
               </div>
-              <button style={{ 
-                width: '100%', minHeight: '44px', padding: '10px', 
-                borderRadius: '10px', border: `1px solid ${M.redBorder}`, 
-                background: M.redLight, color: M.red, 
-                fontSize: '13px', fontWeight: 600, cursor: 'pointer', fontFamily: "'IBM Plex Sans', sans-serif" 
-              }}>
+              <button className="w-full min-h-[44px] p-2.5 rounded-[10px] border border-danger-border bg-danger-light text-danger text-[13px] font-semibold cursor-pointer font-sans transition-colors hover:bg-danger/10">
                 Cancel Queue Ticket
               </button>
             </div>
           </div>
         ) : (
-          <div className="animate-fade-up" style={{ animationDelay: '0.2s', marginBottom: '24px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '12px' }}>
+          <div className="animate-fade-up mb-6" style={{ animationDelay: '0.2s' }}>
+            <div className="flex justify-between items-end mb-3">
               <div>
-                <p style={{ fontSize: '11px', fontWeight: 600, color: M.gold, letterSpacing: '0.1em', textTransform: 'uppercase', margin: '0 0 2px' }}>Live Queue</p>
-                <h2 style={{ fontFamily: "'Fraunces', serif", fontSize: '18px', fontWeight: 700, color: M.text, margin: 0 }}>Active Registrar Queue</h2>
+                <p className="text-[11px] font-semibold text-gold tracking-widest uppercase m-0 mb-0.5">Live Queue</p>
+                <h2 className="font-serif text-[18px] font-bold text-text-main m-0">Active Registrar Queue</h2>
               </div>
             </div>
-            <div style={{ textAlign: 'center', padding: '40px 20px', color: M.textMuted, display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', background: M.offWhite, borderRadius: '16px', border: `1px dashed ${M.border}` }}>
-              <div style={{ color: M.textMuted, marginBottom: '14px' }}><Ticket size={42} /></div>
-              <p style={{ fontSize: '15px', margin: 0, fontWeight: 700, color: M.textMuted }}>No Active Queue Ticket</p>
-              <p style={{ fontSize: '13px', margin: '6px 0 0', color: '#A8A29E' }}>Get a ticket to start your transaction</p>
+            <div className="text-center py-10 px-5 text-text-muted flex flex-col justify-center items-center bg-off-white rounded-2xl border border-dashed border-border">
+              <div className="text-text-muted mb-3.5"><Ticket size={42} /></div>
+              <p className="text-[15px] m-0 font-bold text-text-muted">No Active Queue Ticket</p>
+              <p className="text-[13px] mt-1.5 mb-0 text-text-muted">Get a ticket to start your transaction</p>
             </div>
           </div>
         )}
 
         {/* Upcoming Appointments */}
-        <div className="animate-fade-up" style={{ animationDelay: '0.3s', marginBottom: '24px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '12px' }}>
+        <div className="animate-fade-up mb-6" style={{ animationDelay: '0.3s' }}>
+          <div className="flex justify-between items-end mb-3">
             <div>
-              <p style={{ fontSize: '11px', fontWeight: 600, color: M.gold, letterSpacing: '0.1em', textTransform: 'uppercase', margin: '0 0 2px' }}>Schedule</p>
-              <h2 style={{ fontFamily: "'Fraunces', serif", fontSize: '18px', fontWeight: 700, color: M.text, margin: 0 }}>Upcoming Appointments</h2>
+              <p className="text-[11px] font-semibold text-gold tracking-widest uppercase m-0 mb-0.5">Schedule</p>
+              <h2 className="font-serif text-[18px] font-bold text-text-main m-0">Upcoming Appointments</h2>
             </div>
-            <button onClick={() => navigate('/student/appointments')} style={{ fontSize: '13px', fontWeight: 600, color: M.maroon, background: 'none', border: 'none', cursor: 'pointer', padding: '4px 0' }}>View All →</button>
+            <button onClick={() => navigate('/student/appointments')} className="text-[13px] font-semibold text-maroon bg-transparent border-none cursor-pointer py-1">View All →</button>
           </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          <div className="flex flex-col gap-3">
             {loading ? (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <div className="flex flex-col gap-3">
                 {[1, 2].map(i => (
-                  <div key={i} style={{ background: M.white, borderRadius: '16px', padding: '16px', border: `1px solid ${M.border}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div key={i} className="bg-white rounded-2xl p-4 border border-border flex justify-between items-center">
                     <div>
-                      <div className="animate-shimmer" style={{ width: '140px', height: '14px', borderRadius: '4px', marginBottom: '8px' }} />
-                      <div className="animate-shimmer" style={{ width: '100px', height: '12px', borderRadius: '4px', marginBottom: '8px' }} />
-                      <div className="animate-shimmer" style={{ width: '180px', height: '12px', borderRadius: '4px' }} />
+                      <div className="animate-pulse w-[140px] h-[14px] rounded bg-border mb-2" />
+                      <div className="animate-pulse w-[100px] h-[12px] rounded bg-border mb-2" />
+                      <div className="animate-pulse w-[180px] h-[12px] rounded bg-border" />
                     </div>
-                    <div className="animate-shimmer" style={{ width: '70px', height: '24px', borderRadius: '100px' }} />
+                    <div className="animate-pulse w-[70px] h-6 rounded-full bg-border" />
                   </div>
                 ))}
               </div>
             ) : appointments.length > 0 ? (
               appointments.map(apt => (
-                <div key={apt.id} style={{ background: M.white, borderRadius: '16px', padding: '16px', boxShadow: '0 4px 12px rgba(0,0,0,0.03), 0 0 0 1px rgba(123, 26, 42, 0.04)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div key={apt.id} className="bg-white rounded-2xl p-4 shadow-[0_4px_12px_rgba(0,0,0,0.03),0_0_0_1px_rgba(123,26,42,0.04)] flex justify-between items-center">
                   <div>
-                    <div style={{ fontSize: '14px', fontWeight: 600, color: M.text, margin: '0 0 4px' }}>{apt.type}</div>
-                    <div style={{ fontSize: '12px', color: M.textSub, margin: '0 0 6px' }}>{apt.step}</div>
-                    <div style={{ fontSize: '12px', color: M.textMuted, display: 'flex', gap: '8px' }}>
-                      <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><Calendar size={12} /> {apt.date}</span>
-                      <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><Clock size={12} /> {apt.time}</span>
+                    <div className="text-[14px] font-semibold text-text-main m-0 mb-1">{apt.type}</div>
+                    <div className="text-[12px] text-text-sub m-0 mb-1.5">{apt.step}</div>
+                    <div className="text-[12px] text-text-muted flex gap-2">
+                      <span className="flex items-center gap-1"><Calendar size={12} /> {apt.date}</span>
+                      <span className="flex items-center gap-1"><Clock size={12} /> {apt.time}</span>
                     </div>
                   </div>
                   <div>
-                    <span style={{ fontSize: '11px', fontWeight: 600, padding: '4px 10px', borderRadius: '100px', textTransform: 'uppercase', letterSpacing: '0.02em', whiteSpace: 'nowrap', background: STATUS_STYLES[apt.status].bg, color: STATUS_STYLES[apt.status].color, border: `1.5px solid ${STATUS_STYLES[apt.status].border}` }}>
+                    <span className="text-[11px] font-semibold py-1 px-2.5 rounded-full uppercase tracking-[0.02em] whitespace-nowrap"
+                      style={{
+                        background: STATUS_STYLES[apt.status].bg, color: STATUS_STYLES[apt.status].color, border: `1.5px solid ${STATUS_STYLES[apt.status].border}`
+                      }}
+                    >
                       {apt.status}
                     </span>
                   </div>
                 </div>
               ))
             ) : (
-              <div style={{ textAlign: 'center', padding: '24px', color: M.textMuted, background: M.white, borderRadius: '16px', border: `1px dashed ${M.border}` }}>
+              <div className="text-center p-6 text-text-muted bg-white rounded-2xl border border-dashed border-border">
                 No upcoming appointments.
               </div>
             )}
@@ -727,40 +570,6 @@ export default function StudentDashboard() {
         </div>
       </main>
 
-
-      <style>{`
-        @keyframes pulseLive {
-          0% { box-shadow: 0 0 0 0 rgba(184, 144, 10, 0.4); }
-          70% { box-shadow: 0 0 0 8px rgba(184, 144, 10, 0); }
-          100% { box-shadow: 0 0 0 0 rgba(184, 144, 10, 0); }
-        }
-        @keyframes floatBubble {
-          0% { transform: translateY(0) scale(1); }
-          50% { transform: translateY(-8px) scale(1.04); }
-          100% { transform: translateY(0) scale(1); }
-        }
-        @keyframes slideUp {
-          from { transform: translateY(100%); }
-          to { transform: translateY(0); }
-        }
-        @keyframes fadeInBackdrop {
-          from { opacity: 0; }
-          to { opacity: 1; }
-        }
-        .drawer-backdrop {
-          animation: fadeInBackdrop 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-        }
-        .drawer-content {
-          animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-        }
-        .floating-ai-button {
-          transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-        }
-        .floating-ai-button:hover {
-          transform: scale(1.08) translateY(-2px);
-          box-shadow: 0 8px 24px rgba(123,26,42,0.45);
-        }
-      `}</style>
         </div>
       )}
     </StudentLayout>

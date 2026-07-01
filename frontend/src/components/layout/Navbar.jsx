@@ -10,7 +10,7 @@ export default function Navbar({ user, onLogout, backTo, title, subtitle, childr
       display: 'flex', alignItems: 'center', justifyContent: 'space-between',
       height: '60px', position: 'sticky', top: 0, zIndex: 40,
       boxShadow: '0 2px 8px rgba(123,26,42,0.2)',
-      fontFamily: "'IBM Plex Sans', sans-serif", flexShrink: 0,
+      fontFamily: "'Poppins', sans-serif", flexShrink: 0,
     }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
         {backTo ? (
@@ -24,7 +24,7 @@ export default function Navbar({ user, onLogout, backTo, title, subtitle, childr
           <>
             <img src={crmcLogo} alt="CRMC" style={{ width: '32px', height: '32px', borderRadius: '50%', border: '2px solid rgba(240,192,64,0.4)' }} />
             <div>
-              <div style={{ fontFamily: "'Fraunces', serif", fontWeight: 700, fontSize: '15px', color: '#F0C040', lineHeight: 1.1 }}>CampusFlow</div>
+              <div style={{ fontFamily: "'Lora', serif", fontWeight: 700, fontSize: '15px', color: '#F0C040', lineHeight: 1.1 }}>CampusFlow</div>
               {subtitle && <div style={{ fontSize: '10px', color: 'rgba(255,255,255,0.4)' }}>{subtitle}</div>}
             </div>
           </>

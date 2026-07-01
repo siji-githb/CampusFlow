@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '../context/useAuth'
 import { Calendar, Ticket, Route, Bot, Zap, BarChart3 } from 'lucide-react'
 
@@ -16,30 +16,13 @@ function useWindowWidth() {
   return width
 }
 
-// ── Tokens ──
-const M = {
-  maroon:       '#7B1A2A',
-  maroonDark:   '#5C1320',
-  maroonLight:  '#F9F0F1',
-  maroonBorder: 'rgba(123,26,42,0.2)',
-  gold:         '#B8900A',
-  goldLight:    '#FDF6E3',
-  goldBorder:   'rgba(184,144,10,0.3)',
-  white:        '#FFFFFF',
-  offWhite:     '#F9F7F4',
-  border:       '#EAE7E2',
-  text:         '#1C1917',
-  textSub:      '#57534E',
-  textMuted:    '#A8A29E',
-}
-
 const FEATURES = [
-  { icon: <Calendar size={22} strokeWidth={2} color={M.maroon} />, title: 'Online Appointment Booking', desc: 'Schedule TOR, COE, or Diploma requests anytime — no need to line up just to get a number.' },
-  { icon: <Ticket size={22} strokeWidth={2} color={M.maroon} />, title: 'Digital Queue Number',       desc: 'Receive your queue number on your phone the moment you arrive on campus.' },
-  { icon: <Route size={22} strokeWidth={2} color={M.maroon} />, title: 'Step-by-Step Guidance',      desc: 'Know exactly which counter to go to next. No confusion, no unnecessary wandering.' },
-  { icon: <Bot size={22} strokeWidth={2} color={M.maroon} />, title: 'AI Scheduling Assistant',    desc: 'Ask anything about requirements, schedules, or procedures — conversationally.' },
-  { icon: <Zap size={22} strokeWidth={2} color={M.maroon} />, title: 'Real-Time Step Tracking',    desc: 'Your progress updates live as each registrar counter confirms your transaction.' },
-  { icon: <BarChart3 size={22} strokeWidth={2} color={M.maroon} />, title: 'Smart Admin Reports',        desc: 'Registrar staff see analytics, demand forecasts, and AI insights at a glance.' },
+  { icon: <Calendar size={22} strokeWidth={2} className="text-maroon" />, title: 'Online Appointment Booking', desc: 'Schedule TOR, COE, or Diploma requests anytime — no need to line up just to get a number.' },
+  { icon: <Ticket size={22} strokeWidth={2} className="text-maroon" />, title: 'Digital Queue Number',       desc: 'Receive your queue number on your phone the moment you arrive on campus.' },
+  { icon: <Route size={22} strokeWidth={2} className="text-maroon" />, title: 'Step-by-Step Guidance',      desc: 'Know exactly which counter to go to next. No confusion, no unnecessary wandering.' },
+  { icon: <Bot size={22} strokeWidth={2} className="text-maroon" />, title: 'AI Scheduling Assistant',    desc: 'Ask anything about requirements, schedules, or procedures — conversationally.' },
+  { icon: <Zap size={22} strokeWidth={2} className="text-maroon" />, title: 'Real-Time Step Tracking',    desc: 'Your progress updates live as each registrar counter confirms your transaction.' },
+  { icon: <BarChart3 size={22} strokeWidth={2} className="text-maroon" />, title: 'Smart Admin Reports',        desc: 'Registrar staff see analytics, demand forecasts, and AI insights at a glance.' },
 ]
 
 const STEPS = [
@@ -65,39 +48,28 @@ export default function Landing() {
   }
 
   return (
-    <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", background: M.white, minHeight: '100vh', color: M.text }}>
+    <div className="font-sans bg-white min-h-screen text-text-main">
 
       {/* ── Navbar ── */}
-      <nav style={{
-        background: M.maroon,
-        padding: isMobile ? '0 16px' : '0 2rem',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        height: isMobile ? '56px' : '64px',
-        position: 'sticky',
-        top: 0,
-        zIndex: 50,
-        boxShadow: '0 2px 12px rgba(123,26,42,0.25)',
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <img src={crmcLogo} alt="CRMC" style={{ width: isMobile ? '30px' : '36px', height: isMobile ? '30px' : '36px', borderRadius: '50%', border: '2px solid rgba(184,144,10,0.5)', flexShrink: 0 }} />
+      <nav className={`bg-maroon flex items-center justify-between sticky top-0 z-50 shadow-[0_2px_12px_rgba(123,26,42,0.25)] ${isMobile ? 'px-4 h-14' : 'px-8 h-16'}`}>
+        <div className="flex items-center gap-2.5">
+          <img src={crmcLogo} alt="CRMC" className={`rounded-full border-2 border-gold/50 shrink-0 ${isMobile ? 'w-[30px] h-[30px]' : 'w-[36px] h-[36px]'}`} />
           <div>
-            <div style={{ fontFamily: "'Fraunces', serif", fontWeight: 700, fontSize: isMobile ? '15px' : '17px', color: '#F0C040', lineHeight: 1.1 }}>CampusFlow</div>
-            {!isMobile && <div style={{ fontSize: '10px', color: 'rgba(255,255,255,0.5)', letterSpacing: '0.04em' }}>CRMC Registrar System</div>}
+            <div className={`font-serif font-bold text-[#F0C040] leading-[1.1] ${isMobile ? 'text-[15px]' : 'text-[17px]'}`}>CampusFlow</div>
+            {!isMobile && <div className="text-[10px] text-white/50 tracking-wider">CRMC Registrar System</div>}
           </div>
         </div>
-        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+        <div className="flex gap-2 items-center">
           {user ? (
-            <button onClick={handlePrimary} style={{ padding: isMobile ? '7px 14px' : '8px 20px', borderRadius: '8px', border: 'none', background: '#F0C040', color: M.maroon, fontSize: '13px', fontWeight: 700, cursor: 'pointer' }}>
+            <button onClick={handlePrimary} className={`rounded-lg border-none bg-[#F0C040] text-maroon text-[13px] font-bold cursor-pointer ${isMobile ? 'py-[7px] px-3.5' : 'py-2 px-5'}`}>
               Dashboard →
             </button>
           ) : (
             <>
-              <button onClick={() => navigate('/login')} style={{ padding: isMobile ? '7px 12px' : '8px 20px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.25)', background: 'transparent', color: 'white', fontSize: '13px', fontWeight: 500, cursor: 'pointer' }}>
+              <button onClick={() => navigate('/login')} className={`rounded-lg border border-white/25 bg-transparent text-white text-[13px] font-medium cursor-pointer ${isMobile ? 'py-[7px] px-3' : 'py-2 px-5'}`}>
                 Login
               </button>
-              <button onClick={() => navigate('/register')} style={{ padding: isMobile ? '7px 14px' : '8px 20px', borderRadius: '8px', border: 'none', background: '#F0C040', color: M.maroon, fontSize: '13px', fontWeight: 700, cursor: 'pointer' }}>
+              <button onClick={() => navigate('/register')} className={`rounded-lg border-none bg-[#F0C040] text-maroon text-[13px] font-bold cursor-pointer ${isMobile ? 'py-[7px] px-3.5' : 'py-2 px-5'}`}>
                 Register
               </button>
             </>
@@ -106,87 +78,56 @@ export default function Landing() {
       </nav>
 
       {/* ── Hero ── */}
-      <section style={{
-        background: `linear-gradient(135deg, ${M.maroon} 0%, #9B2335 50%, ${M.maroon} 100%)`,
-        padding: isMobile ? '40px 20px 64px' : '5rem 2rem 6rem',
-        textAlign: 'center',
-        position: 'relative',
-        overflow: 'hidden',
-      }}>
+      <section className={`bg-linear-to-br from-maroon via-[#9B2335] to-maroon text-center relative overflow-hidden ${isMobile ? 'pt-10 px-5 pb-16' : 'pt-20 px-8 pb-24'}`}>
         {/* Dot grid */}
-        <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', opacity: 0.06, backgroundImage: 'radial-gradient(circle, #F0C040 1px, transparent 1px)', backgroundSize: '32px 32px' }} />
+        <div className="absolute inset-0 pointer-events-none opacity-5 bg-[radial-gradient(circle,#F0C040_1px,transparent_1px)] bg-size-[32px_32px]" />
         {/* White arc */}
-        <div style={{ position: 'absolute', bottom: isMobile ? '-48px' : '-120px', left: '50%', transform: 'translateX(-50%)', width: isMobile ? '600px' : '900px', height: isMobile ? '100px' : '240px', borderRadius: '50%', background: M.white, pointerEvents: 'none' }} />
+        <div className={`absolute left-1/2 -translate-x-1/2 rounded-full bg-white pointer-events-none ${isMobile ? '-bottom-12 w-[600px] h-[100px]' : 'bottom-[-120px] w-[900px] h-[240px]'}`} />
 
-        <div style={{ position: 'relative' }}>
+        <div className="relative">
           {/* Logo */}
-          <div style={{ marginBottom: isMobile ? '16px' : '1.5rem' }}>
-            <img src={crmcLogo} alt="CRMC" style={{
-              width: isMobile ? '72px' : '88px',
-              height: isMobile ? '72px' : '88px',
-              borderRadius: '50%',
-              border: '3px solid rgba(240,192,64,0.5)',
-              boxShadow: '0 0 48px rgba(240,192,64,0.2)',
-            }} />
+          <div className={isMobile ? 'mb-4' : 'mb-6'}>
+            <img src={crmcLogo} alt="CRMC" className={`rounded-full border-3 border-gold/50 shadow-[0_0_48px_rgba(240,192,64,0.2)] ${isMobile ? 'w-[72px] h-[72px]' : 'w-[88px] h-[88px]'}`} />
           </div>
 
           {/* Badge */}
-          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: isMobile ? '4px 14px' : '5px 16px', borderRadius: '100px', border: '1px solid rgba(240,192,64,0.3)', background: 'rgba(240,192,64,0.1)', marginBottom: isMobile ? '16px' : '1.5rem' }}>
-            <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#F0C040', display: 'inline-block', flexShrink: 0 }} />
-            <span style={{ fontSize: isMobile ? '10px' : '11px', color: '#F0C040', fontWeight: 500, letterSpacing: '0.05em' }}>
+          <div className={`inline-flex items-center gap-1.5 rounded-full border border-gold/30 bg-gold/10 ${isMobile ? 'py-1 px-3.5 mb-4' : 'py-1.5 px-4 mb-6'}`}>
+            <span className="w-1.5 h-1.5 rounded-full bg-[#F0C040] inline-block shrink-0" />
+            <span className={`text-[#F0C040] font-medium tracking-wider ${isMobile ? 'text-[10px]' : 'text-[11px]'}`}>
               {isMobile ? 'BSIT Capstone 2026 · CRMC' : 'College of Computer Studies · BSIT Capstone 2026'}
             </span>
           </div>
 
-          <h1 style={{
-            fontFamily: "'Fraunces', serif",
-            fontSize: isMobile ? 'clamp(26px, 8vw, 36px)' : 'clamp(2.2rem, 5.5vw, 3.8rem)',
-            fontWeight: 800, color: 'white',
-            margin: isMobile ? '0 0 16px' : '0 0 1.25rem', lineHeight: 1.1,
-          }}>
+          <h1 className={`font-serif font-extrabold text-white leading-[1.1] ${isMobile ? 'text-[clamp(26px,8vw,36px)] m-0 mb-4' : 'text-[clamp(2.2rem,5.5vw,3.8rem)] m-0 mb-5'}`}>
             No More Long Lines<br />
-            at the <span style={{ color: '#F0C040' }}>Registrar's Office</span>
+            at the <span className="text-[#F0C040]">Registrar's Office</span>
           </h1>
 
-          <p style={{ fontSize: isMobile ? '14px' : 'clamp(1rem, 2vw, 1.1rem)', color: 'rgba(255,255,255,0.7)', maxWidth: '520px', margin: isMobile ? '0 auto 24px' : '0 auto 2.5rem', lineHeight: 1.75 }}>
+          <p className={`text-white/70 max-w-[520px] leading-relaxed ${isMobile ? 'text-[14px] m-0 mx-auto mb-6' : 'text-[clamp(1rem,2vw,1.1rem)] m-0 mx-auto mb-10'}`}>
             CampusFlow is an AI-powered appointment and queue management system guiding CRMC students through every registrar transaction.
           </p>
 
-          <div style={{ display: 'flex', gap: '10px', flexDirection: isMobile ? 'column' : 'row', flexWrap: 'wrap', justifyContent: 'center', alignItems: 'stretch' }}>
-            <button onClick={handlePrimary} style={{
-              padding: isMobile ? '14px 24px' : '14px 34px', borderRadius: '10px', border: 'none',
-              background: '#F0C040', color: M.maroon,
-              fontSize: '15px', fontWeight: 700, cursor: 'pointer',
-              fontFamily: "'IBM Plex Sans', sans-serif",
-              minHeight: isMobile ? '52px' : 'auto',
-              boxShadow: '0 4px 24px rgba(240,192,64,0.3)',
-            }}>
+          <div className={`flex gap-2.5 justify-center items-stretch ${isMobile ? 'flex-col' : 'flex-row flex-wrap'}`}>
+            <button onClick={handlePrimary} className={`rounded-[10px] border-none bg-[#F0C040] text-maroon font-bold cursor-pointer font-sans shadow-[0_4px_24px_rgba(240,192,64,0.3)] ${isMobile ? 'py-3.5 px-6 text-[15px] min-h-[52px]' : 'py-3.5 px-8 text-[15px]'}`}>
               {user ? 'Go to Dashboard →' : 'Book an Appointment →'}
             </button>
             {!user && (
-              <button onClick={() => navigate('/login')} style={{
-                padding: isMobile ? '14px 24px' : '14px 34px', borderRadius: '10px',
-                border: '1px solid rgba(255,255,255,0.25)',
-                background: 'transparent', color: 'white',
-                fontSize: '15px', fontWeight: 500, cursor: 'pointer',
-                fontFamily: "'IBM Plex Sans', sans-serif",
-                minHeight: isMobile ? '52px' : 'auto',
-              }}>
+              <button onClick={() => navigate('/login')} className={`rounded-[10px] border border-white/25 bg-transparent text-white font-medium cursor-pointer font-sans ${isMobile ? 'py-3.5 px-6 text-[15px] min-h-[52px]' : 'py-3.5 px-8 text-[15px]'}`}>
                 Sign in to your account
               </button>
             )}
           </div>
 
           {/* Stats */}
-          <div style={{ display: 'flex', gap: isMobile ? '0' : '48px', marginTop: isMobile ? '32px' : '4rem', justifyContent: 'space-around', flexWrap: 'wrap', paddingTop: isMobile ? '24px' : '0', borderTop: isMobile ? '1px solid rgba(255,255,255,0.08)' : 'none' }}>
+          <div className={`flex flex-wrap justify-around ${isMobile ? 'gap-0 mt-8 pt-6 border-t border-white/10' : 'gap-12 mt-16 pt-0 border-none'}`}>
             {[
               { value: '3 Types', label: 'Transactions' },
               { value: 'AI', label: 'Powered' },
               { value: 'Live', label: 'Queue' },
             ].map((s, i) => (
-              <div key={i} style={{ textAlign: 'center' }}>
-                <div style={{ fontFamily: "'Fraunces', serif", fontSize: isMobile ? '18px' : '1.2rem', fontWeight: 700, color: '#F0C040' }}>{s.value}</div>
-                <div style={{ fontSize: isMobile ? '10px' : '11px', color: 'rgba(255,255,255,0.45)', marginTop: '2px', letterSpacing: '0.04em', textTransform: 'uppercase' }}>{s.label}</div>
+              <div key={i} className="text-center">
+                <div className={`font-serif font-bold text-[#F0C040] ${isMobile ? 'text-[18px]' : 'text-[1.2rem]'}`}>{s.value}</div>
+                <div className={`text-white/45 mt-0.5 tracking-wider uppercase ${isMobile ? 'text-[10px]' : 'text-[11px]'}`}>{s.label}</div>
               </div>
             ))}
           </div>
@@ -194,38 +135,26 @@ export default function Landing() {
       </section>
 
       {/* ── Features ── */}
-      <section style={{ padding: isMobile ? '40px 16px' : '5rem 2rem', background: M.offWhite }}>
-        <div style={{ maxWidth: '1040px', margin: '0 auto' }}>
-          <div style={{ textAlign: 'center', marginBottom: isMobile ? '24px' : '3rem' }}>
-            <p style={{ fontSize: '11px', fontWeight: 700, color: M.gold, letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: '8px', margin: '0 0 8px' }}>
+      <section className={`bg-off-white ${isMobile ? 'py-10 px-4' : 'py-20 px-8'}`}>
+        <div className="max-w-[1040px] mx-auto">
+          <div className={`text-center ${isMobile ? 'mb-6' : 'mb-12'}`}>
+            <p className="text-[11px] font-bold text-gold tracking-[0.12em] uppercase m-0 mb-2">
               What CampusFlow Does
             </p>
-            <h2 style={{ fontFamily: "'Fraunces', serif", fontSize: isMobile ? '22px' : 'clamp(1.8rem, 4vw, 2.4rem)', fontWeight: 700, color: M.maroon, margin: 0, lineHeight: 1.2 }}>
+            <h2 className={`font-serif font-bold text-maroon m-0 leading-[1.2] ${isMobile ? 'text-[22px]' : 'text-[clamp(1.8rem,4vw,2.4rem)]'}`}>
               Everything You Need,<br />Built Into One System
             </h2>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fit, minmax(290px, 1fr))', gap: isMobile ? '12px' : '16px' }}>
+          <div className={`grid ${isMobile ? 'grid-cols-1 gap-3' : 'grid-cols-[repeat(auto-fit,minmax(290px,1fr))] gap-4'}`}>
             {FEATURES.map((f, i) => (
-              <div key={i} style={{
-                padding: isMobile ? '16px' : '1.5rem',
-                borderRadius: '14px',
-                background: M.white,
-                border: `1px solid ${M.border}`,
-                boxShadow: '0 1px 6px rgba(0,0,0,0.04)',
-                display: isMobile ? 'flex' : 'block',
-                gap: isMobile ? '14px' : '0',
-                alignItems: isMobile ? 'flex-start' : 'initial',
-              }}>
-                <div style={{
-                  width: '44px', height: '44px', borderRadius: isMobile ? '12px' : '10px',
-                  background: M.maroonLight, flexShrink: 0,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontSize: '1.3rem', marginBottom: isMobile ? '0' : '14px',
-                }}>{f.icon}</div>
+              <div key={i} className={`rounded-[14px] bg-white border border-border shadow-[0_1px_6px_rgba(0,0,0,0.04)] ${isMobile ? 'p-4 flex gap-3.5 items-start' : 'p-6 block items-initial gap-0'}`}>
+                <div className={`bg-maroon-light shrink-0 flex items-center justify-center text-[1.3rem] ${isMobile ? 'w-[44px] h-[44px] rounded-xl mb-0' : 'w-[44px] h-[44px] rounded-[10px] mb-3.5'}`}>
+                  {f.icon}
+                </div>
                 <div>
-                  <h3 style={{ fontSize: '15px', fontWeight: 600, color: M.maroon, margin: isMobile ? '0 0 4px' : '0 0 8px' }}>{f.title}</h3>
-                  <p style={{ fontSize: '13px', color: M.textSub, margin: 0, lineHeight: 1.65 }}>{f.desc}</p>
+                  <h3 className={`text-[15px] font-semibold text-maroon ${isMobile ? 'm-0 mb-1' : 'm-0 mb-2'}`}>{f.title}</h3>
+                  <p className="text-[13px] text-text-sub m-0 leading-[1.65]">{f.desc}</p>
                 </div>
               </div>
             ))}
@@ -234,57 +163,45 @@ export default function Landing() {
       </section>
 
       {/* ── How it Works ── */}
-      <section style={{ padding: isMobile ? '40px 16px' : '5rem 2rem', background: M.white }}>
-        <div style={{ maxWidth: '800px', margin: '0 auto', textAlign: 'center' }}>
-          <p style={{ fontSize: '11px', fontWeight: 700, color: M.gold, letterSpacing: '0.12em', textTransform: 'uppercase', margin: '0 0 8px' }}>
+      <section className={`bg-white ${isMobile ? 'py-10 px-4' : 'py-20 px-8'}`}>
+        <div className="max-w-[800px] mx-auto text-center">
+          <p className="text-[11px] font-bold text-gold tracking-[0.12em] uppercase m-0 mb-2">
             Simple Process
           </p>
-          <h2 style={{ fontFamily: "'Fraunces', serif", fontSize: isMobile ? '22px' : 'clamp(1.8rem, 4vw, 2.4rem)', fontWeight: 700, color: M.maroon, margin: isMobile ? '0 0 32px' : '0 0 3.5rem', lineHeight: 1.2 }}>
+          <h2 className={`font-serif font-bold text-maroon leading-[1.2] ${isMobile ? 'text-[22px] m-0 mb-8' : 'text-[clamp(1.8rem,4vw,2.4rem)] m-0 mb-14'}`}>
             From Booking to Done<br />in Three Steps
           </h2>
 
           {isMobile ? (
             /* Mobile: vertical timeline */
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0', textAlign: 'left' }}>
+            <div className="flex flex-col gap-0 text-left">
               {STEPS.map((s, i) => (
-                <div key={i} style={{ display: 'flex', gap: '16px', alignItems: 'flex-start' }}>
-                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flexShrink: 0 }}>
-                    <div style={{
-                      width: '44px', height: '44px', borderRadius: '50%',
-                      background: M.maroon,
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      fontFamily: "'Fraunces', serif",
-                      fontWeight: 700, fontSize: '14px', color: '#F0C040',
-                      boxShadow: '0 4px 16px rgba(123,26,42,0.2)',
-                      flexShrink: 0,
-                    }}>{s.step}</div>
+                <div key={i} className="flex gap-4 items-start">
+                  <div className="flex flex-col items-center shrink-0">
+                    <div className="w-[44px] h-[44px] rounded-full bg-maroon flex items-center justify-center font-serif font-bold text-[14px] text-[#F0C040] shadow-[0_4px_16px_rgba(123,26,42,0.2)] shrink-0">
+                      {s.step}
+                    </div>
                     {i < STEPS.length - 1 && (
-                      <div style={{ width: '1px', flex: 1, minHeight: '32px', background: `linear-gradient(${M.maroonBorder}, transparent)`, margin: '4px 0' }} />
+                      <div className="w-px flex-1 min-h-[32px] bg-linear-to-b from-maroon-border to-transparent my-1" />
                     )}
                   </div>
-                  <div style={{ paddingBottom: i < STEPS.length - 1 ? '32px' : '0', paddingTop: '8px' }}>
-                    <h3 style={{ fontSize: '15px', fontWeight: 600, color: M.maroon, margin: '0 0 6px' }}>{s.title}</h3>
-                    <p style={{ fontSize: '13px', color: M.textSub, margin: 0, lineHeight: 1.65 }}>{s.desc}</p>
+                  <div className={`pt-2 ${i < STEPS.length - 1 ? 'pb-8' : 'pb-0'}`}>
+                    <h3 className="text-[15px] font-semibold text-maroon m-0 mb-1.5">{s.title}</h3>
+                    <p className="text-[13px] text-text-sub m-0 leading-[1.65]">{s.desc}</p>
                   </div>
                 </div>
               ))}
             </div>
           ) : (
             /* Desktop: horizontal grid */
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '2.5rem' }}>
+            <div className="grid grid-cols-[repeat(auto-fit,minmax(200px,1fr))] gap-10">
               {STEPS.map((s, i) => (
                 <div key={i}>
-                  <div style={{
-                    width: '52px', height: '52px', borderRadius: '50%',
-                    background: M.maroon,
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    margin: '0 auto 1.25rem',
-                    fontFamily: "'Fraunces', serif",
-                    fontWeight: 700, fontSize: '16px', color: '#F0C040',
-                    boxShadow: '0 4px 16px rgba(123,26,42,0.2)',
-                  }}>{s.step}</div>
-                  <h3 style={{ fontSize: '16px', fontWeight: 600, color: M.maroon, margin: '0 0 10px' }}>{s.title}</h3>
-                  <p style={{ fontSize: '13px', color: M.textSub, margin: 0, lineHeight: 1.65 }}>{s.desc}</p>
+                  <div className="w-[52px] h-[52px] rounded-full bg-maroon flex items-center justify-center mx-auto mb-5 font-serif font-bold text-[16px] text-[#F0C040] shadow-[0_4px_16px_rgba(123,26,42,0.2)]">
+                    {s.step}
+                  </div>
+                  <h3 className="text-[16px] font-semibold text-maroon m-0 mb-2.5">{s.title}</h3>
+                  <p className="text-[13px] text-text-sub m-0 leading-[1.65]">{s.desc}</p>
                 </div>
               ))}
             </div>
@@ -293,48 +210,30 @@ export default function Landing() {
       </section>
 
       {/* ── CTA Banner ── */}
-      <section style={{ padding: isMobile ? '36px 20px' : '4.5rem 2rem', background: M.goldLight, borderTop: `${isMobile ? '3px' : '4px'} solid ${M.gold}`, textAlign: 'center' }}>
-        <div style={{ maxWidth: '560px', margin: '0 auto' }}>
-          <h2 style={{ fontFamily: "'Fraunces', serif", fontSize: isMobile ? '22px' : 'clamp(1.5rem, 3vw, 2.1rem)', fontWeight: 800, color: M.maroon, margin: isMobile ? '0 0 12px' : '0 0 1rem', lineHeight: 1.2 }}>
+      <section className={`bg-gold-light text-center border-gold ${isMobile ? 'py-9 px-5 border-t-[3px]' : 'py-18 px-8 border-t-4'}`}>
+        <div className="max-w-[560px] mx-auto">
+          <h2 className={`font-serif font-extrabold text-maroon leading-[1.2] ${isMobile ? 'text-[22px] m-0 mb-3' : 'text-[clamp(1.5rem,3vw,2.1rem)] m-0 mb-4'}`}>
             Ready to Skip the Line?
           </h2>
-          <p style={{ fontSize: isMobile ? '14px' : '15px', color: M.textSub, margin: isMobile ? '0 0 24px' : '0 0 1.75rem', lineHeight: 1.65 }}>
+          <p className={`text-text-sub leading-[1.65] ${isMobile ? 'text-[14px] m-0 mb-6' : 'text-[15px] m-0 mb-7'}`}>
             Create your CampusFlow account and book your next registrar appointment in under 2 minutes.
           </p>
-          <button onClick={handlePrimary} style={{
-            padding: isMobile ? '14px 24px' : '14px 36px', borderRadius: '10px', border: 'none',
-            background: M.maroon, color: 'white',
-            fontSize: '15px', fontWeight: 700, cursor: 'pointer',
-            fontFamily: "'IBM Plex Sans', sans-serif",
-            minHeight: isMobile ? '52px' : 'auto',
-            width: isMobile ? '100%' : 'auto',
-            boxShadow: '0 4px 20px rgba(123,26,42,0.25)',
-          }}>
+          <button onClick={handlePrimary} className={`rounded-[10px] border-none bg-maroon text-white font-bold cursor-pointer font-sans shadow-[0_4px_20px_rgba(123,26,42,0.25)] ${isMobile ? 'py-3.5 px-6 text-[15px] min-h-[52px] w-full' : 'py-3.5 px-9 text-[15px] w-auto'}`}>
             {user ? 'Go to Dashboard →' : 'Create Free Account →'}
           </button>
         </div>
       </section>
 
       {/* ── Footer ── */}
-      <footer style={{
-        background: M.maroon,
-        padding: isMobile ? '20px 16px' : '1.5rem 2rem',
-        display: 'flex',
-        alignItems: isMobile ? 'center' : 'center',
-        justifyContent: isMobile ? 'center' : 'space-between',
-        flexDirection: isMobile ? 'column' : 'row',
-        flexWrap: 'wrap',
-        gap: isMobile ? '10px' : '1rem',
-        textAlign: isMobile ? 'center' : 'left',
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <img src={crmcLogo} alt="CRMC" style={{ width: '26px', height: '26px', borderRadius: '50%' }} />
-          <div style={{ textAlign: 'left' }}>
-            <div style={{ fontSize: isMobile ? '12px' : '13px', fontWeight: 600, color: 'rgba(255,255,255,0.85)' }}>Cebu Roosevelt Memorial Colleges</div>
-            <div style={{ fontSize: isMobile ? '10px' : '11px', color: 'rgba(255,255,255,0.4)', marginTop: '1px' }}>College of Computer Studies · BSIT Capstone 2026</div>
+      <footer className={`bg-maroon flex flex-wrap ${isMobile ? 'py-5 px-4 items-center justify-center flex-col gap-2.5 text-center' : 'py-6 px-8 items-center justify-between flex-row gap-4 text-left'}`}>
+        <div className="flex items-center gap-2.5">
+          <img src={crmcLogo} alt="CRMC" className="w-[26px] h-[26px] rounded-full" />
+          <div className="text-left">
+            <div className={`font-semibold text-white/85 ${isMobile ? 'text-[12px]' : 'text-[13px]'}`}>Cebu Roosevelt Memorial Colleges</div>
+            <div className={`text-white/40 mt-px ${isMobile ? 'text-[10px]' : 'text-[11px]'}`}>College of Computer Studies · BSIT Capstone 2026</div>
           </div>
         </div>
-        <div style={{ fontSize: isMobile ? '10px' : '12px', color: 'rgba(255,255,255,0.35)', letterSpacing: '0.04em' }}>
+        <div className={`text-white/35 tracking-wider ${isMobile ? 'text-[10px]' : 'text-[12px]'}`}>
           SDG 4 · Quality Education &nbsp;·&nbsp; SDG 9 · Innovation
         </div>
       </footer>

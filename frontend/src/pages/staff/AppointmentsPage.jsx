@@ -3,30 +3,6 @@ import { useAuth } from '../../context/useAuth'
 import { getAllAppointments, getAppointmentStats, rescheduleAppointment } from '../../services/appointmentService'
 import { Calendar, RefreshCw, BarChart2, Circle, User, Tag, X, FileText, Activity } from 'lucide-react'
 
-const M = {
-  maroon: '#7B1A2A',
-  maroonDark: '#5C1320',
-  maroonLight: '#F9F0F1',
-  maroonMid: 'rgba(123,26,42,0.08)',
-  maroonBorder: 'rgba(123,26,42,0.2)',
-  gold: '#B8900A',
-  goldLight: '#FDF6E3',
-  goldBorder: 'rgba(184,144,10,0.3)',
-  white: '#FFFFFF',
-  offWhite: '#F9F7F4',
-  surface: '#F2EDE8',
-  border: '#EAE7E2',
-  text: '#1C1917',
-  textSub: '#57534E',
-  textMuted: '#A8A29E',
-  green: '#15803D',
-  greenLight: '#F0FDF4',
-  greenBorder: '#BBF7D0',
-  blue: '#1D4ED8',
-  blueLight: '#EFF6FF',
-  blueBorder: '#BFDBFE',
-}
-
 export default function AppointmentsPage() {
   const { token } = useAuth()
   
@@ -73,9 +49,9 @@ export default function AppointmentsPage() {
   }, [loadStats])
 
   const stats = [
-    { label: "TODAY'S APPOINTMENTS", value: statsData ? statsData.today_appointments : "-", sub: "Real-time updates", icon: <Calendar size={20} color={M.gold} />, delay: '0.1s' },
-    { label: "COMPLETED TODAY", value: statsData ? statsData.completed_today : "-", sub: "Automated processing", icon: <RefreshCw size={20} color={M.gold} />, delay: '0.2s' },
-    { label: "TOTAL MONTHLY VOLUME", value: statsData ? statsData.total_monthly : "-", sub: "Total this month", icon: <BarChart2 size={20} color={M.gold} />, delay: '0.3s' }
+    { label: "TODAY'S APPOINTMENTS", value: statsData ? statsData.today_appointments : "-", sub: "Real-time updates", icon: <Calendar size={20} className="text-gold" />, delay: '0.1s' },
+    { label: "COMPLETED TODAY", value: statsData ? statsData.completed_today : "-", sub: "Automated processing", icon: <RefreshCw size={20} className="text-gold" />, delay: '0.2s' },
+    { label: "TOTAL MONTHLY VOLUME", value: statsData ? statsData.total_monthly : "-", sub: "Total this month", icon: <BarChart2 size={20} className="text-gold" />, delay: '0.3s' }
   ]
 
   const [appointments, setAppointments] = useState([])
@@ -132,76 +108,64 @@ export default function AppointmentsPage() {
 
   const renderStep = (stepStr, idx) => {
     return (
-      <div key={idx} style={{
-        display: 'flex', alignItems: 'center', gap: '6px',
-        padding: '6px 12px', borderRadius: '100px',
-        background: M.offWhite, border: `1px solid ${M.border}`,
-        fontSize: '11px', fontWeight: 600, color: M.textMuted,
-        whiteSpace: 'nowrap'
-      }}>
-        <span style={{ display: 'flex', alignItems: 'center' }}><Circle size={10} color={M.gold} /></span> {stepStr}
+      <div key={idx} className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-off-white border border-border text-[11px] font-semibold text-text-muted whitespace-nowrap">
+        <span className="flex items-center"><Circle size={10} className="text-gold" /></span> {stepStr}
       </div>
     )
   }
 
   return (
-    <div className="fade-in-section" style={{ fontFamily: "'IBM Plex Sans', sans-serif" }}>
+    <div className="animate-fade-up font-sans">
       
       {/* ── Header ── */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '24px' }}>
+      <div className="flex justify-between items-start mb-6">
         <div>
-          <h1 style={{ fontFamily: "'Fraunces', serif", fontSize: '24px', fontWeight: 700, color: M.maroon, margin: '0 0 4px' }}>
+          <h1 className="font-serif text-2xl font-bold text-maroon m-0 mb-1">
             Appointment Calendar
           </h1>
-          <p style={{ fontSize: '13px', color: M.textSub, margin: 0 }}>
+          <p className="text-[13px] text-text-sub m-0">
             Monitor automated student transactions and scheduled appointments.
           </p>
         </div>
-
       </div>
 
       {/* ── Stats Row ── */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '20px', marginBottom: '32px' }}>
+      <div className="grid grid-cols-3 gap-5 mb-8">
         {stats.map((s, i) => (
-          <div key={i} className="animate-fade-up" style={{
-            animationDelay: s.delay,
-            background: M.white, borderRadius: '16px', padding: '20px',
-            border: `1px solid ${M.border}`, boxShadow: '0 4px 12px rgba(0,0,0,0.02)',
-            display: 'flex', flexDirection: 'column', position: 'relative'
-          }}>
-            <div style={{ fontSize: '10px', fontWeight: 700, color: M.textMuted, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '8px' }}>
+          <div key={i} className="animate-fade-up bg-white rounded-2xl p-5 border border-border shadow-[0_4px_12px_rgba(0,0,0,0.02)] flex flex-col relative" style={{ animationDelay: s.delay }}>
+            <div className="text-[10px] font-bold text-text-muted tracking-[0.1em] uppercase mb-2">
               {s.label}
             </div>
-            <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px', minHeight: '32px' }}>
-              <span style={{ fontFamily: "'Fraunces', serif", fontSize: '32px', fontWeight: 700, color: M.maroon, lineHeight: 1 }}>
-                {!statsData ? <div className="animate-shimmer" style={{ width: '40px', height: '32px', background: M.border, borderRadius: '6px' }} /> : s.value}
+            <div className="flex items-baseline gap-2 min-h-[32px]">
+              <span className="font-serif text-[32px] font-bold text-maroon leading-none">
+                {!statsData ? <div className="animate-pulse w-10 h-8 bg-border rounded-md" /> : s.value}
               </span>
-              <span style={{ fontSize: '11px', color: M.textMuted }}>{s.sub}</span>
+              <span className="text-[11px] text-text-muted">{s.sub}</span>
             </div>
           </div>
         ))}
       </div>
 
       {/* ── Main Layout ── */}
-      <div style={{ display: 'grid', gridTemplateColumns: '280px 1fr', gap: '32px' }}>
+      <div className="grid grid-cols-[280px_1fr] gap-8">
         
         {/* Left Col: Calendar & Filters */}
-        <div className="animate-fade-up" style={{ animationDelay: '0.4s', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+        <div className="animate-fade-up flex flex-col gap-5" style={{ animationDelay: '0.4s' }}>
           
-          <div style={{ background: M.white, borderRadius: '16px', padding: '24px', border: `1px solid ${M.border}`, boxShadow: '0 4px 12px rgba(0,0,0,0.02)' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-              <span style={{ fontSize: '15px', fontWeight: 700, fontFamily: "'Fraunces', serif", color: M.text }}>
+          <div className="bg-white rounded-2xl p-6 border border-border shadow-[0_4px_12px_rgba(0,0,0,0.02)]">
+            <div className="flex justify-between items-center mb-4">
+              <span className="text-[15px] font-bold font-serif text-text-main">
                 {currentMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
               </span>
-              <div style={{ display: 'flex', gap: '8px' }}>
-                <span onClick={handlePrevMonth} style={{ cursor: 'pointer', color: M.textMuted, fontSize: '12px', padding: '4px' }}>&lt;</span>
-                <span onClick={handleNextMonth} style={{ cursor: 'pointer', color: M.textMuted, fontSize: '12px', padding: '4px' }}>&gt;</span>
+              <div className="flex gap-2">
+                <span onClick={handlePrevMonth} className="cursor-pointer text-text-muted text-xs p-1 hover:text-text-main transition-colors">&lt;</span>
+                <span onClick={handleNextMonth} className="cursor-pointer text-text-muted text-xs p-1 hover:text-text-main transition-colors">&gt;</span>
               </div>
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '8px', textAlign: 'center', fontSize: '12px', color: M.textMuted, marginBottom: '12px', fontWeight: 600 }}>
+            <div className="grid grid-cols-7 gap-2 text-center text-xs text-text-muted mb-3 font-semibold">
               <span>Su</span><span>Mo</span><span>Tu</span><span>We</span><span>Th</span><span>Fr</span><span>Sa</span>
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '8px', textAlign: 'center', fontSize: '13px', alignItems: 'center' }}>
+            <div className="grid grid-cols-7 gap-2 text-center text-[13px] items-center">
               {getDaysInMonth().map((d, i) => {
                 if (!d) return <span key={`empty-${i}`} />
                 const isSelected = selectedDate.getFullYear() === d.getFullYear() && selectedDate.getMonth() === d.getMonth() && selectedDate.getDate() === d.getDate()
@@ -210,17 +174,9 @@ export default function AppointmentsPage() {
                   <span 
                     key={i} 
                     onClick={() => setSelectedDate(d)}
-                    style={{
-                      cursor: 'pointer', 
-                      background: isSelected ? M.maroon : 'transparent', 
-                      color: isSelected ? M.white : isToday ? M.gold : M.text, 
-                      borderRadius: isSelected ? '50%' : '4px', 
-                      width: '24px', height: '24px', 
-                      display: 'flex', alignItems: 'center', justifyContent: 'center', 
-                      margin: '0 auto', 
-                      fontWeight: isSelected || isToday ? 700 : 500,
-                      transition: 'background 0.2s'
-                    }}
+                    className={`cursor-pointer w-6 h-6 flex items-center justify-center mx-auto transition-colors duration-200 
+                      ${isSelected ? 'bg-maroon text-white rounded-full font-bold' : isToday ? 'text-gold font-bold rounded' : 'text-text-main font-medium rounded hover:bg-surface'}
+                    `}
                   >
                     {d.getDate()}
                   </span>
@@ -229,16 +185,16 @@ export default function AppointmentsPage() {
             </div>
           </div>
 
-          <div style={{ background: M.white, borderRadius: '16px', padding: '24px', border: `1px solid ${M.border}`, boxShadow: '0 4px 12px rgba(0,0,0,0.02)' }}>
-            <div style={{ fontSize: '10px', fontWeight: 700, color: M.textMuted, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '16px' }}>
+          <div className="bg-white rounded-2xl p-6 border border-border shadow-[0_4px_12px_rgba(0,0,0,0.02)]">
+            <div className="text-[10px] font-bold text-text-muted tracking-[0.1em] uppercase mb-4">
               Daily Filter
             </div>
-            <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <input type="checkbox" defaultChecked style={{ accentColor: M.maroon, cursor: 'pointer' }} />
-                <span style={{ fontSize: '13px', fontWeight: 500, color: M.text }}>Appointed</span>
+            <label className="flex items-center justify-between cursor-pointer">
+              <div className="flex items-center gap-2.5">
+                <input type="checkbox" defaultChecked className="accent-maroon cursor-pointer" />
+                <span className="text-[13px] font-medium text-text-main">Appointed</span>
               </div>
-              <span style={{ fontSize: '11px', color: M.textMuted, background: M.offWhite, padding: '2px 6px', borderRadius: '6px' }}>
+              <span className="text-[11px] text-text-muted bg-off-white px-1.5 py-0.5 rounded-md">
                 {appointments.length}
               </span>
             </label>
@@ -248,46 +204,43 @@ export default function AppointmentsPage() {
 
         {/* Right Col: Appointment List */}
         <div className="animate-fade-up" style={{ animationDelay: '0.5s' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-            <h2 style={{ fontFamily: "'Fraunces', serif", fontSize: '18px', fontWeight: 700, color: M.text, margin: 0 }}>
+          <div className="flex justify-between items-center mb-5">
+            <h2 className="font-serif text-[18px] font-bold text-text-main m-0">
               Schedule for {selectedDate.toLocaleDateString('en-US', { month: 'long', day: '2-digit', year: 'numeric' })}
             </h2>
-            <span style={{ fontSize: '12px', color: M.textMuted }}>Showing {appointments.length} appointment{appointments.length !== 1 ? 's' : ''}</span>
+            <span className="text-xs text-text-muted">Showing {appointments.length} appointment{appointments.length !== 1 ? 's' : ''}</span>
           </div>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+          <div className="flex flex-col gap-5">
             {loading && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+              <div className="flex flex-col gap-5">
                 {[1, 2, 3].map(i => (
-                  <div key={i} style={{ 
-                    background: M.white, borderRadius: '16px', padding: '24px', 
-                    border: `1px solid ${M.border}`, boxShadow: '0 4px 16px rgba(0,0,0,0.02)',
-                  }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
+                  <div key={i} className="bg-white rounded-2xl p-6 border border-border shadow-[0_4px_16px_rgba(0,0,0,0.02)]">
+                    <div className="flex justify-between mb-3">
                       <div>
-                        <div className="animate-shimmer" style={{ width: '200px', height: '18px', borderRadius: '4px', marginBottom: '10px' }} />
-                        <div className="animate-shimmer" style={{ width: '140px', height: '14px', borderRadius: '4px', marginBottom: '12px' }} />
-                        <div style={{ display: 'flex', gap: '16px' }}>
-                          <div className="animate-shimmer" style={{ width: '80px', height: '14px', borderRadius: '4px' }} />
-                          <div className="animate-shimmer" style={{ width: '80px', height: '14px', borderRadius: '4px' }} />
+                        <div className="animate-pulse w-[200px] h-4.5 rounded bg-border mb-2.5" />
+                        <div className="animate-pulse w-[140px] h-3.5 rounded bg-border mb-3" />
+                        <div className="flex gap-4">
+                          <div className="animate-pulse w-20 h-3.5 rounded bg-border" />
+                          <div className="animate-pulse w-20 h-3.5 rounded bg-border" />
                         </div>
                       </div>
-                      <div className="animate-shimmer" style={{ width: '60px', height: '22px', borderRadius: '100px' }} />
+                      <div className="animate-pulse w-[60px] h-5.5 rounded-full bg-border" />
                     </div>
-                    <div style={{ margin: '20px 0' }}>
-                      <div className="animate-shimmer" style={{ width: '100px', height: '10px', borderRadius: '4px', marginBottom: '10px' }} />
-                      <div style={{ display: 'flex', gap: '8px' }}>
-                        <div className="animate-shimmer" style={{ width: '140px', height: '24px', borderRadius: '100px' }} />
-                        <div className="animate-shimmer" style={{ width: '140px', height: '24px', borderRadius: '100px' }} />
+                    <div className="my-5">
+                      <div className="animate-pulse w-[100px] h-2.5 rounded bg-border mb-2.5" />
+                      <div className="flex gap-2">
+                        <div className="animate-pulse w-[140px] h-6 rounded-full bg-border" />
+                        <div className="animate-pulse w-[140px] h-6 rounded-full bg-border" />
                       </div>
                     </div>
                   </div>
                 ))}
               </div>
             )}
-            {error && <div style={{ padding: '20px', color: M.red }}>{error}</div>}
+            {error && <div className="p-5 text-danger">{error}</div>}
             {!loading && !error && appointments.length === 0 && (
-              <div style={{ padding: '40px', textAlign: 'center', color: M.textMuted }}>No appointments for this date.</div>
+              <div className="p-10 text-center text-text-muted">No appointments for this date.</div>
             )}
             
             {appointments.map(apt => {
@@ -297,67 +250,55 @@ export default function AppointmentsPage() {
               const steps = apt.transaction_types?.processing_steps || []
               
               return (
-              <div key={apt.id} style={{ 
-                background: M.white, borderRadius: '16px', padding: '24px', 
-                border: `1px solid ${M.border}`, boxShadow: '0 4px 16px rgba(0,0,0,0.02)' 
-              }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
+              <div key={apt.id} className="bg-white rounded-2xl p-6 border border-border shadow-[0_4px_16px_rgba(0,0,0,0.02)] transition-colors hover:border-maroon-border">
+                <div className="flex justify-between items-start mb-3">
                   <div>
-                    <h3 style={{ fontSize: '15px', fontWeight: 600, color: M.maroon, margin: '0 0 6px', fontFamily: "'Fraunces', serif" }}>
+                    <h3 className="text-[15px] font-semibold text-maroon m-0 mb-1.5 font-serif">
                       {typeName}
                     </h3>
-                    <div style={{ fontSize: '13px', color: M.textSub, display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '10px' }}>
-                      <User size={14} color={M.gold} /> <span style={{ fontWeight: 500 }}>{studentName}</span> (ID: {studentId})
+                    <div className="text-[13px] text-text-sub flex items-center gap-1.5 mb-2.5">
+                      <User size={14} className="text-gold" /> <span className="font-medium">{studentName}</span> (ID: {studentId})
                     </div>
-                    <div style={{ display: 'flex', gap: '16px', fontSize: '12px', color: M.textMuted }}>
-                      <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><Calendar size={12} color={M.gold} /> {fmt12h(apt.time_slot)}</span>
-                      <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><Tag size={12} color={M.gold} /> Priority: {apt.priority_class}</span>
+                    <div className="flex gap-4 text-xs text-text-muted">
+                      <span className="flex items-center gap-1"><Calendar size={12} className="text-gold" /> {fmt12h(apt.time_slot)}</span>
+                      <span className="flex items-center gap-1"><Tag size={12} className="text-gold" /> Priority: {apt.priority_class}</span>
                     </div>
                   </div>
-                  <span style={{ 
-                    fontSize: '11px', fontWeight: 600, color: M.green, 
-                    background: M.greenLight, border: `1px solid ${M.greenBorder}`, 
-                    padding: '4px 12px', borderRadius: '100px',
-                    textTransform: 'capitalize'
-                  }}>
+                  <span className={`text-[11px] font-semibold px-3 py-1 rounded-full capitalize border 
+                    ${apt.status === 'completed' ? 'text-success bg-success-light border-success-border' : 
+                      apt.status === 'pending' ? 'text-gold bg-gold-light border-gold-border' : 
+                      apt.status === 'cancelled' ? 'text-danger bg-danger-light border-danger-border' : 
+                      'text-blue bg-blue-light border-blue-border'}`}>
                     {apt.status}
                   </span>
                 </div>
 
-                <div style={{ margin: '20px 0' }}>
-                  <div style={{ fontSize: '10px', fontWeight: 700, color: M.textMuted, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '10px' }}>
+                <div className="my-5">
+                  <div className="text-[10px] font-bold text-text-muted tracking-[0.1em] uppercase mb-2.5">
                     Processing Steps
                   </div>
-                  <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '4px' }}>
+                  <div className="flex gap-2 overflow-x-auto pb-1">
                     {steps.map((step, idx) => renderStep(step, idx))}
                   </div>
                 </div>
 
-                <div style={{ height: '1px', background: M.border, margin: '20px 0' }} />
+                <div className="h-px bg-border my-5" />
                 
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span style={{ fontSize: '12px', color: M.textMuted }}></span>
-                  <div style={{ display: 'flex', gap: '12px' }}>
+                <div className="flex justify-between items-center">
+                  <span className="text-xs text-text-muted"></span>
+                  <div className="flex gap-3">
                     <button 
                       onClick={() => {
                         setRescheduleModal(apt)
                         setNewDate(apt.appointment_date || '')
                         setNewTime(apt.time_slot || '')
                       }}
-                      style={{ 
-                      background: 'transparent', border: 'none', color: M.maroon, 
-                      fontSize: '13px', fontWeight: 600, cursor: 'pointer' 
-                    }}>
+                      className="bg-transparent border-none text-maroon text-[13px] font-semibold cursor-pointer hover:text-maroon-dark transition-colors">
                       Reschedule
                     </button>
                     <button 
                       onClick={() => setViewDetailsModal(apt)}
-                      style={{ 
-                      background: M.maroon, color: M.white, border: 'none', 
-                      borderRadius: '8px', padding: '8px 20px', 
-                      fontSize: '13px', fontWeight: 600, cursor: 'pointer',
-                      fontFamily: "'IBM Plex Sans', sans-serif"
-                    }}>
+                      className="bg-maroon text-white border-none rounded-lg px-5 py-2 text-[13px] font-semibold cursor-pointer font-sans hover:bg-maroon-dark transition-colors">
                       View Details
                     </button>
                   </div>
@@ -385,65 +326,65 @@ export default function AppointmentsPage() {
           mediaUrl = parts[1] ? parts[1].trim() : null
         }
 
-        const sColor = viewDetailsModal.status === 'completed' ? M.green : viewDetailsModal.status === 'cancelled' ? M.red : viewDetailsModal.status === 'pending' ? M.gold : M.blue
-        const sBg = viewDetailsModal.status === 'completed' ? M.greenLight : viewDetailsModal.status === 'cancelled' ? M.redLight : viewDetailsModal.status === 'pending' ? M.goldLight : M.blueLight
-        const sBorder = viewDetailsModal.status === 'completed' ? M.greenBorder : viewDetailsModal.status === 'cancelled' ? M.redBorder : viewDetailsModal.status === 'pending' ? M.goldBorder : M.blueBorder
+        const sColor = viewDetailsModal.status === 'completed' ? 'text-success' : viewDetailsModal.status === 'cancelled' ? 'text-danger' : viewDetailsModal.status === 'pending' ? 'text-gold' : 'text-blue'
+        const sBg = viewDetailsModal.status === 'completed' ? 'bg-success-light' : viewDetailsModal.status === 'cancelled' ? 'bg-danger-light' : viewDetailsModal.status === 'pending' ? 'bg-gold-light' : 'bg-blue-light'
+        const sBorder = viewDetailsModal.status === 'completed' ? 'border-success-border' : viewDetailsModal.status === 'cancelled' ? 'border-danger-border' : viewDetailsModal.status === 'pending' ? 'border-gold-border' : 'border-blue-border'
 
         return (
-          <div style={{ position: 'fixed', inset: 0, zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)' }} onClick={() => setViewDetailsModal(null)} />
-            <div className="animate-fade-up" style={{ position: 'relative', background: M.white, borderRadius: '24px', width: '480px', maxWidth: '90%', maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 20px 40px rgba(0,0,0,0.2)' }}>
+          <div className="fixed inset-0 z-[1000] flex items-center justify-center">
+            <div className="absolute inset-0 bg-black/50 backdrop-blur-[4px]" onClick={() => setViewDetailsModal(null)} />
+            <div className="animate-fade-up relative bg-white rounded-[24px] w-[480px] max-w-[90%] max-h-[90vh] overflow-y-auto shadow-[0_20px_40px_rgba(0,0,0,0.2)]">
               
               {/* Header */}
-              <div style={{ padding: '24px 32px', borderBottom: `1px solid ${M.border}`, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+              <div className="px-8 py-6 border-b border-border flex justify-between items-start">
                 <div>
-                  <h2 style={{ margin: '0 0 6px', color: M.text, fontFamily: "'Fraunces', serif", fontSize: '22px', fontWeight: 700 }}>Appointment Details</h2>
-                  <p style={{ margin: 0, fontSize: '13px', color: M.textMuted }}>ID: {viewDetailsModal.id.split('-')[0].toUpperCase()}</p>
+                  <h2 className="m-0 mb-1.5 text-text-main font-serif text-[22px] font-bold">Appointment Details</h2>
+                  <p className="m-0 text-[13px] text-text-muted">ID: {viewDetailsModal.id.split('-')[0].toUpperCase()}</p>
                 </div>
-                <button onClick={() => setViewDetailsModal(null)} style={{ background: M.surface, border: 'none', width: '32px', height: '32px', borderRadius: '50%', cursor: 'pointer', color: M.textSub, display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'background 0.2s' }} onMouseEnter={e => e.currentTarget.style.background = M.border} onMouseLeave={e => e.currentTarget.style.background = M.surface}><X size={16} /></button>
+                <button onClick={() => setViewDetailsModal(null)} className="bg-surface border-none w-8 h-8 rounded-full cursor-pointer text-text-sub flex items-center justify-center transition-colors hover:bg-border"><X size={16} /></button>
               </div>
 
-              <div style={{ padding: '32px' }}>
+              <div className="p-8">
                 {/* Student Info Profile */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '32px', padding: '16px', background: M.offWhite, borderRadius: '16px', border: `1px solid ${M.border}` }}>
-                  <div style={{ width: '56px', height: '56px', borderRadius: '50%', background: M.maroonLight, color: M.maroon, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px', fontWeight: 700, border: `1px solid ${M.maroonBorder}` }}>
+                <div className="flex items-center gap-4 mb-8 p-4 bg-off-white rounded-2xl border border-border">
+                  <div className="w-14 h-14 rounded-full bg-maroon-light text-maroon flex items-center justify-center text-[20px] font-bold border border-maroon-border shrink-0">
                     {initials}
                   </div>
                   <div>
-                    <h3 style={{ margin: '0 0 4px', fontSize: '16px', fontWeight: 700, color: M.text }}>{name}</h3>
-                    <p style={{ margin: 0, fontSize: '13px', color: M.textMuted, fontFamily: 'monospace' }}>{studentId}</p>
+                    <h3 className="m-0 mb-1 text-[16px] font-bold text-text-main">{name}</h3>
+                    <p className="m-0 text-[13px] text-text-muted font-mono">{studentId}</p>
                   </div>
                 </div>
 
                 {/* Grid Details */}
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px', marginBottom: '32px' }}>
+                <div className="grid grid-cols-2 gap-6 mb-8">
                   <div>
-                    <p style={{ fontSize: '11px', fontWeight: 700, color: M.textMuted, textTransform: 'uppercase', letterSpacing: '0.06em', margin: '0 0 8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                      <FileText size={14} color={M.gold} /> Transaction Type
+                    <p className="text-[11px] font-bold text-text-muted uppercase tracking-[0.06em] m-0 mb-2 flex items-center gap-1.5">
+                      <FileText size={14} className="text-gold" /> Transaction Type
                     </p>
-                    <p style={{ fontSize: '14px', fontWeight: 600, color: M.text, margin: 0 }}>{viewDetailsModal.transaction_types?.name}</p>
+                    <p className="text-[14px] font-semibold text-text-main m-0">{viewDetailsModal.transaction_types?.name}</p>
                   </div>
                   <div>
-                    <p style={{ fontSize: '11px', fontWeight: 700, color: M.textMuted, textTransform: 'uppercase', letterSpacing: '0.06em', margin: '0 0 8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                      <Calendar size={14} color={M.gold} /> Schedule
+                    <p className="text-[11px] font-bold text-text-muted uppercase tracking-[0.06em] m-0 mb-2 flex items-center gap-1.5">
+                      <Calendar size={14} className="text-gold" /> Schedule
                     </p>
-                    <p style={{ fontSize: '14px', fontWeight: 600, color: M.text, margin: 0 }}>
+                    <p className="text-[14px] font-semibold text-text-main m-0">
                       {new Date(viewDetailsModal.appointment_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })} at {fmt12h(viewDetailsModal.time_slot)}
                     </p>
                   </div>
                   <div>
-                    <p style={{ fontSize: '11px', fontWeight: 700, color: M.textMuted, textTransform: 'uppercase', letterSpacing: '0.06em', margin: '0 0 8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                      <Tag size={14} color={M.gold} /> Priority Class
+                    <p className="text-[11px] font-bold text-text-muted uppercase tracking-[0.06em] m-0 mb-2 flex items-center gap-1.5">
+                      <Tag size={14} className="text-gold" /> Priority Class
                     </p>
-                    <span style={{ fontSize: '12px', fontWeight: 600, color: M.maroon, background: M.maroonLight, padding: '4px 12px', borderRadius: '100px', border: `1px solid ${M.maroonBorder}`, textTransform: 'capitalize' }}>
+                    <span className="text-[12px] font-semibold text-maroon bg-maroon-light px-3 py-1 rounded-full border border-maroon-border capitalize inline-block">
                       {viewDetailsModal.priority_class}
                     </span>
                   </div>
                   <div>
-                    <p style={{ fontSize: '11px', fontWeight: 700, color: M.textMuted, textTransform: 'uppercase', letterSpacing: '0.06em', margin: '0 0 8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                      <Activity size={14} color={M.gold} /> Status
+                    <p className="text-[11px] font-bold text-text-muted uppercase tracking-[0.06em] m-0 mb-2 flex items-center gap-1.5">
+                      <Activity size={14} className="text-gold" /> Status
                     </p>
-                    <span style={{ fontSize: '12px', fontWeight: 600, color: sColor, background: sBg, padding: '4px 12px', borderRadius: '100px', border: `1px solid ${sBorder}`, textTransform: 'capitalize' }}>
+                    <span className={`text-[12px] font-semibold px-3 py-1 rounded-full border capitalize inline-block ${sColor} ${sBg} ${sBorder}`}>
                       {viewDetailsModal.status}
                     </span>
                   </div>
@@ -451,18 +392,18 @@ export default function AppointmentsPage() {
 
                 {/* Notes & Media */}
                 {(parsedNotes || mediaUrl) && (
-                  <div style={{ borderTop: `1px solid ${M.border}`, paddingTop: '24px' }}>
-                    <p style={{ fontSize: '11px', fontWeight: 700, color: M.textMuted, textTransform: 'uppercase', letterSpacing: '0.06em', margin: '0 0 12px' }}>Notes & Attachments</p>
+                  <div className="border-t border-border pt-6">
+                    <p className="text-[11px] font-bold text-text-muted uppercase tracking-[0.06em] m-0 mb-3">Notes & Attachments</p>
                     {parsedNotes && (
-                      <div style={{ padding: '16px', background: M.surface, borderRadius: '12px', fontSize: '13px', color: M.textSub, lineHeight: 1.5, marginBottom: '16px' }}>
+                      <div className="p-4 bg-surface rounded-xl text-[13px] text-text-sub leading-relaxed mb-4">
                         {parsedNotes}
                       </div>
                     )}
                     {mediaUrl && (
                       <div>
-                        <p style={{ fontSize: '12px', fontWeight: 600, color: M.text, margin: '0 0 8px' }}>Attached Media</p>
-                        <a href={mediaUrl} target="_blank" rel="noreferrer" style={{ display: 'block', borderRadius: '12px', overflow: 'hidden', border: `1px solid ${M.border}` }}>
-                          <img src={mediaUrl} alt="Attachment" style={{ width: '100%', display: 'block' }} />
+                        <p className="text-[12px] font-semibold text-text-main m-0 mb-2">Attached Media</p>
+                        <a href={mediaUrl} target="_blank" rel="noreferrer" className="block rounded-xl overflow-hidden border border-border transition-opacity hover:opacity-90">
+                          <img src={mediaUrl} alt="Attachment" className="w-full block" />
                         </a>
                       </div>
                     )}
@@ -475,20 +416,20 @@ export default function AppointmentsPage() {
       })()}
 
       {rescheduleModal && (
-        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
-          <div style={{ background: M.white, padding: '32px', borderRadius: '16px', width: '400px', maxWidth: '90%', fontFamily: "'IBM Plex Sans', sans-serif" }}>
-            <h2 style={{ margin: '0 0 16px', color: M.maroon, fontFamily: "'Fraunces', serif" }}>Reschedule Appointment</h2>
-            <div style={{ marginBottom: '16px' }}>
-              <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: M.textSub, marginBottom: '6px' }}>New Date</label>
-              <input type="date" value={newDate} onChange={e => setNewDate(e.target.value)} style={{ width: '100%', padding: '10px', borderRadius: '8px', border: `1px solid ${M.border}`, fontSize: '14px', boxSizing: 'border-box' }} />
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[1000] backdrop-blur-[4px]">
+          <div className="bg-white p-8 rounded-2xl w-[400px] max-w-[90%] font-sans shadow-xl animate-fade-up">
+            <h2 className="m-0 mb-4 text-maroon font-serif text-[22px] font-bold">Reschedule Appointment</h2>
+            <div className="mb-4">
+              <label className="block text-xs font-semibold text-text-sub mb-1.5">New Date</label>
+              <input type="date" value={newDate} onChange={e => setNewDate(e.target.value)} className="w-full p-2.5 rounded-lg border border-border text-sm outline-none font-sans focus:border-maroon transition-colors" />
             </div>
-            <div style={{ marginBottom: '24px' }}>
-              <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: M.textSub, marginBottom: '6px' }}>New Time Slot</label>
-              <input type="time" value={newTime} onChange={e => setNewTime(e.target.value)} style={{ width: '100%', padding: '10px', borderRadius: '8px', border: `1px solid ${M.border}`, fontSize: '14px', boxSizing: 'border-box' }} />
+            <div className="mb-6">
+              <label className="block text-xs font-semibold text-text-sub mb-1.5">New Time Slot</label>
+              <input type="time" value={newTime} onChange={e => setNewTime(e.target.value)} className="w-full p-2.5 rounded-lg border border-border text-sm outline-none font-sans focus:border-maroon transition-colors" />
             </div>
-            <div style={{ display: 'flex', gap: '12px' }}>
-              <button onClick={() => setRescheduleModal(null)} style={{ flex: 1, background: M.offWhite, color: M.text, padding: '10px', borderRadius: '8px', border: 'none', cursor: 'pointer', fontWeight: 600 }}>Cancel</button>
-              <button onClick={handleReschedule} disabled={rescheduling} style={{ flex: 1, background: M.maroon, color: M.white, padding: '10px', borderRadius: '8px', border: 'none', cursor: 'pointer', fontWeight: 600 }}>
+            <div className="flex gap-3">
+              <button onClick={() => setRescheduleModal(null)} className="flex-1 bg-off-white text-text-main p-2.5 rounded-lg border border-border cursor-pointer font-semibold font-sans hover:bg-border transition-colors">Cancel</button>
+              <button onClick={handleReschedule} disabled={rescheduling} className={`flex-1 p-2.5 rounded-lg border-none font-semibold font-sans transition-colors ${rescheduling ? 'bg-maroon-border text-white cursor-not-allowed' : 'bg-maroon text-white cursor-pointer hover:bg-maroon-dark'}`}>
                 {rescheduling ? 'Saving...' : 'Save Changes'}
               </button>
             </div>

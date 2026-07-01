@@ -12,82 +12,36 @@ import { getAppointmentStats } from '../../services/appointmentService'
 import { Inbox, MessageSquare, BarChart2, Ticket, Calendar, ClipboardList, LogOut, Users, CheckSquare, Clock, CalendarClock, Monitor, MonitorX } from 'lucide-react'
 import { getWindowAssignments, claimWindow, releaseWindow } from '../../services/adminService'
 
-// ── Design Tokens ──────────────────────────────────────────────────────────────
-const M = {
-  maroon: '#7B1A2A',
-  maroonDark: '#5C1320',
-  maroonLight: '#F9F0F1',
-  maroonMid: 'rgba(123,26,42,0.08)',
-  maroonBorder: 'rgba(123,26,42,0.2)',
-  gold: '#B8900A',
-  goldLight: '#FDF6E3',
-  goldBorder: 'rgba(184,144,10,0.3)',
-  white: '#FFFFFF',
-  offWhite: '#F9F7F4',
-  surface: '#F2EDE8',
-  border: '#EAE7E2',
-  text: '#1C1917',
-  textSub: '#57534E',
-  textMuted: '#A8A29E',
-  green: '#15803D',
-  greenLight: '#F0FDF4',
-  greenBorder: '#BBF7D0',
-  blue: '#1D4ED8',
-  blueLight: '#EFF6FF',
-  blueBorder: '#BFDBFE',
-  red: '#DC2626',
-  redLight: '#FEF2F2',
-  redBorder: '#FECACA',
-}
-
-const PRIORITY = {
-  urgent: { bg: M.redLight, color: M.red, border: M.redBorder, label: 'Urgent' },
-  normal: { bg: M.goldLight, color: M.gold, border: M.goldBorder, label: 'Normal' },
-  fyi: { bg: M.blueLight, color: M.blue, border: M.blueBorder, label: 'FYI' },
-}
-const CATEGORY = {
-  requirements: { label: 'Requirements' },
-  scheduling: { label: 'Scheduling' },
-  process: { label: 'Process' },
-  complaint: { label: 'Complaint' },
-  other: { label: 'Other' },
-}
-
 // ── Compact Queue Preview (Overview panel) ─────────────────────────────────────
 function CompactQueuePreview({ queue, loading }) {
   const active = queue.filter(q => q.ticket.status !== 'completed').slice(0, 4)
 
   if (loading) return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-      {[1,2,3].map(i => <div key={i} style={{ height: '48px', borderRadius: '10px' }} className="animate-shimmer" />)}
+    <div className="flex flex-col gap-2">
+      {[1,2,3].map(i => <div key={i} className="h-12 rounded-xl animate-pulse bg-border" />)}
     </div>
   )
 
   if (active.length === 0) return (
-    <div style={{ textAlign: 'center', padding: '28px 0', color: M.textMuted, fontSize: '13px' }}>
-      <div style={{ marginBottom: '8px', display: 'flex', justifyContent: 'center' }}><Inbox size={32} /></div>
+    <div className="text-center py-7 text-text-muted text-[13px]">
+      <div className="mb-2 flex justify-center"><Inbox size={32} /></div>
       No active tickets right now
     </div>
   )
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+    <div className="flex flex-col gap-2">
       {active.map(({ ticket }) => {
         const name = ticket.users ? `${ticket.users.last_name}, ${ticket.users.first_name}` : 'Unknown'
         const isServing = ticket.status === 'in_progress'
         return (
-          <div key={ticket.id} style={{
-            display: 'flex', alignItems: 'center', gap: '12px',
-            padding: '10px 12px', borderRadius: '10px',
-            border: `1px solid ${isServing ? M.greenBorder : M.border}`,
-            background: isServing ? M.greenLight : M.offWhite,
-          }}>
-            <span style={{ fontFamily: "'Fraunces', serif", fontSize: '17px', fontWeight: 800, color: M.maroon, minWidth: '60px' }}>{ticket.queue_number}</span>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontSize: '13px', fontWeight: 600, color: M.text, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{name}</div>
-              <div style={{ fontSize: '11px', color: M.textMuted, marginTop: '1px' }}>{ticket.appointments?.transaction_types?.name || 'Transaction'}</div>
+          <div key={ticket.id} className={`flex items-center gap-3 px-3 py-2.5 rounded-[10px] border ${isServing ? 'border-success-border bg-success-light' : 'border-border bg-off-white'}`}>
+            <span className="font-serif text-[17px] font-extrabold text-maroon min-w-[60px]">{ticket.queue_number}</span>
+            <div className="flex-1 min-w-0">
+              <div className="text-[13px] font-semibold text-text-main whitespace-nowrap overflow-hidden text-ellipsis">{name}</div>
+              <div className="text-[11px] text-text-muted mt-px">{ticket.appointments?.transaction_types?.name || 'Transaction'}</div>
             </div>
-            <span style={{ fontSize: '10px', fontWeight: 700, padding: '3px 8px', borderRadius: '100px', whiteSpace: 'nowrap', background: isServing ? M.greenLight : M.goldLight, color: isServing ? M.green : M.gold, border: `1px solid ${isServing ? M.greenBorder : M.goldBorder}` }}>
+            <span className={`text-[10px] font-bold px-2 py-[3px] rounded-full whitespace-nowrap border ${isServing ? 'bg-success-light text-success border-success-border' : 'bg-gold-light text-gold border-gold-border'}`}>
               {isServing ? '● Serving' : '◔ Waiting'}
             </span>
           </div>
@@ -98,27 +52,20 @@ function CompactQueuePreview({ queue, loading }) {
 }
 
 // ── Sidebar Item ───────────────────────────────────────────────────────────────
-const SideItem = ({ icon, label, active, onClick, badge, style, disabled }) => (
-
-  <button onClick={disabled ? undefined : onClick} style={{
-    display: 'flex', alignItems: 'center', gap: '11px',
-    width: '100%', padding: '10px 14px', borderRadius: '10px',
-    border: 'none', cursor: disabled ? 'not-allowed' : 'pointer', textAlign: 'left',
-    background: active ? M.maroonMid : 'transparent',
-    color: active ? M.maroon : M.textSub,
-    fontSize: '13.5px', fontWeight: active ? 600 : 400,
-    fontFamily: "'IBM Plex Sans', sans-serif",
-    position: 'relative', transition: 'background 0.15s, color 0.15s',
-    ...style
-  }}
+const SideItem = ({ icon, label, active, onClick, badge, disabled }) => (
+  <button 
+    onClick={disabled ? undefined : onClick} 
     disabled={disabled}
-    onMouseEnter={e => { if (!active && !disabled) { e.currentTarget.style.background = M.surface; e.currentTarget.style.color = M.text; } }}
-    onMouseLeave={e => { if (!active && !disabled) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = M.textSub; } }}
+    className={`flex items-center gap-[11px] w-full px-3.5 py-2.5 rounded-[10px] border-none text-left text-[13.5px] font-sans relative transition-colors duration-150
+      ${disabled ? 'cursor-not-allowed opacity-40' : 'cursor-pointer'}
+      ${active ? 'bg-maroon-mid text-maroon font-semibold' : 'bg-transparent text-text-sub font-normal'}
+      ${!active && !disabled ? 'hover:bg-surface hover:text-text-main' : ''}
+    `}
   >
-    <span style={{ fontSize: '17px', width: '20px', textAlign: 'center', flexShrink: 0 }}>{icon}</span>
-    <span style={{ flex: 1 }}>{label}</span>
+    <span className="text-[17px] w-5 text-center shrink-0">{icon}</span>
+    <span className="flex-1">{label}</span>
     {badge > 0 && (
-      <span style={{ background: M.maroon, color: M.white, fontSize: '10px', fontWeight: 700, padding: '1px 6px', borderRadius: '100px', minWidth: '18px', textAlign: 'center' }}>
+      <span className="bg-maroon text-white text-[10px] font-bold px-1.5 py-px rounded-full min-w-[18px] text-center">
         {badge}
       </span>
     )}
@@ -126,16 +73,16 @@ const SideItem = ({ icon, label, active, onClick, badge, style, disabled }) => (
 )
 
 // ── Stat Card ──────────────────────────────────────────────────────────────────
-const StatCard = ({ icon, value, label, color = M.maroon, bg = M.maroonLight, loading, delay }) => (
-  <div className="animate-fade-up" style={{ animationDelay: delay || '0s', background: M.white, borderRadius: '14px', padding: '18px 20px', border: `1px solid ${M.border}`, display: 'flex', flexDirection: 'column', gap: '12px', boxShadow: '0 1px 4px rgba(0,0,0,0.04)' }}>
-    <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
-      <div style={{ fontSize: '12px', fontWeight: 600, color: M.textMuted, textTransform: 'uppercase', letterSpacing: '0.06em', marginTop: '6px' }}>{label}</div>
-      <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: bg, display: 'flex', alignItems: 'center', justifyContent: 'center', color: color, flexShrink: 0 }}>
+const StatCard = ({ icon, value, label, colorClass, bgClass, loading, delay }) => (
+  <div className="animate-fade-up bg-white rounded-[14px] px-5 py-[18px] border border-border flex flex-col gap-3 shadow-[0_1px_4px_rgba(0,0,0,0.04)]" style={{ animationDelay: delay || '0s' }}>
+    <div className="flex items-start justify-between">
+      <div className="text-xs font-semibold text-text-muted uppercase tracking-[0.06em] mt-1.5">{label}</div>
+      <div className={`w-9 h-9 rounded-[10px] flex items-center justify-center shrink-0 ${bgClass} ${colorClass}`}>
         {icon}
       </div>
     </div>
-    <div style={{ fontFamily: "'Fraunces', serif", fontSize: '28px', fontWeight: 800, color, lineHeight: 1, margin: 0, minHeight: '28px' }}>
-      {loading ? <div className="animate-shimmer" style={{ width: '60px', height: '28px', borderRadius: '6px', background: M.border }} /> : value}
+    <div className={`font-serif text-[28px] font-extrabold leading-none m-0 min-h-[28px] ${colorClass}`}>
+      {loading ? <div className="animate-pulse w-[60px] h-7 rounded-md bg-border" /> : value}
     </div>
   </div>
 )
@@ -153,36 +100,31 @@ function CompactMessagesPreview() {
   const unread = messages.filter(m => !m.is_read).slice(0, 3)
 
   if (loading) return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-      {[1,2,3].map(i => <div key={i} style={{ height: '64px', borderRadius: '12px' }} className="animate-shimmer" />)}
+    <div className="flex flex-col gap-2">
+      {[1,2,3].map(i => <div key={i} className="h-16 rounded-xl animate-pulse bg-border" />)}
     </div>
   )
 
   if (unread.length === 0) return (
-    <div style={{ textAlign: 'center', padding: '28px 0', color: M.textMuted, fontSize: '13px' }}>
-      <div style={{ marginBottom: '8px', display: 'flex', justifyContent: 'center' }}><MessageSquare size={32} /></div>
+    <div className="text-center py-7 text-text-muted text-[13px]">
+      <div className="mb-2 flex justify-center"><MessageSquare size={32} /></div>
       No new escalations
     </div>
   )
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+    <div className="flex flex-col gap-2">
       {unread.map(msg => {
         const name = msg.users ? `${msg.users.first_name} ${msg.users.last_name}` : 'Unknown Student'
         const raw = msg.content || ''
         const body = (raw.match(/^\[.*?\]\s*\n\n([\s\S]*)/) || [])[1]?.trim() || raw
         return (
-          <div key={msg.id} style={{
-            background: M.white, borderRadius: '12px',
-            border: `1px solid ${M.maroonBorder}`,
-            padding: '12px 14px',
-            boxShadow: '0 1px 6px rgba(123,26,42,0.06)',
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px' }}>
-              <span style={{ fontSize: '13px', fontWeight: 700, color: M.text }}>{name}</span>
-              {msg.priority === 'urgent' && <span style={{ fontSize: '9px', fontWeight: 700, padding: '2px 6px', borderRadius: '100px', background: M.redLight, color: M.red, border: `1px solid ${M.redBorder}` }}>URGENT</span>}
+          <div key={msg.id} className="bg-white rounded-xl border border-maroon-border px-3.5 py-3 shadow-[0_1px_6px_rgba(123,26,42,0.06)]">
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-[13px] font-bold text-text-main">{name}</span>
+              {msg.priority === 'urgent' && <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-danger-light text-danger border border-danger-border">URGENT</span>}
             </div>
-            <p style={{ fontSize: '12px', color: M.textSub, margin: 0, lineHeight: 1.5, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+            <p className="text-xs text-text-sub m-0 leading-relaxed line-clamp-2">
               {body}
             </p>
           </div>
@@ -213,11 +155,14 @@ export default function StaffDashboard() {
 
   const loadWindowData = async () => {
     try {
-      const data = await getWindowAssignments(token)
-      setNumWindows(data.num_windows || 3)
+      const data = await getWindowAssignments(token, Date.now())
+      setNumWindows(data.num_windows != null ? Number(data.num_windows) : 3)
       setWindowAssignments(data.assignments || {})
       setMyWindow(data.assignments?.[user?.id] || null)
-    } catch (e) { console.error('Window fetch error', e) }
+    } catch (e) { 
+      console.error('Window fetch error', e) 
+      setWindowError('Fetch Error: ' + e.message)
+    }
   }
 
   const handleClaimWindow = async (winNum) => {
@@ -284,10 +229,10 @@ export default function StaffDashboard() {
   const pendingAppts = Math.max(0, (apptStats.today_appointments || 0) - (apptStats.completed_today || 0))
 
   const stats = [
-    { icon: <Users size={20} />, value: activeInQueue.toString(), label: 'Active in Queue', color: M.maroon, bg: M.maroonLight, loading: loadingQueue, delay: '0.1s' },
-    { icon: <CheckSquare size={20} />, value: completedToday.toString(), label: 'Completed Today', color: M.green, bg: M.greenLight, loading: loadingQueue, delay: '0.2s' },
-    { icon: <Clock size={20} />, value: `${avgWait}m`, label: 'Avg. Process Time', color: M.gold, bg: M.goldLight, loading: loadingQueue, delay: '0.3s' },
-    { icon: <CalendarClock size={20} />, value: pendingAppts.toString(), label: 'Pending Appts.', color: M.blue, bg: M.blueLight, loading: loadingQueue, delay: '0.4s' },
+    { icon: <Users size={20} />, value: activeInQueue.toString(), label: 'Active in Queue', colorClass: 'text-maroon', bgClass: 'bg-maroon-light', loading: loadingQueue, delay: '0.1s' },
+    { icon: <CheckSquare size={20} />, value: completedToday.toString(), label: 'Completed Today', colorClass: 'text-success', bgClass: 'bg-success-light', loading: loadingQueue, delay: '0.2s' },
+    { icon: <Clock size={20} />, value: `${avgWait}m`, label: 'Avg. Process Time', colorClass: 'text-gold', bgClass: 'bg-gold-light', loading: loadingQueue, delay: '0.3s' },
+    { icon: <CalendarClock size={20} />, value: pendingAppts.toString(), label: 'Pending Appts.', colorClass: 'text-blue', bgClass: 'bg-blue-light', loading: loadingQueue, delay: '0.4s' },
   ]
 
   const navItems = [
@@ -299,28 +244,22 @@ export default function StaffDashboard() {
   ]
 
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', background: M.offWhite, fontFamily: "'IBM Plex Sans', sans-serif" }}>
+    <div className="min-h-screen flex bg-off-white font-sans">
 
       {/* ── Fixed Left Sidebar ── */}
-      <aside style={{
-        width: '240px', flexShrink: 0,
-        background: M.white, borderRight: `1px solid ${M.border}`,
-        display: 'flex', flexDirection: 'column',
-        position: 'fixed', left: 0, top: 0, bottom: 0,
-        zIndex: 50, padding: '20px 14px',
-      }}>
+      <aside className="w-[240px] shrink-0 bg-white border-r border-border flex flex-col fixed left-0 top-0 bottom-0 z-50 px-3.5 py-5">
         {/* Logo */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', paddingLeft: '6px', marginBottom: '28px' }}>
-          <img src={crmcLogo} alt="CRMC" style={{ width: '34px', height: '34px', borderRadius: '50%' }} />
+        <div className="flex items-center gap-2.5 pl-1.5 mb-7">
+          <img src={crmcLogo} alt="CRMC" className="w-[34px] h-[34px] rounded-full" />
           <div>
-            <div style={{ fontFamily: "'Fraunces', serif", fontSize: '15px', fontWeight: 700, color: M.maroon }}>CampusFlow</div>
-            <div style={{ fontSize: '10px', color: M.textMuted, letterSpacing: '0.04em' }}>Staff Portal</div>
+            <div className="font-serif text-[15px] font-bold text-maroon">CampusFlow</div>
+            <div className="text-[10px] text-text-muted tracking-[0.04em]">Staff Portal</div>
           </div>
         </div>
 
         {/* Nav */}
-        <div style={{ fontSize: '10px', fontWeight: 700, color: M.textMuted, letterSpacing: '0.08em', textTransform: 'uppercase', padding: '0 14px', marginBottom: '6px' }}>Navigation</div>
-        <nav style={{ display: 'flex', flexDirection: 'column', gap: '3px', flex: 1 }}>
+        <div className="text-[10px] font-bold text-text-muted tracking-[0.08em] uppercase px-3.5 mb-1.5">Navigation</div>
+        <nav className="flex flex-col gap-[3px] flex-1">
           {navItems.map(item => (
             <SideItem
               key={item.id}
@@ -329,99 +268,71 @@ export default function StaffDashboard() {
               active={activeNav === item.id}
               onClick={() => myWindow ? setActiveNav(item.id) : null}
               badge={item.badge}
-              style={!myWindow ? { opacity: 0.4 } : {}}
               disabled={!myWindow}
             />
           ))}
         </nav>
         {/* Window required hint in sidebar */}
         {!myWindow && (
-          <div style={{
-            margin: '0 4px 8px', padding: '10px 12px', borderRadius: '10px',
-            background: M.goldLight, border: `1px solid ${M.goldBorder}`,
-            fontSize: '11px', color: M.gold, fontWeight: 600, lineHeight: 1.5,
-          }}>
+          <div className="mx-1 mb-2 px-3 py-2.5 rounded-[10px] bg-gold-light border border-gold-border text-[11px] text-gold font-semibold leading-relaxed">
             ⚠ Claim a window to unlock navigation.
           </div>
         )}
       </aside>
 
       {/* ── Right Content ── */}
-      <div style={{ marginLeft: '240px', flex: 1, display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
+      <div className="ml-[240px] flex-1 flex flex-col min-h-screen">
 
         {/* Top Bar */}
-        <header style={{
-          background: M.white, borderBottom: `1px solid ${M.border}`,
-          padding: '0 28px', height: '60px',
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          position: 'sticky', top: 0, zIndex: 40,
-          boxShadow: '0 1px 4px rgba(0,0,0,0.04)',
-        }}>
+        <header className="bg-white border-b border-border px-7 h-[60px] flex items-center justify-between sticky top-0 z-40 shadow-[0_1px_4px_rgba(0,0,0,0.04)]">
           <div>
-            <span style={{ fontSize: '18px', fontFamily: "'Fraunces', serif", fontWeight: 700, color: M.maroon }}>Welcome back, Staff. Here's what's happening today.</span>
+            <span className="text-[18px] font-serif font-bold text-maroon">Welcome back, Staff. Here's what's happening today.</span>
           </div>
 
           {/* Window Badge + Avatar */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <div className="flex items-center gap-3">
 
             {/* Active Window Badge */}
             {myWindow ? (
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px',
-                background: M.greenLight, border: `1.5px solid ${M.greenBorder}`,
-                borderRadius: '10px', padding: '6px 14px',
-              }}>
-                <Monitor size={16} color={M.green} />
-                <span style={{ fontSize: '13px', fontWeight: 700, color: M.green, fontFamily: "'IBM Plex Sans', sans-serif" }}>
+              <div className="flex items-center gap-2 bg-success-light border-[1.5px] border-success-border rounded-[10px] px-3.5 py-1.5">
+                <Monitor size={16} className="text-success" />
+                <span className="text-[13px] font-bold text-success font-sans">
                   Window {myWindow}
                 </span>
                 <button
                   onClick={handleReleaseWindow}
                   title="Release window"
-                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: M.green, display: 'flex', alignItems: 'center', padding: '0 0 0 4px', opacity: 0.6 }}
-                  onMouseEnter={e => e.currentTarget.style.opacity = '1'}
-                  onMouseLeave={e => e.currentTarget.style.opacity = '0.6'}
+                  className="bg-transparent border-none cursor-pointer text-success flex items-center pl-1 opacity-60 hover:opacity-100 transition-opacity"
                 >
                   <MonitorX size={15} />
                 </button>
               </div>
             ) : (
-              <div style={{ fontSize: '12px', color: M.textMuted, fontWeight: 600, fontFamily: "'IBM Plex Sans', sans-serif" }}>
+              <div className="text-xs text-text-muted font-semibold font-sans">
                 No window assigned
               </div>
             )}
 
             {/* Avatar dropdown */}
-            <div style={{ position: 'relative' }}>
-              {profileOpen && <div onClick={() => setProfileOpen(false)} style={{ position: 'fixed', inset: 0, zIndex: 105 }} />}
-              <button onClick={() => setProfileOpen(!profileOpen)} style={{
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                padding: '0', borderRadius: '50%', border: 'none',
-                background: 'transparent', cursor: 'pointer', outline: 'none',
-              }}>
-                <div style={{ width: '38px', height: '38px', borderRadius: '50%', background: M.maroonMid, border: `1.5px solid ${M.maroonBorder}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '15px', fontWeight: 700, color: M.maroon }}>
+            <div className="relative">
+              {profileOpen && <div onClick={() => setProfileOpen(false)} className="fixed inset-0 z-105" />}
+              <button onClick={() => setProfileOpen(!profileOpen)} className="flex items-center justify-center p-0 rounded-full border-none bg-transparent cursor-pointer outline-none">
+                <div className="w-[38px] h-[38px] rounded-full bg-maroon-mid border-[1.5px] border-maroon-border flex items-center justify-center text-[15px] font-bold text-maroon transition-colors hover:bg-maroon-light">
                   {user?.first_name?.[0]?.toUpperCase() || 'S'}
                 </div>
               </button>
               {profileOpen && (
-                <div style={{ position: 'absolute', top: '44px', right: 0, width: '200px', background: M.white, borderRadius: '12px', boxShadow: '0 8px 24px rgba(0,0,0,0.12), 0 0 0 1px rgba(0,0,0,0.05)', padding: '12px', zIndex: 110 }}>
-                  <div style={{ fontSize: '13px', fontWeight: 600, color: M.text, marginBottom: '4px' }}>{user?.first_name} {user?.last_name}</div>
-                  <div style={{ fontSize: '11px', color: M.textMuted, marginBottom: '12px', wordBreak: 'break-all' }}>{user?.email}</div>
-                  <div style={{ height: '1px', background: M.border, marginBottom: '10px' }} />
+                <div className="absolute top-[44px] right-0 w-[200px] bg-white rounded-xl shadow-[0_8px_24px_rgba(0,0,0,0.12),0_0_0_1px_rgba(0,0,0,0.05)] p-3 z-110">
+                  <div className="text-[13px] font-semibold text-text-main mb-1">{user?.first_name} {user?.last_name}</div>
+                  <div className="text-[11px] text-text-muted mb-3 break-all">{user?.email}</div>
+                  <div className="h-px bg-border mb-2.5" />
                   <button onClick={async () => {
                     if (myWindow) {
-                      try {
-                        await releaseWindow(token)
-                      } catch (e) {
-                        console.error('Failed to release window on logout', e)
-                      }
+                      try { await releaseWindow(token) } catch (e) { console.error('Failed to release window on logout', e) }
                     }
                     logout(); navigate('/login')
-                  }} style={{
-                    width: '100%', padding: '9px 12px', borderRadius: '8px', border: 'none',
-                    background: '#FEF2F2', color: '#DC2626', fontSize: '13px', fontWeight: 600,
-                    cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', fontFamily: "'IBM Plex Sans', sans-serif",
-                  }}>
-                    <span style={{ display: 'flex', alignItems: 'center' }}><LogOut size={16} /></span> Log Out
+                  }} className="w-full px-3 py-[9px] rounded-lg border-none bg-danger-light text-danger text-[13px] font-semibold cursor-pointer flex items-center gap-2 font-sans hover:bg-[#FCA5A5] transition-colors">
+                    <span className="flex items-center"><LogOut size={16} /></span> Log Out
                   </button>
                 </div>
               )}
@@ -430,42 +341,26 @@ export default function StaffDashboard() {
         </header>
 
         {/* ── Page Content ── */}
-        <main style={{ padding: '28px', flex: 1, position: 'relative' }}>
+        <main className="p-7 flex-1 relative">
 
           {/* ──── WINDOW GATE OVERLAY ──── */}
           {!myWindow && (
-            <div style={{
-              position: 'absolute', inset: 0, zIndex: 30,
-              background: 'rgba(242, 237, 232, 0.85)',
-              backdropFilter: 'blur(6px)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              padding: '28px',
-            }}>
-              <div style={{
-                background: M.white, borderRadius: '24px', padding: '40px 40px 36px',
-                border: `1.5px solid ${M.goldBorder}`,
-                boxShadow: '0 8px 40px rgba(0,0,0,0.1)',
-                width: '100%', maxWidth: '560px', textAlign: 'center',
-              }}>
-                <div style={{
-                  width: '64px', height: '64px', borderRadius: '50%',
-                  background: M.goldLight, border: `2px solid ${M.goldBorder}`,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  margin: '0 auto 20px',
-                }}>
-                  <Monitor size={28} color={M.gold} />
+            <div className="absolute inset-0 z-30 bg-surface/85 backdrop-blur-md flex items-center justify-center p-7">
+              <div className="bg-white rounded-[24px] px-10 pt-10 pb-9 border-[1.5px] border-gold-border shadow-[0_8px_40px_rgba(0,0,0,0.1)] w-full max-w-[560px] text-center">
+                <div className="w-16 h-16 rounded-full bg-gold-light border-2 border-gold-border flex items-center justify-center mx-auto mb-5">
+                  <Monitor size={28} className="text-gold" />
                 </div>
-                <p style={{ fontSize: '11px', fontWeight: 700, color: M.gold, letterSpacing: '0.12em', textTransform: 'uppercase', margin: '0 0 8px' }}>Action Required</p>
-                <h2 style={{ fontFamily: "'Fraunces', serif", fontSize: '26px', fontWeight: 800, color: M.text, margin: '0 0 10px' }}>Claim Your Service Window</h2>
-                <p style={{ fontSize: '14px', color: M.textSub, margin: '0 0 28px', lineHeight: 1.6 }}>
+                <p className="text-[11px] font-bold text-gold tracking-[0.12em] uppercase m-0 mb-2">Action Required</p>
+                <h2 className="font-serif text-[26px] font-extrabold text-text-main m-0 mb-2.5">Claim Your Service Window</h2>
+                <p className="text-[14px] text-text-sub m-0 mb-7 leading-relaxed">
                   You must be assigned to a window before you can access the queue, appointments, or any other features.
                 </p>
                 {windowError && (
-                  <div style={{ padding: '10px 14px', borderRadius: '8px', background: M.redLight, color: M.red, fontSize: '13px', marginBottom: '20px', border: `1px solid ${M.redBorder}` }}>
+                  <div className="px-3.5 py-2.5 rounded-lg bg-danger-light text-danger text-[13px] mb-5 border border-danger-border">
                     {windowError}
                   </div>
                 )}
-                <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', justifyContent: 'center' }}>
+                <div className="flex gap-3 flex-wrap justify-center">
                   {Array.from({ length: numWindows }, (_, i) => i + 1).map(winNum => {
                     const occupiedByOther = Object.entries(windowAssignments).some(([uid, wn]) => wn === winNum && uid !== user?.id)
                     const isClaiming = claimingWindow === winNum
@@ -474,23 +369,17 @@ export default function StaffDashboard() {
                         key={winNum}
                         onClick={() => !occupiedByOther && handleClaimWindow(winNum)}
                         disabled={occupiedByOther || !!claimingWindow}
-                        style={{
-                          display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-                          gap: '8px', width: '110px', height: '100px', borderRadius: '16px',
-                          border: `2px solid ${occupiedByOther ? M.border : M.maroonBorder}`,
-                          background: occupiedByOther ? M.surface : M.maroonLight,
-                          cursor: occupiedByOther ? 'not-allowed' : 'pointer',
-                          transition: 'all 0.2s',
-                          fontFamily: "'IBM Plex Sans', sans-serif",
-                          opacity: occupiedByOther ? 0.6 : 1,
-                        }}
-                        onMouseEnter={e => { if (!occupiedByOther && !claimingWindow) { e.currentTarget.style.background = M.maroon; e.currentTarget.style.borderColor = M.maroon; e.currentTarget.querySelector('.win-label').style.color = '#fff'; e.currentTarget.querySelector('.win-icon').style.color = '#fff'; } }}
-                        onMouseLeave={e => { if (!occupiedByOther) { e.currentTarget.style.background = M.maroonLight; e.currentTarget.style.borderColor = M.maroonBorder; e.currentTarget.querySelector('.win-label').style.color = M.maroon; e.currentTarget.querySelector('.win-icon').style.color = M.maroon; } }}
+                        className={`flex flex-col items-center justify-center gap-2 w-[110px] h-[100px] rounded-2xl border-2 transition-all duration-200 font-sans group
+                          ${occupiedByOther 
+                            ? 'border-border bg-surface cursor-not-allowed opacity-60' 
+                            : 'border-maroon-border bg-maroon-light cursor-pointer hover:bg-maroon hover:border-maroon'
+                          }
+                        `}
                       >
-                        <span className="win-icon" style={{ color: occupiedByOther ? M.textMuted : M.maroon, display: 'flex' }}>
+                        <span className={`flex transition-colors duration-200 ${occupiedByOther ? 'text-text-muted' : 'text-maroon group-hover:text-white'}`}>
                           {occupiedByOther ? <MonitorX size={24} /> : <Monitor size={24} />}
                         </span>
-                        <span className="win-label" style={{ fontSize: '13px', fontWeight: 700, color: occupiedByOther ? M.textMuted : M.maroon }}>
+                        <span className={`text-[13px] font-bold transition-colors duration-200 ${occupiedByOther ? 'text-text-muted' : 'text-maroon group-hover:text-white'}`}>
                           {isClaiming ? 'Claiming…' : occupiedByOther ? 'Occupied' : `Window ${winNum}`}
                         </span>
                       </button>
@@ -504,53 +393,48 @@ export default function StaffDashboard() {
           {/* ──── OVERVIEW VIEW ──── */}
           {activeNav === 'overview' && (
             <>
-              <div style={{ marginBottom: '24px' }}>
-                <p style={{ fontSize: '11px', fontWeight: 700, color: M.gold, letterSpacing: '0.1em', textTransform: 'uppercase', margin: '0 0 6px' }}>Today's Summary</p>
-                <h1 style={{ fontFamily: "'Fraunces', serif", fontSize: '22px', fontWeight: 700, color: M.text, margin: 0 }}>Daily Overview</h1>
+              <div className="mb-6">
+                <p className="text-[11px] font-bold text-gold tracking-widest uppercase m-0 mb-1.5">Today's Summary</p>
+                <h1 className="font-serif text-[22px] font-bold text-text-main m-0">Daily Overview</h1>
               </div>
 
               {/* Stats Grid */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px', marginBottom: '28px' }}>
+              <div className="grid grid-cols-4 gap-4 mb-7">
                 {stats.map((s, i) => <StatCard key={i} {...s} />)}
               </div>
 
               {/* Two-column: Queue preview + AI Escalations */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 340px', gap: '20px' }}>
+              <div className="grid grid-cols-[1fr_340px] gap-5">
 
                 {/* Live Queue Preview */}
-                <div className="animate-fade-up" style={{ animationDelay: '0.5s', background: M.white, borderRadius: '16px', padding: '24px', border: `1px solid ${M.border}`, boxShadow: '0 1px 4px rgba(0,0,0,0.04)' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
+                <div className="animate-fade-up bg-white rounded-2xl p-6 border border-border shadow-[0_1px_4px_rgba(0,0,0,0.04)]" style={{ animationDelay: '0.5s' }}>
+                  <div className="flex items-center justify-between mb-5">
                     <div>
-                      <p style={{ fontSize: '11px', fontWeight: 700, color: M.gold, letterSpacing: '0.1em', textTransform: 'uppercase', margin: '0 0 4px' }}>Real-Time</p>
-                      <h2 style={{ fontFamily: "'Fraunces', serif", fontSize: '18px', fontWeight: 700, color: M.text, margin: 0 }}>Live Queue Management</h2>
+                      <p className="text-[11px] font-bold text-gold tracking-widest uppercase m-0 mb-1">Real-Time</p>
+                      <h2 className="font-serif text-[18px] font-bold text-text-main m-0">Live Queue Management</h2>
                     </div>
-                    <button onClick={() => setActiveNav('queue')} style={{
-                      padding: '6px 14px', borderRadius: '8px', border: `1px solid ${M.maroonBorder}`,
-                      background: M.maroonLight, color: M.maroon,
-                      fontSize: '12px', fontWeight: 600, cursor: 'pointer', fontFamily: "'IBM Plex Sans', sans-serif",
-                    }}>View All</button>
+                    <button onClick={() => setActiveNav('queue')} className="px-3.5 py-1.5 rounded-lg border border-maroon-border bg-maroon-light text-maroon text-xs font-semibold cursor-pointer font-sans hover:bg-maroon-border transition-colors">
+                      View All
+                    </button>
                   </div>
                   <CompactQueuePreview queue={queue} loading={loadingQueue} />
                 </div>
 
                 {/* AI Escalations Panel */}
-                <div className="animate-fade-up" style={{ animationDelay: '0.6s', background: M.white, borderRadius: '16px', padding: '24px', border: `1px solid ${M.border}`, boxShadow: '0 1px 4px rgba(0,0,0,0.04)', display: 'flex', flexDirection: 'column' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
+                <div className="animate-fade-up bg-white rounded-2xl p-6 border border-border shadow-[0_1px_4px_rgba(0,0,0,0.04)] flex flex-col" style={{ animationDelay: '0.6s' }}>
+                  <div className="flex items-center justify-between mb-4">
                     <div>
-                      <p style={{ fontSize: '11px', fontWeight: 700, color: M.gold, letterSpacing: '0.1em', textTransform: 'uppercase', margin: '0 0 4px' }}>Inbox</p>
-                      <h2 style={{ fontFamily: "'Fraunces', serif", fontSize: '18px', fontWeight: 700, color: M.text, margin: 0 }}>AI Escalations</h2>
+                      <p className="text-[11px] font-bold text-gold tracking-widest uppercase m-0 mb-1">Inbox</p>
+                      <h2 className="font-serif text-[18px] font-bold text-text-main m-0">AI Escalations</h2>
                     </div>
-                    <span style={{ background: '#DC2626', color: M.white, fontSize: '11px', fontWeight: 700, padding: '2px 8px', borderRadius: '100px' }}>New</span>
+                    <span className="bg-danger text-white text-[11px] font-bold px-2 py-0.5 rounded-full">New</span>
                   </div>
-                  <div style={{ flex: 1, overflow: 'auto' }}>
+                  <div className="flex-1 overflow-auto">
                     <CompactMessagesPreview />
                   </div>
-                  <button onClick={() => setActiveNav('messages')} style={{
-                    marginTop: '16px', width: '100%', padding: '9px', borderRadius: '9px',
-                    border: `1px solid ${M.border}`, background: M.offWhite,
-                    color: M.textSub, fontSize: '13px', fontWeight: 600, cursor: 'pointer',
-                    fontFamily: "'IBM Plex Sans', sans-serif",
-                  }}>View All Messages</button>
+                  <button onClick={() => setActiveNav('messages')} className="mt-4 w-full p-2.5 rounded-xl border border-border bg-off-white text-text-sub text-[13px] font-semibold cursor-pointer font-sans hover:bg-border transition-colors">
+                    View All Messages
+                  </button>
                 </div>
               </div>
             </>

@@ -4,8 +4,6 @@ import { useAuth } from '../../context/useAuth'
 import Navbar from '../../components/layout/Navbar'
 import { sendMessage, clearChat, getChatHistory } from '../../services/aiService'
 
-const M = { maroon: '#7B1A2A', maroonLight: '#F9F0F1', gold: '#B8900A', goldLight: '#FDF6E3', offWhite: '#F9F7F4', gray200: '#EAE7E2', gray500: '#706B65', text: '#1C1917' }
-
 const SUGGESTED = [
   'What documents do I need for a TOR?',
   'What are the office hours?',
@@ -56,7 +54,6 @@ export default function AiChat() {
   const [loading, setLoading] = useState(false)
   const [error,   setError]   = useState('')
 
-  // ── M11: Voice state ──────────────────────────────────────────────────────
   const [isListening, setIsListening] = useState(false)
   const [isSpeaking,  setIsSpeaking]  = useState(false)
   const recognitionRef = useRef(null)
@@ -67,7 +64,6 @@ export default function AiChat() {
 
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [messages])
 
-  // ── M11: Cleanup on unmount ───────────────────────────────────────────────
   useEffect(() => {
     return () => {
       recognitionRef.current?.stop()
@@ -75,7 +71,6 @@ export default function AiChat() {
     }
   }, [])
 
-  // ── M11: Speak AI response aloud ─────────────────────────────────────────
   const speakResponse = (text) => {
     if (!('speechSynthesis' in window)) return
     window.speechSynthesis.cancel()
@@ -90,7 +85,6 @@ export default function AiChat() {
     window.speechSynthesis.speak(utter)
   }
 
-  // ── M11: Start voice input ────────────────────────────────────────────────
   const startListening = () => {
     if (!voiceSupported) {
       alert('Voice input requires Chrome or Edge.')
@@ -136,7 +130,7 @@ export default function AiChat() {
       const data  = await sendMessage(token, msg)
       const reply = data.message
       setMessages(prev => [...prev, { role: 'assistant', content: reply, escalated: data.escalated }])
-      speakResponse(reply)   // ── M11: read reply aloud
+      speakResponse(reply)
     } catch (e) {
       setError(e.message)
       setMessages(prev => [...prev, { role: 'assistant', content: "Sorry, I'm having trouble connecting. Please try again.", isError: true }])
@@ -154,40 +148,21 @@ export default function AiChat() {
   }
 
   return (
-    <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', background: M.offWhite, fontFamily: "'DM Sans', sans-serif" }}>
-
-      <style>{`
-        @keyframes bounce {
-          0%, 80%, 100% { transform: translateY(0); }
-          40%            { transform: translateY(-6px); }
-        }
-        @keyframes pulse-ring {
-          0%   { box-shadow: 0 0 0 0 rgba(184,144,10,0.45); }
-          70%  { box-shadow: 0 0 0 8px rgba(184,144,10,0); }
-          100% { box-shadow: 0 0 0 0 rgba(184,144,10,0); }
-        }
-        @keyframes speaking-wave {
-          0%, 100% { opacity: 0.4; transform: scaleY(0.6); }
-          50%       { opacity: 1;   transform: scaleY(1.4); }
-        }
-      `}</style>
-
+    <div className="h-screen flex flex-col bg-off-white font-sans">
       <Navbar backTo="/student/dashboard" title="AI Assistant">
-        <button onClick={handleClear} style={{ fontSize: '12px', color: 'rgba(255,255,255,0.4)', background: 'none', border: 'none', cursor: 'pointer' }}>Clear chat</button>
+        <button onClick={handleClear} className="text-[12px] text-white/40 bg-transparent border-none cursor-pointer">Clear chat</button>
       </Navbar>
 
       {/* Chat area */}
-      <div style={{ flex: 1, overflowY: 'auto', padding: '1.5rem', maxWidth: '680px', width: '100%', margin: '0 auto', boxSizing: 'border-box' }}>
+      <div className="flex-1 overflow-y-auto p-6 max-w-[680px] w-full mx-auto box-border">
 
         {messages.length === 1 && (
-          <div style={{ marginBottom: '1.5rem' }}>
-            <p style={{ fontSize: '11px', color: M.gray500, textAlign: 'center', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '10px' }}>Suggested questions</p>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '8px' }}>
+          <div className="mb-6">
+            <p className="text-[11px] text-text-sub text-center uppercase tracking-[0.05em] mb-2.5">Suggested questions</p>
+            <div className="grid grid-cols-2 gap-2">
               {SUGGESTED.map((q, i) => (
                 <button key={i} onClick={() => handleSend(q)}
-                  style={{ textAlign: 'left', padding: '10px 12px', borderRadius: '10px', border: `1.5px solid ${M.gray200}`, background: 'white', color: M.text, fontSize: '12px', cursor: 'pointer', fontFamily: "'DM Sans', sans-serif", lineHeight: 1.45, transition: 'border-color .15s' }}
-                  onMouseEnter={e => e.currentTarget.style.borderColor = M.maroon}
-                  onMouseLeave={e => e.currentTarget.style.borderColor = M.gray200}>
+                  className="text-left p-2.5 rounded-[10px] border-[1.5px] border-border bg-white text-text-main text-[12px] cursor-pointer font-sans leading-relaxed transition-colors hover:border-maroon">
                   {q}
                 </button>
               ))}
@@ -195,29 +170,34 @@ export default function AiChat() {
           </div>
         )}
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+        <div className="flex flex-col gap-4">
           {messages.map((msg, i) => (
-            <div key={i} style={{ display: 'flex', justifyContent: msg.role === 'user' ? 'flex-end' : 'flex-start', gap: '12px', alignItems: 'flex-end' }}>
+            <div key={i} className={`flex items-end gap-3 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
               {msg.role === 'assistant' && (
-                <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: M.maroon, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: '13px', fontWeight: 700, color: '#F0C040', fontFamily: "'Playfair Display', serif", boxShadow: '0 2px 6px rgba(123,26,42,0.3)' }}>CF</div>
+                <div className="w-8 h-8 rounded-full bg-maroon flex items-center justify-center shrink-0 text-[13px] font-bold text-gold font-serif shadow-[0_2px_6px_rgba(123,26,42,0.3)]">CF</div>
               )}
               {msg.role === 'staff' && (
-                <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: M.gold, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: '13px', fontWeight: 700, color: M.maroon, fontFamily: "'IBM Plex Sans', sans-serif", boxShadow: '0 2px 6px rgba(184,144,10,0.3)' }}>S</div>
+                <div className="w-8 h-8 rounded-full bg-gold flex items-center justify-center shrink-0 text-[13px] font-bold text-maroon font-serif shadow-[0_2px_6px_rgba(184,144,10,0.3)]">S</div>
               )}
-              <div style={{ maxWidth: '75%', padding: '12px 18px', borderRadius: msg.role === 'user' ? '20px 20px 6px 20px' : '20px 20px 20px 6px', background: msg.role === 'user' ? M.maroon : msg.role === 'staff' ? M.goldLight : msg.isError ? M.maroonLight : 'white', color: msg.role === 'user' ? 'white' : msg.role === 'staff' ? M.maroonDark : msg.isError ? M.maroon : M.text, fontSize: '14px', lineHeight: 1.5, boxShadow: '0 4px 12px rgba(0,0,0,0.05)', border: (msg.role === 'assistant' || msg.role === 'staff') && !msg.isError ? `1px solid ${msg.role === 'staff' ? 'rgba(184,144,10,0.2)' : M.gray200}` : 'none' }}>
-                {msg.role === 'staff' && <p style={{ fontSize: '11px', fontWeight: 700, margin: '0 0 6px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{msg.staff_name || 'Registrar Staff'}</p>}
-                <p style={{ margin: 0, whiteSpace: 'pre-wrap' }}>{msg.content}</p>
-                {msg.escalated && <p style={{ fontSize: '12px', color: M.gold, margin: '8px 0 0', paddingTop: '8px', borderTop: `1px solid ${M.gold}30` }}>📨 Forwarded to Registrar staff</p>}
+              <div className={`max-w-[75%] py-3 px-4.5 text-[14px] leading-[1.5] shadow-[0_4px_12px_rgba(0,0,0,0.05)] ${
+                msg.role === 'user' ? 'rounded-[20px_20px_6px_20px] bg-maroon text-white border-none' : 
+                msg.role === 'staff' ? 'rounded-[20px_20px_20px_6px] bg-gold-light text-maroon-dark border border-gold/20' : 
+                msg.isError ? 'rounded-[20px_20px_20px_6px] bg-maroon-light text-maroon border-none' : 
+                'rounded-[20px_20px_20px_6px] bg-white text-text-main border border-border'
+              }`}>
+                {msg.role === 'staff' && <p className="text-[11px] font-bold m-0 mb-1.5 uppercase tracking-[0.05em]">{msg.staff_name || 'Registrar Staff'}</p>}
+                <p className="m-0 whitespace-pre-wrap">{msg.content}</p>
+                {msg.escalated && <p className="text-[12px] text-gold m-0 mt-2 pt-2 border-t border-gold/30">📨 Forwarded to Registrar staff</p>}
               </div>
             </div>
           ))}
 
           {loading && (
-            <div style={{ display: 'flex', gap: '8px', alignItems: 'flex-end' }}>
-              <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: M.maroon, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: '11px', fontWeight: 700, color: '#F0C040', fontFamily: "'Playfair Display', serif" }}>CF</div>
-              <div style={{ padding: '12px 16px', borderRadius: '16px 16px 16px 4px', background: 'white', border: `1px solid ${M.gray200}` }}>
-                <div style={{ display: 'flex', gap: '4px', alignItems: 'center', height: '16px' }}>
-                  {[0, 1, 2].map(j => <div key={j} style={{ width: '6px', height: '6px', borderRadius: '50%', background: M.gray500, animation: 'bounce 1.2s infinite', animationDelay: `${j * 0.15}s` }} />)}
+            <div className="flex items-end gap-2">
+              <div className="w-7 h-7 rounded-full bg-maroon flex items-center justify-center shrink-0 text-[11px] font-bold text-gold font-serif">CF</div>
+              <div className="py-3 px-4 rounded-[16px_16px_16px_4px] bg-white border border-border">
+                <div className="flex items-center gap-1 h-4">
+                  {[0, 1, 2].map(j => <div key={j} className="w-1.5 h-1.5 rounded-full bg-text-sub animate-bounce-custom" style={{ animationDelay: `${j * 0.15}s` }} />)}
                 </div>
               </div>
             </div>
@@ -227,37 +207,30 @@ export default function AiChat() {
       </div>
 
       {/* Input area */}
-      <div style={{ background: 'white', borderTop: `1px solid ${M.gray200}`, padding: '1rem' }}>
-        <div style={{ maxWidth: '680px', margin: '0 auto' }}>
-          {error && <p style={{ fontSize: '12px', color: M.maroon, marginBottom: '6px' }}>{error}</p>}
+      <div className="bg-white border-t border-border p-4">
+        <div className="max-w-[680px] mx-auto">
+          {error && <p className="text-[12px] text-maroon mb-1.5">{error}</p>}
 
-          <div style={{ display: 'flex', gap: '8px', alignItems: 'flex-end' }}>
+          <div className="flex items-end gap-2">
             <textarea
               value={input}
               onChange={e => setInput(e.target.value)}
               onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend() } }}
               placeholder={isListening ? 'Listening...' : 'Ask about registrar transactions...'}
               rows={1}
-              style={{ flex: 1, padding: '14px 16px', borderRadius: '16px', border: `1px solid ${isListening ? M.gold : M.gray200}`, fontSize: '14px', resize: 'none', outline: 'none', fontFamily: "'DM Sans', sans-serif", color: M.text, minHeight: '48px', maxHeight: '120px', boxSizing: 'border-box', transition: 'all .2s ease-in-out', boxShadow: isListening ? `0 0 0 4px rgba(184,144,10,0.1)` : 'inset 0 2px 4px rgba(0,0,0,0.02)' }}
-              onFocus={e => { if (!isListening) e.target.style.boxShadow = `0 0 0 4px rgba(123,26,42,0.1)`; e.target.style.borderColor = M.maroon }}
-              onBlur={e  => { if (!isListening) e.target.style.boxShadow = 'inset 0 2px 4px rgba(0,0,0,0.02)'; e.target.style.borderColor = M.gray200 }}
+              className={`flex-1 py-3.5 px-4 rounded-2xl text-[14px] resize-none outline-none font-sans text-text-main min-h-[48px] max-h-[120px] box-border transition-all duration-200 border bg-white ${
+                isListening ? 'border-gold shadow-[0_0_0_4px_rgba(184,144,10,0.1)]' : 'border-border shadow-[inset_0_2px_4px_rgba(0,0,0,0.02)] focus:border-maroon focus:shadow-[0_0_0_4px_rgba(123,26,42,0.1)]'
+              }`}
             />
 
-            {/* ── M11: Mic button ── */}
+            {/* Mic button */}
             {voiceSupported && (
               <button
                 onClick={isListening ? stopListening : startListening}
                 title={isListening ? 'Stop listening' : 'Tap to speak'}
-                style={{
-                  width: '48px', height: '48px', borderRadius: '16px', flexShrink: 0,
-                  border: `1px solid ${isListening ? M.gold : M.gray200}`,
-                  background: isListening ? M.goldLight : 'white',
-                  color: isListening ? M.gold : M.gray500,
-                  cursor: 'pointer',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  transition: 'all 0.2s',
-                  animation: isListening ? 'pulse-ring 1.2s infinite' : 'none',
-                }}
+                className={`w-12 h-12 rounded-2xl shrink-0 border flex items-center justify-center cursor-pointer transition-all duration-200 ${
+                  isListening ? 'border-gold bg-gold-light text-gold animate-pulse-ring' : 'border-border bg-white text-text-sub'
+                }`}
               >
                 <MicIcon />
               </button>
@@ -267,34 +240,36 @@ export default function AiChat() {
             <button
               onClick={() => handleSend()}
               disabled={!input.trim() || loading}
-              style={{ width: '48px', height: '48px', borderRadius: '16px', border: 'none', background: !input.trim() || loading ? M.gray200 : M.maroon, color: !input.trim() || loading ? M.gray500 : 'white', cursor: !input.trim() || loading ? 'not-allowed' : 'pointer', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s', boxShadow: !input.trim() || loading ? 'none' : '0 4px 12px rgba(123,26,42,0.25)' }}
+              className={`w-12 h-12 rounded-2xl border-none shrink-0 flex items-center justify-center transition-all duration-200 ${
+                !input.trim() || loading ? 'bg-border text-text-sub cursor-not-allowed shadow-none' : 'bg-maroon text-white cursor-pointer shadow-[0_4px_12px_rgba(123,26,42,0.25)]'
+              }`}
             >
               <SendIcon />
             </button>
           </div>
 
-          {/* ── M11: Status bar ── */}
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '16px', marginTop: '6px', minHeight: '18px' }}>
+          {/* Status bar */}
+          <div className="flex items-center justify-center gap-4 mt-1.5 min-h-[18px]">
             {isListening ? (
-              <span style={{ fontSize: '11px', color: M.gold, display: 'flex', alignItems: 'center', gap: '5px' }}>
+              <span className="text-[11px] text-gold flex items-center gap-1.5">
                 {[0,1,2,3].map(j => (
-                  <span key={j} style={{ display: 'inline-block', width: '3px', height: '12px', background: M.gold, borderRadius: '2px', animation: 'speaking-wave 0.8s infinite', animationDelay: `${j*0.12}s` }} />
+                  <span key={j} className="inline-block w-[3px] h-3 bg-gold rounded-[2px] animate-speaking-wave" style={{ animationDelay: `${j*0.12}s` }} />
                 ))}
                 Listening...
               </span>
             ) : isSpeaking ? (
-              <span style={{ fontSize: '11px', color: M.maroon, display: 'flex', alignItems: 'center', gap: '5px' }}>
+              <span className="text-[11px] text-maroon flex items-center gap-1.5">
                 {[0,1,2,3].map(j => (
-                  <span key={j} style={{ display: 'inline-block', width: '3px', height: '12px', background: M.maroon, borderRadius: '2px', animation: 'speaking-wave 0.8s infinite', animationDelay: `${j*0.12}s` }} />
+                  <span key={j} className="inline-block w-[3px] h-3 bg-maroon rounded-[2px] animate-speaking-wave" style={{ animationDelay: `${j*0.12}s` }} />
                 ))}
                 Speaking...
                 <button onClick={() => { window.speechSynthesis.cancel(); setIsSpeaking(false) }}
-                  style={{ marginLeft: '4px', fontSize: '10px', color: M.gray500, background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
+                  className="ml-1 text-[10px] text-text-sub bg-transparent border-none cursor-pointer p-0">
                   ✕ stop
                 </button>
               </span>
             ) : (
-              <p style={{ fontSize: '11px', color: M.gray500, margin: 0 }}>
+              <p className="text-[11px] text-text-sub m-0">
                 Enter to send · Shift+Enter for new line{voiceSupported ? ' · Mic for voice' : ''}
               </p>
             )}

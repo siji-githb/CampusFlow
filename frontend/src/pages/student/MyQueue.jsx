@@ -2,16 +2,14 @@ import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/useAuth'
 import StudentLayout from '../../components/layout/StudentLayout'
-import { getMyQueue, activateQueue, getTimeEstimate } from '../../services/queueService'  // ← M9
+import { getMyQueue, activateQueue, getTimeEstimate } from '../../services/queueService'
 import { getMyAppointments } from '../../services/appointmentService'
 import { Clock, Hourglass, PartyPopper, Ticket, Calendar, Inbox } from 'lucide-react'
 
-const M = { maroon: '#7B1A2A', maroonLight: '#F9F0F1', gold: '#B8900A', goldLight: '#FDF6E3', offWhite: '#F9F7F4', gray200: '#EAE7E2', gray500: '#706B65', text: '#1C1917' }
-
 const STEP_STYLE = {
-  pending:     { dot: M.gray200, text: M.gray500, badge: 'Pending',     badgeBg: '#F9F9F9',   badgeColor: M.gray500 },
-  in_progress: { dot: M.gold,    text: M.text,    badge: 'In Progress', badgeBg: M.goldLight,  badgeColor: M.gold    },
-  completed:   { dot: M.maroon,  text: M.text,    badge: 'Done',        badgeBg: M.maroonLight,badgeColor: M.maroon  },
+  pending:     { bg: '#F9F9F9', color: '#706B65' }, // text-text-sub
+  in_progress: { bg: '#FDF6E3', color: '#B8900A' }, // text-gold
+  completed:   { bg: '#F9F0F1', color: '#7B1A2A' }, // text-maroon
 }
 
 export default function MyQueue() {
@@ -22,7 +20,7 @@ export default function MyQueue() {
   const [loading, setLoading]       = useState(true)
   const [activating, setActivating] = useState(null)
   const [error, setError]           = useState('')
-  const [estimates, setEstimates]   = useState([])   // ← M9
+  const [estimates, setEstimates]   = useState([])
   const [activeTab, setActiveTab]   = useState('active')
   const today    = new Date().toISOString().split('T')[0]
   const pollRef  = useRef(null)
@@ -41,13 +39,12 @@ export default function MyQueue() {
     } catch (e) { setError(e.message) }
   }
 
-  // ── M9: fetch time estimates once we have a queue ticket ──────────────────
   const fetchEstimates = async (appointmentId) => {
     try {
       const data = await getTimeEstimate(token, appointmentId)
       setEstimates(data.estimates || [])
     } catch {
-      setEstimates([])   // fail silently — estimates are non-critical
+      setEstimates([])
     }
   }
 
@@ -57,7 +54,6 @@ export default function MyQueue() {
     return () => clearInterval(pollRef.current)
   }, [])
 
-  // ── M9: trigger estimate fetch when ticket becomes available ──────────────
   useEffect(() => {
     if (queueData?.ticket?.appointment_id) {
       fetchEstimates(queueData.ticket.appointment_id)
@@ -76,156 +72,135 @@ export default function MyQueue() {
 
   return (
     <StudentLayout activeTab="queue" mobileTitle="My Queue" backTo="/student/dashboard">
-      <style>{`
-        .myqueue-layout {
-          max-width: 560px;
-          margin: 0 auto;
-        }
-        .myqueue-tabs { display: flex; }
-        .desktop-header { display: none; }
-        
-        .tab-content-active { display: ${activeTab === 'active' ? 'block' : 'none'}; }
-        .tab-content-upcoming { display: ${activeTab === 'upcoming' ? 'block' : 'none'}; }
-      `}</style>
 
-      <div className="myqueue-layout">
+      <div className="max-w-[560px] mx-auto pt-6 px-4 pb-20">
         {error && (
-          <div className="error-banner" style={{ padding: '10px 14px', borderRadius: '8px', background: M.maroonLight, color: M.maroon, fontSize: '13px', marginBottom: '1rem' }}>
+          <div className="py-2.5 px-3.5 rounded-lg bg-danger-light text-danger text-[13px] mb-4">
             {error}
           </div>
         )}
 
         {/* Navigation Tabs */}
-        <div className="myqueue-tabs" style={{ gap: '8px', marginBottom: '1.5rem', background: 'white', padding: '6px', borderRadius: '12px', border: `1px solid ${M.gray200}` }}>
+        <div className="flex gap-2 mb-6 bg-white p-1.5 rounded-xl border border-border">
           <button 
             onClick={() => setActiveTab('active')}
-            style={{ flex: 1, padding: '10px', borderRadius: '8px', border: 'none', background: activeTab === 'active' ? M.maroonLight : 'transparent', color: activeTab === 'active' ? M.maroon : M.gray500, fontSize: '14px', fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s', fontFamily: "'DM Sans', sans-serif" }}
+            className={`flex-1 py-2.5 px-4 rounded-lg border-none text-[14px] font-semibold cursor-pointer transition-all duration-200 font-sans ${activeTab === 'active' ? 'bg-maroon-light text-maroon' : 'bg-transparent text-text-sub hover:bg-off-white'}`}
           >
             Active Queue
           </button>
           <button 
             onClick={() => setActiveTab('upcoming')}
-            style={{ flex: 1, padding: '10px', borderRadius: '8px', border: 'none', background: activeTab === 'upcoming' ? M.maroonLight : 'transparent', color: activeTab === 'upcoming' ? M.maroon : M.gray500, fontSize: '14px', fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s', fontFamily: "'DM Sans', sans-serif" }}
+            className={`flex-1 py-2.5 px-4 rounded-lg border-none text-[14px] font-semibold cursor-pointer transition-all duration-200 font-sans ${activeTab === 'upcoming' ? 'bg-maroon-light text-maroon' : 'bg-transparent text-text-sub hover:bg-off-white'}`}
           >
             Upcoming
           </button>
         </div>
 
-        <div className="tab-content-active">
-          <h2 className="desktop-header">Active Queue</h2>
+        <div className={`${activeTab === 'active' ? 'block' : 'hidden'}`}>
+          <h2 className="hidden md:block font-serif text-[22px] font-bold text-text-main mb-4">Active Queue</h2>
           {loading ? (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-              <div style={{ background: M.white, borderRadius: '16px', padding: '24px', border: `1px solid ${M.gray200}` }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '16px' }}>
+            <div className="flex flex-col gap-4">
+              <div className="bg-white rounded-2xl p-6 border border-border shadow-sm">
+                <div className="flex justify-between items-start mb-4">
                   <div>
-                    <div className="animate-shimmer" style={{ width: '80px', height: '12px', borderRadius: '4px', marginBottom: '8px' }} />
-                    <div className="animate-shimmer" style={{ width: '60px', height: '48px', borderRadius: '8px' }} />
+                    <div className="animate-pulse w-[80px] h-[12px] rounded bg-border mb-2" />
+                    <div className="animate-pulse w-[60px] h-[48px] rounded-lg bg-border" />
                   </div>
-                  <div className="animate-shimmer" style={{ width: '90px', height: '24px', borderRadius: '100px' }} />
+                  <div className="animate-pulse w-[90px] h-[24px] rounded-full bg-border" />
                 </div>
-                <div className="animate-shimmer" style={{ width: '180px', height: '14px', borderRadius: '4px', marginBottom: '6px' }} />
-                <div className="animate-shimmer" style={{ width: '140px', height: '12px', borderRadius: '4px' }} />
+                <div className="animate-pulse w-[180px] h-[14px] rounded bg-border mb-1.5" />
+                <div className="animate-pulse w-[140px] h-[12px] rounded bg-border" />
               </div>
-              <div style={{ background: M.white, borderRadius: '14px', padding: '24px', border: `1px solid ${M.gray200}` }}>
-                <div className="animate-shimmer" style={{ width: '150px', height: '16px', borderRadius: '4px', marginBottom: '24px' }} />
+              <div className="bg-white rounded-2xl p-6 border border-border shadow-sm">
+                <div className="animate-pulse w-[150px] h-[16px] rounded bg-border mb-6" />
                 {[1, 2, 3].map(i => (
-                  <div key={i} style={{ display: 'flex', gap: '14px', marginBottom: '16px' }}>
-                    <div className="animate-shimmer" style={{ width: '28px', height: '28px', borderRadius: '50%', flexShrink: 0 }} />
-                    <div style={{ flex: 1 }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-                        <div className="animate-shimmer" style={{ width: '100px', height: '14px', borderRadius: '4px' }} />
-                        <div className="animate-shimmer" style={{ width: '60px', height: '16px', borderRadius: '100px' }} />
+                  <div key={i} className="flex gap-3.5 mb-4 last:mb-0">
+                    <div className="animate-pulse w-7 h-7 rounded-full bg-border shrink-0" />
+                    <div className="flex-1">
+                      <div className="flex justify-between mb-2">
+                        <div className="animate-pulse w-[100px] h-[14px] rounded bg-border" />
+                        <div className="animate-pulse w-[60px] h-[16px] rounded-full bg-border" />
                       </div>
-                      <div className="animate-shimmer" style={{ width: '140px', height: '12px', borderRadius: '4px' }} />
+                      <div className="animate-pulse w-[140px] h-[12px] rounded bg-border" />
                     </div>
                   </div>
                 ))}
               </div>
             </div>
           ) : ticket ? (
-            <div className="animate-fade-up" style={{ animationDelay: '0.1s' }}>
+            <div className="animate-fade-up">
               {/* Queue ticket card */}
-              <div style={{ background: `linear-gradient(135deg, ${M.maroon} 0%, #9B2335 100%)`, borderRadius: '16px', padding: '1.75rem', marginBottom: '1rem', color: 'white' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
+              <div className="bg-gradient-to-br from-maroon to-maroon-dark rounded-2xl p-7 mb-4 text-white shadow-lg relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full -mr-10 -mt-10 blur-xl" />
+                <div className="relative z-10 flex justify-between items-start mb-4">
                   <div>
-                    <p style={{ fontSize: '11px', color: 'rgba(255,255,255,0.5)', margin: '0 0 4px', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Queue Number</p>
-                    <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '3rem', fontWeight: 800, color: '#F0C040', lineHeight: 1 }}>{ticket.queue_number}</div>
+                    <p className="text-[11px] text-white/50 m-0 mb-1 uppercase tracking-[0.08em]">Queue Number</p>
+                    <div className="font-serif text-[48px] font-bold text-gold leading-none">{ticket.queue_number}</div>
                   </div>
-                  <span style={{
-                    fontSize: '12px', fontWeight: 600, padding: '5px 12px', borderRadius: '100px',
-                    background: ticket.status === 'completed' ? '#EFF6FF' : 'rgba(240,192,64,0.2)',
-                    color: ticket.status === 'completed' ? '#1D4ED8' : '#F0C040',
-                    border: ticket.status === 'completed' ? '1px solid #BFDBFE' : '1px solid rgba(240,192,64,0.3)'
-                  }}>
+                  <span className={`text-[12px] font-semibold py-1 px-3 rounded-full border ${
+                    ticket.status === 'completed' 
+                      ? 'bg-success-light text-success border-success-border' 
+                      : 'bg-gold/20 text-gold border-gold/30'
+                  }`}>
                     {ticket.status === 'in_progress' ? 'In Progress' : ticket.status === 'completed' ? 'Completed' : ticket.status}
                   </span>
                 </div>
-                <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.7)', margin: '0 0 3px' }}>{ticket.appointments?.transaction_types?.name}</p>
-                <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.45)', margin: 0 }}>{ticket.appointments?.appointment_date} at {ticket.appointments?.time_slot}</p>
+                <p className="text-[13px] text-white/70 m-0 mb-1 relative z-10">{ticket.appointments?.transaction_types?.name}</p>
+                <p className="text-[12px] text-white/45 m-0 relative z-10">{ticket.appointments?.appointment_date} at {ticket.appointments?.time_slot}</p>
               </div>
 
               {/* Step tracker */}
-              <div style={{ background: 'white', borderRadius: '14px', border: `1px solid ${M.gray200}`, padding: '1.5rem', boxShadow: '0 1px 4px rgba(0,0,0,0.04)' }}>
-                <h3 style={{ fontSize: '14px', fontWeight: 700, color: M.text, margin: '0 0 1.25rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Transaction Progress</h3>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0' }}>
+              <div className="bg-white rounded-2xl border border-border p-6 shadow-sm">
+                <h3 className="text-[14px] font-bold text-text-main m-0 mb-5 uppercase tracking-[0.05em]">Transaction Progress</h3>
+                <div className="flex flex-col">
                   {steps.map((step, idx) => {
-                    const ss     = STEP_STYLE[step.status] || STEP_STYLE.pending
                     const isLast = idx === steps.length - 1
                     const est = estimates.find(e => e.step === step.step_number)
 
                     return (
-                      <div key={step.id} style={{ display: 'flex', gap: '14px' }}>
+                      <div key={step.id} className="flex gap-3.5">
                         {/* Step dot + connector */}
-                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                          <div style={{
-                            width: '28px', height: '28px', borderRadius: '50%', flexShrink: 0,
-                            background: step.status === 'completed' ? M.maroon : step.status === 'in_progress' ? M.gold : M.gray200,
-                            display: 'flex', alignItems: 'center', justifyContent: 'center',
-                            color: step.status === 'pending' ? M.gray500 : 'white',
-                            fontSize: '12px', fontWeight: 700,
-                          }}>
+                        <div className="flex flex-col items-center">
+                          <div className={`w-7 h-7 rounded-full shrink-0 flex items-center justify-center text-[12px] font-bold ${
+                            step.status === 'completed' ? 'bg-maroon text-white' : 
+                            step.status === 'in_progress' ? 'bg-gold text-white shadow-[0_0_0_4px_rgba(184,144,10,0.15)]' : 
+                            'bg-border text-text-sub'
+                          }`}>
                             {step.status === 'completed' ? '✓' : step.step_number}
                           </div>
                           {!isLast && (
-                            <div style={{ width: '2px', flex: 1, minHeight: '24px', margin: '3px 0', background: step.status === 'completed' ? M.maroon : M.gray200 }} />
+                            <div className={`w-0.5 flex-1 min-h-[24px] my-1 ${step.status === 'completed' ? 'bg-maroon' : 'bg-border'}`} />
                           )}
                         </div>
 
                         {/* Step content */}
-                        <div style={{ flex: 1, paddingBottom: isLast ? 0 : '16px' }}>
+                        <div className={`flex-1 ${isLast ? 'pb-0' : 'pb-4'}`}>
                           {/* Name row + status badge */}
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '3px' }}>
-                            <span style={{ fontSize: '14px', fontWeight: 600, color: ss.text }}>{step.step_name}</span>
-                            <span style={{ fontSize: '11px', fontWeight: 600, padding: '2px 8px', borderRadius: '100px', background: ss.badgeBg, color: ss.badgeColor }}>
-                              {ss.badge}
+                          <div className="flex justify-between items-center mb-1">
+                            <span className={`text-[14px] font-semibold ${step.status === 'pending' ? 'text-text-sub' : 'text-text-main'}`}>{step.step_name}</span>
+                            <span className="text-[11px] font-semibold py-0.5 px-2 rounded-full" style={{
+                               background: STEP_STYLE[step.status]?.bg || '#F9F9F9',
+                               color: STEP_STYLE[step.status]?.color || '#706B65'
+                            }}>
+                              {step.status === 'in_progress' ? 'In Progress' : step.status === 'completed' ? 'Done' : 'Pending'}
                             </span>
                           </div>
 
-                          {/* ── M9: estimate badge — only on pending steps ── */}
+                          {/* estimate badge */}
                           {est && step.status === 'pending' && (
-                            <div style={{ marginBottom: '4px' }}>
-                              <span style={{
-                                display: 'inline-flex', alignItems: 'center', gap: '4px',
-                                fontSize: '11px', fontWeight: 500,
-                                background: 'rgba(184,144,10,0.08)',
-                                color: M.gold,
-                                border: `1px solid rgba(184,144,10,0.25)`,
-                                borderRadius: '100px',
-                                padding: '2px 10px',
-                                fontFamily: 'monospace',
-                                letterSpacing: '0.03em',
-                              }}>
-                                <Clock size={11} color={M.gold} /> {est.label}
+                            <div className="mb-1">
+                              <span className="inline-flex items-center gap-1 text-[11px] font-medium bg-gold/10 text-gold border border-gold/25 rounded-full py-0.5 px-2.5 font-mono tracking-wide">
+                                <Clock size={11} className="text-gold" /> {est.label}
                               </span>
                             </div>
                           )}
 
                           {/* Sub-labels */}
                           {step.status === 'in_progress' && (
-                            <p style={{ fontSize: '12px', color: M.gold, margin: 0, display: 'flex', alignItems: 'center', gap: '4px' }}><Hourglass size={12} color={M.gold} /> Please proceed to this counter</p>
+                            <p className="text-[12px] text-gold m-0 flex items-center gap-1 font-medium"><Hourglass size={12} className="text-gold animate-pulse" /> Please proceed to this counter</p>
                           )}
                           {step.status === 'completed' && step.confirmed_at && (
-                            <p style={{ fontSize: '11px', color: M.gray500, margin: 0 }}>✓ Confirmed at {new Date(step.confirmed_at).toLocaleTimeString()}</p>
+                            <p className="text-[11px] text-text-muted m-0">✓ Confirmed at {new Date(step.confirmed_at).toLocaleTimeString()}</p>
                           )}
                         </div>
                       </div>
@@ -234,65 +209,64 @@ export default function MyQueue() {
                 </div>
 
                 {ticket.status === 'completed' && (
-                  <div style={{ marginTop: '1rem', padding: '1rem', background: M.maroonLight, borderRadius: '10px', textAlign: 'center', border: `1px solid ${M.maroon}20` }}>
-                    <p style={{ fontSize: '15px', fontWeight: 700, color: M.maroon, margin: '0 0 3px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}><PartyPopper size={18} color={M.gold} /> Transaction Complete!</p>
-                    <p style={{ fontSize: '12px', color: M.gray500, margin: 0 }}>All steps have been processed.</p>
+                  <div className="mt-4 p-4 bg-maroon-light rounded-xl text-center border border-maroon-border animate-fade-up">
+                    <p className="text-[15px] font-bold text-maroon m-0 mb-1 flex items-center justify-center gap-1.5"><PartyPopper size={18} className="text-gold" /> Transaction Complete!</p>
+                    <p className="text-[12px] text-text-sub m-0">All steps have been processed.</p>
                   </div>
                 )}
               </div>
             </div>
           ) : (
-            <div className="animate-fade-up" style={{ animationDelay: '0.1s', textAlign: 'center', padding: '4rem 2rem', background: 'white', borderRadius: '16px', border: `1px solid ${M.gray200}` }}>
-              <div style={{ color: M.gray500, marginBottom: '1rem', display: 'flex', justifyContent: 'center' }}><Ticket size={48} color={M.gold} /></div>
-              <p style={{ fontSize: '15px', fontWeight: 600, color: M.text, margin: '0 0 6px' }}>No Active Queue Ticket</p>
-              <p style={{ fontSize: '13px', color: M.gray500, margin: '0 0 1.5rem' }}>Check your upcoming appointments to activate a queue number.</p>
-              <button onClick={() => setActiveTab('upcoming')} style={{ padding: '11px 24px', borderRadius: '8px', border: 'none', background: M.maroon, color: 'white', fontSize: '14px', fontWeight: 600, cursor: 'pointer' }}>
+            <div className="animate-fade-up text-center py-16 px-8 bg-white rounded-2xl border border-border shadow-sm">
+              <div className="text-text-muted mb-4 flex justify-center"><Ticket size={48} className="text-gold" /></div>
+              <p className="text-[15px] font-semibold text-text-main m-0 mb-1.5">No Active Queue Ticket</p>
+              <p className="text-[13px] text-text-sub m-0 mb-6">Check your upcoming appointments to activate a queue number.</p>
+              <button onClick={() => setActiveTab('upcoming')} className="py-2.5 px-6 rounded-lg border-none bg-maroon text-white text-[14px] font-semibold cursor-pointer hover:bg-maroon-dark transition-colors">
                 View Upcoming
               </button>
             </div>
           )}
         </div>
 
-        <div className="tab-content-upcoming">
-          <h2 className="desktop-header">Upcoming Appointments</h2>
+        <div className={`${activeTab === 'upcoming' ? 'block' : 'hidden'}`}>
+          <h2 className="hidden md:block font-serif text-[22px] font-bold text-text-main mb-4">Upcoming Appointments</h2>
           {loading ? (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <div className="flex flex-col gap-3">
               {[1, 2, 3].map(i => (
-                <div key={i} style={{ background: M.white, borderRadius: '14px', padding: '20px', border: `1px solid ${M.gray200}` }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
-                    <div className="animate-shimmer" style={{ width: '140px', height: '16px', borderRadius: '4px' }} />
-                    <div className="animate-shimmer" style={{ width: '70px', height: '20px', borderRadius: '100px' }} />
+                <div key={i} className="bg-white rounded-[14px] p-5 border border-border shadow-sm">
+                  <div className="flex justify-between mb-3">
+                    <div className="animate-pulse w-[140px] h-[16px] rounded bg-border" />
+                    <div className="animate-pulse w-[70px] h-[20px] rounded-full bg-border" />
                   </div>
-                  <div className="animate-shimmer" style={{ width: '120px', height: '14px', borderRadius: '4px', marginBottom: '16px' }} />
-                  <div className="animate-shimmer" style={{ width: '100%', height: '44px', borderRadius: '8px' }} />
+                  <div className="animate-pulse w-[120px] h-[14px] rounded bg-border mb-4" />
+                  <div className="animate-pulse w-full h-[44px] rounded-lg bg-border" />
                 </div>
               ))}
             </div>
           ) : upcomingAppts.length > 0 ? (
-            <div className="animate-fade-up" style={{ animationDelay: '0.1s' }}>
-              <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: '1.4rem', fontWeight: 700, color: M.maroon, margin: '0 0 6px' }}>Upcoming Appointments</h2>
-              <p style={{ fontSize: '13px', color: M.gray500, margin: '0 0 1.25rem' }}>Activate your queue number when you arrive at the Registrar's Office on your appointment date.</p>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            <div className="animate-fade-up">
+              <p className="text-[13px] text-text-sub m-0 mb-5 leading-relaxed bg-off-white p-3 rounded-lg border border-border">Activate your queue number when you arrive at the Registrar's Office on your appointment date.</p>
+              <div className="flex flex-col gap-3">
                 {upcomingAppts.map(appt => {
                   const isToday = appt.appointment_date === today;
                   return (
-                    <div key={appt.id} style={{ background: 'white', borderRadius: '14px', border: `1px solid ${M.gray200}`, padding: '1.25rem', boxShadow: '0 1px 4px rgba(0,0,0,0.04)' }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-                        <h3 style={{ fontSize: '15px', fontWeight: 600, color: M.text, margin: 0 }}>{appt.transaction_types?.name}</h3>
-                        <span style={{ fontSize: '11px', fontWeight: 600, padding: '2px 10px', borderRadius: '100px', background: '#F0FDF4', color: '#15803D', border: '1px solid #BBF7D0' }}>Confirmed</span>
+                    <div key={appt.id} className="bg-white rounded-2xl border border-border p-5 shadow-[0_1px_4px_rgba(0,0,0,0.04)]">
+                      <div className="flex justify-between mb-2">
+                        <h3 className="text-[15px] font-semibold text-text-main m-0">{appt.transaction_types?.name}</h3>
+                        <span className="text-[11px] font-semibold py-0.5 px-2.5 rounded-full bg-success-light text-success border border-success-border">Confirmed</span>
                       </div>
-                      <p style={{ fontSize: '13px', color: M.gray500, margin: '0 0 1rem', display: 'flex', alignItems: 'center', gap: '6px' }}><Calendar size={13} color={M.gold} /> {appt.appointment_date} at {appt.time_slot}</p>
+                      <p className="text-[13px] text-text-sub m-0 mb-4 flex items-center gap-1.5"><Calendar size={13} className="text-gold" /> {appt.appointment_date} at {appt.time_slot}</p>
                       {ticket && ticket.appointment_id === appt.id ? (
-                        <div style={{ display: 'flex', gap: '8px' }}>
+                        <div className="flex gap-2">
                           <button
                             disabled
-                            style={{ flex: 1, padding: '12px', borderRadius: '8px', border: `1px solid ${M.gray200}`, background: '#F0FDF4', color: '#15803D', fontSize: '14px', fontWeight: 700, cursor: 'default', fontFamily: "'DM Sans', sans-serif" }}
+                            className="flex-1 py-3 px-4 rounded-lg border border-border bg-success-light text-success text-[14px] font-bold cursor-default font-sans text-center"
                           >
                             ✓ Activated
                           </button>
                           <button
                             onClick={() => setActiveTab('active')}
-                            style={{ flex: 1, padding: '12px', borderRadius: '8px', border: 'none', background: M.maroon, color: 'white', fontSize: '14px', fontWeight: 700, cursor: 'pointer', fontFamily: "'DM Sans', sans-serif" }}
+                            className="flex-1 py-3 px-4 rounded-lg border-none bg-maroon text-white text-[14px] font-bold cursor-pointer font-sans transition-colors hover:bg-maroon-dark text-center"
                           >
                             View Details
                           </button>
@@ -302,9 +276,13 @@ export default function MyQueue() {
                           onClick={() => handleActivate(appt.id)}
                           disabled={activating === appt.id || !isToday || ticket}
                           title={ticket ? "You already have an active queue ticket" : ""}
-                          style={{ width: '100%', padding: '12px', borderRadius: '8px', border: 'none', background: (!isToday || ticket) ? M.gray200 : activating === appt.id ? '#B8667A' : M.maroon, color: (!isToday || ticket) ? M.gray500 : 'white', fontSize: '14px', fontWeight: 700, cursor: activating === appt.id || !isToday || ticket ? 'not-allowed' : 'pointer', fontFamily: "'DM Sans', sans-serif", display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
+                          className={`w-full py-3 rounded-lg border-none text-[14px] font-bold font-sans flex items-center justify-center gap-2 transition-colors ${
+                            (!isToday || ticket) ? 'bg-border text-text-sub cursor-not-allowed' : 
+                            activating === appt.id ? 'bg-[#B8667A] text-white cursor-not-allowed' : 
+                            'bg-maroon text-white cursor-pointer hover:bg-maroon-dark shadow-sm'
+                          }`}
                         >
-                          {activating === appt.id ? 'Activating...' : !isToday ? 'Available on Appointment Date' : <><Ticket size={16} color={M.gold} /> Get Queue Number</>}
+                          {activating === appt.id ? 'Activating...' : !isToday ? 'Available on Appointment Date' : <><Ticket size={16} className="text-gold" /> Get Queue Number</>}
                         </button>
                       )}
                     </div>
@@ -313,16 +291,15 @@ export default function MyQueue() {
               </div>
             </div>
           ) : (
-            <div className="animate-fade-up" style={{ animationDelay: '0.1s', textAlign: 'center', padding: '4rem 2rem', background: 'white', borderRadius: '16px', border: `1px solid ${M.gray200}` }}>
-              <div style={{ color: M.gold, marginBottom: '1rem', display: 'flex', justifyContent: 'center' }}><Inbox size={48} /></div>
-              <p style={{ fontSize: '15px', fontWeight: 600, color: M.text, margin: '0 0 6px' }}>No upcoming appointments</p>
-              <p style={{ fontSize: '13px', color: M.gray500, margin: '0 0 1.5rem' }}>Queue numbers are only available on your appointment date.</p>
-              <button onClick={() => navigate('/student/book')} style={{ padding: '11px 24px', borderRadius: '8px', border: 'none', background: M.maroon, color: 'white', fontSize: '14px', fontWeight: 600, cursor: 'pointer' }}>
+            <div className="animate-fade-up text-center py-16 px-8 bg-white rounded-2xl border border-border shadow-sm">
+              <div className="text-gold mb-4 flex justify-center"><Inbox size={48} /></div>
+              <p className="text-[15px] font-semibold text-text-main m-0 mb-1.5">No upcoming appointments</p>
+              <p className="text-[13px] text-text-sub m-0 mb-6">Queue numbers are only available on your appointment date.</p>
+              <button onClick={() => navigate('/student/book')} className="py-2.5 px-6 rounded-lg border-none bg-maroon text-white text-[14px] font-semibold cursor-pointer hover:bg-maroon-dark transition-colors">
                 Book an Appointment
               </button>
             </div>
-          )
-        }
+          )}
         </div>
       </div>
     </StudentLayout>
