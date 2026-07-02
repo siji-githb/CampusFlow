@@ -14,6 +14,7 @@ import {
   getDashboardStats, getReports, getOfficeConfig, updateOfficeConfig,
   getAllUsers, updateUserRole, getAuditLog, getAiInsights
 } from '../../services/adminService'
+import NotificationDropdown from '../../components/NotificationDropdown'
 
 // ── Sidebar Nav Item ───────────────────────────────────────────────────────────
 const SideItem = ({ icon, label, active, onClick }) => (
@@ -47,15 +48,22 @@ const LineChart = ({ actualData, labels }) => {
   const maxV = Math.max(...actualData, 4) * 1.15
   const minV = 0
 
-  const toX = i => PAD.left + (i / (actualData.length - 1)) * cW
+  const toX = i => {
+    if (actualData.length <= 1) return PAD.left + cW / 2;
+    return PAD.left + (i / (actualData.length - 1)) * cW;
+  };
   const toY = v => PAD.top + cH - ((v - minV) / (maxV - minV)) * cH
 
   const makePath = data =>
-    data.map((v, i) => `${i === 0 ? 'M' : 'L'}${toX(i).toFixed(1)},${toY(v).toFixed(1)}`).join(' ')
+    data.length === 0 ? '' : data.map((v, i) => `${i === 0 ? 'M' : 'L'}${toX(i).toFixed(1)},${toY(v).toFixed(1)}`).join(' ')
 
   const makeArea = data => {
+    if (data.length === 0) return '';
     const pts = data.map((v, i) => `${toX(i).toFixed(1)},${toY(v).toFixed(1)}`).join(' L')
     const last = data.length - 1
+    if (last === 0) {
+      return `M${toX(0).toFixed(1)},${toY(data[0]).toFixed(1)} L${toX(0).toFixed(1)},${(PAD.top + cH).toFixed(1)} Z`
+    }
     return `M${toX(0).toFixed(1)},${toY(data[0]).toFixed(1)} L${pts} L${toX(last).toFixed(1)},${(PAD.top + cH).toFixed(1)} L${PAD.left.toFixed(1)},${(PAD.top + cH).toFixed(1)} Z`
   }
 
@@ -220,7 +228,7 @@ function OverviewTab() {
             </div>
             <div className="flex items-center gap-4">
               <select value={days} onChange={e => setDays(Number(e.target.value))} className="py-1.5 px-3 rounded-md border border-border text-[12px] font-semibold text-text-sub outline-none bg-surface cursor-pointer">
-                <option value={1}>Today</option>
+                <option value={1} disabled>Today</option>
                 <option value={7}>1 Week</option>
                 <option value={14}>2 Weeks</option>
                 <option value={21}>3 Weeks</option>
@@ -366,7 +374,7 @@ export default function AdminDashboard() {
           {/* Right controls */}
           <div className="flex items-center gap-2.5">
             {/* Bell */}
-            <button className="w-9 h-9 rounded-full border border-border bg-white cursor-pointer flex items-center justify-center text-text-sub"><Bell size={18} /></button>
+            <NotificationDropdown />
 
             {/* Avatar + dropdown */}
             <div className="relative">

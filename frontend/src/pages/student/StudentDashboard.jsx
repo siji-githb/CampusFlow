@@ -3,9 +3,10 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/useAuth';
 import crmcLogo from '../../assets/crmc-logo.webp';
 import StudentLayout, { useWindowWidth, ProfileDropdown } from '../../components/layout/StudentLayout';
-import { getMyAppointments } from '../../services/appointmentService';
+import { getMyAppointments, cancelAppointment } from '../../services/appointmentService';
 import { getMyQueue, getTimeEstimate } from '../../services/queueService';
-import { LogOut, ClipboardList, Ticket, Home, Calendar, Bot, Clock, Bell } from 'lucide-react';
+import { LogOut, ClipboardList, Ticket, Home, Calendar, Bot, Clock } from 'lucide-react';
+import NotificationDropdown from '../../components/NotificationDropdown';
 
 // ── Status Styles ──
 const STATUS_STYLES = {
@@ -113,6 +114,23 @@ export default function StudentDashboard() {
   const [loading, setLoading] = useState(true);
   const [appointments, setAppointments] = useState([]);
   const [liveTicket, setLiveTicket] = useState(null);
+  const [cancelling, setCancelling] = useState(false);
+
+  const handleCancelTicket = async () => {
+    if (!liveTicket || !liveTicket.id) return;
+    if (!window.confirm('Are you sure you want to cancel your queue ticket?')) return;
+    
+    setCancelling(true);
+    try {
+      await cancelAppointment(token, liveTicket.id);
+      setLiveTicket(null);
+      fetchDashboardData();
+    } catch (e) {
+      alert('Failed to cancel ticket: ' + e.message);
+    } finally {
+      setCancelling(false);
+    }
+  };
 
   const fetchDashboardData = async () => {
     try {
@@ -151,6 +169,7 @@ export default function StudentDashboard() {
         }
 
         setLiveTicket({
+          id: qData.ticket.appointment_id,
           queue_number: qData.ticket.queue_number,
           est_wait_mins: estMins,
           currently_serving: 'Processing',
@@ -383,8 +402,11 @@ export default function StudentDashboard() {
                         <strong className="text-[13px] text-text-main">{liveTicket.est_wait_mins} min</strong>
                       </div>
                     </div>
-                    <button className="w-full min-h-[44px] p-2.5 rounded-[10px] border border-danger-border bg-danger-light text-danger text-[13px] font-semibold cursor-pointer font-sans transition-colors hover:bg-danger/10">
-                      Cancel Queue Ticket
+                    <button 
+                      onClick={handleCancelTicket}
+                      disabled={cancelling}
+                      className="w-full min-h-[44px] p-2.5 rounded-[10px] border border-danger-border bg-danger-light text-danger text-[13px] font-semibold cursor-pointer font-sans transition-colors hover:bg-danger/10 disabled:opacity-50">
+                      {cancelling ? 'Cancelling...' : 'Cancel Queue Ticket'}
                     </button>
                   </div>
                 ) : (
@@ -416,9 +438,7 @@ export default function StudentDashboard() {
             </div>
           </div>
           <div className="flex items-center gap-4">
-            <button className="bg-transparent border-none text-white cursor-pointer hover:text-gold transition-colors p-1 flex items-center justify-center">
-              <Bell size={22} />
-            </button>
+            <NotificationDropdown isMobile={true} mobileRoute="/student/notifications" />
             <ProfileDropdown />
           </div>
         </div>
@@ -495,8 +515,11 @@ export default function StudentDashboard() {
                   <strong className="text-[13px] text-text-main">{liveTicket.est_wait_mins} min</strong>
                 </div>
               </div>
-              <button className="w-full min-h-[44px] p-2.5 rounded-[10px] border border-danger-border bg-danger-light text-danger text-[13px] font-semibold cursor-pointer font-sans transition-colors hover:bg-danger/10">
-                Cancel Queue Ticket
+              <button 
+                onClick={handleCancelTicket}
+                disabled={cancelling}
+                className="w-full min-h-[44px] p-2.5 rounded-[10px] border border-danger-border bg-danger-light text-danger text-[13px] font-semibold cursor-pointer font-sans transition-colors hover:bg-danger/10 disabled:opacity-50">
+                {cancelling ? 'Cancelling...' : 'Cancel Queue Ticket'}
               </button>
             </div>
           </div>

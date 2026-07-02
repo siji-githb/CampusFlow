@@ -4,6 +4,7 @@ from supabase import create_client
 from models.appointment_models import AppointmentCreate
 from datetime import date, datetime, timedelta
 from services.admin_service import log_audit_action
+from services.notification_service import create_system_notification
 
 settings = get_settings()
 
@@ -178,6 +179,14 @@ def create_appointment(student_id: str, priority_class: str, data: AppointmentCr
             "notes": data.notes
         }).execute()
         appt = appt_res.data[0]
+        
+        # Trigger notification
+        create_system_notification(
+            user_id=student_id,
+            title="Appointment Confirmed",
+            message=f"Your appointment for {tt['name']} on {data.appointment_date} at {data.time_slot} is confirmed.",
+            type="success"
+        )
         
         log_audit_action(
             user_id=student_id,

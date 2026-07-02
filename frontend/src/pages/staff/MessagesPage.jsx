@@ -64,7 +64,7 @@ const MessageItem = ({ msg, selected, onClick }) => {
           </div>
           {/* Priority badge */}
           <div className="mb-1.5">
-            <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full border uppercase tracking-[0.05em] ${prio.bg} ${prio.color} ${prio.border}`}>
+            <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full border uppercase tracking-wider ${prio.bg} ${prio.color} ${prio.border}`}>
               {prio.label}
             </span>
             {msg.category && (
@@ -114,7 +114,7 @@ export default function MessagesPage() {
   const [loading, setLoading]     = useState(true)
   const [selected, setSelected]   = useState(null)
   const [marking, setMarking]     = useState(null)
-  const [filter, setFilter]       = useState('all')   // all | unread | urgent
+  const [filter, setFilter]       = useState('all')   // all | unread | urgent | resolved
   const [replyText, setReplyText] = useState('')
   const [sendingReply, setSendingReply] = useState(false)
   const [error, setError]         = useState('')
@@ -161,6 +161,7 @@ export default function MessagesPage() {
   const filtered = messages.filter(m => {
     if (filter === 'unread')  return !m.is_read
     if (filter === 'urgent')  return m.priority === 'urgent'
+    if (filter === 'resolved') return m.is_read
     return true
   })
 
@@ -192,11 +193,11 @@ export default function MessagesPage() {
           </div>
           {/* Filter tabs */}
           <div className="flex gap-0">
-            {[['all', 'All'], ['unread', 'Requires Action'], ['urgent', 'Resolved']].map(([val, lbl]) => (
+            {[['all', 'All'], ['unread', 'Requires Action'], ['urgent', 'Urgent'], ['resolved', 'Resolved']].map(([val, lbl]) => (
               <button
                 key={val}
                 onClick={() => setFilter(val)}
-                className={`flex-1 py-2 px-1.5 border-none bg-transparent text-[11px] font-sans cursor-pointer whitespace-nowrap mb-[-1px] transition-colors border-b-2
+                className={`flex-1 py-2 px-1.5 border-none bg-transparent text-[11px] font-sans cursor-pointer whitespace-nowrap -mb-px transition-colors border-b-2
                   ${filter === val ? 'border-maroon text-maroon font-bold' : 'border-transparent text-text-muted font-normal hover:text-text-main'}
                 `}
               >{lbl}</button>
@@ -375,7 +376,7 @@ export default function MessagesPage() {
       )}
 
       {error && (
-        <div className="fixed bottom-5 left-1/2 -translate-x-1/2 bg-danger-light border border-danger-border text-danger px-4.5 py-2.5 rounded-[10px] text-[13px] z-[999] shadow-lg">
+        <div className="fixed bottom-5 left-1/2 -translate-x-1/2 bg-danger-light border border-danger-border text-danger px-4.5 py-2.5 rounded-[10px] text-[13px] z-999 shadow-lg">
           {error}
         </div>
       )}

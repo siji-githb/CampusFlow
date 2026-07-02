@@ -4,7 +4,8 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/useAuth';
 import crmcLogo from '../../assets/crmc-logo.webp';
 import BottomNav from './BottomNav';
-import { LogOut, ClipboardList, Ticket, Home, Calendar, Bot, Bell } from 'lucide-react';
+import { LogOut, ClipboardList, Ticket, Home, Calendar, Bot } from 'lucide-react';
+import NotificationDropdown from '../NotificationDropdown';
 import Navbar from './Navbar';
 
 // eslint-disable-next-line react-refresh/only-export-components
@@ -415,13 +416,7 @@ export default function StudentLayout({ children, activeTab, mobileTitle, backTo
             display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '24px',
             position: 'sticky', top: 0, zIndex: 40,
           }}>
-            <button style={{
-              background: 'transparent', border: 'none', cursor: 'pointer',
-              color: M.textSub, display: 'flex', alignItems: 'center', justifyContent: 'center',
-              padding: '4px', transition: 'color 0.2s'
-            }} onMouseEnter={e => e.currentTarget.style.color = M.maroon} onMouseLeave={e => e.currentTarget.style.color = M.textSub}>
-              <Bell size={22} />
-            </button>
+            <NotificationDropdown />
             <ProfileDropdown />
           </header>
 

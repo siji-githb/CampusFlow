@@ -5,6 +5,7 @@ from config import get_settings
 from datetime import date
 import json
 import re
+from services.notification_service import notify_staff_urgent_message
 
 settings = get_settings()
 
@@ -163,7 +164,15 @@ def escalate_to_staff(student_id: str, question: str):
             "category":   category,          # requirements | scheduling | process | complaint | other
             "is_read":    False,
         }).execute()
-    except Exception:
+        
+        if priority == "urgent":
+            # fetch student info to include name
+            student_res = admin.table("users").select("first_name, last_name").eq("id", student_id).single().execute()
+            if student_res.data:
+                name = f"{student_res.data.get('first_name')} {student_res.data.get('last_name')}".strip()
+                notify_staff_urgent_message(name)
+            
+    except Exception as e:
         pass  # escalation failure must never crash the chat
 
 

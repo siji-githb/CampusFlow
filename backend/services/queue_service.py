@@ -3,6 +3,7 @@ from supabase import create_client
 from config import get_settings
 from datetime import date, datetime, timezone
 from services.admin_service import log_audit_action
+from services.notification_service import create_system_notification
 
 settings = get_settings()
 
@@ -101,6 +102,14 @@ def activate_queue(appointment_id: str, student_id: str):
         .update({"status": "confirmed"}) \
         .eq("id", appointment_id) \
         .execute()
+
+    # Trigger notification
+    create_system_notification(
+        user_id=student_id,
+        title="Queue Activated",
+        message=f"Your ticket {queue_number} has been generated. Please proceed to the first step: {processing_steps[0] if processing_steps else 'Window'}.",
+        type="info"
+    )
 
     return {"ticket": ticket, "steps": steps_res.data}
 
@@ -217,6 +226,13 @@ def confirm_step(queue_ticket_id: str, step_number: int, staff_id: str):
             .update({"status": "completed"}) \
             .eq("id", ticket["appointment_id"]) \
             .execute()
+            
+        create_system_notification(
+            user_id=ticket["student_id"],
+            title="Transaction Completed",
+            message=f"Your transaction {ticket['queue_number']} is fully complete. Thank you!",
+            type="success"
+        )
         return {"message": "Transaction completed", "status": "completed"}
     else:
         # Advance to next step
@@ -229,6 +245,13 @@ def confirm_step(queue_ticket_id: str, step_number: int, staff_id: str):
             .eq("queue_ticket_id", queue_ticket_id) \
             .eq("step_number", next_step) \
             .execute()
+            
+        create_system_notification(
+            user_id=ticket["student_id"],
+            title="Step Confirmed",
+            message=f"Step {step_number} confirmed. Proceed to step {next_step}.",
+            type="info"
+        )
         return {"message": f"Step {step_number} confirmed. Moved to step {next_step}.", "status": "in_progress"}
 
 

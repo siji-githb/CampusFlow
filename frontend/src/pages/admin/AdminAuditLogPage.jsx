@@ -147,7 +147,7 @@ export default function AdminAuditLogPage() {
                   
                   <div className="flex items-center gap-2 min-w-0">
                     <div className="w-6 h-6 rounded-full bg-maroon-light text-maroon flex items-center justify-center text-[10px] font-bold shrink-0 border border-maroon-border">
-                      {log.users ? log.users.first_name[0].toUpperCase() : 'S'}
+                      {log.users?.first_name?.[0]?.toUpperCase() || 'S'}
                     </div>
                     <span className="text-[13px] font-semibold text-text-main whitespace-nowrap overflow-hidden text-ellipsis">
                       {log.users ? `${log.users.first_name} ${log.users.last_name}` : 'System Auto'}

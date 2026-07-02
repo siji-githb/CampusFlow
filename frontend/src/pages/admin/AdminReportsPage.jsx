@@ -148,7 +148,17 @@ export default function AdminReportsPage() {
         // i=0 is oldest (m6 - m5), i=5 is newest (m1)
         const currIndex = 5 - i
         const curr = cumulative[currIndex]
-        const prev = currIndex > 0 ? cumulative[currIndex - 1] : { total_appointments: 0, completed: 0, cancelled: 0, no_show: 0 }
+        const prev = currIndex > 0 ? cumulative[currIndex - 1] : { total_appointments: 0, completed: 0, cancelled: 0, no_show: 0, by_type: [] }
+        
+        const currByType = curr.by_type || []
+        const prevByType = prev.by_type || []
+        const diffByType = currByType.map(ct => {
+          const pt = prevByType.find(p => p.name === ct.name)
+          return {
+            name: ct.name,
+            count: Math.max(0, ct.count - (pt ? pt.count : 0))
+          }
+        })
         
         monthly.push({
           month: getMonthLabel(i),
@@ -156,7 +166,7 @@ export default function AdminReportsPage() {
           completed: (curr.completed || 0) - (prev.completed || 0),
           cancelled: (curr.cancelled || 0) - (prev.cancelled || 0),
           no_show:   (curr.no_show || 0) - (prev.no_show || 0),
-          by_type:   curr.by_type || [], // Simplification: we keep current bucket's types
+          by_type:   diffByType,
         })
       }
       setMonthlyReports(monthly)

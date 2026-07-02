@@ -7,6 +7,7 @@ import MessagesPage from './MessagesPage'
 import AppointmentsPage from './AppointmentsPage'
 import StudentRecordsPage from './StudentRecordsPage'
 import { getTodaysQueue } from '../../services/queueService'
+import NotificationDropdown from '../../components/NotificationDropdown'
 import { getMessages, markMessageRead } from '../../services/messagesService'
 import { getAppointmentStats } from '../../services/appointmentService'
 import { Inbox, MessageSquare, BarChart2, Ticket, Calendar, ClipboardList, LogOut, Users, CheckSquare, Clock, CalendarClock, Monitor, MonitorX } from 'lucide-react'
@@ -159,6 +160,7 @@ export default function StaffDashboard() {
       setNumWindows(data.num_windows != null ? Number(data.num_windows) : 3)
       setWindowAssignments(data.assignments || {})
       setMyWindow(data.assignments?.[user?.id] || null)
+      setWindowError('')
     } catch (e) { 
       console.error('Window fetch error', e) 
       setWindowError('Fetch Error: ' + e.message)
@@ -312,6 +314,8 @@ export default function StaffDashboard() {
                 No window assigned
               </div>
             )}
+
+            <NotificationDropdown />
 
             {/* Avatar dropdown */}
             <div className="relative">
