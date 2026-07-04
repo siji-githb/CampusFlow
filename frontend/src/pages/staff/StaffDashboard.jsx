@@ -180,6 +180,7 @@ export default function StaffDashboard() {
   }
 
   const handleReleaseWindow = async () => {
+    const prevWindow = myWindow;
     try {
       setIsLoadingWindow(true)
       setMyWindow(null)
@@ -187,6 +188,7 @@ export default function StaffDashboard() {
       await loadWindowData()
     } catch (e) { 
       console.error(e)
+      setMyWindow(prevWindow)
       setWindowError(e.message) 
     } finally {
       setIsLoadingWindow(false)

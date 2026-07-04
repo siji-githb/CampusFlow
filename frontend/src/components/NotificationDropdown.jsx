@@ -22,6 +22,7 @@ export default function NotificationDropdown({ isMobile = false, mobileRoute }) 
   const [notifications, setNotifications] = useState([]);
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef(null);
+  const triggerRef = useRef(null);
   
   const [windowWidth, setWindowWidth] = useState(() => window.innerWidth);
   useEffect(() => {
@@ -50,7 +51,9 @@ export default function NotificationDropdown({ isMobile = false, mobileRoute }) 
 
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+      const isOutsideDropdown = dropdownRef.current && !dropdownRef.current.contains(event.target);
+      const isOutsideTrigger = triggerRef.current && !triggerRef.current.contains(event.target);
+      if (isOutsideDropdown && isOutsideTrigger) {
         setIsOpen(false);
       }
     };
@@ -88,7 +91,7 @@ export default function NotificationDropdown({ isMobile = false, mobileRoute }) 
   };
 
   return (
-    <div ref={dropdownRef} className="relative">
+    <div ref={triggerRef} className="relative">
       <button
         style={!effectiveIsMobile ? {
           background: 'transparent', border: 'none', cursor: 'pointer',

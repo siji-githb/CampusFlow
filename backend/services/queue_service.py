@@ -1,11 +1,16 @@
 from fastapi import HTTPException
 from config import get_settings
 from datetime import date, datetime, timezone
+import threading
 from services.admin_service import log_audit_action
 from services.notification_service import create_system_notification
 from deps import get_supabase_admin as get_admin
 
 settings = get_settings()
+
+# Prevents two concurrent activate_queue calls from reading the same daily count
+# and generating duplicate queue numbers within a single process.
+_queue_number_lock = threading.Lock()
 
 
 def generate_queue_number(transaction_name: str, count: int) -> str:
@@ -64,25 +69,28 @@ def activate_queue(appointment_id: str, student_id: str):
     tt = appt["transaction_types"]
     processing_steps = tt["processing_steps"] or []
 
-    # Generate queue number — count only today's tickets to keep numbers small and daily-reset
-    today_str = str(date.today())
-    count_res = admin.table("queue_tickets") \
-        .select("id", count="exact") \
-        .gte("created_at", today_str) \
-        .execute()
-    daily_count = count_res.count if count_res.count is not None else len(count_res.data)
-    queue_number = generate_queue_number(tt["name"], daily_count + 1)
+    # Generate queue number atomically: hold the lock across the count read + insert
+    # so two concurrent activations can't race to the same daily_count value.
+    with _queue_number_lock:
+        today_str = str(date.today())
+        count_res = admin.table("queue_tickets") \
+            .select("id", count="exact") \
+            .gte("created_at", today_str) \
+            .execute()
+        daily_count = count_res.count if count_res.count is not None else len(count_res.data)
+        queue_number = generate_queue_number(tt["name"], daily_count + 1)
 
-    # Create queue ticket
-    ticket_res = admin.table("queue_tickets").insert({
-        "appointment_id": appointment_id,
-        "student_id": student_id,
-        "queue_number": queue_number,
-        "current_step": 1,
-        "total_steps": len(processing_steps),
-        "status": "in_progress"
-    }).execute()
-    ticket = ticket_res.data[0]
+        # Create queue ticket inside the lock so no other request can sneak in
+        # between the count read above and this insert.
+        ticket_res = admin.table("queue_tickets").insert({
+            "appointment_id": appointment_id,
+            "student_id": student_id,
+            "queue_number": queue_number,
+            "current_step": 1,
+            "total_steps": len(processing_steps),
+            "status": "in_progress"
+        }).execute()
+        ticket = ticket_res.data[0]
 
     # Create transaction steps
     steps_to_insert = []
@@ -307,22 +315,21 @@ def get_time_estimate(appointment_id: str, student_id: str):
     tx_type_id = appt["transaction_type_id"]
     total_steps = appt["transaction_types"]["total_steps"]
 
-    # Pull historical confirmed steps for this transaction type by joining through queue_tickets
-    # transaction_steps does not have a direct transaction_type_id column, so we
-    # first get all queue_ticket_ids for this transaction type, then fetch their steps.
+    # Pull historical confirmed steps for this transaction type.
+    # Use a server-side embedded filter (appointments.transaction_type_id=eq.<id>)
+    # so PostgREST only returns tickets for this type — avoids the 1000-row cap
+    # that would silently truncate a fetch-all-then-filter approach.
     ticket_ids_res = admin.table("queue_tickets") \
-        .select("id, appointments(transaction_type_id)") \
-        .not_.is_("appointments", "null") \
+        .select("id") \
+        .eq("appointments.transaction_type_id", tx_type_id) \
+        .not_.is_("appointment_id", "null") \
         .execute()
 
-    matching_ticket_ids = [
-        row["id"] for row in (ticket_ids_res.data or [])
-        if row.get("appointments") and row["appointments"].get("transaction_type_id") == tx_type_id
-    ]
+    matching_ticket_ids = [row["id"] for row in (ticket_ids_res.data or [])]
 
     history_data = []
     if matching_ticket_ids:
-        # Fetch in batches to avoid URL length limits
+        # Fetch steps in batches to stay within PostgREST URL length limits
         batch_size = 100
         for i in range(0, len(matching_ticket_ids), batch_size):
             batch = matching_ticket_ids[i:i + batch_size]

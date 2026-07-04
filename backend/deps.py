@@ -6,6 +6,8 @@ each file reimplementing (and potentially drifting from) its own copy.
 """
 from functools import lru_cache
 
+from typing import Optional
+
 from fastapi import Header, HTTPException, Depends
 from supabase import create_client, Client
 
@@ -33,11 +35,13 @@ def get_supabase_admin() -> Client:
 
 # ── Auth dependencies ────────────────────────────────────────────────────────
 
-def get_current_user(authorization: str = Header(...)):
+def get_current_user(authorization: Optional[str] = Header(None)):
     """Extract and verify the authenticated user from the Bearer token."""
+    if not authorization:
+        raise HTTPException(status_code=401, detail="Missing authorization header")
     if not authorization.startswith("Bearer "):
         raise HTTPException(status_code=401, detail="Invalid authorization header")
-    token = authorization.replace("Bearer ", "")
+    token = authorization.replace("Bearer ", "", 1)
     try:
         supabase = get_supabase_anon()
         user = supabase.auth.get_user(token)
