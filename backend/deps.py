@@ -39,9 +39,12 @@ def get_current_user(authorization: Optional[str] = Header(None)):
     """Extract and verify the authenticated user from the Bearer token."""
     if not authorization:
         raise HTTPException(status_code=401, detail="Missing authorization header")
-    if not authorization.startswith("Bearer "):
+    # Split on any whitespace (handles extra spaces and case variants like 'bearer').
+    # RFC 7235 defines auth-scheme as case-insensitive.
+    parts = authorization.split(None, 1)
+    if len(parts) != 2 or parts[0].lower() != "bearer":
         raise HTTPException(status_code=401, detail="Invalid authorization header")
-    token = authorization.replace("Bearer ", "", 1)
+    token = parts[1].strip()
     try:
         supabase = get_supabase_anon()
         user = supabase.auth.get_user(token)

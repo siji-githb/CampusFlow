@@ -51,7 +51,7 @@ export default function NotificationDropdown({ isMobile = false, mobileRoute }) 
 
   useEffect(() => {
     const handleClickOutside = (event) => {
-      const isOutsideDropdown = dropdownRef.current && !dropdownRef.current.contains(event.target);
+      const isOutsideDropdown = !dropdownRef.current || !dropdownRef.current.contains(event.target);
       const isOutsideTrigger = triggerRef.current && !triggerRef.current.contains(event.target);
       if (isOutsideDropdown && isOutsideTrigger) {
         setIsOpen(false);

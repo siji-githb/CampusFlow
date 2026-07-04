@@ -69,28 +69,46 @@ def activate_queue(appointment_id: str, student_id: str):
     tt = appt["transaction_types"]
     processing_steps = tt["processing_steps"] or []
 
-    # Generate queue number atomically: hold the lock across the count read + insert
-    # so two concurrent activations can't race to the same daily_count value.
+    # Queue number assignment strategy:
+    #   1. _queue_number_lock guards concurrent requests within a single process.
+    #   2. The retry loop handles races between different processes/replicas.
+    #   3. For guarantee-level safety, a unique constraint on (queue_number, date(created_at))
+    #      should be defined on the queue_tickets table in the database.
+    _MAX_QNUM_RETRIES = 5
+    ticket = None
     with _queue_number_lock:
         today_str = str(date.today())
-        count_res = admin.table("queue_tickets") \
-            .select("id", count="exact") \
-            .gte("created_at", today_str) \
-            .execute()
-        daily_count = count_res.count if count_res.count is not None else len(count_res.data)
-        queue_number = generate_queue_number(tt["name"], daily_count + 1)
+        for attempt in range(_MAX_QNUM_RETRIES):
+            # Re-read the live daily count on every attempt so a retried insert
+            # uses the accurate post-collision count rather than a stale value.
+            count_res = admin.table("queue_tickets") \
+                .select("id", count="exact") \
+                .gte("created_at", today_str) \
+                .execute()
+            daily_count = count_res.count if count_res.count is not None else len(count_res.data)
+            queue_number = generate_queue_number(tt["name"], daily_count + 1)
 
-        # Create queue ticket inside the lock so no other request can sneak in
-        # between the count read above and this insert.
-        ticket_res = admin.table("queue_tickets").insert({
-            "appointment_id": appointment_id,
-            "student_id": student_id,
-            "queue_number": queue_number,
-            "current_step": 1,
-            "total_steps": len(processing_steps),
-            "status": "in_progress"
-        }).execute()
-        ticket = ticket_res.data[0]
+            try:
+                ticket_res = admin.table("queue_tickets").insert({
+                    "appointment_id": appointment_id,
+                    "student_id": student_id,
+                    "queue_number": queue_number,
+                    "current_step": 1,
+                    "total_steps": len(processing_steps),
+                    "status": "in_progress"
+                }).execute()
+                ticket = ticket_res.data[0]
+                break  # success — exit retry loop
+            except Exception as e:
+                err = str(e).lower()
+                # Only retry on duplicate-key / unique-constraint violations.
+                if attempt < _MAX_QNUM_RETRIES - 1 and ("duplicate" in err or "unique" in err or "23505" in err):
+                    continue
+                raise HTTPException(
+                    status_code=409 if ("duplicate" in err or "unique" in err or "23505" in err) else 500,
+                    detail="Could not assign a unique queue number. Please try again." if "duplicate" in err or "unique" in err else str(e)
+                )
+
 
     # Create transaction steps
     steps_to_insert = []
@@ -315,12 +333,8 @@ def get_time_estimate(appointment_id: str, student_id: str):
     tx_type_id = appt["transaction_type_id"]
     total_steps = appt["transaction_types"]["total_steps"]
 
-    # Pull historical confirmed steps for this transaction type.
-    # Use a server-side embedded filter (appointments.transaction_type_id=eq.<id>)
-    # so PostgREST only returns tickets for this type — avoids the 1000-row cap
-    # that would silently truncate a fetch-all-then-filter approach.
     ticket_ids_res = admin.table("queue_tickets") \
-        .select("id") \
+        .select("id, appointments!inner(transaction_type_id)") \
         .eq("appointments.transaction_type_id", tx_type_id) \
         .not_.is_("appointment_id", "null") \
         .execute()
@@ -427,4 +441,4 @@ def get_live_queue_stats():
     except Exception as e:
         import traceback
         traceback.print_exc()
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e))
