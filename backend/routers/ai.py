@@ -1,8 +1,9 @@
-from fastapi import APIRouter, Header, HTTPException
+from fastapi import APIRouter, Depends, Request
 from pydantic import BaseModel
 from services.ai_service import chat, clear_session, get_or_create_session
-from supabase import create_client
 from config import get_settings
+from deps import get_current_user
+from rate_limit import limiter
 
 settings = get_settings()
 router = APIRouter(prefix="/ai", tags=["AI Assistant"])
@@ -12,38 +13,20 @@ class ChatRequest(BaseModel):
     message: str
 
 
-def get_current_user(authorization: str):
-    if not authorization.startswith("Bearer "):
-        raise HTTPException(status_code=401, detail="Invalid authorization header")
-    token = authorization.replace("Bearer ", "")
-    try:
-        supabase = create_client(settings.supabase_url, settings.supabase_anon_key)
-        user = supabase.auth.get_user(token)
-        if not user or not user.user:
-            raise HTTPException(status_code=401, detail="Invalid or expired token")
-        return user.user
-    except HTTPException:
-        raise
-    except Exception:
-        raise HTTPException(status_code=401, detail="Invalid or expired token")
-
-
 @router.post("/chat")
-def chat_endpoint(data: ChatRequest, authorization: str = Header(...)):
-    user = get_current_user(authorization)
+@limiter.limit("15/minute")
+def chat_endpoint(request: Request, data: ChatRequest, user=Depends(get_current_user)):
     return chat(user.id, data.message)
 
 
 @router.get("/history")
-def get_history(authorization: str = Header(...)):
-    user = get_current_user(authorization)
+def get_history(user=Depends(get_current_user)):
     session = get_or_create_session(user.id)
     return {"messages": session.get("messages", [])}
 
 
 @router.delete("/chat/clear")
-def clear_chat(authorization: str = Header(...)):
-    user = get_current_user(authorization)
+def clear_chat(user=Depends(get_current_user)):
     return clear_session(user.id)
 
 

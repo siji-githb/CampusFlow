@@ -22,6 +22,15 @@ export default function NotificationDropdown({ isMobile = false, mobileRoute }) 
   const [notifications, setNotifications] = useState([]);
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef(null);
+  
+  const [windowWidth, setWindowWidth] = useState(() => window.innerWidth);
+  useEffect(() => {
+    const handleResize = () => setWindowWidth(window.innerWidth);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+  
+  const effectiveIsMobile = isMobile || windowWidth < 768;
 
   const fetchNotifications = async () => {
     if (!token) return;
@@ -81,16 +90,16 @@ export default function NotificationDropdown({ isMobile = false, mobileRoute }) 
   return (
     <div ref={dropdownRef} className="relative">
       <button
-        style={!isMobile ? {
+        style={!effectiveIsMobile ? {
           background: 'transparent', border: 'none', cursor: 'pointer',
           color: M.textSub, display: 'flex', alignItems: 'center', justifyContent: 'center',
           padding: '4px', transition: 'color 0.2s', position: 'relative'
         } : undefined}
-        className={isMobile ? "bg-transparent border-none text-white cursor-pointer hover:text-gold transition-colors p-1 flex items-center justify-center relative" : ""}
-        onMouseEnter={!isMobile ? e => e.currentTarget.style.color = M.maroon : undefined}
-        onMouseLeave={!isMobile ? e => e.currentTarget.style.color = M.textSub : undefined}
+        className={effectiveIsMobile ? "bg-transparent border-none text-white cursor-pointer hover:text-gold transition-colors p-1 flex items-center justify-center relative" : ""}
+        onMouseEnter={!effectiveIsMobile ? e => e.currentTarget.style.color = M.maroon : undefined}
+        onMouseLeave={!effectiveIsMobile ? e => e.currentTarget.style.color = M.textSub : undefined}
         onClick={() => {
-          if (isMobile && mobileRoute) {
+          if (effectiveIsMobile && mobileRoute) {
             navigate(mobileRoute);
           } else {
             setIsOpen(!isOpen);
@@ -110,8 +119,8 @@ export default function NotificationDropdown({ isMobile = false, mobileRoute }) 
       </button>
 
       {isOpen && (
-        isMobile ? createPortal(
-          <div className="fixed right-5 top-[80px] w-[85vw] max-w-[320px] bg-white rounded-xl shadow-[0_10px_40px_rgba(0,0,0,0.2)] border border-border overflow-hidden z-[9999] animate-fade-up" ref={dropdownRef}>
+        effectiveIsMobile ? createPortal(
+          <div className="fixed left-1/2 -translate-x-1/2 top-[80px] w-[90vw] max-w-[320px] bg-white rounded-xl shadow-[0_10px_40px_rgba(0,0,0,0.2)] border border-border overflow-hidden animate-fade-up" style={{ zIndex: 9999 }} ref={dropdownRef}>
             <div className="flex items-center justify-between p-3 border-b border-border bg-off-white">
               <h3 className="m-0 text-[14px] font-semibold text-text-main font-sans">Notifications</h3>
               {unreadCount > 0 && (
@@ -167,7 +176,7 @@ export default function NotificationDropdown({ isMobile = false, mobileRoute }) 
           </div>,
           document.body
         ) : (
-          <div className="absolute right-0 top-full mt-3 bg-white rounded-xl shadow-[0_10px_30px_rgba(0,0,0,0.1)] border border-border w-[320px] overflow-hidden z-50 animate-fade-up">
+          <div className="absolute right-0 top-[35px] w-[320px] bg-white rounded-xl shadow-[0_10px_40px_rgba(0,0,0,0.15)] border border-border overflow-hidden animate-fade-up z-50">
             <div className="flex items-center justify-between p-3 border-b border-border bg-off-white">
               <h3 className="m-0 text-[14px] font-semibold text-text-main font-sans">Notifications</h3>
               {unreadCount > 0 && (

@@ -1,16 +1,16 @@
 from fastapi import HTTPException
 from config import get_settings
-from supabase import create_client
 from models.appointment_models import AppointmentCreate
 from datetime import date, datetime, timedelta
 from services.admin_service import log_audit_action
 from services.notification_service import create_system_notification
+from deps import get_supabase_admin as get_admin
 
 settings = get_settings()
 
-
-def get_admin():
-    return create_client(settings.supabase_url, settings.supabase_service_key)
+# Sentinel so the global auto-cancel only fires once per calendar day,
+# not on every API request (which would add a write to every GET call).
+_last_global_cleanup_date: str = ""
 
 
 def get_transaction_types():
@@ -275,16 +275,19 @@ def cancel_appointment(appointment_id: str, student_id: str):
 
 
 def get_all_appointments(date_str: str = None):
+    global _last_global_cleanup_date
     admin = get_admin()
-    
-    # Auto-cancel all past appointments globally
+
+    # Auto-cancel all past appointments globally — runs at most once per calendar day
     try:
         today_str = str(date.today())
-        admin.table("appointments") \
-            .update({"status": "cancelled"}) \
-            .in_("status", ["pending", "confirmed"]) \
-            .lt("appointment_date", today_str) \
-            .execute()
+        if _last_global_cleanup_date != today_str:
+            admin.table("appointments") \
+                .update({"status": "cancelled"}) \
+                .in_("status", ["pending", "confirmed"]) \
+                .lt("appointment_date", today_str) \
+                .execute()
+            _last_global_cleanup_date = today_str
     except Exception:
         pass
 

@@ -1,14 +1,10 @@
 import io
 import openpyxl
 from fastapi import HTTPException, UploadFile
-from supabase import Client
 from config import get_settings
+from deps import get_supabase_admin
 
 settings = get_settings()
-
-def get_supabase_admin() -> Client:
-    from supabase import create_client
-    return create_client(settings.supabase_url, settings.supabase_service_key)
 
 async def upload_student_records(file: UploadFile) -> dict:
     if not file.filename.endswith('.xlsx'):

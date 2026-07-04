@@ -1,15 +1,11 @@
 from fastapi import HTTPException
-from supabase import create_client
 from config import get_settings
 from datetime import date, datetime, timezone
 from services.admin_service import log_audit_action
 from services.notification_service import create_system_notification
+from deps import get_supabase_admin as get_admin
 
 settings = get_settings()
-
-
-def get_admin():
-    return create_client(settings.supabase_url, settings.supabase_service_key)
 
 
 def generate_queue_number(transaction_name: str, count: int) -> str:
@@ -68,10 +64,14 @@ def activate_queue(appointment_id: str, student_id: str):
     tt = appt["transaction_types"]
     processing_steps = tt["processing_steps"] or []
 
+    # Generate queue number — count only today's tickets to keep numbers small and daily-reset
+    today_str = str(date.today())
     count_res = admin.table("queue_tickets") \
-        .select("id") \
+        .select("id", count="exact") \
+        .gte("created_at", today_str) \
         .execute()
-    queue_number = generate_queue_number(tt["name"], len(count_res.data) + 1)
+    daily_count = count_res.count if count_res.count is not None else len(count_res.data)
+    queue_number = generate_queue_number(tt["name"], daily_count + 1)
 
     # Create queue ticket
     ticket_res = admin.table("queue_tickets").insert({
@@ -260,25 +260,19 @@ def get_todays_queue(date_filter: str = None):
     admin = get_admin()
     today = date_filter or str(date.today())
     try:
+        # Use an inner join to filter by today's appointment date and fetch steps all at once
         tickets_res = admin.table("queue_tickets") \
-            .select("*, appointments(appointment_date, time_slot, transaction_types(name)), users(first_name, last_name, student_id)") \
+            .select("*, appointments!inner(appointment_date, time_slot, transaction_types(name)), users(first_name, last_name, student_id), transaction_steps(*)") \
+            .eq("appointments.appointment_date", today) \
             .order("created_at") \
             .execute()
 
-        # Filter by today's appointments
-        filtered = [
-            t for t in tickets_res.data
-            if t.get("appointments") and t["appointments"].get("appointment_date") == today
-        ]
-
         result = []
-        for ticket in filtered:
-            steps_res = admin.table("transaction_steps") \
-                .select("*") \
-                .eq("queue_ticket_id", ticket["id"]) \
-                .order("step_number") \
-                .execute()
-            result.append({"ticket": ticket, "steps": steps_res.data})
+        for ticket in tickets_res.data:
+            steps = ticket.pop("transaction_steps", [])
+            # Sort steps locally by step_number
+            steps = sorted(steps, key=lambda x: x.get("step_number", 0))
+            result.append({"ticket": ticket, "steps": steps})
 
         return result
     except Exception as e:
@@ -313,18 +307,37 @@ def get_time_estimate(appointment_id: str, student_id: str):
     tx_type_id = appt["transaction_type_id"]
     total_steps = appt["transaction_types"]["total_steps"]
 
-    # Pull historical confirmed steps for this transaction type
-    history = admin.table("transaction_steps") \
-        .select("step_number, created_at, confirmed_at") \
-        .eq("transaction_type_id", tx_type_id) \
-        .not_.is_("confirmed_at", "null") \
+    # Pull historical confirmed steps for this transaction type by joining through queue_tickets
+    # transaction_steps does not have a direct transaction_type_id column, so we
+    # first get all queue_ticket_ids for this transaction type, then fetch their steps.
+    ticket_ids_res = admin.table("queue_tickets") \
+        .select("id, appointments(transaction_type_id)") \
+        .not_.is_("appointments", "null") \
         .execute()
+
+    matching_ticket_ids = [
+        row["id"] for row in (ticket_ids_res.data or [])
+        if row.get("appointments") and row["appointments"].get("transaction_type_id") == tx_type_id
+    ]
+
+    history_data = []
+    if matching_ticket_ids:
+        # Fetch in batches to avoid URL length limits
+        batch_size = 100
+        for i in range(0, len(matching_ticket_ids), batch_size):
+            batch = matching_ticket_ids[i:i + batch_size]
+            res = admin.table("transaction_steps") \
+                .select("step_number, created_at, confirmed_at") \
+                .in_("queue_ticket_id", batch) \
+                .not_.is_("confirmed_at", "null") \
+                .execute()
+            history_data.extend(res.data or [])
 
     from collections import defaultdict
     from datetime import datetime
 
     durations_by_step = defaultdict(list)
-    for row in (history.data or []):
+    for row in history_data:
         try:
             start = datetime.fromisoformat(row["created_at"])
             end   = datetime.fromisoformat(row["confirmed_at"])

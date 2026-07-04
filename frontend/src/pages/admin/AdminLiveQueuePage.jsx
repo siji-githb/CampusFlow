@@ -61,7 +61,7 @@ export default function AdminLiveQueuePage() {
 
   useEffect(() => {
     fetchQueue()
-    const t = setInterval(fetchQueue, 30000)
+    const t = setInterval(fetchQueue, 5000)
     return () => clearInterval(t)
   }, [fetchQueue])
 

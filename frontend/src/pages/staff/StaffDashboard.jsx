@@ -153,6 +153,7 @@ export default function StaffDashboard() {
   const [myWindow, setMyWindow] = useState(null)
   const [windowError, setWindowError] = useState('')
   const [claimingWindow, setClaimingWindow] = useState(null)
+  const [isLoadingWindow, setIsLoadingWindow] = useState(true)
 
   const loadWindowData = async () => {
     try {
@@ -164,6 +165,8 @@ export default function StaffDashboard() {
     } catch (e) { 
       console.error('Window fetch error', e) 
       setWindowError('Fetch Error: ' + e.message)
+    } finally {
+      setIsLoadingWindow(false)
     }
   }
 
@@ -178,9 +181,16 @@ export default function StaffDashboard() {
 
   const handleReleaseWindow = async () => {
     try {
+      setIsLoadingWindow(true)
+      setMyWindow(null)
       await releaseWindow(token)
       await loadWindowData()
-    } catch (e) { setWindowError(e.message) }
+    } catch (e) { 
+      console.error(e)
+      setWindowError(e.message) 
+    } finally {
+      setIsLoadingWindow(false)
+    }
   }
 
   const loadData = useCallback(async () => {
@@ -199,8 +209,8 @@ export default function StaffDashboard() {
   useEffect(() => {
     loadData()
     loadWindowData()
-    const t = setInterval(loadData, 30000)
-    const wt = setInterval(loadWindowData, 20000)
+    const t = setInterval(loadData, 5000)
+    const wt = setInterval(loadWindowData, 10000)
     return () => { clearInterval(t); clearInterval(wt) }
   }, [loadData])
 
@@ -302,7 +312,12 @@ export default function StaffDashboard() {
                   Window {myWindow}
                 </span>
                 <button
-                  onClick={handleReleaseWindow}
+                  type="button"
+                  onClick={(e) => {
+                    e.preventDefault()
+                    e.stopPropagation()
+                    handleReleaseWindow()
+                  }}
                   title="Release window"
                   className="bg-transparent border-none cursor-pointer text-success flex items-center pl-1 opacity-60 hover:opacity-100 transition-opacity"
                 >
@@ -330,11 +345,19 @@ export default function StaffDashboard() {
                   <div className="text-[13px] font-semibold text-text-main mb-1">{user?.first_name} {user?.last_name}</div>
                   <div className="text-[11px] text-text-muted mb-3 break-all">{user?.email}</div>
                   <div className="h-px bg-border mb-2.5" />
-                  <button onClick={async () => {
-                    if (myWindow) {
-                      try { await releaseWindow(token) } catch (e) { console.error('Failed to release window on logout', e) }
+                  <button onClick={async (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    try {
+                      if (myWindow) {
+                        await releaseWindow(token);
+                      }
+                    } catch (err) {
+                      console.error('Failed to release window on logout', err);
+                    } finally {
+                      logout();
+                      navigate('/login', { replace: true });
                     }
-                    logout(); navigate('/login')
                   }} className="w-full px-3 py-[9px] rounded-lg border-none bg-danger-light text-danger text-[13px] font-semibold cursor-pointer flex items-center gap-2 font-sans hover:bg-[#FCA5A5] transition-colors">
                     <span className="flex items-center"><LogOut size={16} /></span> Log Out
                   </button>
@@ -350,7 +373,10 @@ export default function StaffDashboard() {
           {/* ──── WINDOW GATE OVERLAY ──── */}
           {!myWindow && (
             <div className="absolute inset-0 z-30 bg-surface/85 backdrop-blur-md flex items-center justify-center p-7">
-              <div className="bg-white rounded-[24px] px-10 pt-10 pb-9 border-[1.5px] border-gold-border shadow-[0_8px_40px_rgba(0,0,0,0.1)] w-full max-w-[560px] text-center">
+              {isLoadingWindow ? (
+                <div className="w-12 h-12 border-4 border-maroon border-t-transparent rounded-full animate-spin"></div>
+              ) : (
+                <div className="bg-white rounded-[24px] px-10 pt-10 pb-9 border-[1.5px] border-gold-border shadow-[0_8px_40px_rgba(0,0,0,0.1)] w-full max-w-[560px] text-center">
                 <div className="w-16 h-16 rounded-full bg-gold-light border-2 border-gold-border flex items-center justify-center mx-auto mb-5">
                   <Monitor size={28} className="text-gold" />
                 </div>
@@ -391,6 +417,7 @@ export default function StaffDashboard() {
                   })}
                 </div>
               </div>
+              )}
             </div>
           )}
 

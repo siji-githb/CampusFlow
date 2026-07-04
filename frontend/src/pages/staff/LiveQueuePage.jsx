@@ -79,7 +79,7 @@ const FilterSidebar = ({ filters, onChange, highPriorityCount, onReset }) => {
                   className="accent-maroon w-3.5 h-3.5"
                 />
                 <span className="flex-1">{cfg.label}</span>
-                <span className={`text-[10px] font-semibold px-1.5 py-[1px] rounded-full border flex items-center ${cfg.bg} ${cfg.color} ${cfg.border}`}>
+                <span className={`text-[10px] font-semibold px-1.5 py-px rounded-full border flex items-center ${cfg.bg} ${cfg.color} ${cfg.border}`}>
                   {s === 'in_progress' ? <Play size={10} fill="currentColor" /> : s === 'pending' ? <Clock size={10} /> : s === 'completed' ? <Check size={10} /> : <X size={10} />}
                 </span>
               </label>
@@ -103,7 +103,7 @@ const FilterSidebar = ({ filters, onChange, highPriorityCount, onReset }) => {
                   className="accent-maroon w-3.5 h-3.5" />
                 <span className="flex-1">{lbl}</span>
                 {val === 'high' && highPriorityCount > 0 && (
-                  <span className={`text-[10px] font-bold px-1.5 py-[1px] rounded-full border ${badgeBg} ${badgeColor} ${badgeBorder}`}>
+                  <span className={`text-[10px] font-bold px-1.5 py-px rounded-full border ${badgeBg} ${badgeColor} ${badgeBorder}`}>
                     {highPriorityCount}
                   </span>
                 )}
@@ -152,8 +152,8 @@ const QueueDetailsModal = ({ ticketData, onClose, onConfirm, confirming, onSetRe
   const [savingDate, setSavingDate] = useState(false)
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center">
-      <div className="absolute inset-0 bg-black/50 backdrop-blur-[4px]" onClick={onClose} />
+    <div className="fixed inset-0 z-100 flex items-center justify-center">
+      <div className="absolute inset-0 bg-black/50 backdrop-blur-xs" onClick={onClose} />
       <div className="animate-fade-up relative w-full max-w-[680px] bg-white rounded-3xl p-7 max-h-[90vh] overflow-y-auto">
         
         {/* Header */}
@@ -291,7 +291,7 @@ export default function LiveQueuePage() {
 
   useEffect(() => {
     fetchQueue()
-    const t = setInterval(fetchQueue, 30000)
+    const t = setInterval(fetchQueue, 5000)
     return () => clearInterval(t)
   }, [fetchQueue])
 
@@ -363,7 +363,7 @@ export default function LiveQueuePage() {
       {/* ── Page Header ── */}
       <div className="flex items-start justify-between flex-wrap gap-3">
         <div>
-          <p className="text-[11px] font-bold text-gold tracking-[0.1em] uppercase m-0 mb-1">Real-Time</p>
+          <p className="text-[11px] font-bold text-gold tracking-widest uppercase m-0 mb-1">Real-Time</p>
           <h1 className="font-serif text-[24px] font-bold text-text-main m-0">Live Queue Management</h1>
         </div>
         <div className="flex items-center gap-2.5">

@@ -1,5 +1,4 @@
-from fastapi import APIRouter, Header, HTTPException, UploadFile, File
-import os
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
 import uuid
 from typing import Optional
 from models.appointment_models import AppointmentCreate
@@ -14,43 +13,28 @@ from services.appointment_service import (
     reschedule_appointment
 )
 from pydantic import BaseModel
+from deps import get_current_user, get_user_profile, get_supabase_admin, require_staff_or_admin
+from datetime import date
+
+router = APIRouter(prefix="/appointments", tags=["Appointments"])
+
 
 class RescheduleRequest(BaseModel):
     new_date: str
     new_time: str
     notes: Optional[str] = None
-from supabase import create_client
-from config import get_settings
-from datetime import date
-
-settings = get_settings()
-router = APIRouter(prefix="/appointments", tags=["Appointments"])
 
 
-def get_current_user(authorization: str = Header(...)):
-    """Extract and verify the student from the JWT token."""
-    if not authorization.startswith("Bearer "):
-        raise HTTPException(status_code=401, detail="Invalid authorization header")
-    token = authorization.replace("Bearer ", "")
-    try:
-        supabase = create_client(settings.supabase_url, settings.supabase_anon_key)
-        user = supabase.auth.get_user(token)
-        if not user or not user.user:
-            raise HTTPException(status_code=401, detail="Invalid or expired token")
-        return user.user
-    except HTTPException:
-        raise
-    except Exception:
-        raise HTTPException(status_code=401, detail="Invalid or expired token")
-
-
-def get_user_profile(user_id: str):
-    admin = create_client(settings.supabase_url, settings.supabase_service_key)
-    try:
-        res = admin.table("users").select("*").eq("id", user_id).single().execute()
-        return res.data
-    except Exception:
-        raise HTTPException(status_code=404, detail="User profile not found")
+# ── Upload constraints ───────────────────────────────────────────────────────
+MEDIA_BUCKET = "appointment-media"
+MAX_UPLOAD_SIZE = 5 * 1024 * 1024  # 5 MB
+# Map allowed extensions to their real file-signature (magic bytes) and MIME type,
+# so a file can't just be renamed to ".png" to slip past the extension check.
+ALLOWED_UPLOAD_TYPES = {
+    "png": {"signatures": [b"\x89PNG\r\n\x1a\n"], "content_type": "image/png"},
+    "jpg": {"signatures": [b"\xff\xd8\xff"], "content_type": "image/jpeg"},
+    "jpeg": {"signatures": [b"\xff\xd8\xff"], "content_type": "image/jpeg"},
+}
 
 
 @router.get("/transaction-types")
@@ -64,63 +48,70 @@ def available_slots(transaction_type_id: str, appointment_date: date):
 
 
 @router.post("/book")
-def book_appointment(data: AppointmentCreate, authorization: str = Header(...)):
-    user = get_current_user(authorization)
+def book_appointment(data: AppointmentCreate, user=Depends(get_current_user)):
     profile = get_user_profile(user.id)
     return create_appointment(user.id, profile["priority_class"], data)
 
 
 @router.get("/all")
-def all_appointments(date: str = None, authorization: str = Header(...)):
-    user = get_current_user(authorization)
-    profile = get_user_profile(user.id)
-    if profile["role"] not in ["staff", "admin"]:
-        raise HTTPException(status_code=403, detail="Staff only")
+def all_appointments(date: str = None, user=Depends(require_staff_or_admin)):
     return get_all_appointments(date)
 
 
 @router.get("/stats")
-def appointment_stats(authorization: str = Header(...)):
-    user = get_current_user(authorization)
-    profile = get_user_profile(user.id)
-    if profile["role"] not in ["staff", "admin"]:
-        raise HTTPException(status_code=403, detail="Staff only")
+def appointment_stats(user=Depends(require_staff_or_admin)):
     return get_appointment_stats()
 
 
 @router.patch("/{appointment_id}/reschedule")
-def reschedule(appointment_id: str, data: RescheduleRequest, authorization: str = Header(...)):
-    user = get_current_user(authorization)
+def reschedule(appointment_id: str, data: RescheduleRequest, user=Depends(get_current_user)):
     profile = get_user_profile(user.id)
     return reschedule_appointment(appointment_id, data.new_date, data.new_time, user.id, profile["role"], data.notes)
 
 
 @router.get("/my")
-def my_appointments(authorization: str = Header(...)):
-    user = get_current_user(authorization)
+def my_appointments(user=Depends(get_current_user)):
     return get_student_appointments(user.id)
 
 
 @router.patch("/{appointment_id}/cancel")
-def cancel(appointment_id: str, authorization: str = Header(...)):
-    user = get_current_user(authorization)
+def cancel(appointment_id: str, user=Depends(get_current_user)):
     return cancel_appointment(appointment_id, user.id)
 
 
 @router.post("/upload-media")
-async def upload_media(file: UploadFile = File(...), authorization: str = Header(...)):
-    user = get_current_user(authorization)
-    
-    # validate extension
-    ext = file.filename.split('.')[-1].lower()
-    if ext not in ['png', 'jpg', 'jpeg']:
+async def upload_media(file: UploadFile = File(...), user=Depends(get_current_user)):
+    # 1. Extension must be one we recognize at all
+    ext = file.filename.rsplit(".", 1)[-1].lower() if "." in file.filename else ""
+    if ext not in ALLOWED_UPLOAD_TYPES:
         raise HTTPException(status_code=400, detail="Only PNG or JPG files are allowed.")
-    
+
+    contents = await file.read()
+
+    # 2. Enforce a size limit so a single upload can't exhaust storage/bandwidth
+    if len(contents) > MAX_UPLOAD_SIZE:
+        raise HTTPException(status_code=400, detail="File exceeds the 5MB size limit.")
+    if len(contents) == 0:
+        raise HTTPException(status_code=400, detail="Uploaded file is empty.")
+
+    # 3. Verify the actual file content matches the claimed extension (magic-byte check),
+    #    so a renamed .exe/.html can't pass itself off as a .png
+    rule = ALLOWED_UPLOAD_TYPES[ext]
+    if not any(contents.startswith(sig) for sig in rule["signatures"]):
+        raise HTTPException(status_code=400, detail="File content does not match a valid PNG or JPG image.")
+
+    # 4. Store in Supabase Storage rather than local disk — local disk on Render is
+    #    ephemeral and will be wiped on every redeploy/restart.
     filename = f"{uuid.uuid4()}.{ext}"
-    os.makedirs("media", exist_ok=True)
-    filepath = os.path.join("media", filename)
-    
-    with open(filepath, "wb") as f:
-        f.write(await file.read())
-        
-    return {"url": f"/media/{filename}"}
+    admin = get_supabase_admin()
+    try:
+        admin.storage.from_(MEDIA_BUCKET).upload(
+            filename,
+            contents,
+            {"content-type": rule["content_type"]},
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Upload failed: {str(e)}")
+
+    public_url = admin.storage.from_(MEDIA_BUCKET).get_public_url(filename)
+    return {"url": public_url}

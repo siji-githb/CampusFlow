@@ -104,6 +104,8 @@ export default function AppointmentsPage() {
 
   useEffect(() => {
     loadAppointments()
+    const t = setInterval(loadAppointments, 5000)
+    return () => clearInterval(t)
   }, [loadAppointments])
 
   const renderStep = (stepStr, idx) => {
@@ -133,7 +135,7 @@ export default function AppointmentsPage() {
       <div className="grid grid-cols-3 gap-5 mb-8">
         {stats.map((s, i) => (
           <div key={i} className="animate-fade-up bg-white rounded-2xl p-5 border border-border shadow-[0_4px_12px_rgba(0,0,0,0.02)] flex flex-col relative" style={{ animationDelay: s.delay }}>
-            <div className="text-[10px] font-bold text-text-muted tracking-[0.1em] uppercase mb-2">
+            <div className="text-[10px] font-bold text-text-muted tracking-widest uppercase mb-2">
               {s.label}
             </div>
             <div className="flex items-baseline gap-2 min-h-[32px]">
@@ -186,7 +188,7 @@ export default function AppointmentsPage() {
           </div>
 
           <div className="bg-white rounded-2xl p-6 border border-border shadow-[0_4px_12px_rgba(0,0,0,0.02)]">
-            <div className="text-[10px] font-bold text-text-muted tracking-[0.1em] uppercase mb-4">
+            <div className="text-[10px] font-bold text-text-muted tracking-widest uppercase mb-4">
               Daily Filter
             </div>
             <label className="flex items-center justify-between cursor-pointer">
@@ -274,7 +276,7 @@ export default function AppointmentsPage() {
                 </div>
 
                 <div className="my-5">
-                  <div className="text-[10px] font-bold text-text-muted tracking-[0.1em] uppercase mb-2.5">
+                  <div className="text-[10px] font-bold text-text-muted tracking-widest uppercase mb-2.5">
                     Processing Steps
                   </div>
                   <div className="flex gap-2 overflow-x-auto pb-1">
@@ -331,8 +333,8 @@ export default function AppointmentsPage() {
         const sBorder = viewDetailsModal.status === 'completed' ? 'border-success-border' : viewDetailsModal.status === 'cancelled' ? 'border-danger-border' : viewDetailsModal.status === 'pending' ? 'border-gold-border' : 'border-blue-border'
 
         return (
-          <div className="fixed inset-0 z-[1000] flex items-center justify-center">
-            <div className="absolute inset-0 bg-black/50 backdrop-blur-[4px]" onClick={() => setViewDetailsModal(null)} />
+          <div className="fixed inset-0 z-1000 flex items-center justify-center">
+            <div className="absolute inset-0 bg-black/50 backdrop-blur-xs" onClick={() => setViewDetailsModal(null)} />
             <div className="animate-fade-up relative bg-white rounded-[24px] w-[480px] max-w-[90%] max-h-[90vh] overflow-y-auto shadow-[0_20px_40px_rgba(0,0,0,0.2)]">
               
               {/* Header */}
@@ -416,7 +418,7 @@ export default function AppointmentsPage() {
       })()}
 
       {rescheduleModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[1000] backdrop-blur-[4px]">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-1000 backdrop-blur-xs">
           <div className="bg-white p-8 rounded-2xl w-[400px] max-w-[90%] font-sans shadow-xl animate-fade-up">
             <h2 className="m-0 mb-4 text-maroon font-serif text-[22px] font-bold">Reschedule Appointment</h2>
             <div className="mb-4">

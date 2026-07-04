@@ -1,12 +1,9 @@
 import logging
-from supabase import create_client
 from config import get_settings
+from deps import get_supabase_admin as get_admin_client
 
 settings = get_settings()
 logger = logging.getLogger(__name__)
-
-def get_admin_client():
-    return create_client(settings.supabase_url, settings.supabase_service_key)
 
 def create_system_notification(user_id: str, title: str, message: str, type: str = "info"):
     """

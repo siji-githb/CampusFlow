@@ -1,17 +1,13 @@
 from openai import OpenAI
 from fastapi import HTTPException
-from supabase import create_client
 from config import get_settings
 from datetime import date
 import json
 import re
 from services.notification_service import notify_staff_urgent_message
+from deps import get_supabase_admin as get_admin
 
 settings = get_settings()
-
-
-def get_admin():
-    return create_client(settings.supabase_url, settings.supabase_service_key)
 
 
 def get_openai_client():

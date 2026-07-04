@@ -1,21 +1,13 @@
-from supabase import create_client, Client
 from config import get_settings
 from models.auth_models import RegisterRequest, LoginRequest, UserResponse
 from fastapi import HTTPException
+from deps import get_supabase_anon, get_supabase_admin
 
 settings = get_settings()
 
 
-def get_supabase() -> Client:
-    return create_client(settings.supabase_url, settings.supabase_anon_key)
-
-
-def get_supabase_admin() -> Client:
-    return create_client(settings.supabase_url, settings.supabase_service_key)
-
-
 async def register_user(data: RegisterRequest) -> dict:
-    supabase = get_supabase()
+    supabase = get_supabase_anon()
     admin = get_supabase_admin()
 
     # Step 1: Create auth user in Supabase Auth
@@ -57,7 +49,7 @@ async def register_user(data: RegisterRequest) -> dict:
 
 
 async def login_user(data: LoginRequest) -> dict:
-    supabase = get_supabase()
+    supabase = get_supabase_anon()
     admin = get_supabase_admin()
 
     # Step 1: Sign in with Supabase Auth
@@ -82,6 +74,10 @@ async def login_user(data: LoginRequest) -> dict:
     except Exception as e:
         raise HTTPException(status_code=404, detail="User profile not found")
 
+    # Step 3: Check account is not suspended
+    if not profile.get("is_active", True):
+        raise HTTPException(status_code=403, detail="Your account has been suspended. Please contact the Registrar's Office.")
+
     return {
         "access_token": access_token,
         "token_type": "bearer",
@@ -100,24 +96,32 @@ async def login_user(data: LoginRequest) -> dict:
 
 async def verify_student(student_id: str) -> dict:
     admin = get_supabase_admin()
-    
+
+    # Both failure paths below (already registered vs. not in school records) return the
+    # exact same status code and message on purpose. Distinguishing them lets someone
+    # enumerate which student IDs are valid/registered just by probing this endpoint.
+    generic_error = HTTPException(
+        status_code=400,
+        detail="This Student ID cannot be used for registration.",
+    )
+
     # 1. Check if the student_id is already in the 'users' table
     try:
         existing = admin.table("users").select("id").eq("student_id", student_id).execute()
         if existing.data:
-            raise HTTPException(status_code=400, detail="Student ID is already registered.")
-    except Exception as e:
-        if isinstance(e, HTTPException):
-            raise e
-        raise HTTPException(status_code=500, detail="Error checking registration status.")
-        
+            raise generic_error
+    except HTTPException:
+        raise
+    except Exception:
+        raise generic_error
+
     # 2. Check if the student_id exists in 'school_students' table
     try:
         record = admin.table("school_students").select("*").eq("student_id", student_id).single().execute()
         if not record.data:
-            raise HTTPException(status_code=404, detail="Student ID not found in school records.")
+            raise generic_error
         return record.data
-    except Exception as e:
-        if isinstance(e, HTTPException):
-            raise e
-        raise HTTPException(status_code=404, detail="Student ID not found in school records.")
+    except HTTPException:
+        raise
+    except Exception:
+        raise generic_error

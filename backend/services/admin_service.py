@@ -1,13 +1,11 @@
+import logging
 from fastapi import HTTPException
-from supabase import create_client
 from config import get_settings
 from datetime import date, timedelta
+from deps import get_supabase_admin as get_admin
 
 settings = get_settings()
-
-
-def get_admin():
-    return create_client(settings.supabase_url, settings.supabase_service_key)
+logger = logging.getLogger(__name__)
 
 
 def get_dashboard_stats():
@@ -186,7 +184,7 @@ def log_audit_action(user_id: str, action: str, table_name: str, record_id: str 
             "severity": severity
         }).execute()
     except Exception as e:
-        print(f"Failed to log audit action: {e}")
+        logger.error(f"Failed to log audit action: {e}")
 
 
 def get_office_config():
@@ -464,4 +462,4 @@ def release_window(user_id: str):
                 _save_assignments(admin, assignments)
         return {"message": "Window released."}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e))

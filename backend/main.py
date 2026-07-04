@@ -1,8 +1,10 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.staticfiles import StaticFiles
-import os
+from slowapi import _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
+from slowapi.middleware import SlowAPIMiddleware
 from routers import auth, appointments, queue, admin, ai, messages, school_records, notifications
+from rate_limit import limiter
 
 app = FastAPI(
     title="CampusFlow API",
@@ -10,11 +12,18 @@ app = FastAPI(
     version="1.0.0",
 )
 
+# Rate limiting — protects auth endpoints from brute force and /ai/chat from
+# being hammered (each call costs an OpenAI request).
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+app.add_middleware(SlowAPIMiddleware)
+
 # CORS — allows React frontend to talk to this API
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
         "http://localhost:5173",
+        "http://localhost:3000",
         "https://campus-flow.vercel.app",
         "https://campus-flow-iota.vercel.app"
     ],
@@ -22,10 +31,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-# Static Files
-os.makedirs("media", exist_ok=True)
-app.mount("/media", StaticFiles(directory="media"), name="media")
 
 # Routers
 app.include_router(auth.router)
