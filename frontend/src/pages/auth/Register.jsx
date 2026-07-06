@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { registerUser, verifyStudent } from '../../services/authService'
+import { requestStudentId } from '../../services/authService'
 import { Eye, EyeOff } from 'lucide-react'
 import crmcLogo from '../../assets/crmc-logo.webp'
 
@@ -27,6 +28,7 @@ export default function Register() {
   const [step, setStep] = useState(1)
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirm, setShowConfirm] = useState(false)
+  const [reqSuccess, setReqSuccess] = useState(false)
 
   const handleChange = (e) => { setForm({ ...form, [e.target.name]: e.target.value }); setError('') }
 
@@ -56,6 +58,21 @@ export default function Register() {
     try {
       await registerUser(form)
       navigate('/login', { state: { message: 'Account created! Please sign in.' } })
+    } catch (err) { setError(err.message) }
+    finally { setLoading(false) }
+  }
+  
+  const handleRequestId = async (e) => {
+    e.preventDefault(); setLoading(true); setError(''); setReqSuccess(false);
+    try {
+      const res = await requestStudentId({
+        first_name: form.first_name,
+        last_name: form.last_name,
+        email: form.email,
+        course: form.course
+      })
+      setReqSuccess(true)
+      setForm({ ...form, first_name: '', last_name: '', email: '', course: '' })
     } catch (err) { setError(err.message) }
     finally { setLoading(false) }
   }
@@ -109,6 +126,49 @@ export default function Register() {
                 <button type="submit" disabled={loading} className={`w-full min-h-[52px] py-3.5 px-6 rounded-[10px] border-none text-[15px] font-bold font-sans shadow-[0_4px_20px_rgba(123,26,42,0.25)] transition-colors duration-150 ${loading ? 'bg-[#B8667A] text-white cursor-not-allowed' : 'bg-maroon text-white cursor-pointer hover:bg-maroon-dark'}`}>
                   {loading ? <span className="spinner" /> : 'Verify ID →'}
                 </button>
+                <div className="mt-4 text-center">
+                  <button type="button" onClick={() => {setStep('request'); setError(''); setReqSuccess(false);}} className="bg-transparent border-none text-maroon text-[13px] cursor-pointer font-semibold underline">
+                    Forgot your Student ID? Request it here
+                  </button>
+                </div>
+              </form>
+            ) : step === 'request' ? (
+              <form onSubmit={handleRequestId}>
+                <div className="mb-6">
+                  <h2 className="text-[18px] font-bold text-text-main mb-2">Request Student ID</h2>
+                  <p className="text-[13px] text-text-sub">Enter your details so the registrar can find your ID and email it to you.</p>
+                </div>
+                
+                {reqSuccess && (
+                  <div className="py-3 px-3.5 rounded-[10px] bg-success-light border border-success-border text-success text-[13px] mb-4 flex gap-2 items-start">
+                    <span>✓</span> Your request has been sent to the registrar. They will email your Student ID shortly.
+                  </div>
+                )}
+
+                <div className="mb-3">
+                  <label className={lblClass}>First Name</label>
+                  <input type="text" name="first_name" value={form.first_name} onChange={handleChange} required placeholder="Juan" className={inpClass} />
+                </div>
+                <div className="mb-3">
+                  <label className={lblClass}>Last Name</label>
+                  <input type="text" name="last_name" value={form.last_name} onChange={handleChange} required placeholder="Dela Cruz" className={inpClass} />
+                </div>
+                <div className="mb-3">
+                  <label className={lblClass}>Course / Program</label>
+                  <input type="text" name="course" value={form.course} onChange={handleChange} required placeholder="BSIT, BSED, etc." className={inpClass} />
+                </div>
+                <div className="mb-5">
+                  <label className={lblClass}>Email Address</label>
+                  <input type="email" name="email" value={form.email} onChange={handleChange} required placeholder="example@gmail.com" className={inpClass} />
+                </div>
+                <button type="submit" disabled={loading} className={`w-full min-h-[52px] py-3.5 px-6 rounded-[10px] border-none text-[15px] font-bold font-sans shadow-[0_4px_20px_rgba(123,26,42,0.25)] transition-colors duration-150 ${loading ? 'bg-[#B8667A] text-white cursor-not-allowed' : 'bg-maroon text-white cursor-pointer hover:bg-maroon-dark'}`}>
+                  {loading ? <span className="spinner" /> : 'Submit Request →'}
+                </button>
+                <div className="mt-4 text-center">
+                  <button type="button" onClick={() => {setStep(1); setError('');}} className="bg-transparent border-none text-text-muted text-[13px] cursor-pointer hover:text-text-main">
+                    ← Back to Verification
+                  </button>
+                </div>
               </form>
             ) : (
               <form onSubmit={handleSubmit}>
@@ -123,7 +183,7 @@ export default function Register() {
 
                 <div className="mb-3">
                   <label className={lblClass}>Email Address</label>
-                  <input type="email" name="email" value={form.email} onChange={handleChange} required placeholder="you@email.com" className={inpClass} />
+                  <input type="email" name="email" value={form.email} onChange={handleChange} required placeholder="example@gmail.com" className={inpClass} />
                 </div>
 
                 <div className="mb-3">
@@ -202,6 +262,49 @@ export default function Register() {
                 <button type="submit" disabled={loading} className={`w-full py-3 rounded-lg border-none text-[14px] font-bold font-sans shadow-[0_3px_14px_rgba(123,26,42,0.2)] transition-colors duration-150 ${loading ? 'bg-[#B8667A] text-white cursor-not-allowed' : 'bg-maroon text-white cursor-pointer hover:bg-maroon-dark'}`}>
                   {loading ? <span className="spinner" /> : 'Verify ID →'}
                 </button>
+                <div className="mt-4 text-center">
+                  <button type="button" onClick={() => {setStep('request'); setError(''); setReqSuccess(false);}} className="bg-transparent border-none text-maroon text-[13px] cursor-pointer font-semibold underline">
+                    Forgot your Student ID? Request it here
+                  </button>
+                </div>
+              </form>
+            ) : step === 'request' ? (
+              <form onSubmit={handleRequestId}>
+                <div className="mb-6">
+                  <h2 className="text-[18px] font-bold text-text-main mb-2">Request Student ID</h2>
+                  <p className="text-[13px] text-text-sub">Enter your details so the registrar can find your ID and email it to you.</p>
+                </div>
+                
+                {reqSuccess && (
+                  <div className="py-3 px-3.5 rounded-[10px] bg-success-light border border-success-border text-success text-[13px] mb-4 flex gap-2 items-start">
+                    <span>✓</span> Your request has been sent to the registrar. They will email your Student ID shortly.
+                  </div>
+                )}
+
+                <div className="mb-3">
+                  <label className={lblClass}>First Name</label>
+                  <input type="text" name="first_name" value={form.first_name} onChange={handleChange} required placeholder="Juan" className={inpClass} />
+                </div>
+                <div className="mb-3">
+                  <label className={lblClass}>Last Name</label>
+                  <input type="text" name="last_name" value={form.last_name} onChange={handleChange} required placeholder="Dela Cruz" className={inpClass} />
+                </div>
+                <div className="mb-3">
+                  <label className={lblClass}>Course / Program</label>
+                  <input type="text" name="course" value={form.course} onChange={handleChange} required placeholder="BSIT, BSED, etc." className={inpClass} />
+                </div>
+                <div className="mb-5">
+                  <label className={lblClass}>Email Address</label>
+                  <input type="email" name="email" value={form.email} onChange={handleChange} required placeholder="example@gmail.com" className={inpClass} />
+                </div>
+                <button type="submit" disabled={loading} className={`w-full py-3 rounded-lg border-none text-[14px] font-bold font-sans shadow-[0_3px_14px_rgba(123,26,42,0.2)] transition-colors duration-150 ${loading ? 'bg-[#B8667A] text-white cursor-not-allowed' : 'bg-maroon text-white cursor-pointer hover:bg-maroon-dark'}`}>
+                  {loading ? <span className="spinner" /> : 'Submit Request →'}
+                </button>
+                <div className="mt-4 text-center">
+                  <button type="button" onClick={() => {setStep(1); setError('');}} className="bg-transparent border-none text-text-muted text-[13px] cursor-pointer hover:text-text-main">
+                    ← Back to Verification
+                  </button>
+                </div>
               </form>
             ) : (
               <form onSubmit={handleSubmit}>
@@ -216,7 +319,7 @@ export default function Register() {
 
                 <div className="mb-3">
                   <label className={lblClass}>Email Address</label>
-                  <input type="email" name="email" value={form.email} onChange={handleChange} required placeholder="you@email.com" className={inpClass} />
+                  <input type="email" name="email" value={form.email} onChange={handleChange} required placeholder="example@gmail.com" className={inpClass} />
                 </div>
 
                 <div className="mb-3">

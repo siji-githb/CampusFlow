@@ -6,11 +6,12 @@ import LiveQueuePage from './LiveQueuePage'
 import MessagesPage from './MessagesPage'
 import AppointmentsPage from './AppointmentsPage'
 import StudentRecordsPage from './StudentRecordsPage'
+import IdRequestsPage from './IdRequestsPage'
 import { getTodaysQueue } from '../../services/queueService'
 import NotificationDropdown from '../../components/NotificationDropdown'
 import { getMessages, markMessageRead } from '../../services/messagesService'
 import { getAppointmentStats } from '../../services/appointmentService'
-import { Inbox, MessageSquare, BarChart2, Ticket, Calendar, ClipboardList, LogOut, Users, CheckSquare, Clock, CalendarClock, Monitor, MonitorX } from 'lucide-react'
+import { Inbox, MessageSquare, BarChart2, Ticket, Calendar, ClipboardList, LogOut, Users, CheckSquare, Clock, CalendarClock, Monitor, MonitorX, HelpCircle } from 'lucide-react'
 import { getWindowAssignments, claimWindow, releaseWindow } from '../../services/adminService'
 
 // ── Compact Queue Preview (Overview panel) ─────────────────────────────────────
@@ -212,7 +213,7 @@ export default function StaffDashboard() {
     loadData()
     loadWindowData()
     const t = setInterval(loadData, 5000)
-    const wt = setInterval(loadWindowData, 10000)
+    const wt = setInterval(loadWindowData, 12000)
     return () => { clearInterval(t); clearInterval(wt) }
   }, [loadData])
 
@@ -255,6 +256,7 @@ export default function StaffDashboard() {
     { id: 'appointments', icon: <Calendar size={18} />, label: 'Appointments' },
     { id: 'records', icon: <ClipboardList size={18} />, label: 'Student Records' },
     { id: 'messages', icon: <MessageSquare size={18} />, label: 'Messages' },
+    { id: 'id-requests', icon: <HelpCircle size={18} />, label: 'Id Requests' },
   ]
 
   return (
@@ -491,6 +493,11 @@ export default function StaffDashboard() {
           {/* ──── STUDENT RECORDS VIEW ──── */}
           {activeNav === 'records' && (
             <StudentRecordsPage />
+          )}
+
+          {/* ──── ID REQUESTS VIEW ──── */}
+          {activeNav === 'id-requests' && (
+            <IdRequestsPage />
           )}
         </main>
       </div>

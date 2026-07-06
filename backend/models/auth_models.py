@@ -17,7 +17,32 @@ class LoginRequest(BaseModel):
     password: str
 
 
+class RefreshRequest(BaseModel):
+    refresh_token: str
+
+
+class ForgotPasswordRequest(BaseModel):
+    email: EmailStr
+
+
+class ResetPasswordRequest(BaseModel):
+    access_token: str
+    new_password: str
+
+
+class IdRequestCreate(BaseModel):
+    first_name: str
+    last_name: str
+    email: EmailStr
+    course: str
+
+
+class IdRequestUpdate(BaseModel):
+    status: str
+
+
 class UserResponse(BaseModel):
+
     id: str
     email: str
     first_name: str

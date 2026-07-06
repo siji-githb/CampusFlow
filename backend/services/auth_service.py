@@ -66,6 +66,7 @@ async def login_user(data: LoginRequest) -> dict:
 
     user_id = auth_response.user.id
     access_token = auth_response.session.access_token
+    refresh_token = auth_response.session.refresh_token
 
     # Step 2: Fetch profile from public.users
     try:
@@ -80,6 +81,7 @@ async def login_user(data: LoginRequest) -> dict:
 
     return {
         "access_token": access_token,
+        "refresh_token": refresh_token,
         "token_type": "bearer",
         "user": {
             "id": user_id,
@@ -93,6 +95,30 @@ async def login_user(data: LoginRequest) -> dict:
         }
 
     }
+
+async def refresh_session(refresh_token: str) -> dict:
+    """
+    Exchange a still-valid refresh_token for a fresh access_token, without
+    requiring the user to log in again. This is what lets long admin/staff
+    dashboard sessions (which poll continuously) survive past the access
+    token's ~1 hour expiry instead of hitting a dead-end 401.
+    """
+    supabase = get_supabase_anon()
+
+    try:
+        auth_response = supabase.auth.refresh_session(refresh_token)
+    except Exception:
+        raise HTTPException(status_code=401, detail="Session expired. Please log in again.")
+
+    if not auth_response or not auth_response.session:
+        raise HTTPException(status_code=401, detail="Session expired. Please log in again.")
+
+    return {
+        "access_token": auth_response.session.access_token,
+        "refresh_token": auth_response.session.refresh_token,
+        "token_type": "bearer",
+    }
+
 
 async def verify_student(student_id: str) -> dict:
     admin = get_supabase_admin()
@@ -125,3 +151,81 @@ async def verify_student(student_id: str) -> dict:
         raise
     except Exception:
         raise generic_error
+
+
+async def forgot_password(email: str) -> dict:
+    """
+    Triggers Supabase's built-in password reset flow.
+    Supabase sends an email with a magic link that includes a recovery token.
+    The redirect_to URL points the user back to the frontend's reset-password page.
+    """
+    supabase = get_supabase_anon()
+    try:
+        # Supabase handles the email sending; we just trigger it.
+        # The redirect URL tells Supabase where to send the user after they click the link.
+        supabase.auth.reset_password_for_email(email, {
+            "redirect_to": "http://localhost:5173/reset-password"
+        })
+    except Exception:
+        # Intentionally swallow errors: we don't want to reveal whether
+        # an email exists in the system (prevents account enumeration).
+        pass
+
+    # Always return success to prevent email enumeration
+    return {
+        "message": "If an account with that email exists, a password reset link has been sent."
+    }
+
+
+async def reset_password(access_token: str, new_password: str) -> dict:
+    """
+    Uses the recovery access token from the Supabase magic link to identify the user,
+    then updates their password via the admin SDK.
+    """
+    supabase = get_supabase_anon()
+
+    # Step 1: Verify the recovery token is valid and identify the user
+    try:
+        user_response = supabase.auth.get_user(access_token)
+        if not user_response or not user_response.user:
+            raise HTTPException(status_code=401, detail="Invalid or expired reset link. Please request a new one.")
+        user_id = user_response.user.id
+    except HTTPException:
+        raise
+    except Exception:
+        raise HTTPException(status_code=401, detail="Invalid or expired reset link. Please request a new one.")
+
+    # Step 2: Update password via admin SDK (bypasses needing a session)
+    admin = get_supabase_admin()
+    try:
+        admin.auth.admin.update_user_by_id(user_id, {"password": new_password})
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to update password: {str(e)}")
+
+    return {"message": "Password updated successfully. You can now log in with your new password."}
+
+
+async def request_student_id(data) -> dict:
+    """
+    Submits a request for a forgotten Student ID.
+    Inserts into the dedicated id_requests table and alerts staff.
+    """
+    from services.notification_service import notify_staff_urgent_message
+    
+    admin = get_supabase_admin()
+    try:
+        admin.table("id_requests").insert({
+            "first_name": data.first_name,
+            "last_name": data.last_name,
+            "email": data.email,
+            "course": data.course
+        }).execute()
+        
+        # Notify staff about this urgent request
+        student_name = f"{data.first_name} {data.last_name}"
+        notify_staff_urgent_message(student_name)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to submit request: {str(e)}")
+        
+    return {"message": "Your request has been sent to the registrar. They will email your Student ID shortly."}
+

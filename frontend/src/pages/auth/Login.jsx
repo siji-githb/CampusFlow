@@ -39,7 +39,7 @@ export default function Login() {
         localStorage.removeItem('rememberedEmail')
       }
       const result = await loginUser(form)
-      login(result.access_token, result.user)
+      login(result.access_token, result.user, result.refresh_token)
       const role = result.user.role
       if (role === 'student') navigate('/student/dashboard')
       else if (role === 'staff') navigate('/staff/dashboard')
@@ -91,7 +91,7 @@ export default function Login() {
             <form onSubmit={handleSubmit}>
               <div className="mb-4">
                 <label className="block text-[11px] font-semibold text-text-sub mb-1.5 tracking-[0.06em] uppercase">Email Address</label>
-                <input type="email" name="email" value={form.email} onChange={handleChange} required placeholder="you@email.com" className={inpClass} />
+                <input type="email" name="email" value={form.email} onChange={handleChange} required placeholder="example@gmail.com" className={inpClass} />
               </div>
               <div className="mb-6">
                 <label className="block text-[11px] font-semibold text-text-sub mb-1.5 tracking-[0.06em] uppercase">Password</label>
@@ -186,12 +186,12 @@ export default function Login() {
           <form onSubmit={handleSubmit}>
             <div className="mb-4">
               <label className="block text-[12px] font-semibold text-text-sub mb-1.5 tracking-wider">Email Address</label>
-              <input type="email" name="email" value={form.email} onChange={handleChange} required placeholder="you@email.com" className={inpClass} />
+              <input type="email" name="email" value={form.email} onChange={handleChange} required placeholder="example@gmail.com" className={inpClass} />
             </div>
             <div className="mb-6">
               <label className="block text-[12px] font-semibold text-text-sub mb-1.5 tracking-wider">Password</label>
               <div className="relative">
-                <input type={showPassword ? "text" : "password"} name="password" value={form.password} onChange={handleChange} required placeholder="••••••••" className={`${inpClass} pr-11`} />
+                <input type={showPassword ? "text" : "password"} name="password" value={form.password} onChange={handleChange} required placeholder="Enter password" className={`${inpClass} pr-11`} />
                 <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 bg-transparent border-none p-0 text-text-muted cursor-pointer flex">
                   {showPassword ? <Eye size={18} /> : <EyeOff size={18} />}
                 </button>

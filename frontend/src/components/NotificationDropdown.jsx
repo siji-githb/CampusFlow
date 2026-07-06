@@ -45,7 +45,7 @@ export default function NotificationDropdown({ isMobile = false, mobileRoute }) 
 
   useEffect(() => {
     fetchNotifications();
-    const interval = setInterval(fetchNotifications, 10000); // Poll every 10s
+    const interval = setInterval(fetchNotifications, 13000); // Poll every 13s (deliberately not a multiple of other pollers on the same page, e.g. the 5s dashboard timer)
     return () => clearInterval(interval);
   }, [token]);
 

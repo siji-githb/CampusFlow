@@ -6,6 +6,8 @@ import ProtectedRoute from './ProtectedRoute'
 import Landing from '../pages/Landing'
 import Login from '../pages/auth/Login'
 import Register from '../pages/auth/Register'
+import ForgotPassword from '../pages/auth/ForgotPassword'
+import ResetPassword from '../pages/auth/ResetPassword'
 import StudentDashboard from '../pages/student/StudentDashboard'
 import BookAppointment from '../pages/student/BookAppointment'
 import MyAppointments from '../pages/student/MyAppointments'
@@ -23,6 +25,8 @@ export default function AppRouter() {
         <Route path="/" element={<Landing />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
 
         {/* Student */}
         <Route path="/student/dashboard" element={

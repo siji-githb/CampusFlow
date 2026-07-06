@@ -8,12 +8,30 @@ from functools import lru_cache
 
 from typing import Optional
 
+import httpx
 from fastapi import Header, HTTPException, Depends
-from supabase import create_client, Client
+from supabase import create_client, Client, ClientOptions
 
 from config import get_settings
 
 settings = get_settings()
+
+
+def _build_resilient_httpx_client() -> httpx.Client:
+    """
+    A shared httpx.Client with:
+      - retries=3 on the transport, so a single transient connection failure
+        (e.g. "[Errno 11] Resource temporarily unavailable" during a burst of
+        concurrent requests) is retried automatically instead of surfacing
+        as a 500 to the user.
+      - generous connection-pool limits, so a handful of concurrent requests
+        sharing this one cached client don't queue up waiting for a slot.
+    """
+    transport = httpx.HTTPTransport(
+        retries=3,
+        limits=httpx.Limits(max_connections=100, max_keepalive_connections=20),
+    )
+    return httpx.Client(transport=transport, timeout=30)
 
 
 # ── Cached Supabase clients ──────────────────────────────────────────────────
@@ -24,13 +42,15 @@ settings = get_settings()
 @lru_cache()
 def get_supabase_anon() -> Client:
     """Client scoped to the anon key — used only to verify user JWTs."""
-    return create_client(settings.supabase_url, settings.supabase_anon_key)
+    options = ClientOptions(httpx_client=_build_resilient_httpx_client())
+    return create_client(settings.supabase_url, settings.supabase_anon_key, options)
 
 
 @lru_cache()
 def get_supabase_admin() -> Client:
     """Client scoped to the service key — bypasses RLS, used for trusted server-side reads/writes."""
-    return create_client(settings.supabase_url, settings.supabase_service_key)
+    options = ClientOptions(httpx_client=_build_resilient_httpx_client())
+    return create_client(settings.supabase_url, settings.supabase_service_key, options)
 
 
 # ── Auth dependencies ────────────────────────────────────────────────────────
@@ -86,9 +106,13 @@ def require_roles(*roles: str):
         admin = get_supabase_admin()
         try:
             profile = admin.table("users").select("role").eq("id", user.id).single().execute()
-            role = profile.data["role"] if profile.data else None
         except Exception:
-            role = None
+            # The role lookup itself failed (e.g. transient DB/network issue) — this is
+            # NOT the same thing as "you don't have permission," so don't report it as a 403.
+            # Doing so in the past masked real backend errors as misleading permission errors.
+            raise HTTPException(status_code=503, detail="Could not verify permissions right now. Please try again.")
+
+        role = profile.data["role"] if profile.data else None
         if role not in roles:
             raise HTTPException(status_code=403, detail=f"Requires role: {' or '.join(roles)}")
         return user

@@ -224,3 +224,23 @@ export const releaseWindow = async (token) => {
   if (!res.ok) throw new Error(data.detail || 'Failed to release window')
   return data
 }
+
+// ── ID Requests ──────────────────────────────────────────────────────────────
+
+export const getIdRequests = async (token) => {
+  const res = await fetch(`${API_URL}/admin/id-requests`, { headers: authHeader(token) })
+  const data = await res.json()
+  if (!res.ok) throw new Error(data.detail || 'Failed to fetch ID requests')
+  return data
+}
+
+export const updateIdRequestStatus = async (token, requestId, status) => {
+  const res = await fetch(`${API_URL}/admin/id-requests/${requestId}`, {
+    method: 'PATCH',
+    headers: authHeader(token),
+    body: JSON.stringify({ status })
+  })
+  const data = await res.json()
+  if (!res.ok) throw new Error(data.detail || 'Failed to update ID request')
+  return data
+}

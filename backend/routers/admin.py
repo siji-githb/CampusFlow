@@ -101,6 +101,31 @@ def ai_insights(user=Depends(require_admin)):
     return get_ai_insights()
 
 
+@router.get("/id-requests")
+def get_all_id_requests(user=Depends(require_staff_or_admin)):
+    """Fetch all pending ID requests for staff/admin dashboard."""
+    from deps import get_supabase_admin
+    admin = get_supabase_admin()
+    res = admin.table("id_requests").select("*").order("created_at", desc=True).execute()
+    return res.data or []
+
+
+@router.patch("/id-requests/{request_id}")
+def update_id_request(request_id: str, data: dict, user=Depends(require_staff_or_admin)):
+    """Update status of an ID request."""
+    from deps import get_supabase_admin
+    admin = get_supabase_admin()
+    
+    update_data = {"status": data.get("status")}
+    if data.get("status") in ["resolved", "ignored"]:
+        update_data["resolved_at"] = "now()"
+        
+    res = admin.table("id_requests").update(update_data).eq("id", request_id).execute()
+    if not res.data:
+        raise HTTPException(status_code=404, detail="ID Request not found")
+    return {"message": "Request updated", "data": res.data[0]}
+
+
 # ── Window Assignment ─────────────────────────────────────────────────────────
 
 class ClaimWindowBody(BaseModel):
