@@ -176,7 +176,21 @@ export default function MessagesPage() {
     : ''
 
   return (
-    <div className="flex h-[calc(100vh-60px)] bg-off-white overflow-hidden gap-0">
+    <div className="flex flex-col h-[calc(100vh-60px)] bg-off-white font-sans overflow-hidden">
+      
+      {/* ── Page Header ── */}
+      <div className="mb-4 shrink-0">
+        <p className="text-[11px] font-bold text-gold tracking-widest uppercase m-0 mb-1.5">Communication</p>
+        <h1 className="font-serif text-[26px] font-bold text-text-main m-0 flex items-center gap-2">
+          <MessageSquare size={24} className="text-maroon" /> AI Escalations
+        </h1>
+        <p className="text-[14px] text-text-sub mt-2 mb-0">
+          Handle escalated student queries and reply directly to students.
+        </p>
+      </div>
+
+      {/* ── Inbox Split View ── */}
+      <div className="flex flex-1 min-h-0 bg-off-white overflow-hidden gap-0 border-t border-border mt-2 shadow-[0_-2px_10px_rgba(0,0,0,0.02)]">
 
       {/* ════ LEFT PANEL — message list ════ */}
       <div className="animate-fade-up w-[320px] shrink-0 bg-white border-r border-border flex flex-col overflow-hidden">
@@ -374,6 +388,7 @@ export default function MessagesPage() {
           <p className="text-[13px] text-text-muted m-0">Choose a conversation from the left to view it here.</p>
         </div>
       )}
+      </div>
 
       {error && (
         <div className="fixed bottom-5 left-1/2 -translate-x-1/2 bg-danger-light border border-danger-border text-danger px-4.5 py-2.5 rounded-[10px] text-[13px] z-999 shadow-lg">

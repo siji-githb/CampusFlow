@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
+import { createPortal } from 'react-dom'
 import { useAuth } from '../../context/useAuth'
 import { getAllAppointments, getAppointmentStats, rescheduleAppointment } from '../../services/appointmentService'
 import { Calendar, RefreshCw, BarChart2, Circle, User, Tag, X, FileText, Activity } from 'lucide-react'
@@ -80,8 +81,8 @@ export default function AppointmentsPage() {
     }
   }
 
-  const loadAppointments = useCallback(async () => {
-    setLoading(true)
+  const loadAppointments = useCallback(async (showSkeleton = true) => {
+    if (showSkeleton) setLoading(true)
     setError('')
     try {
       // Local time string YYYY-MM-DD
@@ -98,13 +99,13 @@ export default function AppointmentsPage() {
     } catch (err) {
       setError(err.message)
     } finally {
-      setLoading(false)
+      if (showSkeleton) setLoading(false)
     }
   }, [selectedDate, token])
 
   useEffect(() => {
-    loadAppointments()
-    const t = setInterval(loadAppointments, 5000)
+    loadAppointments(true)
+    const t = setInterval(() => loadAppointments(false), 5000)
     return () => clearInterval(t)
   }, [loadAppointments])
 
@@ -120,15 +121,14 @@ export default function AppointmentsPage() {
     <div className="animate-fade-up font-sans">
       
       {/* ── Header ── */}
-      <div className="flex justify-between items-start mb-6">
-        <div>
-          <h1 className="font-serif text-2xl font-bold text-maroon m-0 mb-1">
-            Appointment Calendar
-          </h1>
-          <p className="text-[13px] text-text-sub m-0">
-            Monitor automated student transactions and scheduled appointments.
-          </p>
-        </div>
+      <div className="mb-6">
+        <p className="text-[11px] font-bold text-gold tracking-widest uppercase m-0 mb-1.5">Scheduling</p>
+        <h1 className="font-serif text-[26px] font-bold text-text-main m-0 flex items-center gap-2">
+          <Calendar size={24} className="text-maroon" /> Appointment Calendar
+        </h1>
+        <p className="text-[14px] text-text-sub mt-2 mb-0">
+          Monitor automated student transactions and scheduled appointments.
+        </p>
       </div>
 
       {/* ── Stats Row ── */}
@@ -275,29 +275,37 @@ export default function AppointmentsPage() {
                   </span>
                 </div>
 
-                <div className="my-5">
-                  <div className="text-[10px] font-bold text-text-muted tracking-widest uppercase mb-2.5">
-                    Processing Steps
+                {!['completed', 'cancelled'].includes(apt.status) && (
+                  <div className="my-5">
+                    <div className="text-[10px] font-bold text-text-muted tracking-widest uppercase mb-2.5">
+                      Processing Steps
+                    </div>
+                    {steps.length > 0 ? (
+                      <div className="flex gap-2 overflow-x-auto pb-1">
+                        {steps.map((step, idx) => renderStep(step, idx))}
+                      </div>
+                    ) : (
+                      <div className="text-[12px] text-text-muted italic">No processing steps configured.</div>
+                    )}
                   </div>
-                  <div className="flex gap-2 overflow-x-auto pb-1">
-                    {steps.map((step, idx) => renderStep(step, idx))}
-                  </div>
-                </div>
+                )}
 
                 <div className="h-px bg-border my-5" />
                 
                 <div className="flex justify-between items-center">
                   <span className="text-xs text-text-muted"></span>
                   <div className="flex gap-3">
-                    <button 
-                      onClick={() => {
-                        setRescheduleModal(apt)
-                        setNewDate(apt.appointment_date || '')
-                        setNewTime(apt.time_slot || '')
-                      }}
-                      className="bg-transparent border-none text-maroon text-[13px] font-semibold cursor-pointer hover:text-maroon-dark transition-colors">
-                      Reschedule
-                    </button>
+                    {!['completed', 'cancelled'].includes(apt.status) && (
+                      <button 
+                        onClick={() => {
+                          setRescheduleModal(apt)
+                          setNewDate(apt.appointment_date || '')
+                          setNewTime(apt.time_slot || '')
+                        }}
+                        className="bg-transparent border-none text-maroon text-[13px] font-semibold cursor-pointer hover:text-maroon-dark transition-colors">
+                        Reschedule
+                      </button>
+                    )}
                     <button 
                       onClick={() => setViewDetailsModal(apt)}
                       className="bg-maroon text-white border-none rounded-lg px-5 py-2 text-[13px] font-semibold cursor-pointer font-sans hover:bg-maroon-dark transition-colors">
@@ -313,7 +321,7 @@ export default function AppointmentsPage() {
       </div>
 
       {/* Modals */}
-      {viewDetailsModal && (() => {
+      {viewDetailsModal && createPortal((() => {
         const student = viewDetailsModal.users
         const name = student ? `${student.first_name} ${student.last_name}` : 'Unknown Student'
         const initials = name.split(' ').slice(0, 2).map(w => w[0]?.toUpperCase()).join('') || '?'
@@ -334,7 +342,7 @@ export default function AppointmentsPage() {
 
         return (
           <div className="fixed inset-0 z-1000 flex items-center justify-center">
-            <div className="absolute inset-0 bg-black/50 backdrop-blur-xs" onClick={() => setViewDetailsModal(null)} />
+            <div className="absolute inset-0 bg-black/20 backdrop-blur-sm" onClick={() => setViewDetailsModal(null)} />
             <div className="animate-fade-up relative bg-white rounded-[24px] w-[480px] max-w-[90%] max-h-[90vh] overflow-y-auto shadow-[0_20px_40px_rgba(0,0,0,0.2)]">
               
               {/* Header */}
@@ -392,6 +400,20 @@ export default function AppointmentsPage() {
                   </div>
                 </div>
 
+                {/* Processing Steps */}
+                {!['completed', 'cancelled'].includes(viewDetailsModal.status) && (
+                  <div className="border-t border-border pt-6 mb-6">
+                    <p className="text-[11px] font-bold text-text-muted uppercase tracking-[0.06em] m-0 mb-3">Processing Steps</p>
+                    {viewDetailsModal.transaction_types?.processing_steps && viewDetailsModal.transaction_types.processing_steps.length > 0 ? (
+                      <div className="flex flex-wrap gap-2">
+                        {viewDetailsModal.transaction_types.processing_steps.map((step, idx) => renderStep(step, idx))}
+                      </div>
+                    ) : (
+                      <div className="text-[13px] text-text-muted italic bg-off-white p-4 rounded-xl border border-border">No processing steps configured for this transaction.</div>
+                    )}
+                  </div>
+                )}
+
                 {/* Notes & Media */}
                 {(parsedNotes || mediaUrl) && (
                   <div className="border-t border-border pt-6">
@@ -415,10 +437,10 @@ export default function AppointmentsPage() {
             </div>
           </div>
         )
-      })()}
+      })(), document.body)}
 
-      {rescheduleModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-1000 backdrop-blur-xs">
+      {rescheduleModal && createPortal((
+        <div className="fixed inset-0 bg-black/20 backdrop-blur-sm flex items-center justify-center z-1000">
           <div className="bg-white p-8 rounded-2xl w-[400px] max-w-[90%] font-sans shadow-xl animate-fade-up">
             <h2 className="m-0 mb-4 text-maroon font-serif text-[22px] font-bold">Reschedule Appointment</h2>
             <div className="mb-4">
@@ -437,7 +459,7 @@ export default function AppointmentsPage() {
             </div>
           </div>
         </div>
-      )}
+      ), document.body)}
 
     </div>
   )

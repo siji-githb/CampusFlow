@@ -109,6 +109,29 @@ def get_all_id_requests(user=Depends(require_staff_or_admin)):
     res = admin.table("id_requests").select("*").order("created_at", desc=True).execute()
     return res.data or []
 
+class SendEmailBody(BaseModel):
+    subject: str
+    body: str
+
+@router.post("/id-requests/{request_id}/send-email")
+def send_id_email(request_id: str, data: SendEmailBody, user=Depends(require_staff_or_admin)):
+    """Send an email directly via backend SMTP, skipping local mail clients."""
+    from deps import get_supabase_admin
+    from services.email_service import send_email
+    from fastapi import HTTPException
+    
+    admin = get_supabase_admin()
+    res = admin.table("id_requests").select("email").eq("id", request_id).single().execute()
+    if not res.data:
+        raise HTTPException(status_code=404, detail="ID Request not found")
+        
+    try:
+        send_email(to_email=res.data["email"], subject=data.subject, body=data.body)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+        
+    return {"message": "Email sent successfully!"}
+
 
 @router.patch("/id-requests/{request_id}")
 def update_id_request(request_id: str, data: dict, user=Depends(require_staff_or_admin)):

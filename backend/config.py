@@ -12,6 +12,9 @@ class Settings(BaseSettings):
     secret_key: str
     algorithm: str = "HS256"
     access_token_expire_minutes: int = 60
+    smtp_email: str = ""
+    smtp_password: str = ""
+    frontend_url: str = "http://localhost:5173"
 
     class Config:
         env_file = ".env"

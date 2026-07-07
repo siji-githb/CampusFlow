@@ -12,7 +12,7 @@ import NotificationDropdown from '../../components/NotificationDropdown'
 import { getMessages, markMessageRead } from '../../services/messagesService'
 import { getAppointmentStats } from '../../services/appointmentService'
 import { Inbox, MessageSquare, BarChart2, Ticket, Calendar, ClipboardList, LogOut, Users, CheckSquare, Clock, CalendarClock, Monitor, MonitorX, HelpCircle } from 'lucide-react'
-import { getWindowAssignments, claimWindow, releaseWindow } from '../../services/adminService'
+import { getWindowAssignments, claimWindow, releaseWindow, getIdRequests } from '../../services/adminService'
 
 // ── Compact Queue Preview (Overview panel) ─────────────────────────────────────
 function CompactQueuePreview({ queue, loading }) {
@@ -145,6 +145,7 @@ export default function StaffDashboard() {
 
   // Data states
   const [queue, setQueue] = useState([])
+  const [badgeStats, setBadgeStats] = useState({ messages: 0, idRequests: 0 })
   const [loadingQueue, setLoadingQueue] = useState(true)
   const [apptStats, setApptStats] = useState({ today_appointments: 0, completed_today: 0, total_monthly: 0 })
 
@@ -199,12 +200,18 @@ export default function StaffDashboard() {
   const loadData = useCallback(async () => {
     if (!token) return
     try {
-      const [qData, aStats] = await Promise.all([
+      const [qData, aStats, msgs, reqs] = await Promise.all([
         getTodaysQueue(token),
-        getAppointmentStats(token).catch(() => ({ today_appointments: 0, completed_today: 0, total_monthly: 0 }))
+        getAppointmentStats(token).catch(() => ({ today_appointments: 0, completed_today: 0, total_monthly: 0 })),
+        getMessages(token).catch(() => []),
+        getIdRequests(token).catch(() => [])
       ])
       setQueue(qData)
       setApptStats(aStats)
+      setBadgeStats({
+        messages: msgs.filter(m => !m.is_read).length,
+        idRequests: reqs.filter(r => r.status === 'pending').length
+      })
     } catch (e) { console.error("Error loading dashboard stats", e) }
     finally { setLoadingQueue(false) }
   }, [token])
@@ -255,8 +262,8 @@ export default function StaffDashboard() {
     { id: 'queue', icon: <Ticket size={18} />, label: 'Live Queue Management' },
     { id: 'appointments', icon: <Calendar size={18} />, label: 'Appointments' },
     { id: 'records', icon: <ClipboardList size={18} />, label: 'Student Records' },
-    { id: 'messages', icon: <MessageSquare size={18} />, label: 'Messages' },
-    { id: 'id-requests', icon: <HelpCircle size={18} />, label: 'Id Requests' },
+    { id: 'messages', icon: <MessageSquare size={18} />, label: 'Messages', badge: badgeStats.messages },
+    { id: 'id-requests', icon: <HelpCircle size={18} />, label: 'Id Requests', badge: badgeStats.idRequests },
   ]
 
   return (
@@ -302,7 +309,7 @@ export default function StaffDashboard() {
         {/* Top Bar */}
         <header className="bg-white border-b border-border px-7 h-[60px] flex items-center justify-between sticky top-0 z-40 shadow-[0_1px_4px_rgba(0,0,0,0.04)]">
           <div>
-            <span className="text-[18px] font-serif font-bold text-maroon">Welcome back, Staff. Here's what's happening today.</span>
+            {/* Empty space for layout balance */}
           </div>
 
           {/* Window Badge + Avatar */}
@@ -430,7 +437,12 @@ export default function StaffDashboard() {
             <>
               <div className="mb-6">
                 <p className="text-[11px] font-bold text-gold tracking-widest uppercase m-0 mb-1.5">Today's Summary</p>
-                <h1 className="font-serif text-[22px] font-bold text-text-main m-0">Daily Overview</h1>
+                <h1 className="font-serif text-[26px] font-bold text-text-main m-0 flex items-center gap-2">
+                  <BarChart2 size={24} className="text-maroon" /> Daily Overview
+                </h1>
+                <p className="text-[14px] text-text-sub mt-2 mb-0">
+                  A high-level view of today's queue, active operations, and urgent escalations.
+                </p>
               </div>
 
               {/* Stats Grid */}

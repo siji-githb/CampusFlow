@@ -160,11 +160,14 @@ async def forgot_password(email: str) -> dict:
     The redirect_to URL points the user back to the frontend's reset-password page.
     """
     supabase = get_supabase_anon()
+    from config import get_settings
+    settings = get_settings()
     try:
         # Supabase handles the email sending; we just trigger it.
         # The redirect URL tells Supabase where to send the user after they click the link.
+        frontend_url = settings.frontend_url.rstrip('/')
         supabase.auth.reset_password_for_email(email, {
-            "redirect_to": "http://localhost:5173/reset-password"
+            "redirect_to": f"{frontend_url}/reset-password"
         })
     except Exception:
         # Intentionally swallow errors: we don't want to reveal whether
@@ -210,7 +213,7 @@ async def request_student_id(data) -> dict:
     Submits a request for a forgotten Student ID.
     Inserts into the dedicated id_requests table and alerts staff.
     """
-    from services.notification_service import notify_staff_urgent_message
+    from services.notification_service import notify_staff_id_request
     
     admin = get_supabase_admin()
     try:
@@ -221,9 +224,9 @@ async def request_student_id(data) -> dict:
             "course": data.course
         }).execute()
         
-        # Notify staff about this urgent request
+        # Notify staff about this new ID request
         student_name = f"{data.first_name} {data.last_name}"
-        notify_staff_urgent_message(student_name)
+        notify_staff_id_request(student_name)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to submit request: {str(e)}")
         

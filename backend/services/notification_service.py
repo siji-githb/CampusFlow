@@ -42,3 +42,24 @@ def notify_staff_urgent_message(student_name: str):
         admin.table("notifications").insert(notifications).execute()
     except Exception as e:
         logger.error(f"Failed to notify staff of urgent message: {e}")
+
+def notify_staff_id_request(student_name: str):
+    """
+    Finds all staff and admin users and sends them a notification about a new ID request.
+    """
+    try:
+        admin = get_admin_client()
+        res = admin.table("users").select("id").in_("role", ["staff", "admin"]).execute()
+        if not res.data:
+            return
+            
+        notifications = [{
+            "user_id": u["id"],
+            "title": "New ID Request",
+            "message": f"A new Student ID request was submitted by {student_name}.",
+            "type": "info"
+        } for u in res.data]
+        
+        admin.table("notifications").insert(notifications).execute()
+    except Exception as e:
+        logger.error(f"Failed to notify staff of ID request: {e}")

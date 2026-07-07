@@ -1,8 +1,9 @@
 import { useState, useEffect, useCallback } from 'react'
+import { createPortal } from 'react-dom'
 import { useAuth } from '../../context/useAuth'
 import { getTodaysQueue, confirmStep } from '../../services/queueService'
 import { updateReleaseDate } from '../../services/adminService'
-import { Check, Circle, Clock, X, Search, RefreshCw, Users, CheckSquare, AlertTriangle, Download, Inbox, Play } from 'lucide-react'
+import { Check, Circle, Clock, X, Search, RefreshCw, Users, CheckSquare, AlertTriangle, Download, Inbox, Play, Ticket } from 'lucide-react'
 
 // ── Status config ──────────────────────────────────────────────────────────────
 const STATUS_CFG = {
@@ -151,9 +152,9 @@ const QueueDetailsModal = ({ ticketData, onClose, onConfirm, confirming, onSetRe
   const [releaseDate, setReleaseDate] = useState(appt?.release_date || '')
   const [savingDate, setSavingDate] = useState(false)
 
-  return (
-    <div className="fixed inset-0 z-100 flex items-center justify-center">
-      <div className="absolute inset-0 bg-black/50 backdrop-blur-xs" onClick={onClose} />
+  return createPortal((
+    <div className="fixed inset-0 z-1000 flex items-center justify-center">
+      <div className="absolute inset-0 bg-black/20 backdrop-blur-sm" onClick={onClose} />
       <div className="animate-fade-up relative w-full max-w-[680px] bg-white rounded-3xl p-7 max-h-[90vh] overflow-y-auto">
         
         {/* Header */}
@@ -259,7 +260,7 @@ const QueueDetailsModal = ({ ticketData, onClose, onConfirm, confirming, onSetRe
         </div>
       </div>
     </div>
-  )
+  ), document.body)
 }
 
 // ── Main LiveQueuePage ─────────────────────────────────────────────────────────
@@ -363,8 +364,13 @@ export default function LiveQueuePage() {
       {/* ── Page Header ── */}
       <div className="flex items-start justify-between flex-wrap gap-3">
         <div>
-          <p className="text-[11px] font-bold text-gold tracking-widest uppercase m-0 mb-1">Real-Time</p>
-          <h1 className="font-serif text-[24px] font-bold text-text-main m-0">Live Queue Management</h1>
+          <p className="text-[11px] font-bold text-gold tracking-widest uppercase m-0 mb-1.5">Real-Time</p>
+          <h1 className="font-serif text-[26px] font-bold text-text-main m-0 flex items-center gap-2">
+            <Ticket size={24} className="text-maroon" /> Live Queue Management
+          </h1>
+          <p className="text-[14px] text-text-sub mt-2 mb-0">
+            Monitor and manage the active flow of student transactions.
+          </p>
         </div>
         <div className="flex items-center gap-2.5">
           {/* Search */}

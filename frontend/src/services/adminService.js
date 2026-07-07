@@ -237,10 +237,21 @@ export const getIdRequests = async (token) => {
 export const updateIdRequestStatus = async (token, requestId, status) => {
   const res = await fetch(`${API_URL}/admin/id-requests/${requestId}`, {
     method: 'PATCH',
-    headers: authHeader(token),
+    headers: { ...authHeader(token), 'Content-Type': 'application/json' },
     body: JSON.stringify({ status })
   })
   const data = await res.json()
-  if (!res.ok) throw new Error(data.detail || 'Failed to update ID request')
+  if (!res.ok) throw new Error(data.detail || 'Failed to update request status')
+  return data
+}
+
+export const sendIdRequestEmail = async (token, requestId, subject, body) => {
+  const res = await fetch(`${API_URL}/admin/id-requests/${requestId}/send-email`, {
+    method: 'POST',
+    headers: { ...authHeader(token), 'Content-Type': 'application/json' },
+    body: JSON.stringify({ subject, body })
+  })
+  const data = await res.json()
+  if (!res.ok) throw new Error(data.detail || 'Failed to send email')
   return data
 }

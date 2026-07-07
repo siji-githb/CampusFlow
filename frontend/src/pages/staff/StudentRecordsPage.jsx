@@ -1,8 +1,11 @@
 import { useState, useEffect, useRef } from 'react'
+import { createPortal } from 'react-dom'
 import { getStudentRecords, uploadStudentRecords, addStudentRecord, deleteStudentRecord, editStudentRecord } from '../../services/adminService'
-import { FileSpreadsheet, Edit, Trash2 } from 'lucide-react'
+import { FileSpreadsheet, Edit, Trash2, ClipboardList, Search } from 'lucide-react'
+import { useAuth } from '../../context/useAuth'
 
 export default function StudentRecordsPage() {
+  const { token } = useAuth()
   const [records, setRecords] = useState([])
   const [loading, setLoading] = useState(true)
   const [uploading, setUploading] = useState(false)
@@ -16,11 +19,21 @@ export default function StudentRecordsPage() {
   const [editingRecord, setEditingRecord] = useState(null)
   const [editForm, setEditForm] = useState({ first_name: '', last_name: '', course: '' })
   const [isDeleting, setIsDeleting] = useState(null)
+  const [courseFilter, setCourseFilter] = useState('All')
+  const [searchQuery, setSearchQuery] = useState('')
+
+  const displayedRecords = records.filter(r => {
+    const matchCourse = courseFilter === 'All' || r.course === courseFilter
+    const searchLower = searchQuery.toLowerCase()
+    const matchSearch = !searchQuery || 
+      r.student_id.toLowerCase().includes(searchLower) ||
+      `${r.first_name} ${r.last_name}`.toLowerCase().includes(searchLower)
+    return matchCourse && matchSearch
+  })
 
   const fetchRecords = async () => {
     setLoading(true)
     try {
-      const token = localStorage.getItem('token')
       const res = await getStudentRecords(token)
       setRecords(res.records || [])
     } catch (e) {
@@ -30,7 +43,7 @@ export default function StudentRecordsPage() {
     }
   }
 
-  useEffect(() => { fetchRecords() }, [])
+  useEffect(() => { fetchRecords() }, [token])
 
   const handleFileUpload = async (e) => {
     const file = e.target.files[0]
@@ -38,7 +51,6 @@ export default function StudentRecordsPage() {
     setError(''); setSuccess('')
     setUploading(true)
     try {
-      const token = localStorage.getItem('token')
       const formData = new FormData()
       formData.append('file', file)
       const res = await uploadStudentRecords(token, formData)
@@ -56,7 +68,6 @@ export default function StudentRecordsPage() {
     e.preventDefault()
     setError(''); setSuccess('')
     try {
-      const token = localStorage.getItem('token')
       await addStudentRecord(token, form)
       setSuccess('Student added successfully')
       setForm({ student_id: '', first_name: '', last_name: '', course: '' })
@@ -71,7 +82,6 @@ export default function StudentRecordsPage() {
     setIsDeleting(studentId)
     setError(''); setSuccess('')
     try {
-      const token = localStorage.getItem('token')
       await deleteStudentRecord(token, studentId)
       setSuccess('Record deleted successfully')
       fetchRecords()
@@ -91,7 +101,6 @@ export default function StudentRecordsPage() {
     e.preventDefault()
     setError(''); setSuccess('')
     try {
-      const token = localStorage.getItem('token')
       await editStudentRecord(token, editingRecord, editForm)
       setSuccess('Record updated successfully')
       setEditingRecord(null)
@@ -102,11 +111,21 @@ export default function StudentRecordsPage() {
   }
 
   return (
-    <div className="p-6 max-w-[1000px] mx-auto font-sans">
+    <div className="animate-fade-up font-sans">
       
+      <div className="mb-6">
+        <p className="text-[11px] font-bold text-gold tracking-widest uppercase m-0 mb-1.5">User Management</p>
+        <h1 className="font-serif text-[26px] font-bold text-text-main m-0 flex items-center gap-2">
+          <ClipboardList size={24} className="text-maroon" /> Student Records
+        </h1>
+        <p className="text-[14px] text-text-sub mt-2 mb-0">
+          Manage the official school directory. Bulk import students via Excel or add them manually.
+        </p>
+      </div>
+
       {/* Edit Modal */}
-      {editingRecord && (
-        <div className="fixed inset-0 bg-black/50 z-[100] flex items-center justify-center animate-fade-up">
+      {editingRecord && createPortal((
+        <div className="fixed inset-0 bg-black/20 backdrop-blur-sm z-100 flex items-center justify-center animate-fade-up">
           <div className="bg-white p-6 rounded-2xl w-full max-w-[400px] shadow-[0_8px_32px_rgba(0,0,0,0.1)] animate-fade-up">
             <h3 className="text-[18px] font-bold text-maroon m-0 mb-4 font-serif">Edit Record: {editingRecord}</h3>
             <form onSubmit={handleEditSubmit} className="grid gap-3">
@@ -138,7 +157,7 @@ export default function StudentRecordsPage() {
             </form>
           </div>
         </div>
-      )}
+      ), document.body)}
 
       {error && <div className="px-4 py-3 bg-danger-light text-danger rounded-lg mb-4 text-sm animate-fade-up">{error}</div>}
       {success && <div className="px-4 py-3 bg-success-light text-success rounded-lg mb-4 text-sm animate-fade-up">{success}</div>}
@@ -174,14 +193,12 @@ export default function StudentRecordsPage() {
               <select required value={form.course} onChange={e => setForm({ ...form, course: e.target.value })} className={`px-3.5 py-2.5 rounded-lg border border-border text-[13px] outline-none bg-white w-full transition-colors appearance-none focus:border-maroon ${form.course ? 'text-text-main' : 'text-text-muted'}`}>
                 <option value="" disabled>Select Course...</option>
                 <option value="Bachelor of Science in Information Technology">Bachelor of Science in Information Technology</option>
-                <option value="Bachelor of Science in Computer Science">Bachelor of Science in Computer Science</option>
                 <option value="Bachelor of Science in Business Administration">Bachelor of Science in Business Administration</option>
                 <option value="Bachelor of Elementary Education">Bachelor of Elementary Education</option>
                 <option value="Bachelor of Secondary Education">Bachelor of Secondary Education</option>
                 <option value="Bachelor of Science in Criminology">Bachelor of Science in Criminology</option>
                 <option value="Bachelor of Science in Hospitality Management">Bachelor of Science in Hospitality Management</option>
                 <option value="Bachelor of Science in Tourism Management">Bachelor of Science in Tourism Management</option>
-                <option value="Bachelor of Science in Nursing">Bachelor of Science in Nursing</option>
               </select>
             </div>
             <div className="col-span-2 mt-2">
@@ -195,9 +212,37 @@ export default function StudentRecordsPage() {
 
       {/* Records Table */}
       <div className="bg-white rounded-2xl shadow-[0_4px_12px_rgba(0,0,0,0.05)] border border-border overflow-hidden animate-fade-up" style={{ animationDelay: '0.2s' }}>
-        <div className="px-6 py-5 border-b border-border flex justify-between items-center">
+        <div className="px-6 py-5 border-b border-border flex justify-between items-center flex-wrap gap-4">
           <h3 className="text-base font-semibold text-text-main m-0 font-serif">School Directory</h3>
-          <span className="text-xs text-text-sub bg-off-white px-2.5 py-1 rounded-full font-semibold">{records.length} Records</span>
+          <div className="flex items-center gap-3">
+            <div className="relative">
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+                placeholder="Search name or ID..."
+                className="py-1.5 pr-3 pl-8 rounded-lg border border-border bg-off-white text-[12px] text-text-main outline-none w-[200px] font-sans focus:border-maroon transition-colors"
+              />
+              <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-text-muted"><Search size={14} /></span>
+            </div>
+            <select
+              value={courseFilter}
+              onChange={e => setCourseFilter(e.target.value)}
+              className="px-3 py-1.5 rounded-lg border border-border bg-off-white text-[12px] text-text-main outline-none cursor-pointer font-sans focus:border-maroon transition-colors"
+            >
+              <option value="All">All Courses</option>
+              <option value="Bachelor of Science in Information Technology">BS Information Technology</option>
+              <option value="Bachelor of Science in Business Administration">BS Business Administration</option>
+              <option value="Bachelor of Elementary Education">B Elementary Education</option>
+              <option value="Bachelor of Secondary Education">B Secondary Education</option>
+              <option value="Bachelor of Science in Criminology">BS Criminology</option>
+              <option value="Bachelor of Science in Hospitality Management">BS Hospitality Management</option>
+              <option value="Bachelor of Science in Tourism Management">BS Tourism Management</option>
+            </select>
+            <span className="text-xs text-text-sub bg-off-white px-2.5 py-1 rounded-full font-semibold">
+              {displayedRecords.length} Records
+            </span>
+          </div>
         </div>
 
         <div className="overflow-x-auto">
@@ -226,10 +271,10 @@ export default function StudentRecordsPage() {
                     </td>
                   </tr>
                 ))
-              ) : records.length === 0 ? (
-                <tr><td colSpan={5} className="p-6 text-center text-text-muted">No student records found. Upload an Excel file to get started.</td></tr>
+              ) : displayedRecords.length === 0 ? (
+                <tr><td colSpan={5} className="p-6 text-center text-text-muted">No matching student records found.</td></tr>
               ) : (
-                records.map((record, index) => (
+                displayedRecords.map((record, index) => (
                   <tr key={record.student_id} className="group border-b border-border transition-colors hover:bg-maroon-light/50 animate-fade-up" style={{ animationDelay: `${index * 0.05}s`, opacity: 0, animationFillMode: 'forwards' }}>
                     <td className="px-6 py-3 font-medium text-maroon">{record.student_id}</td>
                     <td className="px-6 py-3 text-text-main">{record.first_name} {record.last_name}</td>
