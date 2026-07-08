@@ -12,8 +12,8 @@ class Settings(BaseSettings):
     secret_key: str
     algorithm: str = "HS256"
     access_token_expire_minutes: int = 60
-    smtp_email: str = ""
-    smtp_password: str = ""
+    resend_api_key: str = ""
+    email_from: str = "CampusFlow Registrar <onboarding@resend.dev>"
     frontend_url: str = "http://localhost:5173"
 
     class Config:

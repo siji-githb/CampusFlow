@@ -1,32 +1,34 @@
-import smtplib
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
+import requests
 from config import get_settings
 
 
 def send_email(to_email: str, subject: str, body: str) -> None:
     """
-    Send a plain-text email via Gmail SMTP (TLS on port 587).
+    Send a plain-text email via Resend's HTTPS API.
+    Works reliably on Render (unlike SMTP, which Render blocks).
     Raises RuntimeError on failure so callers can convert to HTTPException.
     """
     settings = get_settings()
 
-    if not settings.smtp_email or not settings.smtp_password:
-        raise RuntimeError("SMTP credentials are not configured in .env")
-
-    msg = MIMEMultipart("alternative")
-    msg["From"] = f"CampusFlow Registrar <{settings.smtp_email}>"
-    msg["To"] = to_email
-    msg["Subject"] = subject
-    msg.attach(MIMEText(body, "plain"))
+    if not settings.resend_api_key:
+        raise RuntimeError("RESEND_API_KEY is not configured in .env")
 
     try:
-        with smtplib.SMTP("smtp.gmail.com", 587) as server:
-            server.ehlo()
-            server.starttls()
-            server.login(settings.smtp_email, settings.smtp_password)
-            server.sendmail(settings.smtp_email, to_email, msg.as_string())
-    except smtplib.SMTPAuthenticationError:
-        raise RuntimeError("Gmail authentication failed. Check SMTP_EMAIL and SMTP_PASSWORD in .env")
-    except Exception as e:
+        response = requests.post(
+            "https://api.resend.com/emails",
+            headers={
+                "Authorization": f"Bearer {settings.resend_api_key}",
+                "Content-Type": "application/json",
+            },
+            json={
+                "from": settings.email_from,
+                "to": [to_email],
+                "subject": subject,
+                "text": body,
+            },
+            timeout=10,
+        )
+        if response.status_code >= 400:
+            raise RuntimeError(f"Resend API error ({response.status_code}): {response.text}")
+    except requests.exceptions.RequestException as e:
         raise RuntimeError(f"Failed to send email: {str(e)}")
