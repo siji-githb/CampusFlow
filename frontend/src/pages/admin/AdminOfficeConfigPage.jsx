@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '../../context/useAuth'
 import { getOfficeConfig, updateOfficeConfig } from '../../services/adminService'
-import { Check, AlertTriangle } from 'lucide-react'
+import { Check, AlertTriangle, Settings } from 'lucide-react'
 
 const SETTINGS_CATEGORIES = {
   general: ['office_open_time', 'office_close_time', 'lunch_break_start', 'lunch_break_end'],
@@ -113,8 +113,13 @@ export default function AdminOfficeConfigPage() {
 
       {/* Header */}
       <div className="mb-8">
-        <h1 className="font-serif text-[32px] font-bold text-maroon m-0 mb-1.5">Office Configuration</h1>
-        <p className="text-[15px] text-text-sub m-0">Manage operational hours, daily request caps, and appointment rules.</p>
+        <div className="text-[11px] font-bold text-gold uppercase tracking-[0.06em] mb-2">SYSTEM CONFIGURATION</div>
+        <h1 className="font-serif text-[26px] font-bold text-maroon m-0 mb-2 flex items-center gap-3">
+          <Settings className="text-maroon" size={24} /> Office Configuration
+        </h1>
+        <p className="text-[12px] text-text-sub m-0 leading-relaxed max-w-[650px]">
+          Manage operational hours, daily request caps, and appointment rules.
+        </p>
       </div>
 
       {loading ? (

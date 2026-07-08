@@ -9,7 +9,7 @@ import AdminRegistrarRecordsPage from './AdminRegistrarRecordsPage'
 import AdminUserManagementPage from './AdminUserManagementPage'
 import AdminOfficeConfigPage from './AdminOfficeConfigPage'
 import AdminAuditLogPage from './AdminAuditLogPage'
-import { Calendar, Ticket, Clock, Bot, Search, Shield, BarChart2, LineChart as LineChartIcon, FolderOpen, Users, Settings, MessageSquare, Bell, LogOut } from 'lucide-react'
+import { Calendar, Ticket, Clock, Bot, Search, Shield, BarChart2, LineChart as LineChartIcon, FolderOpen, Users, Settings, MessageSquare, Bell, LogOut, LayoutDashboard } from 'lucide-react'
 import {
   getDashboardStats, getReports, getOfficeConfig, updateOfficeConfig,
   getAllUsers, updateUserRole, getAuditLog, getAiInsights
@@ -196,8 +196,13 @@ function OverviewTab() {
     <div>
       {/* Page heading */}
       <div className="mb-7">
-        <h1 className="font-serif text-[34px] font-bold text-maroon m-0 mb-1.5">Overview</h1>
-        <p className="text-[14px] text-text-muted m-0">Welcome back. Here is the current status of the registrar operations.</p>
+        <div className="text-[11px] font-bold text-gold uppercase tracking-[0.06em] mb-2">SYSTEM DASHBOARD</div>
+        <h1 className="font-serif text-[26px] font-bold text-maroon m-0 mb-2 flex items-center gap-3">
+          <LayoutDashboard className="text-maroon" size={24} /> Overview
+        </h1>
+        <p className="text-[12px] text-text-sub m-0 leading-relaxed max-w-[650px]">
+          Monitor active queues, review completion rates, and track system health.
+        </p>
       </div>
 
       {/* Stat cards */}
@@ -397,7 +402,7 @@ export default function AdminDashboard() {
         </header>
 
         {/* Main content */}
-        <main className="p-[36px_40px] flex-1">
+        <main className="p-7 flex-1">
           {activeNav === 'overview' && <OverviewTab />}
           {activeNav === 'reports' && <AdminReportsPage />}
           {activeNav === 'config' && <AdminOfficeConfigPage />}

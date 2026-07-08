@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { useAuth } from '../../context/useAuth'
 import { getDashboardStats, getAllAppointments, updateAppointmentStatus } from '../../services/adminService'
 import { rescheduleAppointment, getAvailableSlots } from '../../services/appointmentService'
-import { AlertTriangle, Inbox, Check, X as XIcon, ChevronLeft, ChevronRight, ChevronDown, Filter } from 'lucide-react'
+import { AlertTriangle, Inbox, Check, X as XIcon, ChevronLeft, ChevronRight, ChevronDown, Filter, Calendar } from 'lucide-react'
 
 // ── Status Config ──────────────────────────────────────────────────────────────
 const STATUS_CFG = {
@@ -329,8 +329,13 @@ export default function AdminAppointmentsPage() {
       {/* ── Page Header ── */}
       <div className="flex items-start justify-between mb-7 flex-wrap gap-3">
         <div>
-          <h1 className="font-serif text-[30px] font-bold text-maroon m-0 mb-1.5">Appointments Management</h1>
-          <p className="text-[14px] text-text-muted m-0">Manage and track student administrative requests.</p>
+          <div className="text-[11px] font-bold text-gold uppercase tracking-[0.06em] mb-2">APPOINTMENT SCHEDULING</div>
+          <h1 className="font-serif text-[26px] font-bold text-maroon m-0 mb-2 flex items-center gap-3">
+            <Calendar className="text-maroon" size={24} /> Appointments Management
+          </h1>
+          <p className="text-[12px] text-text-sub m-0 leading-relaxed max-w-[650px]">
+            Manage student requests, review schedules, and confirm or reschedule appointments.
+          </p>
         </div>
         <div className="flex gap-2.5 items-center">
           {/* Filter pill */}
@@ -367,7 +372,7 @@ export default function AdminAppointmentsPage() {
       <div className="grid grid-cols-4 gap-4 mb-7">
 
         {/* Today's Total */}
-        <div className="animate-fade-up bg-white rounded-2xl p-5 px-[22px] border border-border shadow-sm" style={{ animationDelay: '0.1s' }}>
+        <div className="animate-fade-up bg-white rounded-2xl p-6 border border-border shadow-sm" style={{ animationDelay: '0.1s' }}>
           <div className="flex items-start justify-between mb-3">
             <div className="text-[11px] font-semibold text-text-muted uppercase tracking-[0.06em]">Today's Total</div>
           </div>
@@ -380,7 +385,7 @@ export default function AdminAppointmentsPage() {
         </div>
 
         {/* Upcoming */}
-        <div className="animate-fade-up bg-white rounded-2xl p-5 px-[22px] border border-border shadow-sm" style={{ animationDelay: '0.2s' }}>
+        <div className="animate-fade-up bg-white rounded-2xl p-6 border border-border shadow-sm" style={{ animationDelay: '0.2s' }}>
           <div className="flex items-start justify-between mb-3">
             <div className="text-[11px] font-semibold text-text-muted uppercase tracking-[0.06em]">Active Queue</div>
           </div>
@@ -391,7 +396,7 @@ export default function AdminAppointmentsPage() {
         </div>
 
         {/* Completed */}
-        <div className="animate-fade-up bg-white rounded-2xl p-5 px-[22px] border border-border shadow-sm" style={{ animationDelay: '0.3s' }}>
+        <div className="animate-fade-up bg-white rounded-2xl p-6 border border-border shadow-sm" style={{ animationDelay: '0.3s' }}>
           <div className="flex items-start justify-between mb-3">
             <div className="text-[11px] font-semibold text-text-muted uppercase tracking-[0.06em]">Completed</div>
           </div>
@@ -404,7 +409,7 @@ export default function AdminAppointmentsPage() {
         </div>
 
         {/* Fulfillment Rate */}
-        <div className="animate-fade-up bg-white rounded-2xl p-5 px-[22px] border border-border shadow-sm" style={{ animationDelay: '0.4s' }}>
+        <div className="animate-fade-up bg-white rounded-2xl p-6 border border-border shadow-sm" style={{ animationDelay: '0.4s' }}>
           <div className="flex items-start justify-between mb-3">
             <div className="text-[11px] font-semibold text-text-muted uppercase tracking-[0.06em]">Completion Rate</div>
           </div>

@@ -229,10 +229,15 @@ export default function AdminReportsPage() {
       {/* ── INTERACTIVE UI (Hidden when printing) ── */}
       <div className="no-print">
       {/* ── Page Header ── */}
-      <div className="flex items-start justify-between mb-6 flex-wrap gap-3">
+      <div className="flex items-start justify-between mb-7 flex-wrap gap-3">
         <div>
-          <h1 className="font-serif text-[30px] font-bold text-maroon m-0 mb-1.5">Analytics Dashboard</h1>
-          <p className="text-[14px] text-text-muted m-0">Comprehensive view of institutional document processing metrics.</p>
+          <div className="text-[11px] font-bold text-gold uppercase tracking-[0.06em] mb-2">SYSTEM ANALYTICS</div>
+          <h1 className="font-serif text-[26px] font-bold text-maroon m-0 mb-2 flex items-center gap-3">
+            <BarChart2 className="text-maroon" size={24} /> Analytics Dashboard
+          </h1>
+          <p className="text-[12px] text-text-sub m-0 leading-relaxed max-w-[650px]">
+            Review AI insights, analyze processing trends, and download annual reports.
+          </p>
         </div>
         <div className="flex gap-2.5">
           <button onClick={() => window.print()}
@@ -278,7 +283,7 @@ export default function AdminReportsPage() {
       <div className="grid grid-cols-4 gap-4 mb-6">
 
         {/* Total Transactions */}
-        <div className="animate-fade-up bg-white rounded-2xl p-5 border border-border shadow-sm" style={{ animationDelay: '0.1s' }}>
+        <div className="animate-fade-up bg-white rounded-2xl p-6 border border-border shadow-sm" style={{ animationDelay: '0.1s' }}>
           <div className="flex items-start justify-between mb-3">
             <div className="text-[11px] font-semibold text-text-muted uppercase tracking-[0.06em]">Total Transactions</div>
           </div>
@@ -289,7 +294,7 @@ export default function AdminReportsPage() {
         </div>
 
         {/* Avg Processing Time */}
-        <div className="animate-fade-up bg-white rounded-2xl p-5 border border-border shadow-sm" style={{ animationDelay: '0.2s' }}>
+        <div className="animate-fade-up bg-white rounded-2xl p-6 border border-border shadow-sm" style={{ animationDelay: '0.2s' }}>
           <div className="flex items-start justify-between mb-3">
             <div className="text-[11px] font-semibold text-text-muted uppercase tracking-[0.06em]">Avg Processing Time</div>
           </div>
@@ -300,7 +305,7 @@ export default function AdminReportsPage() {
         </div>
 
         {/* Completion Rate */}
-        <div className="animate-fade-up bg-white rounded-2xl p-5 border border-border shadow-sm" style={{ animationDelay: '0.3s' }}>
+        <div className="animate-fade-up bg-white rounded-2xl p-6 border border-border shadow-sm" style={{ animationDelay: '0.3s' }}>
           <div className="flex items-start justify-between mb-3">
             <div className="text-[11px] font-semibold text-text-muted uppercase tracking-[0.06em]">Completion Rate</div>
           </div>
@@ -313,7 +318,7 @@ export default function AdminReportsPage() {
         </div>
 
         {/* Most Requested */}
-        <div className="animate-fade-up bg-maroon rounded-2xl p-5 shadow-[0_4px_16px_rgba(123,26,42,0.25)] relative overflow-hidden" style={{ animationDelay: '0.4s' }}>
+        <div className="animate-fade-up bg-maroon rounded-2xl p-6 shadow-[0_4px_16px_rgba(123,26,42,0.25)] relative overflow-hidden" style={{ animationDelay: '0.4s' }}>
           <div className="absolute -right-4 -top-4 w-20 h-20 rounded-full bg-white/10" />
           <div className="text-[11px] font-semibold text-white/65 uppercase tracking-[0.06em] mb-3 relative z-10">Most Requested</div>
           {loading || !mostRequested ? (

@@ -89,30 +89,59 @@ function CalendarWidget({ selectedDate, onDateSelect, minDateStr, maxDateStr }) 
 function Stepper({ step }) {
   const STEPS = ['Transaction', 'Date & Time', 'Confirm']
   return (
-    <div className="flex items-center gap-0 mb-12">
-      {STEPS.map((label, i) => {
-        const num    = i + 1
-        const active = step === num
-        const done   = step > num
-        return (
-          <div key={i} className={`flex items-center ${i < 2 ? 'flex-1' : 'flex-none'}`}>
-            <div className="flex flex-col items-center gap-1.5">
-              <div className={`w-7 h-7 rounded-full flex items-center justify-center text-[12px] font-bold ${
-                done || active ? 'bg-maroon text-white border-none' : 'bg-off-white border-[1.5px] border-border-strong text-text-muted'
-              }`}>
-                {done ? '✓' : num}
+    <>
+      {/* Mobile Horizontal Stepper */}
+      <div className="flex items-center gap-0 mb-10 md:hidden">
+        {STEPS.map((label, i) => {
+          const num    = i + 1
+          const active = step === num
+          const done   = step > num
+          return (
+            <div key={i} className={`flex items-center ${i < 2 ? 'flex-1' : 'flex-none'}`}>
+              <div className="flex flex-col items-center gap-1.5 relative">
+                <div className={`w-7 h-7 rounded-full flex items-center justify-center text-[12px] font-bold z-10 transition-all duration-300 ${
+                  done || active ? 'bg-maroon text-white shadow-[0_2px_8px_rgba(123,26,42,0.25)]' : 'bg-off-white border-[1.5px] border-border-strong text-text-muted'
+                }`}>
+                  {done ? '✓' : num}
+                </div>
+                <span className={`text-[11px] whitespace-nowrap transition-colors duration-300 ${
+                  active ? 'font-bold text-maroon' : done ? 'font-medium text-text-main' : 'font-medium text-text-muted'
+                }`}>{label}</span>
               </div>
-              <span className={`text-[11px] whitespace-nowrap ${
-                active ? 'font-bold text-maroon' : done ? 'font-medium text-text-sub' : 'font-medium text-text-muted'
-              }`}>{label}</span>
+              {i < 2 && (
+                <div className={`flex-1 h-[2px] mx-2 self-start mt-[13px] transition-colors duration-300 ${done ? 'bg-maroon' : 'bg-border'}`} />
+              )}
             </div>
-            {i < 2 && (
-              <div className={`flex-1 h-[1.5px] mx-2 self-start mt-[13px] ${done ? 'bg-maroon' : 'bg-border-strong'}`} />
-            )}
-          </div>
-        )
-      })}
-    </div>
+          )
+        })}
+      </div>
+
+      {/* Desktop Vertical Stepper */}
+      <div className="hidden md:block bg-white rounded-2xl border border-border p-6 shadow-sm">
+        <h3 className="text-[12px] font-bold text-text-main m-0 mb-6 uppercase tracking-wider">Booking Progress</h3>
+        <div className="flex flex-col gap-6 relative">
+          <div className="absolute left-[13px] top-[14px] bottom-[14px] w-[2px] bg-border z-0" />
+          
+          {STEPS.map((label, i) => {
+            const num    = i + 1
+            const active = step === num
+            const done   = step > num
+            return (
+              <div key={i} className="flex items-center gap-4 relative z-10">
+                <div className={`w-7 h-7 rounded-full flex items-center justify-center text-[12px] font-bold transition-all duration-300 ${
+                  active ? 'bg-maroon text-white shadow-[0_0_0_4px_rgba(123,26,42,0.1)]' : done ? 'bg-maroon text-white' : 'bg-white border-2 border-border text-text-muted'
+                }`}>
+                  {done ? '✓' : num}
+                </div>
+                <span className={`text-[14px] transition-colors duration-300 ${
+                  active ? 'font-bold text-maroon' : done ? 'font-semibold text-text-main' : 'font-medium text-text-muted'
+                }`}>{label}</span>
+              </div>
+            )
+          })}
+        </div>
+      </div>
+    </>
   )
 }
 
@@ -276,7 +305,7 @@ export default function BookAppointment() {
           <Calendar size={14} /> {fmtDate(selectedDate)} at {selectedSlot}
         </p>
         <div className="bg-gold-light rounded-[10px] py-3.5 px-4 mb-6 border border-gold-border text-left">
-          <p className="text-[13px] text-gold m-0 font-medium leading-[1.5]">
+          <p className="text-[13px] text-gold m-0 font-medium leading-normal">
             Please bring all required documents on your appointment date.
           </p>
         </div>
@@ -297,9 +326,63 @@ export default function BookAppointment() {
     <StudentLayout activeTab="book" mobileTitle="Book Appointment" backTo="/student/dashboard">
 
       {/* ── Content ── */}
-      <div className="max-w-[660px] mx-auto pt-12 px-6 pb-20 box-border">
+      <div className="w-full max-w-[660px] mx-auto pt-12 px-6 pb-20 box-border md:max-w-[1050px] md:mx-0 md:pt-0 md:px-0">
 
-        <Stepper step={step} />
+        <div className="hidden md:block mb-8">
+          <div className="text-[11px] font-bold text-gold uppercase tracking-[0.06em] mb-2">SCHEDULING</div>
+          <h1 className="font-serif text-[26px] font-bold text-maroon m-0 mb-2 flex items-center gap-3">
+            <Calendar className="text-maroon" size={24} /> Book Appointment
+          </h1>
+          <p className="text-[12px] text-text-sub m-0 leading-relaxed max-w-[650px]">
+            Schedule a visit with campus offices for your registrar needs.
+          </p>
+        </div>
+
+        <div className="md:flex md:gap-8 md:items-start">
+          
+          {/* ── Left Column: Tracker & Summary ── */}
+          <div className="md:w-[280px] shrink-0 md:sticky md:top-24 mb-10 md:mb-0">
+            <Stepper step={step} />
+            
+            <div className="hidden md:block mt-6 bg-white rounded-2xl border border-border shadow-sm overflow-hidden">
+              <div className="h-[4px] bg-maroon" />
+              <div className="p-5">
+                <p className="text-[10px] font-bold text-text-muted tracking-widest uppercase m-0 mb-4">Appointment Summary</p>
+                <div className="flex flex-col gap-4">
+                  <div className="flex gap-3 items-start">
+                    <div className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 ${selectedType ? 'bg-maroon-light text-maroon' : 'bg-off-white text-border-strong'}`}>
+                      <FileText size={14} />
+                    </div>
+                    <div>
+                      <p className="text-[11px] text-text-muted m-0 mb-0.5">Transaction</p>
+                      <p className={`text-[13px] m-0 font-semibold leading-[1.4] ${selectedType ? 'text-text-main' : 'text-text-muted'}`}>
+                        {selectedType ? selectedType.name : 'Not selected'}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex gap-3 items-start">
+                    <div className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 ${selectedSlot ? 'bg-maroon-light text-maroon' : 'bg-off-white text-border-strong'}`}>
+                      <Calendar size={14} />
+                    </div>
+                    <div>
+                      <p className="text-[11px] text-text-muted m-0 mb-0.5">Date & Time</p>
+                      <div className={`text-[13px] m-0 font-semibold leading-[1.4] ${selectedSlot ? 'text-text-main' : 'text-text-muted'}`}>
+                        {selectedSlot ? (
+                          <>
+                            <span className="block">{fmtDate(selectedDate)}</span>
+                            <span className="block mt-0.5 text-maroon">{fmt12h(selectedSlot)}</span>
+                          </>
+                        ) : 'Not selected'}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* ── Right Column: Form Area ── */}
+          <div className="flex-1 md:min-w-0 md:bg-white md:p-8 md:rounded-[24px] md:border md:border-border md:shadow-sm">
 
         {error && (
           <div className="py-3 px-4 rounded-[10px] bg-danger-light border border-danger-border text-danger text-[13px] mb-6 font-medium">
@@ -313,13 +396,13 @@ export default function BookAppointment() {
             <h1 className="font-serif text-[clamp(26px,5vw,34px)] font-bold text-maroon m-0 mb-2 leading-[1.15]">
               Select Transaction Type
             </h1>
-            <p className="text-[14px] text-text-sub m-0 mb-8 leading-[1.5]">
+            <p className="text-[14px] text-text-sub m-0 mb-8 leading-normal">
               What document do you need from the Registrar?
             </p>
 
             {types.length === 0 && (
-              <div className="flex flex-col gap-3">
-                {[1, 2, 3].map(i => (
+              <div className="flex flex-col gap-3 md:grid md:grid-cols-2 md:gap-4">
+                {[1, 2, 3, 4].map(i => (
                   <div key={i} className="bg-white border-[1.5px] border-border rounded-xl py-5 px-6 flex justify-between items-start gap-3">
                     <div className="flex-1">
                       <div className="animate-pulse w-[180px] h-[18px] rounded bg-border mb-2" />
@@ -330,28 +413,30 @@ export default function BookAppointment() {
                         <div className="animate-pulse w-20 h-[18px] rounded-full bg-border" />
                       </div>
                     </div>
-                    <div className="animate-pulse w-5 h-5 rounded bg-border mt-0.5" />
+                    <div className="animate-pulse w-5 h-5 rounded bg-border mt-0.5 md:hidden" />
                   </div>
                 ))}
               </div>
             )}
 
-            <div className="flex flex-col gap-3">
+            <div className="flex flex-col gap-3 md:grid md:grid-cols-2 md:gap-4">
               {types.map(t => (
                 <button key={t.id} type="button"
                   onClick={() => { setSelectedType(t); setStep(2) }}
-                  className="text-left bg-white border-[1.5px] border-border rounded-xl py-5 px-6 cursor-pointer transition-all duration-200 shadow-[0_1px_4px_rgba(0,0,0,0.03)] flex justify-between items-start gap-3 hover:border-maroon hover:shadow-[0_4px_16px_rgba(123,26,42,0.08)]"
+                  className="text-left bg-white border-[1.5px] border-border rounded-xl p-5 cursor-pointer transition-all duration-200 shadow-[0_1px_4px_rgba(0,0,0,0.03)] flex flex-col justify-between items-start gap-3 hover:border-maroon hover:shadow-[0_4px_16px_rgba(123,26,42,0.08)] hover:-translate-y-0.5"
                 >
-                  <div className="flex-1">
-                    <h3 className="font-serif text-[17px] font-bold text-maroon m-0 mb-1.5">{t.name}</h3>
-                    <p className="text-[13px] text-text-sub m-0 mb-3.5 leading-[1.5]">{t.description}</p>
+                  <div className="w-full">
+                    <div className="flex justify-between items-start w-full mb-1.5">
+                      <h3 className="font-serif text-[16px] font-bold text-maroon m-0 pr-2">{t.name}</h3>
+                      <span className="text-border-strong text-[18px] leading-none shrink-0 md:hidden">›</span>
+                    </div>
+                    <p className="text-[13px] text-text-sub m-0 mb-3.5 leading-normal">{t.description}</p>
                     <div className="flex flex-wrap gap-1.5">
                       {t.required_documents?.map((doc, j) => (
                         <span key={j} className="text-[11px] text-text-sub bg-off-white py-[3px] px-2.5 rounded-full border border-border font-medium">{doc}</span>
                       ))}
                     </div>
                   </div>
-                  <span className="text-border-strong text-[20px] mt-0.5 shrink-0">›</span>
                 </button>
               ))}
             </div>
@@ -364,7 +449,7 @@ export default function BookAppointment() {
             <h1 className="font-serif text-[clamp(26px,5vw,34px)] font-bold text-maroon m-0 mb-2 leading-[1.15]">
               Select Date &amp; Time
             </h1>
-            <p className="text-[14px] text-text-sub m-0 mb-8 leading-[1.5]">
+            <p className="text-[14px] text-text-sub m-0 mb-8 leading-normal">
               Choose an available slot for your visit to the Registrar's Office.
             </p>
 
@@ -497,7 +582,7 @@ export default function BookAppointment() {
               <div className="p-7">
                 {/* Transaction header */}
                 <div className="mb-6 pb-5 border-b border-border">
-                  <p className="text-[10px] font-bold text-text-muted tracking-[0.1em] uppercase m-0 mb-2">TRANSACTION</p>
+                  <p className="text-[10px] font-bold text-text-muted tracking-widest uppercase m-0 mb-2">TRANSACTION</p>
                   <div className="flex items-center gap-3.5">
                     <div className="w-11 h-11 rounded-[10px] bg-maroon-mid text-maroon flex items-center justify-center shrink-0"><FileText size={20} /></div>
                     <div>
@@ -512,7 +597,7 @@ export default function BookAppointment() {
                 {/* Schedule + Location */}
                 <div className="grid grid-cols-2 gap-6 mb-6 pb-5 border-b border-border">
                   <div>
-                    <p className="text-[10px] font-bold text-text-muted tracking-[0.1em] uppercase m-0 mb-2.5">SCHEDULE</p>
+                    <p className="text-[10px] font-bold text-text-muted tracking-widest uppercase m-0 mb-2.5">SCHEDULE</p>
                     <div className="flex items-center gap-2 text-[14px] text-text-main mb-1.5">
                       <Calendar size={14} className="text-gold" /> {fmtDate(selectedDate)}
                     </div>
@@ -521,7 +606,7 @@ export default function BookAppointment() {
                     </div>
                   </div>
                   <div>
-                    <p className="text-[10px] font-bold text-text-muted tracking-[0.1em] uppercase m-0 mb-2.5">LOCATION</p>
+                    <p className="text-[10px] font-bold text-text-muted tracking-widest uppercase m-0 mb-2.5">LOCATION</p>
                     <div className="flex items-start gap-2 text-[14px] text-text-main">
                       <MapPin size={16} className="text-gold mt-0.5" />
                       <div>
@@ -543,7 +628,7 @@ export default function BookAppointment() {
                 {/* Notes & Media */}
                 {(notes || selectedFile) && (
                   <div className="mb-6 pb-5 border-b border-border">
-                    <p className="text-[10px] font-bold text-text-muted tracking-[0.1em] uppercase m-0 mb-2.5">NOTES & MEDIA</p>
+                    <p className="text-[10px] font-bold text-text-muted tracking-widest uppercase m-0 mb-2.5">NOTES & MEDIA</p>
                     {notes && <div className={`text-[14px] text-text-main whitespace-pre-wrap ${selectedFile ? 'mb-2' : 'mb-0'}`}>{notes}</div>}
                     {selectedFile && (
                       <div className="flex items-center gap-2 text-[13px] text-text-sub bg-off-white py-2 px-3 rounded-lg border border-border w-fit">
@@ -555,7 +640,7 @@ export default function BookAppointment() {
 
                 {/* Requirements */}
                 <div>
-                  <p className="text-[10px] font-bold text-text-muted tracking-[0.1em] uppercase m-0 mb-3">REQUIREMENTS TO BRING</p>
+                  <p className="text-[10px] font-bold text-text-muted tracking-widest uppercase m-0 mb-3">REQUIREMENTS TO BRING</p>
                   <div className="flex flex-col gap-2">
                     {selectedType.required_documents?.map((doc, i) => (
                       <div key={i} className="flex items-center gap-2.5 text-[14px] text-text-main">
@@ -594,7 +679,7 @@ export default function BookAppointment() {
         )}
 
         {confirmingBook && (
-          <div className="fixed inset-0 z-[110] flex items-center justify-center">
+          <div className="fixed inset-0 z-110 flex items-center justify-center">
             <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => !loading && setConfirmingBook(false)} />
             <div className="animate-fade-up relative w-[90%] max-w-[320px] bg-white rounded-[20px] p-6 text-center shadow-[0_10px_40px_rgba(0,0,0,0.2)]">
               <div className="w-12 h-12 rounded-full bg-gold-light text-gold flex items-center justify-center mx-auto mb-4">
@@ -623,6 +708,8 @@ export default function BookAppointment() {
             </div>
           </div>
         )}
+          </div>
+        </div>
       </div>
     </StudentLayout>
   )

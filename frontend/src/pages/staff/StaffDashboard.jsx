@@ -440,7 +440,7 @@ export default function StaffDashboard() {
                 <h1 className="font-serif text-[26px] font-bold text-text-main m-0 flex items-center gap-2">
                   <BarChart2 size={24} className="text-maroon" /> Daily Overview
                 </h1>
-                <p className="text-[14px] text-text-sub mt-2 mb-0">
+                <p className="text-[12px] text-text-sub mt-2 mb-0">
                   A high-level view of today's queue, active operations, and urgent escalations.
                 </p>
               </div>

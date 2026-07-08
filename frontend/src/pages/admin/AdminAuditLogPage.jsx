@@ -71,8 +71,13 @@ export default function AdminAuditLogPage() {
       {/* Header */}
       <div className="flex items-start justify-between mb-8 flex-wrap gap-4">
         <div>
-          <h1 className="font-serif text-[32px] font-bold text-maroon m-0 mb-1.5">Audit Log</h1>
-          <p className="text-[15px] text-text-sub m-0">System-wide action history for security and compliance tracking.</p>
+          <div className="text-[11px] font-bold text-gold uppercase tracking-[0.06em] mb-2">SECURITY & COMPLIANCE</div>
+          <h1 className="font-serif text-[26px] font-bold text-maroon m-0 mb-2 flex items-center gap-3">
+            <Shield className="text-maroon" size={24} /> System Audit Log
+          </h1>
+          <p className="text-[12px] text-text-sub m-0 leading-relaxed max-w-[650px]">
+            Track administrative actions, configurations, and data modifications.
+          </p>
         </div>
         <button onClick={exportCSV} disabled={filtered.length === 0}
           className={`py-2.5 px-5 rounded-[10px] border border-border bg-white text-text-main text-[14px] font-semibold font-sans flex items-center gap-2 shadow-sm ${filtered.length ? 'cursor-pointer hover:bg-off-white' : 'cursor-not-allowed opacity-70'}`}>

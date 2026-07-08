@@ -205,7 +205,7 @@ export default function StudentDashboard() {
       {/* Dashboard Body */}
       {isDesktop ? (
         <>
-        <main className="p-10 flex-1 max-w-[1200px] mx-auto w-full">
+        <div className="flex-1 w-full">
           {/* Hero greeting card */}
           <div 
               className="animate-fade-up bg-linear-to-br from-maroon to-maroon-dark rounded-3xl py-10 px-12 mb-8 relative overflow-hidden shadow-[0_20px_40px_-15px_rgba(123,26,42,0.3)]"
@@ -418,7 +418,7 @@ export default function StudentDashboard() {
                 )}
               </div>
             </div>
-          </main>
+            </div>
         </>
       ) : (
         <div className="pb-[88px]">

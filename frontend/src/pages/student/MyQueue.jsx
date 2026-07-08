@@ -73,7 +73,17 @@ export default function MyQueue() {
   return (
     <StudentLayout activeTab="queue" mobileTitle="My Queue" backTo="/student/dashboard">
 
-      <div className="max-w-[560px] mx-auto pt-6 px-4 pb-20">
+      <div className="w-full max-w-[560px] mx-auto pt-6 px-4 pb-20 md:max-w-[900px] md:mx-0 md:pt-0 md:px-0">
+        <div className="hidden md:block mb-8">
+          <div className="text-[11px] font-bold text-gold uppercase tracking-[0.06em] mb-2">LIVE TRACKING</div>
+          <h1 className="font-serif text-[26px] font-bold text-maroon m-0 mb-2 flex items-center gap-3">
+            <Ticket className="text-maroon" size={24} /> My Queue
+          </h1>
+          <p className="text-[12px] text-text-sub m-0 leading-relaxed max-w-[650px]">
+            Monitor your active processing status and upcoming appointments.
+          </p>
+        </div>
+
         {error && (
           <div className="py-2.5 px-3.5 rounded-lg bg-danger-light text-danger text-[13px] mb-4">
             {error}
@@ -97,7 +107,6 @@ export default function MyQueue() {
         </div>
 
         <div className={`${activeTab === 'active' ? 'block' : 'hidden'}`}>
-          <h2 className="hidden md:block font-serif text-[22px] font-bold text-text-main mb-4">Active Queue</h2>
           {loading ? (
             <div className="flex flex-col gap-4">
               <div className="bg-white rounded-2xl p-6 border border-border shadow-sm">
@@ -130,7 +139,7 @@ export default function MyQueue() {
           ) : ticket ? (
             <div className="animate-fade-up">
               {/* Queue ticket card */}
-              <div className="bg-gradient-to-br from-maroon to-maroon-dark rounded-2xl p-7 mb-4 text-white shadow-lg relative overflow-hidden">
+              <div className="bg-linear-to-br from-maroon to-maroon-dark rounded-2xl p-7 mb-4 text-white shadow-lg relative overflow-hidden">
                 <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full -mr-10 -mt-10 blur-xl" />
                 <div className="relative z-10 flex justify-between items-start mb-4">
                   <div>
@@ -151,7 +160,7 @@ export default function MyQueue() {
 
               {/* Step tracker */}
               <div className="bg-white rounded-2xl border border-border p-6 shadow-sm">
-                <h3 className="text-[14px] font-bold text-text-main m-0 mb-5 uppercase tracking-[0.05em]">Transaction Progress</h3>
+                <h3 className="text-[14px] font-bold text-text-main m-0 mb-5 uppercase tracking-wider">Transaction Progress</h3>
                 <div className="flex flex-col">
                   {steps.map((step, idx) => {
                     const isLast = idx === steps.length - 1
@@ -229,7 +238,6 @@ export default function MyQueue() {
         </div>
 
         <div className={`${activeTab === 'upcoming' ? 'block' : 'hidden'}`}>
-          <h2 className="hidden md:block font-serif text-[22px] font-bold text-text-main mb-4">Upcoming Appointments</h2>
           {loading ? (
             <div className="flex flex-col gap-3">
               {[1, 2, 3].map(i => (

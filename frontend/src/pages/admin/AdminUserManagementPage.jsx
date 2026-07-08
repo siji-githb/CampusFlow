@@ -203,8 +203,13 @@ export default function AdminUserManagementPage() {
     <div>
       {/* ── Header ── */}
       <div className="mb-6">
-        <h1 className="font-serif text-[30px] font-bold text-maroon m-0 mb-1.5">User Management</h1>
-        <p className="text-[14px] text-text-muted m-0">Manage all student, staff, and administration accounts.</p>
+        <div className="text-[11px] font-bold text-gold uppercase tracking-[0.06em] mb-2">USER MANAGEMENT</div>
+        <h1 className="font-serif text-[26px] font-bold text-maroon m-0 mb-2 flex items-center gap-3">
+          <Users className="text-maroon" size={24} /> User Management
+        </h1>
+        <p className="text-[12px] text-text-sub m-0 leading-relaxed max-w-[650px]">
+          Manage system accounts, adjust roles, and export the user directory.
+        </p>
       </div>
 
       {/* Alerts */}

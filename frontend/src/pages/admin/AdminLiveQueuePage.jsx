@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useAuth } from '../../context/useAuth'
 import { getTodaysQueue, confirmStep, getLiveQueueStats } from '../../services/queueService'
-import { RefreshCw, AlertTriangle, Inbox } from 'lucide-react'
+import { RefreshCw, AlertTriangle, Inbox, Ticket } from 'lucide-react'
 
 // ── Priority config ────────────────────────────────────────────────────────────
 const PRIORITY_CFG = {
@@ -92,8 +92,13 @@ export default function AdminLiveQueuePage() {
       {/* ── Page Header ── */}
       <div className="flex items-start justify-between mb-7 flex-wrap gap-3">
         <div>
-          <h1 className="font-serif text-[30px] font-bold text-maroon m-0 mb-1.5">Live Operations Dashboard</h1>
-          <p className="text-[14px] text-text-muted m-0">Real-time monitoring of registrar queues and service windows.</p>
+          <div className="text-[11px] font-bold text-gold uppercase tracking-[0.06em] mb-2">QUEUE MANAGEMENT</div>
+          <h1 className="font-serif text-[26px] font-bold text-maroon m-0 mb-2 flex items-center gap-3">
+            <Ticket className="text-maroon" size={24} /> Live Operations Dashboard
+          </h1>
+          <p className="text-[12px] text-text-sub m-0 leading-relaxed max-w-[650px]">
+            Monitor registrar queues, track wait times, and manage active processing in real-time.
+          </p>
         </div>
         <div className="flex items-center gap-2.5">
           <div className="flex items-center gap-2 py-2 px-3.5 rounded-full bg-success-light border border-success-border">
@@ -118,7 +123,7 @@ export default function AdminLiveQueuePage() {
       {/* ── Stat Cards ── */}
       <div className="grid grid-cols-3 gap-4 mb-7">
         {/* Total in Queue */}
-        <div className="animate-fade-up bg-white rounded-2xl p-[20px_22px] border border-border shadow-sm" style={{ animationDelay: '0.1s' }}>
+        <div className="animate-fade-up bg-white rounded-2xl p-6 border border-border shadow-sm" style={{ animationDelay: '0.1s' }}>
           <div className="text-[11px] font-semibold text-text-muted uppercase tracking-[0.06em] mb-2.5">Total in Queue</div>
           <div className="font-serif text-[36px] font-bold text-maroon leading-none mb-1.5 min-h-[36px]">
             {loading ? <div className="animate-pulse w-[60px] h-[36px] bg-border rounded-lg" /> : waiting.length}
@@ -126,7 +131,7 @@ export default function AdminLiveQueuePage() {
         </div>
 
         {/* Avg Wait Time */}
-        <div className="animate-fade-up bg-white rounded-2xl p-[20px_22px] border border-border shadow-sm" style={{ animationDelay: '0.2s' }}>
+        <div className="animate-fade-up bg-white rounded-2xl p-6 border border-border shadow-sm" style={{ animationDelay: '0.2s' }}>
           <div className="text-[11px] font-semibold text-text-muted uppercase tracking-[0.06em] mb-2.5">Avg. Wait Time</div>
           <div className="font-serif text-[36px] font-bold text-maroon leading-none mb-1.5 min-h-[36px]">
             {loading ? <div className="animate-pulse w-[80px] h-[36px] bg-border rounded-lg" /> : <>{avgWait}m&nbsp;<span className="text-[22px]">{queueStats?.avg_wait_seconds || 0}s</span></>}
@@ -134,7 +139,7 @@ export default function AdminLiveQueuePage() {
         </div>
 
         {/* Peak Forecast */}
-        <div className="animate-fade-up bg-maroon rounded-2xl p-[20px_22px] shadow-[0_4px_16px_rgba(123,26,42,0.25)] relative overflow-hidden" style={{ animationDelay: '0.3s' }}>
+        <div className="animate-fade-up bg-maroon rounded-2xl p-6 shadow-[0_4px_16px_rgba(123,26,42,0.25)] relative overflow-hidden" style={{ animationDelay: '0.3s' }}>
           <div className="absolute -right-4 -top-4 w-20 h-20 rounded-full bg-white/10" />
           <div className="text-[11px] font-semibold text-white/65 uppercase tracking-[0.06em] mb-2.5 relative z-10">Peak Forecast</div>
           <div className="font-serif text-[28px] font-bold text-white leading-none mb-1.5 min-h-[28px] relative z-10">

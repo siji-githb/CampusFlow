@@ -129,8 +129,13 @@ export default function AdminRegistrarRecordsPage() {
       {/* ── Header ── */}
       <div className="flex items-start justify-between mb-6 flex-wrap gap-3">
         <div>
-          <h1 className="font-serif text-[30px] font-bold text-maroon m-0 mb-1.5">Registrar Records</h1>
-          <p className="text-[14px] text-text-muted m-0">Document issuance history and student record management.</p>
+          <div className="text-[11px] font-bold text-gold uppercase tracking-[0.06em] mb-2">RECORD MANAGEMENT</div>
+          <h1 className="font-serif text-[26px] font-bold text-maroon m-0 mb-2 flex items-center gap-3">
+            <FolderOpen className="text-maroon" size={24} /> Registrar Records
+          </h1>
+          <p className="text-[12px] text-text-sub m-0 leading-relaxed max-w-[650px]">
+            Review document issuance history, track statuses, and export records.
+          </p>
         </div>
         <div className="flex gap-3 items-center">
           <div className="flex items-center gap-2">

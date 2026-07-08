@@ -422,7 +422,6 @@ export default function StudentLayout({ children, activeTab, mobileTitle, backTo
 
           {/* Body */}
           <main style={{ padding: '40px', flex: 1, maxWidth: '1200px', margin: '0 auto', width: '100%' }}>
-            {mobileTitle && <h1 style={{ fontFamily: "'Lora', serif", fontSize: '28px', color: M.maroon, margin: '0 0 24px 0' }}>{mobileTitle}</h1>}
             {children}
           </main>
         </div>

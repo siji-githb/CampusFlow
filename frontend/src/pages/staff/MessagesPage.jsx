@@ -184,7 +184,7 @@ export default function MessagesPage() {
         <h1 className="font-serif text-[26px] font-bold text-text-main m-0 flex items-center gap-2">
           <MessageSquare size={24} className="text-maroon" /> AI Escalations
         </h1>
-        <p className="text-[14px] text-text-sub mt-2 mb-0">
+        <p className="text-[12px] text-text-sub mt-2 mb-0">
           Handle escalated student queries and reply directly to students.
         </p>
       </div>

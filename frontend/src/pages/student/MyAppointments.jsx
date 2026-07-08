@@ -4,7 +4,7 @@ import { useAuth } from '../../context/useAuth'
 import StudentLayout from '../../components/layout/StudentLayout'
 import { getMyAppointments, cancelAppointment } from '../../services/appointmentService'
 import RescheduleModal from '../../components/RescheduleModal'
-import { Inbox, Calendar, Tag, FileText, AlertTriangle, ChevronLeft, Clock, CheckCircle } from 'lucide-react'
+import { Inbox, Calendar, Tag, FileText, AlertTriangle, ChevronLeft, ChevronRight, Clock, CheckCircle } from 'lucide-react'
 
 const STATUS = {
   confirmed: { label: 'Confirmed', bg: '#F0FDF4', color: '#15803D', border: '#BBF7D0' },
@@ -18,6 +18,16 @@ export default function MyAppointments() {
   const { token } = useAuth()
   const navigate = useNavigate()
   const [appointments, setAppointments] = useState([])
+  const [selectedAppt, setSelectedAppt] = useState(null)
+
+  const fmt12h = (t) => {
+    if (!t) return ''
+    const [hStr, mStr] = t.split(':')
+    const h = parseInt(hStr, 10)
+    const suffix = h < 12 ? 'AM' : 'PM'
+    const h12 = h % 12 || 12
+    return `${h12}:${mStr} ${suffix}`
+  }
   const [loading, setLoading] = useState(true)
   const [cancelling, setCancelling] = useState(null)
   const [error, setError] = useState('')
@@ -65,100 +75,196 @@ export default function MyAppointments() {
 
   return (
     <StudentLayout activeTab="appointments" mobileTitle="My Appointments" backTo="/student/dashboard">
-      <div className="max-w-[480px] mx-auto py-5 px-4">
-        {error && <div className="py-2.5 px-3.5 rounded-lg bg-maroon-light text-maroon text-[13px] mb-4 font-medium">{error}</div>}
-
-        {/* ── Filter Tabs ── */}
-        <div className="flex overflow-x-auto gap-1 mb-5 pb-1 hide-scrollbar">
-          {['all', 'pending', 'confirmed', 'completed', 'cancelled'].map(f => (
-            <button
-              key={f}
-              onClick={() => setFilter(f)}
-              className={`py-1.5 px-3 rounded-full border border-solid text-[12px] font-semibold cursor-pointer whitespace-nowrap transition-all duration-200 font-sans min-h-[36px] ${
-                filter === f ? 'bg-maroon text-white border-maroon' : 'bg-white text-text-main border-border'
-              }`}
-            >
-              {f.charAt(0).toUpperCase() + f.slice(1)}
-            </button>
-          ))}
+      <div className="w-full max-w-[480px] mx-auto py-5 px-4 md:max-w-[1050px] md:mx-0 md:py-0 md:px-0">
+        <div className="hidden md:block mb-8">
+          <div className="text-[11px] font-bold text-gold uppercase tracking-[0.06em] mb-2">APPOINTMENTS</div>
+          <h1 className="font-serif text-[26px] font-bold text-maroon m-0 mb-2 flex items-center gap-3">
+            <Calendar className="text-maroon" size={24} /> My Appointments
+          </h1>
+          <p className="text-[12px] text-text-sub m-0 leading-relaxed max-w-[650px]">
+            View and manage your scheduled appointments.
+          </p>
         </div>
 
-        {loading ? (
-          <div className="flex flex-col gap-3">
-            {[1, 2, 3].map(i => (
-              <div key={i} className="bg-white rounded-2xl p-4 shadow-[0_2px_8px_rgba(0,0,0,0.06)] border border-border">
-                <div className="flex justify-between items-center mb-2.5">
-                  <div className="animate-pulse w-[120px] h-[18px] rounded bg-border" />
-                  <div className="animate-pulse w-[60px] h-[18px] rounded-full bg-border" />
-                </div>
-                <div className="animate-pulse w-[160px] h-[14px] rounded bg-border mb-1.5" />
-                <div className="animate-pulse w-[100px] h-[14px] rounded bg-border mb-4" />
-                <div className="animate-pulse w-full h-8 rounded-lg bg-border" />
+        {error && <div className="py-2.5 px-3.5 rounded-lg bg-maroon-light text-maroon text-[13px] mb-4 font-medium">{error}</div>}
+
+        <div className="md:flex md:gap-8 md:items-start">
+          
+          {/* ── Left Column: List ── */}
+          <div className="md:w-[420px] shrink-0">
+            {/* ── Filter Tabs ── */}
+            <div className="flex overflow-x-auto gap-1 mb-5 pb-1 hide-scrollbar">
+              {['all', 'pending', 'confirmed', 'completed', 'cancelled'].map(f => (
+                <button
+                  key={f}
+                  onClick={() => { setFilter(f); setSelectedAppt(null) }}
+                  className={`py-1.5 px-3 rounded-full border border-solid text-[12px] font-semibold cursor-pointer whitespace-nowrap transition-all duration-200 font-sans min-h-[36px] ${
+                    filter === f ? 'bg-maroon text-white border-maroon' : 'bg-white text-text-main border-border'
+                  }`}
+                >
+                  {f.charAt(0).toUpperCase() + f.slice(1)}
+                </button>
+              ))}
+            </div>
+
+            {loading ? (
+              <div className="flex flex-col gap-3">
+                {[1, 2, 3].map(i => (
+                  <div key={i} className="bg-white rounded-2xl p-4 shadow-[0_2px_8px_rgba(0,0,0,0.06)] border border-border">
+                    <div className="flex justify-between items-center mb-2.5">
+                      <div className="animate-pulse w-[120px] h-[18px] rounded bg-border" />
+                      <div className="animate-pulse w-[60px] h-[18px] rounded-full bg-border" />
+                    </div>
+                    <div className="animate-pulse w-[160px] h-[14px] rounded bg-border mb-1.5" />
+                    <div className="animate-pulse w-[100px] h-[14px] rounded bg-border mb-4" />
+                    <div className="animate-pulse w-full h-8 rounded-lg bg-border" />
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
-        ) : filteredAppointments.length === 0 ? (
-          <div className="animate-fade-up text-center py-16 px-8 bg-white rounded-2xl border border-border shadow-sm">
-            <div className="text-gold mb-4 flex justify-center"><Inbox size={48} /></div>
-            <p className="text-[15px] font-semibold text-text-main m-0 mb-1.5">No appointments found</p>
-            <p className="text-[13px] text-text-sub m-0 mb-6">{filter === 'all' ? 'Book your first registrar transaction' : `You have no ${filter} appointments`}</p>
-            {filter === 'all' && (
-              <button onClick={() => navigate('/student/book')} className="py-3 px-6 rounded-[10px] border-none bg-gold text-maroon text-[14px] font-bold cursor-pointer font-sans shadow-sm transition-transform active:scale-95">Book an Appointment</button>
-            )}
-          </div>
-        ) : (
-          <div className="animate-fade-up flex flex-col gap-3">
-            {filteredAppointments.map(appt => {
-              const s = STATUS[appt.status] || STATUS.pending
-              return (
-                <div key={appt.id} className="bg-white rounded-2xl p-4 shadow-[0_2px_8px_rgba(0,0,0,0.06),0_0_0_1px_rgba(0,0,0,0.04)] transition-all hover:shadow-[0_4px_12px_rgba(0,0,0,0.08)]">
-                  <div className="flex justify-between items-start mb-2.5">
-                    <h3 className="font-serif text-[15px] font-semibold text-text-main m-0">{appt.transaction_types?.name || 'Transaction'}</h3>
-                    <span className="text-[11px] font-semibold py-1 px-2.5 rounded-full whitespace-nowrap" style={{ background: s.bg, color: s.color, border: `1px solid ${s.border}` }}>{s.label}</span>
-                  </div>
-                  <div className="text-[13px] text-text-sub mb-3 flex flex-col gap-1.5">
-                    <span className="flex items-center gap-1.5"><Calendar size={13} className="text-gold" /> {appt.appointment_date} at {(() => {
-                      const [hStr, mStr] = appt.time_slot.split(':')
-                      const h = parseInt(hStr, 10)
-                      const suffix = h < 12 ? 'AM' : 'PM'
-                      const h12 = h % 12 || 12
-                      return `${h12}:${mStr} ${suffix}`
-                    })()}</span>
-                    <span className="flex items-center gap-1.5"><Tag size={13} className="text-gold" /> Priority: <span className="capitalize ml-1">{appt.priority_class}</span></span>
-                    {appt.notes && <span className="flex items-start gap-1.5"><FileText size={13} className="text-gold shrink-0 mt-0.5" /> <span>{appt.notes}</span></span>}
-                  </div>
-                  {appt.transaction_types?.processing_steps && (
-                    <div className="pt-3 pb-1 border-t border-border">
-                      <p className="text-[10px] font-bold text-gold m-0 mb-2 uppercase tracking-[0.04em]">Processing Steps</p>
-                      <div className="flex flex-wrap gap-1.5">
-                        {appt.transaction_types.processing_steps.map((step, i) => (
-                          <span key={i} className="text-[11px] bg-surface text-text-sub py-1 px-2.5 rounded-full font-medium">{i + 1}. {step}</span>
-                        ))}
+            ) : filteredAppointments.length === 0 ? (
+              <div className="animate-fade-up text-center py-16 px-8 bg-white rounded-2xl border border-border shadow-sm">
+                <div className="text-gold mb-4 flex justify-center"><Inbox size={48} /></div>
+                <p className="text-[15px] font-semibold text-text-main m-0 mb-1.5">No appointments found</p>
+                <p className="text-[13px] text-text-sub m-0 mb-6">{filter === 'all' ? 'Book your first registrar transaction' : `You have no ${filter} appointments`}</p>
+                {filter === 'all' && (
+                  <button onClick={() => navigate('/student/book')} className="py-3 px-6 rounded-[10px] border-none bg-gold text-maroon text-[14px] font-bold cursor-pointer font-sans shadow-sm transition-transform active:scale-95">Book an Appointment</button>
+                )}
+              </div>
+            ) : (
+              <div className="animate-fade-up flex flex-col gap-3">
+                {filteredAppointments.map(appt => {
+                  const s = STATUS[appt.status] || STATUS.pending
+                  const isSelected = selectedAppt?.id === appt.id
+                  return (
+                    <div 
+                      key={appt.id} 
+                      onClick={() => setSelectedAppt(appt)}
+                      className={`group bg-white rounded-2xl p-4 shadow-[0_2px_8px_rgba(0,0,0,0.06),0_0_0_1px_rgba(0,0,0,0.04)] transition-all cursor-pointer hover:shadow-[0_4px_12px_rgba(0,0,0,0.08)] ${isSelected ? 'md:ring-2 md:ring-maroon md:shadow-[0_4px_12px_rgba(123,26,42,0.15)]' : ''}`}
+                    >
+                      <div className="flex justify-between items-start mb-2.5">
+                        <h3 className="font-serif text-[15px] font-semibold text-text-main m-0">{appt.transaction_types?.name || 'Transaction'}</h3>
+                        <span className="text-[11px] font-semibold py-1 px-2.5 rounded-full whitespace-nowrap" style={{ background: s.bg, color: s.color, border: `1px solid ${s.border}` }}>{s.label}</span>
+                      </div>
+                      <div className="text-[13px] text-text-sub flex flex-col gap-1.5">
+                        <span className="flex items-center gap-1.5"><Calendar size={13} className="text-gold" /> {appt.appointment_date} at {fmt12h(appt.time_slot)}</span>
+                        <span className="flex items-center gap-1.5"><Tag size={13} className="text-gold" /> Priority: <span className="capitalize ml-1">{appt.priority_class}</span></span>
+                        {appt.notes && <span className="flex items-start gap-1.5"><FileText size={13} className="text-gold shrink-0 mt-0.5" /> <span className="truncate">{appt.notes}</span></span>}
+                      </div>
+                      
+                      {/* MOBILE ONLY Details & Actions */}
+                      <div className="md:hidden">
+                        {appt.transaction_types?.processing_steps && (
+                          <div className="pt-3 pb-1 border-t border-border mt-3">
+                            <p className="text-[10px] font-bold text-gold m-0 mb-2 uppercase tracking-[0.04em]">Processing Steps</p>
+                            <div className="flex flex-wrap gap-1.5">
+                              {appt.transaction_types.processing_steps.map((step, i) => (
+                                <span key={i} className="text-[11px] bg-surface text-text-sub py-1 px-2.5 rounded-full font-medium">{i + 1}. {step}</span>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                        {(appt.status === 'confirmed' || appt.status === 'pending') && (
+                          <div className="flex gap-2 mt-4">
+                            <button 
+                              onClick={(e) => { e.stopPropagation(); setReschedulingAppt(appt) }} 
+                              disabled={cancelling === appt.id || !canReschedule(appt.appointment_date, appt.time_slot)}
+                              className={`flex-1 min-h-[44px] text-[13px] font-semibold text-text-main bg-white border border-border rounded-[10px] font-sans ${(!canReschedule(appt.appointment_date, appt.time_slot) || cancelling === appt.id) ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:bg-off-white'}`}>
+                              Reschedule
+                            </button>
+                            <button 
+                              onClick={(e) => { e.stopPropagation(); setConfirmCancelId(appt.id) }} 
+                              disabled={cancelling === appt.id}
+                              className={`flex-1 min-h-[44px] text-[13px] font-semibold text-maroon bg-transparent border border-maroon-border rounded-[10px] font-sans ${cancelling === appt.id ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:bg-maroon-light'}`}>
+                              {cancelling === appt.id ? 'Cancelling...' : 'Cancel'}
+                            </button>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* DESKTOP ONLY View Details Indicator */}
+                      <div className="hidden md:flex justify-end mt-3 pt-3 border-t border-border border-dashed">
+                        <span className="text-[12px] font-bold text-maroon flex items-center gap-1 transition-transform group-hover:translate-x-1">
+                          {isSelected ? 'Viewing Details' : 'View Details'} <ChevronRight size={14} />
+                        </span>
                       </div>
                     </div>
-                  )}
-                  {(appt.status === 'confirmed' || appt.status === 'pending') && (
-                    <div className="flex gap-2 mt-4">
-                      <button 
-                        onClick={() => setReschedulingAppt(appt)} 
-                        disabled={cancelling === appt.id || !canReschedule(appt.appointment_date, appt.time_slot)}
-                        title={!canReschedule(appt.appointment_date, appt.time_slot) ? "Cannot reschedule within 24 hours of appointment" : ""}
-                        className={`flex-1 min-h-[44px] text-[13px] font-semibold text-text-main bg-white border border-border rounded-[10px] font-sans ${(!canReschedule(appt.appointment_date, appt.time_slot) || cancelling === appt.id) ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:bg-off-white'}`}>
-                        Reschedule
-                      </button>
-                      <button 
-                        onClick={() => setConfirmCancelId(appt.id)} 
-                        disabled={cancelling === appt.id}
-                        className={`flex-1 min-h-[44px] text-[13px] font-semibold text-maroon bg-transparent border border-maroon-border rounded-[10px] font-sans ${cancelling === appt.id ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:bg-maroon-light'}`}>
-                        {cancelling === appt.id ? 'Cancelling...' : 'Cancel'}
-                      </button>
-                    </div>
-                  )}
-                </div>
-              )
-            })}
+                  )
+                })}
+              </div>
+            )}
           </div>
-        )}
+
+          {/* ── Right Column: Details (Desktop Only) ── */}
+          <div className="hidden md:flex flex-col flex-1 bg-white border border-border rounded-[24px] p-8 shadow-sm sticky top-24 min-h-[400px]">
+            {selectedAppt ? (
+              <div className="animate-fade-up flex flex-col h-full">
+                <div className="flex items-start justify-between mb-6 pb-5 border-b border-border">
+                  <div>
+                    <p className="text-[10px] font-bold text-text-muted tracking-widest uppercase m-0 mb-2">TRANSACTION</p>
+                    <h2 className="font-serif text-[22px] font-bold text-text-main m-0 mb-2">{selectedAppt.transaction_types?.name || 'Transaction'}</h2>
+                    <span className="text-[11px] font-semibold py-1.5 px-3 rounded-full inline-flex items-center" style={{ background: STATUS[selectedAppt.status]?.bg || STATUS.pending.bg, color: STATUS[selectedAppt.status]?.color || STATUS.pending.color, border: `1px solid ${STATUS[selectedAppt.status]?.border || STATUS.pending.border}` }}>
+                      {STATUS[selectedAppt.status]?.label || 'Pending'}
+                    </span>
+                  </div>
+                </div>
+                
+                <div className="grid grid-cols-2 gap-6 mb-6 pb-6 border-b border-border">
+                  <div>
+                    <p className="text-[10px] font-bold text-text-muted tracking-widest uppercase m-0 mb-3">SCHEDULE</p>
+                    <div className="flex flex-col gap-2.5 text-[14px] text-text-main font-medium">
+                      <span className="flex items-center gap-2.5"><Calendar size={15} className="text-gold" /> {selectedAppt.appointment_date}</span>
+                      <span className="flex items-center gap-2.5"><Clock size={15} className="text-gold" /> {fmt12h(selectedAppt.time_slot)}</span>
+                    </div>
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-bold text-text-muted tracking-widest uppercase m-0 mb-3">DETAILS</p>
+                    <div className="flex flex-col gap-2.5 text-[14px] text-text-main font-medium">
+                      <span className="flex items-center gap-2.5"><Tag size={15} className="text-gold" /> Priority: <span className="capitalize">{selectedAppt.priority_class}</span></span>
+                      {selectedAppt.notes && <span className="flex items-start gap-2.5"><FileText size={15} className="text-gold shrink-0 mt-0.5" /> <span className="whitespace-pre-wrap leading-relaxed">{selectedAppt.notes}</span></span>}
+                    </div>
+                  </div>
+                </div>
+
+                {selectedAppt.transaction_types?.processing_steps && (
+                  <div className="mb-8">
+                    <p className="text-[10px] font-bold text-text-muted tracking-widest uppercase m-0 mb-3">PROCESSING STEPS</p>
+                    <div className="flex flex-col gap-3">
+                      {selectedAppt.transaction_types.processing_steps.map((step, i) => (
+                        <div key={i} className="flex items-center gap-3 text-[14px] font-medium text-text-main">
+                          <div className="w-6 h-6 rounded-full bg-off-white border border-border flex items-center justify-center text-[11px] font-bold text-text-sub shrink-0">{i + 1}</div>
+                          <span>{step}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {(selectedAppt.status === 'confirmed' || selectedAppt.status === 'pending') && (
+                  <div className="flex gap-3 mt-auto pt-6">
+                    <button 
+                      onClick={() => setReschedulingAppt(selectedAppt)} 
+                      disabled={cancelling === selectedAppt.id || !canReschedule(selectedAppt.appointment_date, selectedAppt.time_slot)}
+                      className={`flex-1 py-3 px-4 text-[13px] font-bold text-text-main bg-white border-[1.5px] border-border rounded-[10px] font-sans transition-colors ${(!canReschedule(selectedAppt.appointment_date, selectedAppt.time_slot) || cancelling === selectedAppt.id) ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:bg-off-white'}`}>
+                      Reschedule
+                    </button>
+                    <button 
+                      onClick={() => setConfirmCancelId(selectedAppt.id)} 
+                      disabled={cancelling === selectedAppt.id}
+                      className={`flex-1 py-3 px-4 text-[13px] font-bold text-maroon bg-transparent border-[1.5px] border-maroon-border rounded-[10px] font-sans transition-colors ${cancelling === selectedAppt.id ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:bg-maroon-light'}`}>
+                      {cancelling === selectedAppt.id ? 'Cancelling...' : 'Cancel Appointment'}
+                    </button>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="flex-1 flex flex-col items-center justify-center text-center text-text-muted animate-fade-up">
+                <FileText size={48} className="mb-4 text-border-strong" />
+                <p className="text-[16px] font-bold text-text-main m-0 mb-1.5 font-serif">No appointment selected</p>
+                <p className="text-[13px] m-0">Click an appointment from the list to view its full details.</p>
+              </div>
+            )}
+          </div>
+        </div>
       </div>
 
       {reschedulingAppt && (
@@ -174,7 +280,7 @@ export default function MyAppointments() {
       )}
 
       {confirmCancelId && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center">
+        <div className="fixed inset-0 z-100 flex items-center justify-center">
           <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setConfirmCancelId(null)} />
           <div className="animate-fade-up relative w-[90%] max-w-[320px] bg-white rounded-[20px] p-6 text-center shadow-[0_10px_40px_rgba(0,0,0,0.2)]">
             <div className="w-12 h-12 rounded-full bg-maroon-light text-maroon flex items-center justify-center mx-auto mb-4">

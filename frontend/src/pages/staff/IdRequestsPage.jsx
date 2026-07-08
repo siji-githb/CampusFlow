@@ -288,7 +288,7 @@ export default function IdRequestsPage() {
         <h1 className="font-serif text-[26px] font-bold text-text-main m-0 flex items-center gap-2">
           <HelpCircle size={24} className="text-maroon" /> Student ID Requests
         </h1>
-        <p className="text-[14px] text-text-sub mt-2 mb-0">
+        <p className="text-[12px] text-text-sub mt-2 mb-0">
           Manage requests from students who forgot their Student ID.
           Click <strong>Send Email</strong> to compose a reply, then mark as resolved.
         </p>
