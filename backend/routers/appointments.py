@@ -10,7 +10,8 @@ from services.appointment_service import (
     cancel_appointment,
     get_all_appointments,
     get_appointment_stats,
-    reschedule_appointment
+    reschedule_appointment,
+    clear_cancelled_appointments
 )
 from pydantic import BaseModel
 from deps import get_current_user, get_user_profile, get_supabase_admin, require_staff_or_admin
@@ -77,6 +78,11 @@ def my_appointments(user=Depends(get_current_user)):
 @router.patch("/{appointment_id}/cancel")
 def cancel(appointment_id: str, user=Depends(get_current_user)):
     return cancel_appointment(appointment_id, user.id)
+
+
+@router.delete("/clear-cancelled")
+def clear_cancelled(user=Depends(get_current_user)):
+    return clear_cancelled_appointments(user.id)
 
 
 @router.post("/upload-media")

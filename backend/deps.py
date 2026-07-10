@@ -9,7 +9,7 @@ from functools import lru_cache
 from typing import Optional
 
 import httpx
-from fastapi import Header, HTTPException, Depends
+from fastapi import Header, HTTPException, Depends, Query, WebSocketException, status
 from supabase import create_client, Client, ClientOptions
 
 from config import get_settings
@@ -75,6 +75,18 @@ def get_current_user(authorization: Optional[str] = Header(None)):
         raise
     except Exception:
         raise HTTPException(status_code=401, detail="Invalid or expired token")
+
+
+async def get_ws_user(token: str = Query(...)):
+    """Extract and verify user from a token passed via query parameters (for WebSockets)."""
+    try:
+        supabase = get_supabase_anon()
+        user = supabase.auth.get_user(token)
+        if not user or not user.user:
+            raise WebSocketException(code=status.WS_1008_POLICY_VIOLATION, reason="Invalid or expired token")
+        return user.user
+    except Exception:
+        raise WebSocketException(code=status.WS_1008_POLICY_VIOLATION, reason="Invalid or expired token")
 
 
 def get_user_profile(user_id: str) -> dict:

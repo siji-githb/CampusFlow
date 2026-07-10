@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '../../context/useAuth'
 import StudentLayout from '../../components/layout/StudentLayout'
-import { getMyAppointments, cancelAppointment } from '../../services/appointmentService'
+import { getMyAppointments, cancelAppointment, clearCancelledAppointments } from '../../services/appointmentService'
 import RescheduleModal from '../../components/RescheduleModal'
-import { Inbox, Calendar, Tag, FileText, AlertTriangle, ChevronLeft, ChevronRight, Clock, CheckCircle } from 'lucide-react'
+import { Inbox, Calendar, Tag, FileText, AlertTriangle, ChevronLeft, ChevronRight, Clock, CheckCircle, Filter, ChevronDown, Trash2 } from 'lucide-react'
 
 const STATUS = {
   confirmed: { label: 'Confirmed', bg: '#F0FDF4', color: '#15803D', border: '#BBF7D0' },
@@ -34,6 +34,10 @@ export default function MyAppointments() {
   const [filter, setFilter] = useState('all')
   const [reschedulingAppt, setReschedulingAppt] = useState(null)
   const [confirmCancelId, setConfirmCancelId] = useState(null)
+  const [showClearConfirm, setShowClearConfirm] = useState(false)
+  const [clearingAll, setClearingAll] = useState(false)
+  const [successMsg, setSuccessMsg] = useState('')
+  const [visibleCount, setVisibleCount] = useState(4)
 
   const canReschedule = (apptDateStr, apptTimeStr) => {
     const apptDate = new Date(`${apptDateStr}T${apptTimeStr}:00`)
@@ -49,14 +53,38 @@ export default function MyAppointments() {
   }
   useEffect(() => { fetch() }, [token])
 
+  // Sync selectedAppt when appointments data changes (e.g. after cancellation)
+  useEffect(() => {
+    if (selectedAppt) {
+      const fresh = appointments.find(a => a.id === selectedAppt.id)
+      if (fresh && fresh.status !== selectedAppt.status) {
+        setSelectedAppt(fresh)
+      } else if (!fresh) {
+        setSelectedAppt(null)
+      }
+    }
+  }, [appointments])
+
   const handleCancelConfirm = async () => {
     if (!confirmCancelId) return
     const id = confirmCancelId
     setConfirmCancelId(null)
     setCancelling(id)
-    try { await cancelAppointment(token, id); await fetch() }
+    try { await cancelAppointment(token, id); await fetch(); setSuccessMsg('Appointment cancelled successfully.') }
     catch (e) { setError(e.message) }
-    finally { setCancelling(null) }
+    finally { setCancelling(null); setTimeout(() => setSuccessMsg(''), 4000) }
+  }
+
+  const handleClearCancelled = async () => {
+    setClearingAll(true)
+    try { 
+      await clearCancelledAppointments(token)
+      await fetch()
+      setShowClearConfirm(false)
+      setSuccessMsg('All cancelled appointments have been cleared.')
+    }
+    catch (e) { setError(e.message) }
+    finally { setClearingAll(false); setTimeout(() => setSuccessMsg(''), 4000) }
   }
 
   const filteredAppointments = appointments.filter(appt => {
@@ -65,9 +93,19 @@ export default function MyAppointments() {
   }).sort((a, b) => {
     const aEnd = a.status === 'completed' || a.status === 'cancelled';
     const bEnd = b.status === 'completed' || b.status === 'cancelled';
+    
+    // Separate active from ended appointments
     if (aEnd && !bEnd) return 1;
     if (!aEnd && bEnd) return -1;
     
+    // If both are ended, sort descending (newest first)
+    if (aEnd && bEnd) {
+      const dateCmp = (b.appointment_date || '').localeCompare(a.appointment_date || '');
+      if (dateCmp !== 0) return dateCmp;
+      return (b.time_slot || '').localeCompare(a.time_slot || '');
+    }
+    
+    // If both are active, sort ascending (oldest/soonest first)
     const dateCmp = (a.appointment_date || '').localeCompare(b.appointment_date || '');
     if (dateCmp !== 0) return dateCmp;
     return (a.time_slot || '').localeCompare(b.time_slot || '');
@@ -76,35 +114,99 @@ export default function MyAppointments() {
   return (
     <StudentLayout activeTab="appointments" mobileTitle="My Appointments" backTo="/student/dashboard">
       <div className="w-full max-w-[480px] mx-auto py-5 px-4 md:max-w-[1050px] md:mx-0 md:py-0 md:px-0">
-        <div className="hidden md:block mb-8">
-          <div className="text-[11px] font-bold text-gold uppercase tracking-[0.06em] mb-2">APPOINTMENTS</div>
-          <h1 className="font-serif text-[26px] font-bold text-maroon m-0 mb-2 flex items-center gap-3">
-            <Calendar className="text-maroon" size={24} /> My Appointments
-          </h1>
-          <p className="text-[12px] text-text-sub m-0 leading-relaxed max-w-[650px]">
-            View and manage your scheduled appointments.
-          </p>
+        <div className="hidden md:flex justify-between items-start mb-8">
+          <div>
+            <div className="text-[11px] font-bold text-gold uppercase tracking-[0.06em] mb-2">APPOINTMENTS</div>
+            <h1 className="font-serif text-[26px] font-bold text-maroon m-0 mb-2 flex items-center gap-3">
+              <Calendar className="text-maroon" size={24} /> My Appointments
+            </h1>
+            <p className="text-[12px] text-text-sub m-0 leading-relaxed max-w-[650px]">
+              View and manage your scheduled appointments.
+            </p>
+          </div>
+          <div className="text-[13px] text-text-sub font-medium flex items-center gap-2 mt-2">
+            <Link to="/student/dashboard" className="text-maroon hover:underline cursor-pointer">Home</Link>
+            <span className="text-border-strong">›</span>
+            <span>My Appointments</span>
+          </div>
         </div>
 
         {error && <div className="py-2.5 px-3.5 rounded-lg bg-maroon-light text-maroon text-[13px] mb-4 font-medium">{error}</div>}
 
         <div className="md:flex md:gap-8 md:items-start">
           
-          {/* ── Left Column: List ── */}
+          {/* ── Confirmation Modal for Clear All Cancelled ── */}
+      {showClearConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-fade-in">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-[360px] shadow-xl animate-scale-up">
+            <div className="w-12 h-12 rounded-full bg-maroon-light flex items-center justify-center mb-4 text-maroon mx-auto">
+              <Trash2 size={24} />
+            </div>
+            <h3 className="font-serif text-[20px] font-bold text-text-main m-0 mb-2 text-center">Clear Cancelled?</h3>
+            <p className="text-[13px] text-text-sub m-0 mb-6 text-center leading-relaxed">
+              Are you sure you want to remove all cancelled appointments from your history? This action cannot be undone.
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowClearConfirm(false)}
+                disabled={clearingAll}
+                className="flex-1 py-2.5 px-4 rounded-[10px] bg-white border border-border text-text-main text-[13px] font-bold cursor-pointer hover:bg-off-white transition-colors"
+              >
+                Keep Them
+              </button>
+              <button
+                onClick={handleClearCancelled}
+                disabled={clearingAll}
+                className="flex-1 py-2.5 px-4 rounded-[10px] bg-maroon border-none text-white text-[13px] font-bold cursor-pointer hover:bg-maroon-dark transition-colors disabled:opacity-50 flex items-center justify-center"
+              >
+                {clearingAll ? 'Clearing...' : 'Clear All'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Confirmation Modal for Single Cancel ── */}
           <div className="md:w-[420px] shrink-0">
-            {/* ── Filter Tabs ── */}
-            <div className="flex overflow-x-auto gap-1 mb-5 pb-1 hide-scrollbar">
-              {['all', 'pending', 'confirmed', 'completed', 'cancelled'].map(f => (
-                <button
-                  key={f}
-                  onClick={() => { setFilter(f); setSelectedAppt(null) }}
-                  className={`py-1.5 px-3 rounded-full border border-solid text-[12px] font-semibold cursor-pointer whitespace-nowrap transition-all duration-200 font-sans min-h-[36px] ${
-                    filter === f ? 'bg-maroon text-white border-maroon' : 'bg-white text-text-main border-border'
-                  }`}
-                >
-                  {f.charAt(0).toUpperCase() + f.slice(1)}
-                </button>
-              ))}
+            {successMsg && <div className="py-2.5 px-3.5 rounded-lg bg-success-light text-success border border-success-border text-[13px] mb-4 font-medium animate-fade-in">{successMsg}</div>}
+
+            {/* ── Filter Dropdown & Clear Button ── */}
+            <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
+              <div className="flex items-center gap-3 w-full sm:w-auto flex-1">
+                <div className="relative inline-block w-full sm:max-w-[220px]">
+                  <select 
+                    value={filter}
+                    onChange={(e) => { setFilter(e.target.value); setSelectedAppt(null); }}
+                    className="appearance-none w-full bg-white border-[1.5px] border-border text-text-main text-[13.5px] font-bold py-2.5 pl-10 pr-8 rounded-[12px] shadow-[0_2px_8px_rgba(0,0,0,0.04)] outline-none focus:border-maroon focus:ring-4 focus:ring-maroon/10 cursor-pointer hover:border-text-sub transition-all font-sans"
+                  >
+                    <option value="all">All Appointments</option>
+                    <option value="pending">Pending</option>
+                    <option value="confirmed">Confirmed</option>
+                    <option value="completed">Completed</option>
+                    <option value="cancelled">Cancelled</option>
+                  </select>
+                  <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5">
+                    <Filter size={16} className="text-gold" />
+                  </div>
+                  <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3.5">
+                    <ChevronDown size={16} className="text-text-sub" />
+                  </div>
+                </div>
+                
+                {appointments.some(a => a.status === 'cancelled') && (
+                  <button
+                    onClick={() => setShowClearConfirm(true)}
+                    className="flex items-center justify-center gap-2 px-3 py-2.5 rounded-[12px] border-[1.5px] border-border bg-white text-text-sub text-[12px] font-bold cursor-pointer hover:border-maroon hover:text-maroon transition-all shadow-[0_2px_8px_rgba(0,0,0,0.04)]"
+                    title="Clear all cancelled appointments"
+                  >
+                    <Trash2 size={16} />
+                    <span className="hidden sm:inline">Clear</span>
+                  </button>
+                )}
+              </div>
+              <div className="text-[12px] font-medium text-text-sub whitespace-nowrap">
+                {filteredAppointments.length} {filteredAppointments.length === 1 ? 'result' : 'results'}
+              </div>
             </div>
 
             {loading ? (
@@ -127,12 +229,12 @@ export default function MyAppointments() {
                 <p className="text-[15px] font-semibold text-text-main m-0 mb-1.5">No appointments found</p>
                 <p className="text-[13px] text-text-sub m-0 mb-6">{filter === 'all' ? 'Book your first registrar transaction' : `You have no ${filter} appointments`}</p>
                 {filter === 'all' && (
-                  <button onClick={() => navigate('/student/book')} className="py-3 px-6 rounded-[10px] border-none bg-gold text-maroon text-[14px] font-bold cursor-pointer font-sans shadow-sm transition-transform active:scale-95">Book an Appointment</button>
+                  <button onClick={() => navigate('/student/book')} className="py-3 px-6 rounded-[10px] border-none bg-maroon text-white text-[14px] font-bold cursor-pointer font-sans shadow-sm transition-transform active:scale-95">Book an Appointment</button>
                 )}
               </div>
             ) : (
               <div className="animate-fade-up flex flex-col gap-3">
-                {filteredAppointments.map(appt => {
+                {filteredAppointments.slice(0, visibleCount).map(appt => {
                   const s = STATUS[appt.status] || STATUS.pending
                   const isSelected = selectedAppt?.id === appt.id
                   return (
@@ -190,6 +292,23 @@ export default function MyAppointments() {
                     </div>
                   )
                 })}
+                
+                {/* ── Limit Indicator & Load More ── */}
+                {filteredAppointments.length > 0 && (
+                  <div className="flex items-center justify-end gap-4 mt-2">
+                    <span className="text-[11px] font-bold text-text-muted tracking-wide uppercase">
+                      Showing {Math.min(visibleCount, filteredAppointments.length)} out of {filteredAppointments.length}
+                    </span>
+                    {filteredAppointments.length > visibleCount && (
+                      <button 
+                        onClick={() => setVisibleCount(prev => prev + 4)}
+                        className="text-[12px] font-bold text-maroon hover:underline bg-transparent border-none cursor-pointer"
+                      >
+                        Load More
+                      </button>
+                    )}
+                  </div>
+                )}
               </div>
             )}
           </div>

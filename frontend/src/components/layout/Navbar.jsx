@@ -1,6 +1,6 @@
 import { useNavigate } from 'react-router-dom'
 import { ChevronLeft } from 'lucide-react'
-import crmcLogo from '../../assets/crmc-logo.webp'
+import campusFlowLogo from '../../assets/logo.png'
 
 export default function Navbar({ user, onLogout, backTo, title, subtitle, children }) {
   const navigate = useNavigate()
@@ -22,7 +22,7 @@ export default function Navbar({ user, onLogout, backTo, title, subtitle, childr
           </>
         ) : (
           <>
-            <img src={crmcLogo} alt="CRMC" style={{ width: '32px', height: '32px', borderRadius: '50%', border: '2px solid rgba(240,192,64,0.4)' }} />
+            <img src={campusFlowLogo} alt="CampusFlow" style={{ width: '32px', height: '32px', borderRadius: '50%', border: '2px solid rgba(240,192,64,0.4)' }} className="bg-white object-contain" />
             <div>
               <div style={{ fontFamily: "'Lora', serif", fontWeight: 700, fontSize: '15px', color: '#F0C040', lineHeight: 1.1 }}>CampusFlow</div>
               {subtitle && <div style={{ fontSize: '10px', color: 'rgba(255,255,255,0.4)' }}>{subtitle}</div>}

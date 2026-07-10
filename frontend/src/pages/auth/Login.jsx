@@ -1,26 +1,15 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useNavigate, Link, useLocation } from 'react-router-dom'
 import { useAuth } from '../../context/useAuth'
 import { loginUser } from '../../services/authService'
-import { Eye, EyeOff } from 'lucide-react'
-import crmcLogo from '../../assets/crmc-logo.webp'
-
-function useWindowWidth() {
-  const [width, setWidth] = useState(() => window.innerWidth)
-  useEffect(() => {
-    const onResize = () => setWidth(window.innerWidth)
-    window.addEventListener('resize', onResize)
-    return () => window.removeEventListener('resize', onResize)
-  }, [])
-  return width
-}
+import { Eye, EyeOff, ChevronLeft, ChevronRight } from 'lucide-react'
+import campusFlowLogo from '../../assets/logo.png'
+import loginImage from '../../assets/login.png'
 
 export default function Login() {
   const navigate = useNavigate()
   const location = useLocation()
   const { login } = useAuth()
-  const width = useWindowWidth()
-  const isMobile = width < 768
   const [form, setForm] = useState({ email: localStorage.getItem('rememberedEmail') || '', password: '' })
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
@@ -48,171 +37,166 @@ export default function Login() {
     finally { setLoading(false) }
   }
 
-  const inpClass = `w-full rounded-lg border-[1.5px] border-border bg-off-white text-text-main outline-none box-border font-sans transition-colors duration-150 focus:border-maroon focus:ring-0 ${isMobile ? 'py-[13px] px-[14px] text-[15px] min-h-[52px]' : 'py-[11px] px-[14px] text-[14px]'}`
+  return (
+    <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4 md:p-8 font-sans">
+      
+      {/* ── Main Elevated Card ── */}
+      <div className="w-full max-w-[1040px] bg-white rounded-3xl shadow-[0_20px_40px_-15px_rgba(0,0,0,0.05)] border border-slate-100 flex flex-col md:flex-row overflow-hidden relative">
+        
+        {/* ── Branding Panel (Left side on desktop, Top on mobile) ── */}
+        <div className="w-full md:w-[45%] bg-slate-50/50 pt-14 pb-10 px-6 md:p-12 flex flex-col items-center justify-center md:justify-center relative border-b md:border-b-0 md:border-r border-slate-100 z-10 shrink-0">
+          
+          {/* Subtle Background Texture */}
+          <div className="absolute inset-0 pointer-events-none opacity-5 bg-[radial-gradient(circle,#7B1A2A_1px,transparent_1px)] bg-size-[24px_24px]" />
+          <div className="absolute top-0 right-0 w-64 h-64 bg-maroon/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/4 pointer-events-none" />
+          
+          {/* Mobile "Back to Home" */}
+          <div className="absolute top-6 left-6 md:hidden z-20">
+            <Link to="/" className="inline-flex items-center gap-1.5 text-[12px] font-medium text-slate-500 hover:text-slate-800 transition-colors">
+              <ChevronLeft size={14} /> Back to home
+            </Link>
+          </div>
 
-  if (isMobile) {
-    return (
-      <div className="min-h-screen bg-off-white font-sans max-w-[480px] mx-auto pb-24">
-        <div className="bg-linear-to-br from-maroon to-maroon-dark pt-9 px-5 pb-14 relative overflow-hidden text-center">
-          <div className="absolute inset-0 pointer-events-none opacity-5 bg-[radial-gradient(circle,#F0C040_1px,transparent_1px)] bg-size-[24px_24px]" />
-          <div className="absolute -top-10 -right-10 w-40 h-40 rounded-full bg-[radial-gradient(circle,rgba(184,144,10,0.18)_0%,transparent_70%)] pointer-events-none" />
-          <div className="absolute -bottom-12 left-1/2 -translate-x-1/2 w-[600px] h-24 rounded-full bg-off-white pointer-events-none" />
+          <div className="relative w-full max-w-[320px] text-center z-10 flex flex-col items-center">
 
-          <div className="relative">
-            <div className="text-left mb-4">
-              <Link to="/" className="inline-flex items-center gap-1 text-[12px] text-white/50 no-underline">
-                ← Back to home
-              </Link>
-            </div>
-            <img src={crmcLogo} alt="CRMC" className="w-16 h-16 rounded-full border-2 border-gold/45 shadow-[0_0_32px_rgba(184,144,10,0.18)] mb-3.5 mx-auto" />
-            <div className="font-serif font-bold text-[13px] text-gold mb-1.5">CampusFlow</div>
-            <h1 className="font-serif text-[clamp(26px,7vw,32px)] font-bold text-white m-0 mb-2 leading-[1.1]">
+            <img 
+              src={campusFlowLogo} 
+              alt="CampusFlow Logo" 
+              className="w-16 h-16 md:w-20 md:h-20 rounded-full border border-slate-200 shadow-sm mb-4 md:mb-6 object-cover bg-white" 
+            />
+            
+            <div className="font-serif font-bold text-[13px] text-maroon mb-1 md:hidden tracking-wide uppercase">CampusFlow</div>
+            
+            <h2 className="hidden md:block font-serif text-[32px] font-bold text-slate-800 m-0 mb-1 leading-tight tracking-tight">
+              CampusFlow
+            </h2>
+            <p className="hidden md:block text-[13px] text-slate-500 m-0 mb-8 leading-relaxed">
+              Smart queueing and seamless registrar appointments for the modern campus.
+            </p>
+
+            <img 
+              src={loginImage} 
+              alt="CampusFlow Illustration" 
+              className="w-full max-w-[240px] md:max-w-[280px] h-auto mb-8 object-contain drop-shadow-xl hover:scale-[1.02] transition-transform duration-500" 
+            />
+
+            <h1 className="font-serif text-[clamp(26px,7vw,32px)] font-bold text-slate-800 m-0 mb-2 leading-[1.1] md:hidden tracking-tight">
               Welcome back
             </h1>
-            <p className="text-[13px] text-white/55 m-0 leading-relaxed">
+            <p className="text-[13px] text-slate-500 m-0 leading-relaxed md:hidden">
               Sign in to manage your registrar appointments
             </p>
+
+            <div className="hidden md:block w-full border-t border-slate-200 pt-6 mt-4">
+              {['Book appointments online', 'Real-time queue tracking', 'AI-guided step-by-step'].map((item, i) => (
+                <div key={i} className="flex items-center gap-3 py-2.5">
+                  <div className="w-[20px] h-[20px] rounded-full bg-emerald-50 border border-emerald-100 flex items-center justify-center shrink-0 shadow-sm">
+                    <span className="text-emerald-500 text-[10px] font-bold">✓</span>
+                  </div>
+                  <span className="text-[12.5px] font-medium text-slate-600">{item}</span>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
 
-        <main className="px-4 max-w-[480px] mx-auto">
-          <div className="bg-white rounded-[20px] shadow-[0_8px_24px_rgba(0,0,0,0.10),0_0_0_1px_rgba(0,0,0,0.04)] py-6 px-5 -mt-5 relative">
+        {/* ── Form Panel (Right side) ── */}
+        <div className="flex-1 p-8 md:p-12 lg:p-16 flex flex-col justify-center relative bg-white z-20">
+          <div className="w-full max-w-[380px] mx-auto">
+            
+            <Link to="/" className="hidden md:inline-flex items-center gap-1.5 text-[12px] font-medium text-slate-500 hover:text-slate-800 transition-colors mb-10">
+              <ChevronLeft size={14} /> Back to home
+            </Link>
+            
+            <div className="hidden md:block mb-10">
+              <h1 className="font-serif text-[2rem] font-bold text-slate-800 m-0 mb-2 tracking-tight leading-none">
+                Welcome back
+              </h1>
+              <p className="text-[14px] text-slate-500 m-0">
+                Sign in to manage your registrar appointments
+              </p>
+            </div>
+
             {successMessage && (
-              <div className="py-3 px-3.5 rounded-lg bg-success-light border border-success-border text-success text-[13px] mb-4 flex gap-2 items-start">
-                <span>✓</span> {successMessage}
+              <div className="py-3 px-4 rounded-xl bg-emerald-50 border border-emerald-100 text-emerald-700 text-[13px] font-medium mb-6 flex gap-2.5 items-center shadow-sm">
+                <span className="bg-emerald-100 text-emerald-600 rounded-full w-5 h-5 flex items-center justify-center text-[10px] font-bold shrink-0">✓</span> 
+                {successMessage}
               </div>
             )}
             {error && (
-              <div className="py-3 px-3.5 rounded-lg bg-danger-light border border-danger-border text-danger text-[13px] mb-4 flex gap-2 items-start">
-                <span>⚠</span> {error}
+              <div className="py-3 px-4 rounded-xl bg-red-50 border border-red-100 text-red-600 text-[13px] font-medium mb-6 flex gap-2.5 items-center shadow-sm">
+                <span className="bg-red-100 text-red-500 rounded-full w-5 h-5 flex items-center justify-center text-[10px] font-bold shrink-0">!</span> 
+                {error}
               </div>
             )}
 
             <form onSubmit={handleSubmit}>
-              <div className="mb-4">
-                <label className="block text-[11px] font-semibold text-text-sub mb-1.5 tracking-[0.06em] uppercase">Email Address</label>
-                <input type="email" name="email" value={form.email} onChange={handleChange} required placeholder="example@gmail.com" className={inpClass} />
+              <div className="mb-5">
+                <label className="block text-[12.5px] font-bold text-slate-700 mb-2">Email Address</label>
+                <input 
+                  type="email" 
+                  name="email" 
+                  value={form.email} 
+                  onChange={handleChange} 
+                  required 
+                  placeholder="example@gmail.com" 
+                  className="w-full rounded-xl border border-slate-200 bg-slate-50/50 text-slate-800 outline-none box-border font-sans transition-all duration-200 focus:bg-white focus:border-maroon focus:ring-[3px] focus:ring-maroon/10 py-[12px] px-[16px] text-[14.5px] shadow-sm placeholder:text-slate-400 font-medium" 
+                />
               </div>
-              <div className="mb-6">
-                <label className="block text-[11px] font-semibold text-text-sub mb-1.5 tracking-[0.06em] uppercase">Password</label>
+              
+              <div className="mb-8">
+                <label className="block text-[12.5px] font-bold text-slate-700 mb-2">Password</label>
                 <div className="relative">
-                  <input type={showPassword ? "text" : "password"} name="password" value={form.password} onChange={handleChange} required placeholder="••••••••" className={`${inpClass} pr-12`} />
-                  <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3.5 top-1/2 -translate-y-1/2 bg-transparent border-none p-0 text-text-muted cursor-pointer flex">
+                  <input 
+                    type={showPassword ? "text" : "password"} 
+                    name="password" 
+                    value={form.password} 
+                    onChange={handleChange} 
+                    required 
+                    placeholder="Enter your password" 
+                    className="w-full rounded-xl border border-slate-200 bg-slate-50/50 text-slate-800 outline-none box-border font-sans transition-all duration-200 focus:bg-white focus:border-maroon focus:ring-[3px] focus:ring-maroon/10 py-[12px] px-[16px] text-[14.5px] shadow-sm placeholder:text-slate-400 pr-12 font-medium" 
+                  />
+                  <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-4 top-1/2 -translate-y-1/2 bg-transparent border-none p-0 text-slate-400 hover:text-slate-600 cursor-pointer flex transition-colors">
                     {showPassword ? <Eye size={18} /> : <EyeOff size={18} />}
                   </button>
                 </div>
-                <div className="flex justify-between items-center mt-3">
-                  <label className="flex items-center gap-1.5 cursor-pointer">
-                    <input type="checkbox" checked={rememberMe} onChange={e => setRememberMe(e.target.checked)} className="accent-maroon w-3.5 h-3.5 cursor-pointer m-0" />
-                    <span className="text-[12px] text-text-sub font-medium">Remember me</span>
+                
+                <div className="flex justify-between items-center mt-4">
+                  <label className="flex items-center gap-2 cursor-pointer group">
+                    <input type="checkbox" checked={rememberMe} onChange={e => setRememberMe(e.target.checked)} className="accent-maroon w-4 h-4 cursor-pointer m-0 rounded-sm border-slate-300" />
+                    <span className="text-[13px] text-slate-600 font-medium group-hover:text-slate-800 transition-colors">Remember me</span>
                   </label>
-                  <Link to="/forgot-password" className="text-[12px] text-maroon no-underline font-semibold">Forgot password?</Link>
+                  <Link to="/forgot-password" className="text-[13px] text-maroon no-underline font-bold hover:text-maroon-dark transition-colors">Forgot password?</Link>
                 </div>
               </div>
-              <button type="submit" disabled={loading} className={`w-full min-h-[52px] py-3.5 px-6 rounded-lg border-none text-[15px] font-bold font-sans shadow-[0_4px_20px_rgba(123,26,42,0.25)] transition-colors duration-150 ${loading ? 'bg-[#B8667A] text-white cursor-not-allowed' : 'bg-maroon text-white cursor-pointer hover:bg-maroon-dark'}`}>
-                {loading ? <span className="spinner" /> : 'Sign In →'}
+
+              <button type="submit" disabled={loading} className={`w-full py-3.5 px-6 rounded-xl border-none text-[14.5px] font-bold font-sans shadow-[0_4px_12px_rgba(123,26,42,0.15)] transition-all duration-200 flex items-center justify-center gap-2 ${loading ? 'bg-maroon/70 text-white cursor-not-allowed' : 'bg-maroon text-white cursor-pointer hover:bg-maroon-dark hover:shadow-[0_6px_16px_rgba(123,26,42,0.25)] hover:-translate-y-px'}`}>
+                {loading ? <span className="spinner" /> : (
+                  <>Sign In <ChevronRight size={16} strokeWidth={2.5} /></>
+                )}
               </button>
             </form>
 
-            <p className="text-[13px] text-text-muted mt-5 text-center">
-              Don't have an account?{' '}
-              <Link to="/register" className="text-maroon no-underline font-semibold">Register here</Link>
-            </p>
-          </div>
+            <div className="mt-8 pt-6 border-t border-slate-100 text-center">
+              <p className="text-[13.5px] text-slate-500 font-medium">
+                Don't have an account?{' '}
+                <Link to="/register" className="text-maroon no-underline font-bold hover:text-maroon-dark transition-colors">Register here</Link>
+              </p>
+            </div>
 
-          <div className="mt-5 bg-white rounded-2xl shadow-[0_2px_8px_rgba(0,0,0,0.06),0_0_0_1px_rgba(0,0,0,0.04)] overflow-hidden">
-            {['Book appointments online', 'Real-time queue tracking', 'AI-guided step-by-step'].map((perk, i, arr) => (
-              <div key={i} className={`flex items-center gap-3 py-3.5 px-4 ${i < arr.length - 1 ? 'border-b border-border' : 'border-none'}`}>
-                <div className="w-[22px] h-[22px] rounded-full shrink-0 bg-gold-light border border-gold-border flex items-center justify-center">
-                  <span className="text-gold text-[10px] font-bold">✓</span>
+            {/* Mobile Perks */}
+            <div className="mt-8 bg-slate-50 rounded-2xl shadow-sm border border-slate-100 overflow-hidden md:hidden">
+              {['Book appointments online', 'Real-time queue tracking', 'AI-guided step-by-step'].map((perk, i, arr) => (
+                <div key={i} className={`flex items-center gap-3 py-3.5 px-4 ${i < arr.length - 1 ? 'border-b border-slate-100' : 'border-none'}`}>
+                  <div className="w-[20px] h-[20px] rounded-full shrink-0 bg-emerald-50 border border-emerald-100 flex items-center justify-center">
+                    <span className="text-emerald-500 text-[10px] font-bold">✓</span>
+                  </div>
+                  <span className="text-[13px] font-medium text-slate-600">{perk}</span>
                 </div>
-                <span className="text-[13px] text-text-sub">{perk}</span>
-              </div>
-            ))}
+              ))}
+            </div>
+
           </div>
-        </main>
-      </div>
-    )
-  }
-
-  return (
-    <div className="min-h-screen bg-off-white flex font-sans">
-      <div className="w-[400px] bg-maroon flex flex-col items-center justify-center py-12 px-10 relative overflow-hidden shrink-0">
-        <div className="absolute -top-16 -right-16 w-[200px] h-[200px] rounded-full border border-[rgba(240,192,64,0.15)]" />
-        <div className="absolute -bottom-20 -left-20 w-[260px] h-[260px] rounded-full border border-[rgba(240,192,64,0.1)]" />
-
-        <img src={crmcLogo} alt="CRMC" className="w-20 h-20 rounded-full border-4 border-gold/40 shadow-[0_0_40px_rgba(240,192,64,0.15)] mb-6 relative" />
-        <h2 className="font-serif text-xl font-bold text-white text-center m-0 mb-2">
-          Cebu Roosevelt<br />Memorial Colleges
-        </h2>
-        <p className="text-[12px] text-white/45 text-center m-0 mb-10 leading-relaxed">
-          College of Computer Studies<br />BSIT Capstone 2026
-        </p>
-        <div className="w-full border-t border-white/10 pt-6">
-          {['Book appointments online', 'Real-time queue tracking', 'AI-guided step-by-step'].map((item, i) => (
-            <div key={i} className={`flex items-center gap-2.5 py-2 ${i < 2 ? 'border-b border-white/5' : 'border-none'}`}>
-              <div className="w-[18px] h-[18px] rounded-full bg-[rgba(240,192,64,0.15)] border border-[rgba(240,192,64,0.35)] flex items-center justify-center shrink-0">
-                <span className="text-[#F0C040] text-[9px]">✓</span>
-              </div>
-              <span className="text-[12px] text-white/55">{item}</span>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      <div className="flex-1 flex items-center justify-center p-8">
-        <div className="w-full max-w-[380px]">
-          <Link to="/" className="inline-flex items-center gap-1.5 text-[12px] text-text-muted no-underline mb-8">
-            ← Back to home
-          </Link>
-          <h1 className="font-serif text-[1.85rem] font-bold text-maroon m-0 mb-1.5">
-            Welcome back
-          </h1>
-          <p className="text-[13px] text-text-muted m-0 mb-8">
-            Sign in to manage your registrar appointments
-          </p>
-
-          {successMessage && (
-            <div className="py-2.5 px-3.5 rounded-lg bg-success-light border border-success-border text-success text-[13px] mb-4">
-              {successMessage}
-            </div>
-          )}
-          {error && (
-            <div className="py-2.5 px-3.5 rounded-lg bg-danger-light border border-danger-border text-danger text-[13px] mb-4">
-              {error}
-            </div>
-          )}
-
-          <form onSubmit={handleSubmit}>
-            <div className="mb-4">
-              <label className="block text-[12px] font-semibold text-text-sub mb-1.5 tracking-wider">Email Address</label>
-              <input type="email" name="email" value={form.email} onChange={handleChange} required placeholder="example@gmail.com" className={inpClass} />
-            </div>
-            <div className="mb-6">
-              <label className="block text-[12px] font-semibold text-text-sub mb-1.5 tracking-wider">Password</label>
-              <div className="relative">
-                <input type={showPassword ? "text" : "password"} name="password" value={form.password} onChange={handleChange} required placeholder="Enter password" className={`${inpClass} pr-11`} />
-                <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 bg-transparent border-none p-0 text-text-muted cursor-pointer flex">
-                  {showPassword ? <Eye size={18} /> : <EyeOff size={18} />}
-                </button>
-              </div>
-              <div className="flex justify-between items-center mt-3">
-                <label className="flex items-center gap-1.5 cursor-pointer">
-                  <input type="checkbox" checked={rememberMe} onChange={e => setRememberMe(e.target.checked)} className="accent-maroon w-3.5 h-3.5 cursor-pointer m-0" />
-                  <span className="text-[12px] text-text-sub font-medium">Remember me</span>
-                </label>
-                <Link to="/forgot-password" className="text-[12px] text-maroon no-underline font-semibold">Forgot password?</Link>
-              </div>
-            </div>
-            <button type="submit" disabled={loading} className={`w-full py-3 rounded-lg border-none text-[14px] font-bold font-sans shadow-[0_3px_14px_rgba(123,26,42,0.25)] transition-colors duration-150 ${loading ? 'bg-[#B8667A] text-white cursor-not-allowed' : 'bg-maroon text-white cursor-pointer hover:bg-maroon-dark'}`}>
-              {loading ? <span className="spinner" /> : 'Sign In →'}
-            </button>
-          </form>
-
-          <p className="text-[13px] text-text-muted mt-6 text-center">
-            Don't have an account?{' '}
-            <Link to="/register" className="text-maroon no-underline font-semibold">Register here</Link>
-          </p>
         </div>
       </div>
     </div>

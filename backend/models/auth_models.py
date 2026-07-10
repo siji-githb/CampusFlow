@@ -41,6 +41,17 @@ class IdRequestUpdate(BaseModel):
     status: str
 
 
+class UpdateProfileRequest(BaseModel):
+    first_name: str
+    last_name: str
+    email: EmailStr
+
+
+class ChangePasswordRequest(BaseModel):
+    current_password: str
+    new_password: str
+
+
 class UserResponse(BaseModel):
 
     id: str

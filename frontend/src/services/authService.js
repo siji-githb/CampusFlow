@@ -72,4 +72,80 @@ export const requestStudentId = async (data) => {
   if (!response.ok) throw new Error(result.detail || 'Request failed')
   return result
 }
+
+export const updateProfile = async (data, token) => {
+  const response = await fetch(`${API_URL}/auth/profile`, {
+    method: 'PUT',
+    headers: { 
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`
+    },
+    body: JSON.stringify(data),
+  })
+  const result = await response.json()
+  if (!response.ok) throw new Error(result.detail || 'Failed to update profile')
+  return result
+}
+
+export const changePassword = async (data, token) => {
+  const response = await fetch(`${API_URL}/auth/change-password`, {
+    method: 'POST',
+    headers: { 
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`
+    },
+    body: JSON.stringify(data),
+  })
+  const result = await response.json()
+  if (!response.ok) throw new Error(result.detail || 'Failed to change password')
+  return result
+}
+
+export const logoutAllDevices = async (token) => {
+  const response = await fetch(`${API_URL}/auth/logout-all`, {
+    method: 'POST',
+    headers: { 'Authorization': `Bearer ${token}` },
+  })
+  const result = await response.json()
+  if (!response.ok) throw new Error(result.detail || 'Failed to logout from all devices')
+  return result
+}
+
+export const deleteAccount = async (token) => {
+  const response = await fetch(`${API_URL}/auth/account`, {
+    method: 'DELETE',
+    headers: { 'Authorization': `Bearer ${token}` },
+  })
+  const result = await response.json()
+  if (!response.ok) throw new Error(result.detail || 'Failed to delete account')
+  return result
+}
+
+export const updateProfilePicture = async (file, token) => {
+  const formData = new FormData()
+  formData.append('file', file)
+  
+  const response = await fetch(`${API_URL}/auth/profile-picture`, {
+    method: 'POST',
+    headers: { 
+      'Authorization': `Bearer ${token}` 
+    },
+    body: formData,
+  })
+  const result = await response.json()
+  if (!response.ok) throw new Error(result.detail || 'Failed to upload profile picture')
+  return result
+}
+
+export const removeProfilePicture = async (token) => {
+  const response = await fetch(`${API_URL}/auth/profile-picture`, {
+    method: 'DELETE',
+    headers: { 'Authorization': `Bearer ${token}` },
+  })
+  const result = await response.json()
+  if (!response.ok) throw new Error(result.detail || 'Failed to remove profile picture')
+  return result
+}
+
+
 

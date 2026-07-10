@@ -1,5 +1,6 @@
-from fastapi import APIRouter, Depends, HTTPException
-from deps import get_current_user, get_supabase_anon, get_supabase_admin
+from fastapi import APIRouter, Depends, HTTPException, WebSocket, WebSocketDisconnect
+from deps import get_current_user, get_supabase_anon, get_supabase_admin, get_ws_user
+from services.websocket_manager import manager
 
 router = APIRouter(prefix="/notifications", tags=["Notifications"])
 
@@ -28,3 +29,15 @@ async def mark_all_notifications_read(user=Depends(get_current_user)):
     admin = get_supabase_admin()
     response = admin.table("notifications").update({"is_read": True}).eq("user_id", user.id).eq("is_read", False).execute()
     return {"message": f"Marked {len(response.data) if response.data else 0} as read"}
+
+
+@router.websocket("/ws")
+async def websocket_endpoint(websocket: WebSocket, user=Depends(get_ws_user)):
+    await manager.connect(websocket, user.id)
+    try:
+        while True:
+            # We don't expect the client to send messages here, but we must
+            # wait on receive() to detect when the client disconnects.
+            await websocket.receive_text()
+    except WebSocketDisconnect:
+        manager.disconnect(websocket, user.id)

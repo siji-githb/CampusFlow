@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/useAuth'
-import crmcLogo from '../../assets/crmc-logo.webp'
+import campusFlowLogo from '../../assets/logo.png'
 import AdminLiveQueuePage from './AdminLiveQueuePage'
 import AdminAppointmentsPage from './AdminAppointmentsPage'
 import AdminReportsPage from './AdminReportsPage'
@@ -346,7 +346,7 @@ export default function AdminDashboard() {
       <aside className="w-[240px] shrink-0 bg-white border-r border-border flex flex-col fixed inset-y-0 left-0 z-50 p-[24px_14px]">
         {/* Brand */}
         <div className="flex items-center gap-2.5 px-2 mb-8">
-          <img src={crmcLogo} alt="CRMC" className="w-[38px] h-[38px] rounded-full" />
+          <img src={campusFlowLogo} alt="CampusFlow" className="w-[38px] h-[38px] rounded-full bg-white object-contain border border-slate-200" />
           <div>
             <div className="font-serif text-[14px] font-bold text-maroon leading-[1.2]">CampusFlow</div>
             <div className="text-[10px] text-text-muted tracking-[0.04em]">Registrar Admin</div>

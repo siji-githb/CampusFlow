@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '../../context/useAuth'
 import StudentLayout from '../../components/layout/StudentLayout'
 import { getMyQueue, activateQueue, getTimeEstimate } from '../../services/queueService'
@@ -74,14 +74,21 @@ export default function MyQueue() {
     <StudentLayout activeTab="queue" mobileTitle="My Queue" backTo="/student/dashboard">
 
       <div className="w-full max-w-[560px] mx-auto pt-6 px-4 pb-20 md:max-w-[900px] md:mx-0 md:pt-0 md:px-0">
-        <div className="hidden md:block mb-8">
-          <div className="text-[11px] font-bold text-gold uppercase tracking-[0.06em] mb-2">LIVE TRACKING</div>
-          <h1 className="font-serif text-[26px] font-bold text-maroon m-0 mb-2 flex items-center gap-3">
-            <Ticket className="text-maroon" size={24} /> My Queue
-          </h1>
-          <p className="text-[12px] text-text-sub m-0 leading-relaxed max-w-[650px]">
-            Monitor your active processing status and upcoming appointments.
-          </p>
+        <div className="hidden md:flex justify-between items-start mb-8">
+          <div>
+            <div className="text-[11px] font-bold text-gold uppercase tracking-[0.06em] mb-2">LIVE TRACKING</div>
+            <h1 className="font-serif text-[26px] font-bold text-maroon m-0 mb-2 flex items-center gap-3">
+              <Ticket className="text-maroon" size={24} /> My Queue
+            </h1>
+            <p className="text-[12px] text-text-sub m-0 leading-relaxed max-w-[650px]">
+              Monitor your active processing status and upcoming appointments.
+            </p>
+          </div>
+          <div className="text-[13px] text-text-sub font-medium flex items-center gap-2 mt-2">
+            <Link to="/student/dashboard" className="text-maroon hover:underline cursor-pointer">Home</Link>
+            <span className="text-border-strong">›</span>
+            <span>My Queue</span>
+          </div>
         </div>
 
         {error && (

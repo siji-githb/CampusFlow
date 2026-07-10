@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/useAuth'
-import crmcLogo from '../../assets/crmc-logo.webp'
+import campusFlowLogo from '../../assets/logo.png'
 import LiveQueuePage from './LiveQueuePage'
 import MessagesPage from './MessagesPage'
 import AppointmentsPage from './AppointmentsPage'
@@ -273,7 +273,7 @@ export default function StaffDashboard() {
       <aside className="w-[240px] shrink-0 bg-white border-r border-border flex flex-col fixed left-0 top-0 bottom-0 z-50 px-3.5 py-5">
         {/* Logo */}
         <div className="flex items-center gap-2.5 pl-1.5 mb-7">
-          <img src={crmcLogo} alt="CRMC" className="w-[34px] h-[34px] rounded-full" />
+          <img src={campusFlowLogo} alt="CampusFlow" className="w-[34px] h-[34px] rounded-full bg-white object-contain border border-slate-200" />
           <div>
             <div className="font-serif text-[15px] font-bold text-maroon">CampusFlow</div>
             <div className="text-[10px] text-text-muted tracking-[0.04em]">Staff Portal</div>

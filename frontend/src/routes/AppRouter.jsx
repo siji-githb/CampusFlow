@@ -14,6 +14,7 @@ import MyAppointments from '../pages/student/MyAppointments'
 import MyQueue from '../pages/student/MyQueue'
 import AiChat from '../pages/student/AiChat'
 import StudentNotifications from '../pages/student/StudentNotifications'
+import StudentProfile from '../pages/student/StudentProfile'
 import StaffDashboard from '../pages/staff/StaffDashboard'
 import AdminDashboard from '../pages/admin/AdminDashboard'
 
@@ -46,6 +47,12 @@ export default function AppRouter() {
         } />
         <Route path="/student/notifications" element={
           <ProtectedRoute allowedRoles={['student']}><StudentNotifications /></ProtectedRoute>
+        } />
+        <Route path="/student/profile" element={
+          <ProtectedRoute allowedRoles={['student']}><StudentProfile /></ProtectedRoute>
+        } />
+        <Route path="/student/settings" element={
+          <ProtectedRoute allowedRoles={['student']}><StudentProfile /></ProtectedRoute>
         } />
 
         {/* Staff */}

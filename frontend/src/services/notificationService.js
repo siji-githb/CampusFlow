@@ -6,7 +6,7 @@ const authHeader = (token) => ({
 });
 
 export const getNotifications = async (token) => {
-  const res = await fetch(`${API_URL}/notifications/`, {
+  const res = await fetch(`${API_URL}/notifications`, {
     headers: authHeader(token)
   });
   const data = await res.json();

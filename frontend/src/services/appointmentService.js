@@ -41,14 +41,28 @@ export const getMyAppointments = async (token) => {
   return data
 }
 
-export const cancelAppointment = async (token, appointmentId) => {
-  const res = await fetch(`${API_URL}/appointments/${appointmentId}/cancel`, {
+export const cancelAppointment = async (token, id) => {
+  const res = await fetch(`${API_URL}/appointments/${id}/cancel`, {
     method: 'PATCH',
     headers: authHeader(token)
   })
-  const data = await res.json()
-  if (!res.ok) throw new Error(data.detail || 'Failed to cancel appointment')
-  return data
+  if (!res.ok) {
+    const error = await res.json()
+    throw new Error(error.detail || 'Failed to cancel appointment')
+  }
+  return res.json()
+}
+
+export const clearCancelledAppointments = async (token) => {
+  const res = await fetch(`${API_URL}/appointments/clear-cancelled`, {
+    method: 'DELETE',
+    headers: authHeader(token)
+  })
+  if (!res.ok) {
+    const error = await res.json()
+    throw new Error(error.detail || 'Failed to clear cancelled appointments')
+  }
+  return res.json()
 }
 
 export const getAllAppointments = async (token, dateStr = null) => {

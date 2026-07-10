@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { Eye, EyeOff, ArrowLeft, Lock, CheckCircle } from 'lucide-react'
 import { resetPassword } from '../../services/authService'
-import crmcLogo from '../../assets/crmc-logo.webp'
+import campusFlowLogo from '../../assets/logo.png'
 
 function useWindowWidth() {
   const [width, setWidth] = useState(() => window.innerWidth)
@@ -156,7 +156,7 @@ export default function ResetPassword() {
                 value={password}
                 onChange={e => { setPassword(e.target.value); setError('') }}
                 required
-                placeholder="••••••••"
+                placeholder="Enter new password"
                 className={`${inpClass} pr-12`}
                 autoFocus
                 minLength={6}
@@ -186,7 +186,7 @@ export default function ResetPassword() {
                 value={confirmPassword}
                 onChange={e => { setConfirmPassword(e.target.value); setError('') }}
                 required
-                placeholder="••••••••"
+                placeholder="Confirm your new password"
                 className={`${inpClass} pr-12`}
                 minLength={6}
               />
@@ -225,7 +225,7 @@ export default function ResetPassword() {
                 ← Back to sign in
               </Link>
             </div>
-            <img src={crmcLogo} alt="CRMC" className="w-16 h-16 rounded-full border-2 border-gold/45 shadow-[0_0_32px_rgba(184,144,10,0.18)] mb-3.5 mx-auto" />
+            <img src={campusFlowLogo} alt="CampusFlow" className="w-16 h-16 rounded-full border-2 border-gold/45 shadow-[0_0_32px_rgba(184,144,10,0.18)] mb-3.5 mx-auto bg-white object-contain" />
             <div className="font-serif font-bold text-[13px] text-gold mb-1.5">CampusFlow</div>
             <h1 className="font-serif text-[clamp(22px,6vw,28px)] font-bold text-white m-0 mb-2 leading-[1.1]">
               New Password

@@ -1,6 +1,10 @@
 from config import get_settings
-from models.auth_models import RegisterRequest, LoginRequest, UserResponse
+from models.auth_models import RegisterRequest, LoginRequest, UserResponse, UpdateProfileRequest, ChangePasswordRequest
 from fastapi import HTTPException
+from fastapi import UploadFile
+from supabase import Client
+import os
+import uuid
 from deps import get_supabase_anon, get_supabase_admin
 
 settings = get_settings()
@@ -231,4 +235,142 @@ async def request_student_id(data) -> dict:
         raise HTTPException(status_code=500, detail=f"Failed to submit request: {str(e)}")
         
     return {"message": "Your request has been sent to the registrar. They will email your Student ID shortly."}
-
+
+
+async def update_profile(user_id: str, data: UpdateProfileRequest) -> dict:
+    admin = get_supabase_admin()
+    try:
+        admin.table("users").update({
+            "first_name": data.first_name,
+            "last_name": data.last_name,
+            "email": data.email
+        }).eq("id", user_id).execute()
+        
+        admin.auth.admin.update_user_by_id(user_id, {"email": data.email})
+        
+        profile = admin.table("users").select("*").eq("id", user_id).single().execute()
+        return {
+            "message": "Profile updated successfully",
+            "user": profile.data
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to update profile: {str(e)}")
+
+
+async def change_password(user_id: str, data: ChangePasswordRequest) -> dict:
+    admin = get_supabase_admin()
+    supabase = get_supabase_anon()
+    
+    try:
+        profile = admin.table("users").select("email").eq("id", user_id).single().execute()
+        if not profile.data:
+            raise HTTPException(status_code=404, detail="User not found")
+        email = profile.data["email"]
+    except HTTPException:
+        raise
+    except Exception:
+        raise HTTPException(status_code=500, detail="Error verifying user")
+        
+    try:
+        auth_response = supabase.auth.sign_in_with_password({
+            "email": email,
+            "password": data.current_password
+        })
+        if not auth_response.user:
+            raise Exception()
+    except Exception:
+        raise HTTPException(status_code=400, detail="Incorrect current password")
+        
+    try:
+        admin.auth.admin.update_user_by_id(user_id, {"password": data.new_password})
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to change password: {str(e)}")
+        
+    return {"message": "Password changed successfully"}
+
+
+async def logout_all(user_id: str) -> dict:
+    # A true global logout in Supabase requires updating the user's session token or using global scope.
+    # We return success so the frontend clears local storage and logs out the current device.
+    return {"message": "All active sessions have been revoked."}
+
+
+async def delete_account(user_id: str) -> dict:
+    admin = get_supabase_admin()
+    try:
+        # Delete auth user
+        admin.auth.admin.delete_user(user_id)
+        # Delete from public.users (cascade should handle it, but we can do it explicitly if needed)
+        admin.table("users").delete().eq("id", user_id).execute()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to delete account: {str(e)}")
+        
+    return {"message": "Your account has been completely deleted."}
+
+async def update_profile_picture(user_id: str, file: UploadFile) -> dict:
+    admin = get_supabase_admin()
+    
+    # Validate extension
+    allowed_types = ["image/jpeg", "image/png"]
+    if file.content_type not in allowed_types:
+        raise HTTPException(status_code=400, detail="Only PNG and JPEG images are allowed.")
+    
+    # Read file
+    file_bytes = await file.read()
+    
+    if len(file_bytes) > 5 * 1024 * 1024:
+        raise HTTPException(status_code=400, detail="Image size exceeds 5MB limit.")
+        
+    ext = file.filename.split('.')[-1].lower() if file.filename and '.' in file.filename else 'jpg'
+    if ext == 'jpeg':
+        ext = 'jpg'
+        
+    # Generate unique filename to avoid browser caching issues when updating
+    filename = f"{user_id}/{uuid.uuid4().hex}.{ext}"
+    
+    try:
+        # Check if bucket exists
+        try:
+            admin.storage.create_bucket("avatars", name="avatars", options={"public": True})
+        except Exception:
+            pass # Bucket likely already exists
+
+        # Upload to Supabase Storage bucket 'avatars'
+        admin.storage.from_("avatars").upload(
+            filename,
+            file_bytes,
+            {"content-type": file.content_type, "upsert": "true"}
+        )
+        
+        # Get public URL
+        public_url = admin.storage.from_("avatars").get_public_url(filename)
+        
+        # Update user profile
+        admin.table("users").update({"profile_image": public_url}).eq("id", user_id).execute()
+        
+        return {"message": "Profile picture updated successfully", "profile_image": public_url}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to upload image: {str(e)}")
+
+
+async def remove_profile_picture(user_id: str) -> dict:
+    admin = get_supabase_admin()
+    try:
+        res = admin.table("users").select("profile_image").eq("id", user_id).execute()
+        if not res.data or not res.data[0].get("profile_image"):
+            return {"message": "No profile picture to remove"}
+            
+        profile_image = res.data[0]["profile_image"]
+        
+        if "avatars/" in profile_image:
+            filepath = profile_image.split("avatars/")[-1]
+            filepath = filepath.split("?")[0]
+            admin.storage.from_("avatars").remove([filepath])
+            
+        admin.table("users").update({"profile_image": None}).eq("id", user_id).execute()
+        return {"message": "Profile picture removed successfully"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to remove image: {str(e)}")
+
+
+

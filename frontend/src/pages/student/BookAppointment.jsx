@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '../../context/useAuth'
 import StudentLayout from '../../components/layout/StudentLayout'
 import { getTransactionTypes, getAvailableSlots, bookAppointment, uploadMedia } from '../../services/appointmentService'
@@ -36,7 +36,7 @@ function CalendarWidget({ selectedDate, onDateSelect, minDateStr, maxDateStr }) 
   const maxD = new Date(maxDateStr + 'T00:00:00').getTime()
 
   return (
-    <div>
+    <div className="max-w-[360px] mx-auto">
       {/* Month header */}
       <div className="flex justify-between items-center mb-4">
         <h3 className="font-serif text-[20px] font-bold text-text-main m-0">
@@ -328,14 +328,21 @@ export default function BookAppointment() {
       {/* ── Content ── */}
       <div className="w-full max-w-[660px] mx-auto pt-12 px-6 pb-20 box-border md:max-w-[1050px] md:mx-0 md:pt-0 md:px-0">
 
-        <div className="hidden md:block mb-8">
-          <div className="text-[11px] font-bold text-gold uppercase tracking-[0.06em] mb-2">SCHEDULING</div>
-          <h1 className="font-serif text-[26px] font-bold text-maroon m-0 mb-2 flex items-center gap-3">
-            <Calendar className="text-maroon" size={24} /> Book Appointment
-          </h1>
-          <p className="text-[12px] text-text-sub m-0 leading-relaxed max-w-[650px]">
-            Schedule a visit with campus offices for your registrar needs.
-          </p>
+        <div className="hidden md:flex justify-between items-start mb-8">
+          <div>
+            <div className="text-[11px] font-bold text-gold uppercase tracking-[0.06em] mb-2">SCHEDULING</div>
+            <h1 className="font-serif text-[26px] font-bold text-maroon m-0 mb-2 flex items-center gap-3">
+              <Calendar className="text-maroon" size={24} /> Book Appointment
+            </h1>
+            <p className="text-[12px] text-text-sub m-0 leading-relaxed max-w-[650px]">
+              Schedule a visit with campus offices for your registrar needs.
+            </p>
+          </div>
+          <div className="text-[13px] text-text-sub font-medium flex items-center gap-2 mt-2">
+            <Link to="/student/dashboard" className="text-maroon hover:underline cursor-pointer">Home</Link>
+            <span className="text-border-strong">›</span>
+            <span>Book Appointment</span>
+          </div>
         </div>
 
         <div className="md:flex md:gap-8 md:items-start">
@@ -467,13 +474,13 @@ export default function BookAppointment() {
                 </div>
                 <div className="mb-5">
                   <div className="animate-pulse h-[14px] w-[80px] rounded bg-border mb-2.5" />
-                  <div className="grid grid-cols-4 gap-2">
+                  <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
                     {[1, 2, 3, 4].map(i => <div key={i} className="animate-pulse h-10 rounded-lg border-[1.5px] border-border bg-border/20" />)}
                   </div>
                 </div>
                 <div>
                   <div className="animate-pulse h-[14px] w-[90px] rounded bg-border mb-2.5" />
-                  <div className="grid grid-cols-4 gap-2">
+                  <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
                     {[1, 2, 3, 4].map(i => <div key={i} className="animate-pulse h-10 rounded-lg border-[1.5px] border-border bg-border/20" />)}
                   </div>
                 </div>
@@ -497,7 +504,7 @@ export default function BookAppointment() {
                     <p className="text-[12px] font-semibold text-text-sub m-0 mb-2.5 flex items-center gap-1.5">
                       <CloudSun size={14} className="text-gold" /> Morning
                     </p>
-                    <div className="grid grid-cols-4 gap-2">
+                    <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
                       {morningSlots.map(s => <SlotBtn key={s.time_slot} slot={{ ...s, display: fmt12h(s.time_slot) }} selected={selectedSlot === s.time_slot} onSelect={setSelectedSlot} selectedDate={selectedDate} />)}
                     </div>
                   </div>
@@ -508,7 +515,7 @@ export default function BookAppointment() {
                     <p className="text-[12px] font-semibold text-text-sub m-0 mb-2.5 flex items-center gap-1.5">
                       <Sun size={14} className="text-gold" /> Afternoon
                     </p>
-                    <div className="grid grid-cols-4 gap-2">
+                    <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
                       {afternoonSlots.map(s => <SlotBtn key={s.time_slot} slot={{ ...s, display: fmt12h(s.time_slot) }} selected={selectedSlot === s.time_slot} onSelect={setSelectedSlot} selectedDate={selectedDate} />)}
                     </div>
                   </div>
@@ -517,7 +524,7 @@ export default function BookAppointment() {
                 {/* Notes & Media Upload */}
                 <div className="border-t border-border pt-5 mt-2.5">
                   <p className="text-[12px] font-bold text-text-main m-0 mb-3">Additional Notes & Media (Optional)</p>
-                  <div className="grid grid-cols-[1.5fr_1fr] gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-[1.5fr_1fr] gap-4">
                     <textarea 
                       placeholder="Add any urgent requests here or upload... "
                       value={notes}
@@ -547,13 +554,13 @@ export default function BookAppointment() {
             <div className="flex justify-between items-center mt-2">
               <button type="button"
                 onClick={() => { setStep(1); setSelectedType(null); setSelectedDate(''); setSelectedSlot(''); setSlotsData(null) }}
-                className="py-3 px-7 rounded-[10px] border-[1.5px] border-maroon-border bg-white text-maroon text-[14px] font-semibold cursor-pointer font-sans hover:bg-maroon-light transition-colors">
+                className="py-3 px-4 md:px-7 rounded-[10px] border-[1.5px] border-maroon-border bg-white text-maroon text-[14px] font-semibold cursor-pointer font-sans hover:bg-maroon-light transition-colors">
                 Back
               </button>
               <button type="button"
                 onClick={() => setStep(3)}
                 disabled={!selectedSlot}
-                className={`py-3 px-7 rounded-[10px] border-none text-[14px] font-bold font-sans transition-all duration-200 ${
+                className={`py-3 px-4 md:px-7 rounded-[10px] border-none text-[14px] font-bold font-sans transition-all duration-200 ${
                   selectedSlot ? 'bg-maroon text-white cursor-pointer hover:opacity-90' : 'bg-border-strong text-white cursor-not-allowed'
                 }`}>
                 Next: Confirm →
@@ -595,7 +602,7 @@ export default function BookAppointment() {
                 </div>
 
                 {/* Schedule + Location */}
-                <div className="grid grid-cols-2 gap-6 mb-6 pb-5 border-b border-border">
+                <div className="flex flex-col gap-4 md:grid md:grid-cols-2 md:gap-6 mb-6 pb-5 border-b border-border">
                   <div>
                     <p className="text-[10px] font-bold text-text-muted tracking-widest uppercase m-0 mb-2.5">SCHEDULE</p>
                     <div className="flex items-center gap-2 text-[14px] text-text-main mb-1.5">
@@ -663,13 +670,13 @@ export default function BookAppointment() {
               <button type="button"
                 onClick={() => setStep(2)}
                 disabled={loading}
-                className={`py-3 px-7 rounded-[10px] border-[1.5px] border-maroon-border bg-white text-maroon text-[14px] font-semibold font-sans ${loading ? 'cursor-not-allowed opacity-50' : 'cursor-pointer hover:bg-maroon-light'}`}>
+                className={`py-3 px-4 md:px-7 rounded-[10px] border-[1.5px] border-maroon-border bg-white text-maroon text-[14px] font-semibold font-sans ${loading ? 'cursor-not-allowed opacity-50' : 'cursor-pointer hover:bg-maroon-light'}`}>
                 Back
               </button>
               <button type="button"
                 onClick={handleConfirmClick}
                 disabled={loading || isUploading}
-                className={`py-3 px-7 rounded-[10px] border-none text-[14px] font-bold font-sans flex items-center gap-2 min-w-[140px] justify-center transition-all duration-200 shadow-[0_4px_12px_rgba(123,26,42,0.15)] ${
+                className={`py-3 px-4 md:px-7 rounded-[10px] border-none text-[14px] font-bold font-sans flex items-center gap-2 min-w-0 md:min-w-[140px] justify-center transition-all duration-200 shadow-[0_4px_12px_rgba(123,26,42,0.15)] ${
                   (loading || isUploading) ? 'bg-[#B8667A] text-white cursor-not-allowed' : 'bg-maroon text-white cursor-pointer hover:opacity-90'
                 }`}>
                 {isUploading ? 'Uploading Media...' : loading ? 'Appointing...' : 'Confirm & Appoint'}

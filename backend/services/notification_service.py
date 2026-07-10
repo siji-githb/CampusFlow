@@ -1,6 +1,8 @@
 import logging
+import asyncio
 from config import get_settings
 from deps import get_supabase_admin as get_admin_client
+from services.websocket_manager import manager
 
 settings = get_settings()
 logger = logging.getLogger(__name__)
@@ -12,12 +14,17 @@ def create_system_notification(user_id: str, title: str, message: str, type: str
     """
     try:
         admin = get_admin_client()
-        admin.table("notifications").insert({
+        res = admin.table("notifications").insert({
             "user_id": user_id,
             "title": title,
             "message": message,
             "type": type
         }).execute()
+        
+        if res.data:
+            notification = res.data[0]
+            # Thread-safe websocket push from sync route
+            manager.send_personal_message_sync(notification, user_id)
     except Exception as e:
         logger.error(f"Failed to create notification for {user_id}: {e}")
 
@@ -39,7 +46,10 @@ def notify_staff_urgent_message(student_name: str):
             "type": "warning"
         } for u in res.data]
         
-        admin.table("notifications").insert(notifications).execute()
+        res_insert = admin.table("notifications").insert(notifications).execute()
+        if res_insert.data:
+            for notif in res_insert.data:
+                manager.send_personal_message_sync(notif, notif["user_id"])
     except Exception as e:
         logger.error(f"Failed to notify staff of urgent message: {e}")
 
@@ -60,6 +70,9 @@ def notify_staff_id_request(student_name: str):
             "type": "info"
         } for u in res.data]
         
-        admin.table("notifications").insert(notifications).execute()
+        res_insert = admin.table("notifications").insert(notifications).execute()
+        if res_insert.data:
+            for notif in res_insert.data:
+                manager.send_personal_message_sync(notif, notif["user_id"])
     except Exception as e:
         logger.error(f"Failed to notify staff of ID request: {e}")

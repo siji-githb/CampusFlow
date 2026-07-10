@@ -180,11 +180,19 @@ def create_appointment(student_id: str, priority_class: str, data: AppointmentCr
         }).execute()
         appt = appt_res.data[0]
         
+        # Format time to 12-hour AM/PM
+        try:
+            ts = data.time_slot[:5]
+            t_obj = datetime.strptime(ts, "%H:%M")
+            formatted_time = t_obj.strftime("%I:%M %p").lstrip("0")
+        except Exception:
+            formatted_time = data.time_slot
+            
         # Trigger notification
         create_system_notification(
             user_id=student_id,
             title="Appointment Confirmed",
-            message=f"Your appointment for {tt['name']} on {data.appointment_date} at {data.time_slot} is confirmed.",
+            message=f"Your appointment for {tt['name']} on {data.appointment_date} at {formatted_time} is confirmed.",
             type="success"
         )
         
@@ -260,6 +268,18 @@ def cancel_appointment(appointment_id: str, student_id: str):
             .eq("id", appointment_id) \
             .execute()
             
+        # Automatically mark the confirmation notification as read
+        try:
+            admin.table("notifications") \
+                .update({"is_read": True}) \
+                .eq("user_id", student_id) \
+                .eq("title", "Appointment Confirmed") \
+                .eq("is_read", False) \
+                .ilike("message", f"%{appt['appointment_date']}%") \
+                .execute()
+        except Exception as e:
+            pass
+            
         log_audit_action(
             user_id=student_id,
             action="Cancelled appointment",
@@ -270,6 +290,29 @@ def cancel_appointment(appointment_id: str, student_id: str):
             severity="Warning"
         )
         return {"message": "Appointment cancelled successfully"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+def clear_cancelled_appointments(student_id: str):
+    admin = get_admin()
+    try:
+        res = admin.table("appointments") \
+            .delete() \
+            .eq("student_id", student_id) \
+            .eq("status", "cancelled") \
+            .execute()
+            
+        log_audit_action(
+            user_id=student_id,
+            action="Cleared cancelled appointments",
+            table_name="appointments",
+            record_id="Multiple",
+            status="Success",
+            changes=f"Deleted {len(res.data)} cancelled records",
+            severity="Info"
+        )
+        return {"message": f"Successfully cleared {len(res.data)} cancelled appointments"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
