@@ -5,9 +5,9 @@ import { GraduationCap, Briefcase, Shield, AlertTriangle, Check, Search, X as XI
 
 // ── Role config ────────────────────────────────────────────────────────────────
 const ROLE_CFG = {
-  student: { label: 'Student', bg: 'bg-info-light', color: 'text-info', border: 'border-info-border' },
-  staff:   { label: 'Staff',   bg: 'bg-gold-light', color: 'text-gold', border: 'border-gold-border' },
-  admin:   { label: 'Admin',   bg: 'bg-maroon-light', color: 'text-maroon', border: 'border-maroon-border' },
+  student: { label: 'Student', bg: 'bg-surface', color: 'text-text-main', dotBg: 'bg-[#1C1917]', border: 'border-border' },
+  staff:   { label: 'Staff',   bg: 'bg-gold-light', color: 'text-gold', dotBg: 'bg-gold', border: 'border-gold-border' },
+  admin:   { label: 'Admin',   bg: 'bg-maroon-light', color: 'text-maroon', dotBg: 'bg-maroon', border: 'border-maroon-border' },
 }
 
 // ── Priority class from user profile ──────────────────────────────────────────
@@ -41,7 +41,7 @@ const RoleBadge = ({ role }) => {
   const cfg = ROLE_CFG[role] || ROLE_CFG.student
   return (
     <div className="flex items-center gap-1.5">
-      <div className={`w-1.5 h-1.5 rounded-full ${cfg.color.replace('text-', 'bg-')}`} />
+      <div className={`w-1.5 h-1.5 rounded-full ${cfg.dotBg}`} />
       <span className="text-[13px] font-semibold text-text-main">{cfg.label}</span>
     </div>
   )
@@ -219,18 +219,20 @@ export default function AdminUserManagementPage() {
       {/* ── Stat Cards ── */}
       <div className="grid grid-cols-4 gap-4 mb-7">
         {[
-          { label: 'All Users',        value: statsLoading ? '—' : counts.all.toLocaleString(),     dark: false, color: 'text-maroon' },
-          { label: 'Active Students',  value: statsLoading ? '—' : counts.student.toLocaleString(), dark: false, color: 'text-info'   },
-          { label: 'Registrar Staff',  value: statsLoading ? '—' : counts.staff.toLocaleString(),   dark: false, color: 'text-gold'   },
-          { label: 'Admin Accounts',   value: statsLoading ? '—' : counts.admin.toLocaleString(),   dark: true,  color: 'text-white'  },
+          { label: 'All Users',        value: statsLoading ? '—' : counts.all.toLocaleString(),     icon: <Users size={18} />, bg: 'bg-maroon-light', fg: 'text-maroon' },
+          { label: 'Active Students',  value: statsLoading ? '—' : counts.student.toLocaleString(), icon: <GraduationCap size={18} />, bg: 'bg-surface', fg: 'text-text-sub' },
+          { label: 'Registrar Staff',  value: statsLoading ? '—' : counts.staff.toLocaleString(),   icon: <Briefcase size={18} />, bg: 'bg-gold-light', fg: 'text-gold' },
+          { label: 'Admin Accounts',   value: statsLoading ? '—' : counts.admin.toLocaleString(),   icon: <Shield size={18} />, bg: 'bg-maroon-light', fg: 'text-maroon' },
         ].map((c, i) => (
-          <div key={i} className={`animate-fade-up rounded-2xl p-[22px_20px] relative overflow-hidden shadow-[0_1px_4px_rgba(0,0,0,0.04)] ${c.dark ? 'bg-maroon shadow-[0_4px_16px_rgba(123,26,42,0.22)] border-none' : 'bg-white border border-border'}`} style={{ animationDelay: `${0.1 * (i + 1)}s` }}>
-            {c.dark && <div className="absolute -right-4 -top-4 w-[72px] h-[72px] rounded-full bg-white/10" />}
-            <div className="flex items-start justify-between mb-3">
-              <div className={`text-[11px] font-semibold uppercase tracking-[0.06em] ${c.dark ? 'text-white/60' : 'text-text-muted'}`}>{c.label}</div>
+          <div key={i} className="animate-fade-up rounded-2xl p-[18px_20px] bg-white border border-border shadow-[0_1px_4px_rgba(0,0,0,0.04)] relative overflow-hidden" style={{ animationDelay: `${0.1 * (i + 1)}s` }}>
+            <div className="flex items-start justify-between mb-2">
+              <div className="text-[10px] font-extrabold uppercase tracking-[0.08em] text-text-muted mt-1">{c.label}</div>
+              <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${c.bg} ${c.fg}`}>
+                {c.icon}
+              </div>
             </div>
-            <div className={`font-serif text-[36px] font-bold leading-none m-0 min-h-[36px] ${c.dark ? 'text-white' : c.color}`}>
-              {statsLoading ? <div className={`animate-pulse w-[60px] h-[36px] rounded-lg ${c.dark ? 'bg-white/20' : 'bg-border'}`} /> : c.value}
+            <div className="font-sans text-[36px] font-extrabold leading-none m-0 min-h-[36px] text-text-main">
+              {statsLoading ? <div className="animate-pulse w-[60px] h-[36px] rounded-lg bg-border" /> : c.value}
             </div>
           </div>
         ))}
@@ -268,32 +270,32 @@ export default function AdminUserManagementPage() {
         </div>
 
         {/* Table header */}
-        <div className="grid grid-cols-[110px_1.6fr_1.4fr_120px_100px] p-[11px_24px] bg-surface border-b border-border">
+        <div className="grid grid-cols-[120px_1.6fr_1.4fr_130px_100px] p-[14px_24px] bg-off-white border-b border-border">
           {['ID', 'NAME', 'EMAIL', 'ROLE', 'ACTIONS'].map(h => (
-            <span key={h} className="text-[10px] font-bold text-text-muted uppercase tracking-[0.07em]">{h}</span>
+            <span key={h} className="text-[11px] font-bold text-text-muted uppercase tracking-[0.08em]">{h}</span>
           ))}
         </div>
 
         {/* Rows */}
         {loading ? (
           [1, 2, 3, 4, 5].map((n, idx) => (
-            <div key={n} className={`grid grid-cols-[110px_1.6fr_1.4fr_120px_100px] p-[14px_24px] items-center ${idx === 4 ? 'border-none' : 'border-b border-border'} ${idx % 2 === 0 ? 'bg-white' : 'bg-[#FDFCFB]'}`}>
+            <div key={n} className={`grid grid-cols-[120px_1.6fr_1.4fr_130px_100px] p-[16px_24px] items-center ${idx === 4 ? 'border-none' : 'border-b border-border/60'} bg-white`}>
               <div className="animate-pulse h-4 w-[70px] rounded bg-border" />
-              <div className="flex items-center gap-3">
-                <div className="animate-pulse w-9 h-9 rounded-full bg-border" />
+              <div className="flex items-center gap-4">
+                <div className="animate-pulse w-10 h-10 rounded-full bg-border" />
                 <div className="animate-pulse h-5 w-[60%] rounded bg-border" />
               </div>
               <div className="animate-pulse h-4 w-[80%] rounded bg-border" />
-              <div className="animate-pulse h-6 w-[60px] rounded-full bg-border" />
-              <div className="animate-pulse h-6 w-[30px] rounded bg-border" />
+              <div className="animate-pulse h-6 w-[70px] rounded-full bg-border" />
+              <div className="animate-pulse h-8 w-[60px] rounded bg-border" />
             </div>
           ))
         ) : paginated.length === 0 ? (
-          <div className="p-[56px_24px] text-center">
-            <div className="flex justify-center mb-3 text-text-muted"><Users size={48} /></div>
-            <p className="text-[15px] font-semibold text-text-main m-0 mb-1.5">No users found</p>
-            <p className="text-[13px] text-text-muted m-0">
-              {search ? 'Try adjusting your search query.' : 'No accounts registered yet.'}
+          <div className="p-[60px_24px] text-center">
+            <div className="flex justify-center mb-4 text-text-muted/50"><Users size={52} strokeWidth={1.5} /></div>
+            <p className="font-serif text-[18px] font-bold text-text-main m-0 mb-1">No users found</p>
+            <p className="text-[13px] text-text-muted m-0 max-w-[250px] mx-auto">
+              {search ? 'Try adjusting your search query or filters to find what you are looking for.' : 'No accounts have been registered in the system yet.'}
             </p>
           </div>
         ) : (
@@ -303,45 +305,49 @@ export default function AdminUserManagementPage() {
             const isLast   = idx === paginated.length - 1
 
             return (
-              <div key={user.id} className={`grid grid-cols-[110px_1.6fr_1.4fr_120px_100px] p-[16px_24px] items-center transition-colors duration-100 hover:bg-off-white ${isLast ? 'border-none' : 'border-b border-border'} ${idx % 2 === 0 ? 'bg-white' : 'bg-[#FDFCFB]'} ${user.is_active === false ? 'opacity-60' : 'opacity-100'}`}>
+              <div key={user.id} className={`grid grid-cols-[120px_1.6fr_1.4fr_130px_100px] p-[16px_24px] items-center transition-all duration-200 hover:bg-surface group ${isLast ? 'border-none' : 'border-b border-border'} bg-white ${user.is_active === false ? 'opacity-60 grayscale-[0.2]' : 'opacity-100'}`}>
                 {/* ID */}
-                <div className="text-[12px] text-text-muted font-mono">{uid}</div>
+                <div className="text-[12.5px] text-text-muted font-mono font-medium">{uid}</div>
 
                 {/* Name */}
-                <div className="flex items-center gap-2.5 min-w-0">
-                  <Avatar name={name} role={user.role} size={34} />
-                  <div className="text-[14px] font-semibold text-text-main whitespace-nowrap overflow-hidden text-ellipsis">{name}</div>
+                <div className="flex items-center gap-3.5 min-w-0 pr-4">
+                  <div className="shadow-sm rounded-full bg-white"><Avatar name={name} role={user.role} size={38} /></div>
+                  <div className="flex flex-col gap-0.5 min-w-0">
+                    <div className="text-[14px] font-bold text-text-main whitespace-nowrap overflow-hidden text-ellipsis group-hover:text-maroon transition-colors">{name}</div>
+                    {user.is_active === false && <span className="text-[10px] font-bold text-danger bg-danger-light py-[2px] px-1.5 rounded-[4px] w-fit border border-danger-border leading-none">SUSPENDED</span>}
+                  </div>
                 </div>
 
                 {/* Email */}
-                <div className="text-[13px] text-text-sub whitespace-nowrap overflow-hidden text-ellipsis">{user.email}</div>
+                <div className="text-[13px] font-medium text-text-sub whitespace-nowrap overflow-hidden text-ellipsis pr-4">{user.email}</div>
 
                 {/* Role */}
-                <div className="flex flex-col gap-1">
-                  <RoleBadge role={user.role} />
-                  {user.is_active === false && <span className="text-[10px] font-bold text-danger bg-danger-light py-0.5 px-1.5 rounded w-fit border border-danger-border">SUSPENDED</span>}
+                <div className="flex items-center">
+                  <div className="bg-surface py-1 px-2.5 rounded-md border border-border/50">
+                    <RoleBadge role={user.role} />
+                  </div>
                 </div>
 
                 {/* Actions */}
-                <div className="flex items-center gap-1.5 relative">
+                <div className="flex items-center gap-2 relative">
                   <button
                     onClick={() => setEditUser(user)}
                     title="Update role"
-                    className="w-8 h-8 rounded-lg border border-border bg-off-white text-text-sub cursor-pointer flex items-center justify-center transition-all duration-150 hover:bg-maroon-light hover:border-maroon-border hover:text-maroon"
+                    className="w-8 h-8 rounded-lg border border-border bg-white text-text-sub cursor-pointer flex items-center justify-center transition-all duration-200 hover:bg-maroon hover:border-maroon hover:text-white shadow-sm"
                   ><Pencil size={14} /></button>
                   <button
                     onClick={() => setDropdownOpen(dropdownOpen === user.id ? null : user.id)}
                     title="More options"
-                    className={`w-8 h-8 rounded-lg border cursor-pointer flex items-center justify-center transition-all duration-150 text-text-sub ${dropdownOpen === user.id ? 'border-border bg-surface' : 'border-transparent bg-transparent hover:bg-surface'}`}
+                    className={`w-8 h-8 rounded-lg border cursor-pointer flex items-center justify-center transition-all duration-200 ${dropdownOpen === user.id ? 'border-border bg-off-white text-text-main shadow-sm' : 'border-transparent bg-transparent text-text-sub hover:bg-off-white hover:border-border hover:shadow-sm'}`}
                   ><MoreVertical size={16} /></button>
                   
                   {dropdownOpen === user.id && (
-                    <div className="absolute top-full right-0 mt-1 bg-white border border-border rounded-[10px] shadow-[0_4px_12px_rgba(0,0,0,0.08)] p-1.5 z-10 min-w-[130px]">
+                    <div className="absolute top-full right-0 mt-2 bg-white border border-border rounded-xl shadow-[0_8px_24px_rgba(0,0,0,0.12)] p-1.5 z-10 min-w-[140px] animate-fade-up" style={{ animationDuration: '0.15s' }}>
                       <button
                         onClick={() => handleToggleStatus(user.id, user.is_active !== false)}
-                        className={`w-full py-2 px-3 border-none bg-transparent text-left text-[13px] cursor-pointer rounded-md flex items-center gap-2 transition-colors duration-100 font-sans font-semibold ${user.is_active !== false ? 'text-danger hover:bg-danger-light' : 'text-success hover:bg-success-light'}`}
+                        className={`w-full py-2 px-3 border-none bg-transparent text-left text-[13px] cursor-pointer rounded-lg flex items-center gap-2.5 transition-colors duration-150 font-sans font-semibold ${user.is_active !== false ? 'text-danger hover:bg-danger-light' : 'text-success hover:bg-success-light'}`}
                       >
-                        <span className="flex items-center">{user.is_active !== false ? <Ban size={14} /> : <CheckCircle size={14} />}</span> 
+                        <span className="flex items-center shrink-0">{user.is_active !== false ? <Ban size={15} /> : <CheckCircle size={15} />}</span> 
                         {user.is_active !== false ? 'Suspend User' : 'Reactivate User'}
                       </button>
                     </div>

@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useAuth } from '../../context/useAuth'
 import { getTodaysQueue, confirmStep, getLiveQueueStats } from '../../services/queueService'
-import { RefreshCw, AlertTriangle, Inbox, Ticket } from 'lucide-react'
+import { RefreshCw, AlertTriangle, Inbox, Ticket, Users, Clock, TrendingUp, Check } from 'lucide-react'
 
 // ── Priority config ────────────────────────────────────────────────────────────
 const PRIORITY_CFG = {
@@ -21,7 +21,7 @@ const getPriority = (ticket) => {
 const PriorityBadge = ({ level }) => {
   const cfg = PRIORITY_CFG[level] || PRIORITY_CFG.normal
   return (
-    <span className={`text-[10px] font-bold py-[3px] px-2.5 rounded-full border ${cfg.bg} ${cfg.color} ${cfg.border} tracking-wider`}>
+    <span className={`text-[10px] font-extrabold py-1 px-3 rounded-full border ${cfg.bg} ${cfg.color} ${cfg.border} tracking-[0.06em] uppercase`}>
       {cfg.label}
     </span>
   )
@@ -39,7 +39,8 @@ export default function AdminLiveQueuePage() {
   const [error, setError]       = useState('')
   const [lastUpdated, setLastUpdated] = useState(null)
   const [now, setNow]           = useState(new Date())
-  const [showAll, setShowAll]   = useState(false)
+  const [page, setPage]         = useState(1)
+  const PER_PAGE = 10
 
   useEffect(() => {
     const t = setInterval(() => setNow(new Date()), 60000)
@@ -79,7 +80,8 @@ export default function AdminLiveQueuePage() {
   const completed = queue.filter(q => q.ticket.status === 'completed')
 
   // "Up Next" — pending tickets
-  const upNext = waiting.slice(0, showAll ? 50 : 5)
+  const totalPages = Math.max(1, Math.ceil(waiting.length / PER_PAGE))
+  const upNext = waiting.slice((page - 1) * PER_PAGE, page * PER_PAGE)
 
   // Peak forecast hour
   const peakHour = queueStats?.peak_forecast || '—'
@@ -90,7 +92,7 @@ export default function AdminLiveQueuePage() {
   return (
     <div>
       {/* ── Page Header ── */}
-      <div className="flex items-start justify-between mb-7 flex-wrap gap-3">
+      <div className="flex items-end justify-between mb-7 flex-wrap gap-3">
         <div>
           <div className="text-[11px] font-bold text-gold uppercase tracking-[0.06em] mb-2">QUEUE MANAGEMENT</div>
           <h1 className="font-serif text-[26px] font-bold text-maroon m-0 mb-2 flex items-center gap-3">
@@ -100,16 +102,12 @@ export default function AdminLiveQueuePage() {
             Monitor registrar queues, track wait times, and manage active processing in real-time.
           </p>
         </div>
-        <div className="flex items-center gap-2.5">
-          <div className="flex items-center gap-2 py-2 px-3.5 rounded-full bg-success-light border border-success-border">
-            <div className="w-2 h-2 rounded-full bg-success shadow-[0_0_6px_#15803D]" />
-            <span className="text-[12px] font-semibold text-success">System Online & Active</span>
-          </div>
-          <button onClick={fetchQueue} className="bg-transparent border-none cursor-pointer p-1 flex items-center justify-center text-text-main" title="Refresh">
-            <RefreshCw size={18} />
-          </button>
-          <div className="bg-maroon text-white py-2 px-4 rounded-[9px] font-serif text-[15px] font-bold">
-            {currentTime}
+        <div className="flex items-center">
+          <div className="bg-white border border-border shadow-[0_2px_8px_rgba(0,0,0,0.04)] py-[9px] px-4 rounded-xl flex items-center gap-2">
+            <Clock size={16} strokeWidth={2.5} className="text-maroon" />
+            <span className="font-sans text-[15px] font-bold text-text-main tracking-wide">
+              {currentTime}
+            </span>
           </div>
         </div>
       </div>
@@ -122,55 +120,46 @@ export default function AdminLiveQueuePage() {
 
       {/* ── Stat Cards ── */}
       <div className="grid grid-cols-3 gap-4 mb-7">
-        {/* Total in Queue */}
-        <div className="animate-fade-up bg-white rounded-2xl p-6 border border-border shadow-sm" style={{ animationDelay: '0.1s' }}>
-          <div className="text-[11px] font-semibold text-text-muted uppercase tracking-[0.06em] mb-2.5">Total in Queue</div>
-          <div className="font-serif text-[36px] font-bold text-maroon leading-none mb-1.5 min-h-[36px]">
-            {loading ? <div className="animate-pulse w-[60px] h-[36px] bg-border rounded-lg" /> : waiting.length}
+        {[
+          { label: 'Total in Queue', value: waiting.length, icon: <Users size={18} />, bg: 'bg-maroon-light', fg: 'text-maroon', sub: 'Currently waiting' },
+          { label: 'Avg. Wait Time', value: <>{avgWait}m&nbsp;<span className="text-[20px]">{queueStats?.avg_wait_seconds || 0}s</span></>, icon: <Clock size={18} />, bg: 'bg-gold-light', fg: 'text-gold', sub: 'Rolling average' },
+          { label: 'Peak Forecast', value: peakHour, icon: <TrendingUp size={18} />, bg: 'bg-info-light', fg: 'text-info', sub: 'Estimated peak hour' },
+        ].map((c, i) => (
+          <div key={i} className="animate-fade-up rounded-2xl p-[18px_20px] bg-white border border-border shadow-[0_1px_4px_rgba(0,0,0,0.04)] relative overflow-hidden" style={{ animationDelay: `${i * 0.1}s` }}>
+            <div className="flex items-start justify-between mb-3">
+              <div className="text-[10px] font-extrabold text-text-muted uppercase tracking-[0.08em]">{c.label}</div>
+              <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${c.bg} ${c.fg}`}>
+                {c.icon}
+              </div>
+            </div>
+            <div className="font-sans text-[28px] font-bold text-text-main leading-none">
+              {loading ? <div className="animate-pulse w-[60px] h-[36px] bg-border rounded-lg" /> : c.value}
+            </div>
+            <div className="text-[11px] font-medium text-text-muted mt-1.5">{c.sub}</div>
           </div>
-        </div>
-
-        {/* Avg Wait Time */}
-        <div className="animate-fade-up bg-white rounded-2xl p-6 border border-border shadow-sm" style={{ animationDelay: '0.2s' }}>
-          <div className="text-[11px] font-semibold text-text-muted uppercase tracking-[0.06em] mb-2.5">Avg. Wait Time</div>
-          <div className="font-serif text-[36px] font-bold text-maroon leading-none mb-1.5 min-h-[36px]">
-            {loading ? <div className="animate-pulse w-[80px] h-[36px] bg-border rounded-lg" /> : <>{avgWait}m&nbsp;<span className="text-[22px]">{queueStats?.avg_wait_seconds || 0}s</span></>}
-          </div>
-        </div>
-
-        {/* Peak Forecast */}
-        <div className="animate-fade-up bg-maroon rounded-2xl p-6 shadow-[0_4px_16px_rgba(123,26,42,0.25)] relative overflow-hidden" style={{ animationDelay: '0.3s' }}>
-          <div className="absolute -right-4 -top-4 w-20 h-20 rounded-full bg-white/10" />
-          <div className="text-[11px] font-semibold text-white/65 uppercase tracking-[0.06em] mb-2.5 relative z-10">Peak Forecast</div>
-          <div className="font-serif text-[28px] font-bold text-white leading-none mb-1.5 min-h-[28px] relative z-10">
-            {loading ? <div className="animate-pulse w-[90px] h-[28px] bg-white/20 rounded-lg" /> : peakHour}
-          </div>
-        </div>
+        ))}
       </div>
 
       {/* ── Up Next (Live Queue) ── */}
       <div className="animate-fade-up" style={{ animationDelay: '0.4s' }}>
         <div className="flex items-center justify-between mb-4">
           <h2 className="font-serif text-[18px] font-bold text-text-main m-0">
-            Up Next <span className="text-text-muted font-normal text-[16px]">(Live Queue)</span>
+            Live Queue
           </h2>
-          <button onClick={() => setShowAll(!showAll)} className="bg-transparent border-none cursor-pointer text-[13px] font-semibold text-maroon font-sans flex items-center gap-1">
-            {showAll ? 'Show Less' : 'View Full Queue'} →
-          </button>
         </div>
 
         {/* Table header */}
-        <div className="grid grid-cols-[110px_1.5fr_1.5fr_90px_110px_140px] py-3 px-5 rounded-t-xl bg-surface border border-border border-b-0">
+        <div className="grid grid-cols-[120px_1.5fr_1.5fr_100px_120px_140px] p-[14px_24px] rounded-t-2xl bg-off-white border border-border border-b-0">
           {['Queue No.', 'Student Name', 'Transaction', 'Wait Time', 'Priority', 'Action'].map(h => (
-            <span key={h} className="text-[10px] font-bold text-text-muted uppercase tracking-[0.06em]">{h}</span>
+            <span key={h} className="text-[11px] font-bold text-text-muted uppercase tracking-[0.08em]">{h}</span>
           ))}
         </div>
 
         {/* Table rows */}
-        <div className="border border-border rounded-b-2xl overflow-hidden bg-white">
+        <div className="border border-border rounded-b-2xl overflow-hidden bg-white shadow-sm">
           {loading ? (
             [1, 2, 3].map((n, idx) => (
-              <div key={n} className={`grid grid-cols-[110px_1.5fr_1.5fr_90px_110px_140px] p-[16px_20px] items-center ${idx === 2 ? 'border-none' : 'border-b border-border'} ${idx % 2 === 0 ? 'bg-white' : 'bg-[#FDFCFB]'}`}>
+              <div key={n} className={`grid grid-cols-[120px_1.5fr_1.5fr_100px_120px_140px] p-[16px_24px] items-center ${idx === 2 ? 'border-none' : 'border-b border-border/60'} bg-white`}>
                 <div className="animate-pulse h-5 w-[50px] rounded bg-border" />
                 <div className="animate-pulse h-[18px] w-[60%] rounded bg-border" />
                 <div className="animate-pulse h-4 w-[80%] rounded bg-border" />
@@ -180,30 +169,30 @@ export default function AdminLiveQueuePage() {
               </div>
             ))
           ) : upNext.length === 0 ? (
-            <div className="p-10 text-center">
-              <div className="flex justify-center mb-2.5 text-text-muted"><Inbox size={40} /></div>
-              <p className="text-[14px] font-semibold text-text-main m-0 mb-1">Queue is clear</p>
+            <div className="p-[60px_24px] text-center">
+              <div className="flex justify-center mb-4 text-text-muted/50"><Inbox size={52} strokeWidth={1.5} /></div>
+              <p className="font-serif text-[18px] font-bold text-text-main m-0 mb-1">Queue is clear</p>
               <p className="text-[13px] text-text-muted m-0">No students are currently waiting.</p>
             </div>
           ) : (
             upNext.map(({ ticket }, idx) => {
               const student  = ticket.users
-              const name     = student ? `${student.first_name} ${ticket.users.last_name}` : 'Unknown'
+              const name     = student ? `${student.first_name} ${student.last_name}` : 'Unknown'
               const txName   = ticket.appointments?.transaction_types?.name || 'Transaction'
               const priority = getPriority(ticket)
               const waitMin  = Math.max(3, (idx + 1) * (avgWait || 5)) + 'm'
               const isLast   = idx === upNext.length - 1
 
               return (
-                <div key={ticket.id} className={`grid grid-cols-[110px_1.5fr_1.5fr_90px_110px_140px] p-[16px_20px] items-center transition-colors duration-150 ${isLast ? 'border-none' : 'border-b border-border'} ${idx % 2 === 0 ? 'bg-white' : 'bg-[#FDFCFB]'}`}>
-                  <span className="font-serif text-[16px] font-bold text-maroon">{ticket.queue_number}</span>
-                  <span className="text-[14px] font-semibold text-text-main">{name}</span>
-                  <span className="text-[13px] text-text-sub">{txName}</span>
-                  <span className="text-[13px] font-semibold text-text-sub">{waitMin}</span>
+                <div key={ticket.id} className={`group grid grid-cols-[120px_1.5fr_1.5fr_100px_120px_140px] p-[16px_24px] items-center transition-all duration-200 hover:bg-surface border-l-2 border-l-transparent ${isLast ? 'border-none' : 'border-b border-border'} bg-white`}>
+                  <span className="font-serif text-[18px] font-bold text-maroon">{ticket.queue_number}</span>
+                  <span className="text-[14px] font-bold text-text-main group-hover:text-maroon transition-colors">{name}</span>
+                  <span className="text-[13.5px] font-medium text-text-sub">{txName}</span>
+                  <span className="text-[13.5px] font-bold text-text-main">{waitMin}</span>
                   <div className="flex items-center"><PriorityBadge level={priority} /></div>
                   <button
                     onClick={() => handleConfirm(ticket.id, ticket.current_step)}
-                    className="py-2 px-3.5 rounded-lg border border-maroon-border bg-maroon-light text-maroon text-[12px] font-bold cursor-pointer font-sans whitespace-nowrap hover:bg-maroon hover:text-white transition-colors"
+                    className="py-1.5 px-3.5 rounded-lg border border-maroon-border bg-maroon-light text-maroon text-[12px] font-bold cursor-pointer font-sans whitespace-nowrap hover:bg-maroon hover:text-white transition-all shadow-sm hover:-translate-y-0.5"
                   >
                     Call Now
                   </button>
@@ -211,23 +200,48 @@ export default function AdminLiveQueuePage() {
               )
             })
           )}
+
+          {/* Footer pagination */}
+          {waiting.length > 0 && (
+            <div className="p-[16px_24px] border-t border-border flex items-center justify-between bg-surface rounded-b-2xl">
+              <span className="text-[13px] font-semibold text-text-muted">
+                Showing {Math.min((page - 1) * PER_PAGE + 1, waiting.length)}–{Math.min(page * PER_PAGE, waiting.length)} of {waiting.length} waiting
+              </span>
+              <div className="flex gap-2 items-center">
+                <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}
+                  className={`py-1.5 px-3 rounded-lg border border-border text-[12px] font-bold font-sans shadow-sm transition-colors ${page === 1 ? 'bg-off-white text-text-muted cursor-not-allowed opacity-60' : 'bg-white text-text-main hover:bg-surface cursor-pointer'}`}>
+                  Prev
+                </button>
+                <div className="text-[12.5px] font-bold text-text-main mx-1">
+                  Page {page} <span className="text-text-muted font-medium">of {totalPages}</span>
+                </div>
+                <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages}
+                  className={`py-1.5 px-3 rounded-lg border border-border text-[12px] font-bold font-sans shadow-sm transition-colors ${page === totalPages ? 'bg-off-white text-text-muted cursor-not-allowed opacity-60' : 'bg-white text-text-main hover:bg-surface cursor-pointer'}`}>
+                  Next
+                </button>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Completed section */}
         {completed.length > 0 && (
-          <div className="mt-6">
-            <p className="text-[11px] font-bold text-text-muted uppercase tracking-[0.06em] m-0 mb-3">
-              Completed Today — {completed.length} tickets
+          <div className="mt-8">
+            <p className="text-[11px] font-bold text-text-muted uppercase tracking-[0.08em] m-0 mb-4 flex items-center gap-2">
+               Completed Today — {completed.length} tickets
             </p>
-            <div className="flex flex-col gap-1.5">
+            <div className="flex flex-col gap-2.5">
               {completed.map(({ ticket }) => (
-                <div key={ticket.id} className="flex items-center justify-between p-[12px_20px] rounded-[10px] bg-white border border-border">
-                  <div className="flex items-center gap-3.5">
-                    <span className="font-serif font-bold text-text-muted text-[15px]">{ticket.queue_number}</span>
-                    <span className="text-[13px] text-text-sub">{ticket.users?.last_name}, {ticket.users?.first_name}</span>
-                    <span className="text-[12px] text-text-muted">{ticket.appointments?.transaction_types?.name}</span>
+                <div key={ticket.id} className="flex items-center justify-between p-[16px_24px] rounded-2xl bg-white border border-border shadow-sm hover:shadow-md transition-shadow">
+                  <div className="flex items-center gap-4">
+                    <span className="font-serif font-bold text-text-muted text-[16px] w-[80px]">{ticket.queue_number}</span>
+                    <span className="text-[14px] font-bold text-text-main">{ticket.users?.first_name} {ticket.users?.last_name}</span>
+                    <span className="text-[13.5px] font-medium text-text-sub before:content-['•'] before:mr-3 before:text-border">{ticket.appointments?.transaction_types?.name}</span>
                   </div>
-                  <span className="text-[11px] font-bold py-[3px] px-2.5 rounded-full bg-success-light text-success border border-success-border">Completed</span>
+                  <div className="flex items-center gap-2 py-1.5 px-3 rounded-lg bg-success-light text-success border border-success-border">
+                    <Check size={14} strokeWidth={3} />
+                    <span className="text-[11px] font-extrabold uppercase tracking-[0.06em]">Completed</span>
+                  </div>
                 </div>
               ))}
             </div>

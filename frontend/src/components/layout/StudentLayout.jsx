@@ -167,11 +167,16 @@ export function ProfileDropdown() {
               background: M.maroonLight,
               border: `1.5px solid ${M.maroonBorder}`,
               display: 'flex', alignItems: 'center', justifyContent: 'center',
+              overflow: 'hidden',
               fontSize: '15px', fontWeight: 700,
               color: M.maroon,
               boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
             }}>
-              {user?.first_name?.[0]?.toUpperCase() || 'S'}
+              {user?.profile_image ? (
+                <img src={user.profile_image} alt="Profile" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              ) : (
+                user?.first_name?.[0]?.toUpperCase() || 'S'
+              )}
             </div>
           )}
         </button>
@@ -190,9 +195,14 @@ export function ProfileDropdown() {
                     width: '48px', height: '48px', borderRadius: '50%',
                     background: M.maroonLight, border: `1.5px solid ${M.maroonBorder}`,
                     display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+                    overflow: 'hidden',
                     fontSize: '18px', fontWeight: 700, color: M.maroon,
                   }}>
-                    {user?.first_name?.[0]?.toUpperCase() || 'S'}
+                    {user?.profile_image ? (
+                      <img src={user.profile_image} alt="Profile" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    ) : (
+                      user?.first_name?.[0]?.toUpperCase() || 'S'
+                    )}
                   </div>
                   <div style={{ flex: 1 }}>
                     <div style={{ fontSize: '16px', fontWeight: 700, color: M.text, lineHeight: 1.2, marginBottom: '2px' }}>
@@ -310,9 +320,14 @@ export function ProfileDropdown() {
                     width: '48px', height: '48px', borderRadius: '50%',
                     background: M.maroonLight, border: `1.5px solid ${M.maroonBorder}`,
                     display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+                    overflow: 'hidden',
                     fontSize: '18px', fontWeight: 700, color: M.maroon,
                   }}>
-                    {user?.first_name?.[0]?.toUpperCase() || 'S'}
+                    {user?.profile_image ? (
+                      <img src={user.profile_image} alt="Profile" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    ) : (
+                      user?.first_name?.[0]?.toUpperCase() || 'S'
+                    )}
                   </div>
                   <div style={{ flex: 1 }}>
                     <div style={{ fontSize: '16px', fontWeight: 700, color: M.text, lineHeight: 1.2, marginBottom: '2px' }}>

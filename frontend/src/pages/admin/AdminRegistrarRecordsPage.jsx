@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useAuth } from '../../context/useAuth'
 import { getRegistrarRecords } from '../../services/adminService'
-import { ChevronDown, FileDown, RefreshCw, AlertTriangle, Search, X as XIcon, FolderOpen, Printer, Check, Clipboard } from 'lucide-react'
+import { ChevronDown, FileDown, RefreshCw, AlertTriangle, Search, X as XIcon, FolderOpen, Printer, Check, Clipboard, CheckCircle, Clock, Archive } from 'lucide-react'
 
 const DOC_COLORS = ['#7B1A2A', '#B8900A', '#1D4ED8', '#15803D', '#6D28D9', '#EA580C']
 
@@ -90,7 +90,20 @@ export default function AdminRegistrarRecordsPage() {
   useEffect(() => { load() }, [load])
 
   // ── All type names ─────────────────────────────────────────────────────────
-  const typeNames = [...new Set(records.map(r => r.type))]
+  const PREFERRED_ORDER = [
+    'Transcript of Records (TOR)',
+    'Certificate of Enrollment (COE)',
+    'Diploma Release'
+  ]
+  
+  const typeNames = [...new Set(records.map(r => r.type))].sort((a, b) => {
+    const indexA = PREFERRED_ORDER.indexOf(a)
+    const indexB = PREFERRED_ORDER.indexOf(b)
+    if (indexA === -1 && indexB === -1) return a.localeCompare(b)
+    if (indexA === -1) return 1
+    if (indexB === -1) return -1
+    return indexA - indexB
+  })
 
   // ── Filter + search ────────────────────────────────────────────────────────
   const filtered = records.filter(r => {
@@ -127,7 +140,7 @@ export default function AdminRegistrarRecordsPage() {
   return (
     <div>
       {/* ── Header ── */}
-      <div className="flex items-start justify-between mb-6 flex-wrap gap-3">
+      <div className="flex items-end justify-between mb-6 flex-wrap gap-3">
         <div>
           <div className="text-[11px] font-bold text-gold uppercase tracking-[0.06em] mb-2">RECORD MANAGEMENT</div>
           <h1 className="font-serif text-[26px] font-bold text-maroon m-0 mb-2 flex items-center gap-3">
@@ -137,29 +150,25 @@ export default function AdminRegistrarRecordsPage() {
             Review document issuance history, track statuses, and export records.
           </p>
         </div>
-        <div className="flex gap-3 items-center">
-          <div className="flex items-center gap-2">
-            <span className="text-[12px] font-bold text-text-muted uppercase tracking-[0.06em]">Timeframe:</span>
+        <div className="flex gap-2.5 items-center mt-2 lg:mt-0">
+          <div className="flex items-center gap-2.5 mr-1.5">
+            <span className="text-[10px] font-extrabold text-text-muted uppercase tracking-[0.08em] pt-0.5">Timeframe:</span>
             <div className="relative">
               <select
                 value={months}
                 onChange={e => setMonths(Number(e.target.value))}
-                className="py-[9px] pr-8 pl-3.5 rounded-[9px] border border-border bg-white text-[13px] text-text-main outline-none cursor-pointer font-sans appearance-none font-semibold">
+                className="py-[9px] pr-9 pl-4 rounded-xl border border-border bg-white text-[13px] text-text-main outline-none cursor-pointer font-sans appearance-none font-bold shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:border-text-muted/30 transition-all">
                 <option value={1}>1 Month</option>
                 <option value={3}>3 Months</option>
                 <option value={6}>6 Months</option>
                 <option value={12}>12 Months</option>
               </select>
-              <span className="absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none flex items-center text-text-muted"><ChevronDown size={14} /></span>
+              <span className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none flex items-center text-text-muted"><ChevronDown size={14} strokeWidth={2.5} /></span>
             </div>
           </div>
           <button onClick={() => exportCSV(csvRows, 'registrar_records.csv')}
-            className="py-[9px] px-4.5 rounded-[9px] border border-border bg-white text-text-main text-[13px] font-semibold cursor-pointer font-sans flex items-center gap-2 hover:bg-off-white transition-colors">
-            <FileDown size={15} /> Export CSV
-          </button>
-          <button onClick={load}
-            className="py-[9px] px-4.5 rounded-[9px] border-none bg-maroon text-white text-[13px] font-bold cursor-pointer font-sans flex items-center gap-2 hover:bg-maroon-dark transition-colors">
-            <RefreshCw size={15} /> Refresh
+            className="py-[9px] px-5 rounded-xl border border-border bg-white text-text-main text-[13px] font-bold cursor-pointer font-sans flex items-center gap-2 shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:bg-off-white hover:border-text-muted/30 hover:-translate-y-0.5 transition-all">
+            <FileDown size={16} strokeWidth={2.5} /> Export Records
           </button>
         </div>
       </div>
@@ -171,19 +180,22 @@ export default function AdminRegistrarRecordsPage() {
       {/* ── Stat Cards ── */}
       <div className="grid grid-cols-4 gap-4 mb-6">
         {[
-          { label: 'Total Records', value: totalRecords.toLocaleString(), color: 'text-maroon', sub: `For ${months} ${months === 1 ? 'month' : 'months'}` },
-          { label: 'Completed/Released', value: completedRecs.toLocaleString(), color: 'text-success', sub: `${totalRecords > 0 ? Math.round((completedRecs / totalRecords) * 100) : 0}% fulfillment rate` },
-          { label: 'Pending/Processing', value: pendingRecs.toLocaleString(), color: 'text-gold', sub: 'Requires action' },
-          { label: 'Archived', value: archivedRecs.toLocaleString(), color: 'text-text-sub', sub: 'Historical records' },
+          { label: 'Total Records', value: totalRecords.toLocaleString(), icon: <FolderOpen size={18} />, bg: 'bg-maroon-light', fg: 'text-maroon', sub: `For ${months} ${months === 1 ? 'month' : 'months'}` },
+          { label: 'Completed/Released', value: completedRecs.toLocaleString(), icon: <CheckCircle size={18} />, bg: 'bg-success-light', fg: 'text-success', sub: `${totalRecords > 0 ? Math.round((completedRecs / totalRecords) * 100) : 0}% fulfillment rate` },
+          { label: 'Pending/Processing', value: pendingRecs.toLocaleString(), icon: <Clock size={18} />, bg: 'bg-gold-light', fg: 'text-gold', sub: 'Requires action' },
+          { label: 'Archived', value: archivedRecs.toLocaleString(), icon: <Archive size={18} />, bg: 'bg-surface', fg: 'text-text-sub', sub: 'Historical records' },
         ].map((c, i) => (
-          <div key={i} className="animate-fade-up bg-white rounded-2xl p-5 border border-border shadow-sm" style={{ animationDelay: `${0.1 * (i + 1)}s` }}>
-            <div className="flex items-start justify-between mb-3">
-              <div className="text-[11px] font-semibold text-text-muted uppercase tracking-[0.06em]">{c.label}</div>
+          <div key={i} className="animate-fade-up rounded-2xl p-[18px_20px] bg-white border border-border shadow-[0_1px_4px_rgba(0,0,0,0.04)] relative overflow-hidden" style={{ animationDelay: `${0.1 * (i + 1)}s` }}>
+            <div className="flex items-start justify-between mb-2">
+              <div className="text-[10px] font-extrabold uppercase tracking-[0.08em] text-text-muted mt-1">{c.label}</div>
+              <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${c.bg} ${c.fg}`}>
+                {c.icon}
+              </div>
             </div>
-            <div className={`font-serif text-[34px] font-bold leading-none mb-1.5 min-h-[34px] ${c.color}`}>
-              {loading ? <div className="animate-pulse w-[60px] h-[34px] bg-border rounded-lg" /> : c.value}
+            <div className="font-sans text-[36px] font-extrabold leading-none m-0 min-h-[36px] text-text-main">
+              {loading ? <div className="animate-pulse w-[60px] h-[36px] bg-border rounded-lg" /> : c.value}
             </div>
-            <div className="text-[12px] text-text-muted">{c.sub}</div>
+            <div className="text-[11px] font-medium text-text-muted mt-1.5">{c.sub}</div>
           </div>
         ))}
       </div>
@@ -193,44 +205,47 @@ export default function AdminRegistrarRecordsPage() {
 
         {/* Left: Records Table */}
         <div>
-          {/* Search + Type tabs */}
-          <div className="mb-4">
+          {/* Search + Type dropdown */}
+          <div className="mb-4 flex flex-col sm:flex-row gap-3">
             {/* Search */}
-            <div className="relative mb-3">
+            <div className="relative flex-1">
               <input
                 value={search} onChange={e => { setSearch(e.target.value); setPage(1) }}
                 placeholder="Search by student name, record ID, or student ID…"
-                className="w-full py-2.5 pr-4 pl-9.5 rounded-[10px] border border-border bg-white text-[13px] text-text-main outline-none font-sans box-border focus:border-maroon transition-colors"
+                className="w-full py-2.5 pr-5 pl-10 rounded-full border border-border bg-white text-[13px] text-text-main outline-none font-sans box-border focus:border-maroon transition-colors"
               />
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 flex items-center text-text-muted"><Search size={16} /></span>
+              <span className="absolute left-3.5 top-1/2 -translate-y-1/2 flex items-center text-text-muted"><Search size={16} /></span>
               {search && (
-                <button onClick={() => setSearch('')} className="absolute right-2.5 top-1/2 -translate-y-1/2 bg-transparent border-none cursor-pointer text-text-muted flex items-center p-0.5"><XIcon size={16} /></button>
+                <button onClick={() => setSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 bg-transparent border-none cursor-pointer text-text-muted flex items-center p-0.5 hover:text-text-main transition-colors"><XIcon size={16} /></button>
               )}
             </div>
 
-            {/* Document type tabs */}
-            <div className="flex gap-1.5 flex-wrap">
-              {['all', ...typeNames].map((type, i) => (
-                <button key={type} onClick={() => { setActiveType(type); setPage(1) }} className={`py-1.5 px-3.5 rounded-full border text-[12px] cursor-pointer font-sans transition-all duration-150 ${activeType === type ? 'border-maroon bg-maroon text-white font-bold' : 'border-border bg-white text-text-sub font-normal hover:bg-off-white'}`}>
-                  {type === 'all' ? 'All Types' : type}
-                </button>
-              ))}
+            {/* Type Dropdown */}
+            <div className="relative shrink-0 w-full sm:w-[220px]">
+              <select
+                value={activeType}
+                onChange={e => { setActiveType(e.target.value); setPage(1) }}
+                className="w-full py-2.5 pr-9 pl-4 rounded-full border border-border bg-white text-[13px] text-text-main outline-none cursor-pointer font-sans appearance-none font-medium focus:border-maroon transition-colors">
+                <option value="all">All Document Types</option>
+                {typeNames.map(type => (
+                  <option key={type} value={type}>{type}</option>
+                ))}
+              </select>
+              <span className="absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none flex items-center text-text-muted"><ChevronDown size={15} strokeWidth={2.5} /></span>
             </div>
-          </div>
-
-          {/* Table */}
+          </div>          {/* Table */}
           <div className="bg-white rounded-2xl border border-border overflow-hidden shadow-sm">
             {/* Column headers */}
-            <div className="grid grid-cols-[110px_1.4fr_1.2fr_100px_100px_110px_40px] p-[12px_20px] bg-surface border-b border-border">
+            <div className="grid grid-cols-[110px_1fr_1.7fr_140px_110px_110px_40px] p-[14px_24px] bg-off-white border-b border-border">
               {['Record ID', 'Student', 'Document Type', 'Requested', 'Processed', 'Status', ''].map(h => (
-                <span key={h} className="text-[10px] font-bold text-text-muted uppercase tracking-[0.06em]">{h}</span>
+                <span key={h} className="text-[11px] font-bold text-text-muted uppercase tracking-[0.08em]">{h}</span>
               ))}
             </div>
 
             {/* Rows */}
             {loading ? (
               [1, 2, 3, 4, 5].map((n, idx) => (
-                <div key={n} className={`grid grid-cols-[110px_1.4fr_1.2fr_100px_100px_110px_40px] p-[14px_20px] items-center ${idx === 4 ? 'border-none' : 'border-b border-border'} ${idx % 2 === 0 ? 'bg-white' : 'bg-[#FDFCFB]'}`}>
+                <div key={n} className={`grid grid-cols-[110px_1fr_1.7fr_140px_110px_110px_40px] p-[16px_24px] items-center ${idx === 4 ? 'border-none' : 'border-b border-border/60'} bg-white`}>
                   <div className="animate-pulse h-4 w-[60px] rounded bg-border" />
                   <div className="animate-pulse h-6 w-[70%] rounded bg-border" />
                   <div className="animate-pulse h-4 w-[80%] rounded bg-border" />
@@ -241,10 +256,10 @@ export default function AdminRegistrarRecordsPage() {
                 </div>
               ))
             ) : paginated.length === 0 ? (
-              <div className="p-[56px_24px] text-center">
-                <div className="flex justify-center mb-3 text-text-muted"><FolderOpen size={48} /></div>
-                <p className="text-[15px] font-semibold text-text-main m-0 mb-1.5">No records found</p>
-                <p className="text-[13px] text-text-muted m-0">Try adjusting your search or filters.</p>
+              <div className="p-[60px_24px] text-center">
+                <div className="flex justify-center mb-4 text-text-muted/50"><FolderOpen size={52} strokeWidth={1.5} /></div>
+                <p className="font-serif text-[18px] font-bold text-text-main m-0 mb-1">No records found</p>
+                <p className="text-[13px] text-text-muted m-0 max-w-[250px] mx-auto">Try adjusting your search query or filters to find what you are looking for.</p>
               </div>
             ) : (
               paginated.map((rec, idx) => {
@@ -253,32 +268,36 @@ export default function AdminRegistrarRecordsPage() {
                 const isLast = idx === paginated.length - 1
 
                 return (
-                  <div key={rec.id}>
-                    <div className={`grid grid-cols-[110px_1.4fr_1.2fr_100px_100px_110px_40px] p-[14px_20px] items-center cursor-pointer transition-colors duration-100 ${isLast && !isExpanded ? 'border-none' : 'border-b border-border'} ${isExpanded ? 'bg-maroon-light' : idx % 2 === 0 ? 'bg-white hover:bg-off-white' : 'bg-[#FDFCFB] hover:bg-off-white'}`}
+                  <div key={rec.id} className="group">
+                    <div className={`grid grid-cols-[110px_1fr_1.7fr_140px_110px_110px_40px] p-[16px_24px] items-center cursor-pointer transition-all duration-200 ${isLast && !isExpanded ? 'border-none' : 'border-b border-border'} ${isExpanded ? 'bg-surface border-l-2 border-l-maroon' : 'bg-white hover:bg-surface border-l-2 border-l-transparent'}`}
                       onClick={() => setExpandedId(isExpanded ? null : rec.id)}
                     >
-                      <span className="font-mono text-[12px] font-bold text-maroon">{rec.id}</span>
+                      <span className="font-mono text-[12.5px] font-bold text-maroon">{rec.id}</span>
 
-                      <div className="min-w-0">
-                        <div className="text-[13px] font-semibold text-text-main whitespace-nowrap overflow-hidden text-ellipsis">{rec.student}</div>
-                        <div className="text-[10px] text-text-muted font-mono mt-px">{rec.studentId}</div>
+                      <div className="min-w-0 pr-4">
+                        <div className="text-[14px] font-bold text-text-main whitespace-nowrap overflow-hidden text-ellipsis group-hover:text-maroon transition-colors">{rec.student}</div>
+                        <div className="text-[10.5px] font-medium text-text-muted font-mono mt-0.5">{rec.studentId}</div>
                       </div>
 
-                      <div className="flex items-center gap-2">
-                        <div className="w-2 h-2 rounded-full shrink-0" style={{ background: typeColor }} />
-                        <span className="text-[12px] text-text-sub overflow-hidden text-ellipsis whitespace-nowrap">{rec.type}</span>
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: typeColor }} />
+                        <span className="text-[13px] font-medium text-text-sub overflow-hidden text-ellipsis whitespace-nowrap">{rec.type}</span>
                       </div>
 
-                      <span className="text-[12px] text-text-muted">{rec.requested}</span>
-                      <span className="text-[12px] text-text-muted">{rec.processed}</span>
-                      <StatusBadge status={rec.status} />
-                      <span className={`text-text-muted transition-transform duration-200 flex justify-center ${isExpanded ? 'rotate-180' : 'rotate-0'}`}><ChevronDown size={18} /></span>
+                      <span className="text-[13px] font-medium text-text-sub">{rec.requested}</span>
+                      <span className="text-[13px] font-medium text-text-sub">{rec.processed}</span>
+                      
+                      <div className="flex items-center">
+                        <StatusBadge status={rec.status} />
+                      </div>
+
+                      <span className={`text-text-muted transition-transform duration-200 flex justify-end ${isExpanded ? 'rotate-180' : 'rotate-0'}`}><ChevronDown size={18} /></span>
                     </div>
 
                     {/* Expanded row detail */}
                     {isExpanded && (
-                      <div className={`p-[16px_24px] bg-maroon-light ${isLast ? 'border-none' : 'border-b border-border'}`}>
-                        <div className="grid grid-cols-4 gap-4">
+                      <div className={`p-[20px_24px] bg-off-white shadow-inner ${isLast ? 'border-none' : 'border-b border-border'}`}>
+                        <div className="grid grid-cols-4 gap-6">
                           {[
                             { l: 'Record ID', v: rec.id, mono: true },
                             { l: 'Student ID', v: rec.studentId, mono: true },
@@ -286,8 +305,8 @@ export default function AdminRegistrarRecordsPage() {
                             { l: 'Current Status', v: STATUS_CFG[rec.status]?.label || rec.status },
                           ].map((d, i) => (
                             <div key={i}>
-                              <div className="text-[10px] font-bold text-maroon/70 uppercase tracking-[0.06em] mb-1">{d.l}</div>
-                              <div className={`text-[14px] font-semibold text-maroon ${d.mono ? 'font-mono' : 'font-sans'}`}>{d.v}</div>
+                              <div className="text-[10px] font-extrabold text-text-muted uppercase tracking-[0.08em] mb-1.5">{d.l}</div>
+                              <div className={`text-[14px] font-bold text-text-main ${d.mono ? 'font-mono' : 'font-sans'}`}>{d.v}</div>
                             </div>
                           ))}
                         </div>

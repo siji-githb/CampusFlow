@@ -96,6 +96,7 @@ async def login_user(data: LoginRequest) -> dict:
             "priority_class": profile["priority_class"],
             "student_id": profile.get("student_id"),
             "course": profile.get("course"),
+            "profile_image": profile.get("profile_image"),
         }
 
     }

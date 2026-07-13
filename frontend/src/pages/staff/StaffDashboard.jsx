@@ -7,20 +7,23 @@ import MessagesPage from './MessagesPage'
 import AppointmentsPage from './AppointmentsPage'
 import StudentRecordsPage from './StudentRecordsPage'
 import IdRequestsPage from './IdRequestsPage'
+import StaffGlobalSearch from '../../components/StaffGlobalSearch'
+import StaffProfilePage from './StaffProfilePage'
 import { getTodaysQueue } from '../../services/queueService'
 import NotificationDropdown from '../../components/NotificationDropdown'
 import { getMessages, markMessageRead } from '../../services/messagesService'
 import { getAppointmentStats } from '../../services/appointmentService'
-import { Inbox, MessageSquare, BarChart2, Ticket, Calendar, ClipboardList, LogOut, Users, CheckSquare, Clock, CalendarClock, Monitor, MonitorX, HelpCircle } from 'lucide-react'
+import { Inbox, MessageSquare, BarChart2, Ticket, Calendar, ClipboardList, LogOut, Users, User, Settings, CheckSquare, Clock, CalendarClock, Monitor, MonitorX, HelpCircle, LayoutDashboard } from 'lucide-react'
 import { getWindowAssignments, claimWindow, releaseWindow, getIdRequests } from '../../services/adminService'
 
 // ── Compact Queue Preview (Overview panel) ─────────────────────────────────────
 function CompactQueuePreview({ queue, loading }) {
-  const active = queue.filter(q => q.ticket.status !== 'completed').slice(0, 4)
+  const activeAll = queue.filter(q => q.ticket.status !== 'completed')
+  const active = activeAll.slice(0, 5)
 
   if (loading) return (
     <div className="flex flex-col gap-2">
-      {[1,2,3].map(i => <div key={i} className="h-12 rounded-xl animate-pulse bg-border" />)}
+      {[1,2,3,4,5].map(i => <div key={i} className="h-12 rounded-xl animate-pulse bg-border" />)}
     </div>
   )
 
@@ -32,23 +35,30 @@ function CompactQueuePreview({ queue, loading }) {
   )
 
   return (
-    <div className="flex flex-col gap-2">
-      {active.map(({ ticket }) => {
-        const name = ticket.users ? `${ticket.users.last_name}, ${ticket.users.first_name}` : 'Unknown'
-        const isServing = ticket.status === 'in_progress'
-        return (
-          <div key={ticket.id} className={`flex items-center gap-3 px-3 py-2.5 rounded-[10px] border ${isServing ? 'border-success-border bg-success-light' : 'border-border bg-off-white'}`}>
-            <span className="font-serif text-[17px] font-extrabold text-maroon min-w-[60px]">{ticket.queue_number}</span>
-            <div className="flex-1 min-w-0">
-              <div className="text-[13px] font-semibold text-text-main whitespace-nowrap overflow-hidden text-ellipsis">{name}</div>
-              <div className="text-[11px] text-text-muted mt-px">{ticket.appointments?.transaction_types?.name || 'Transaction'}</div>
+    <div className="flex flex-col">
+      <div className="flex flex-col gap-2">
+        {active.map(({ ticket }) => {
+          const name = ticket.users ? `${ticket.users.last_name}, ${ticket.users.first_name}` : 'Unknown'
+          const isServing = ticket.status === 'in_progress'
+          return (
+            <div key={ticket.id} className={`flex items-center gap-3 px-3 py-2.5 rounded-[10px] border ${isServing ? 'border-success-border bg-success-light' : 'border-border bg-off-white'}`}>
+              <span className="font-serif text-[17px] font-extrabold text-maroon min-w-[60px]">{ticket.queue_number}</span>
+              <div className="flex-1 min-w-0">
+                <div className="text-[13px] font-semibold text-text-main whitespace-nowrap overflow-hidden text-ellipsis">{name}</div>
+                <div className="text-[11px] text-text-muted mt-px">{ticket.appointments?.transaction_types?.name || 'Transaction'}</div>
+              </div>
+              <span className={`text-[10px] font-bold px-2 py-[3px] rounded-full whitespace-nowrap border ${isServing ? 'bg-success-light text-success border-success-border' : 'bg-gold-light text-gold border-gold-border'}`}>
+                {isServing ? '● Serving' : '◔ Waiting'}
+              </span>
             </div>
-            <span className={`text-[10px] font-bold px-2 py-[3px] rounded-full whitespace-nowrap border ${isServing ? 'bg-success-light text-success border-success-border' : 'bg-gold-light text-gold border-gold-border'}`}>
-              {isServing ? '● Serving' : '◔ Waiting'}
-            </span>
-          </div>
-        )
-      })}
+          )
+        })}
+      </div>
+      <div className="mt-4 text-right">
+        <span className="text-[11px] font-bold text-text-muted tracking-wide">
+          Showing {active.length} out of {activeAll.length} tickets
+        </span>
+      </div>
     </div>
   )
 }
@@ -58,16 +68,21 @@ const SideItem = ({ icon, label, active, onClick, badge, disabled }) => (
   <button 
     onClick={disabled ? undefined : onClick} 
     disabled={disabled}
-    className={`flex items-center gap-[11px] w-full px-3.5 py-2.5 rounded-[10px] border-none text-left text-[13.5px] font-sans relative transition-colors duration-150
+    className={`flex items-center gap-[11px] w-full px-3.5 py-2.5 rounded-[10px] border-none text-left text-[13.5px] font-sans relative transition-all duration-300 overflow-hidden
       ${disabled ? 'cursor-not-allowed opacity-40' : 'cursor-pointer'}
-      ${active ? 'bg-maroon-mid text-maroon font-semibold' : 'bg-transparent text-text-sub font-normal'}
+      ${active ? 'bg-maroon-light/60 text-maroon font-bold' : 'bg-transparent text-text-sub font-medium'}
       ${!active && !disabled ? 'hover:bg-surface hover:text-text-main' : ''}
     `}
   >
-    <span className="text-[17px] w-5 text-center shrink-0">{icon}</span>
-    <span className="flex-1">{label}</span>
+    {active && (
+      <div className="absolute left-0 top-[15%] bottom-[15%] w-[3px] bg-maroon rounded-r-full shadow-[1px_0_6px_rgba(123,26,42,0.3)]" />
+    )}
+    <span className={`flex items-center justify-center text-[17px] w-5 shrink-0 transition-all duration-300 ${active ? 'opacity-100 scale-110 text-maroon' : 'opacity-70'}`}>
+      {icon}
+    </span>
+    <span className="flex-1 tracking-wide">{label}</span>
     {badge > 0 && (
-      <span className="bg-maroon text-white text-[10px] font-bold px-1.5 py-px rounded-full min-w-[18px] text-center">
+      <span className="bg-maroon text-white text-[10px] font-bold px-1.5 py-px rounded-full min-w-[18px] text-center z-10 relative shadow-sm">
         {badge}
       </span>
     )}
@@ -75,7 +90,7 @@ const SideItem = ({ icon, label, active, onClick, badge, disabled }) => (
 )
 
 // ── Stat Card ──────────────────────────────────────────────────────────────────
-const StatCard = ({ icon, value, label, colorClass, bgClass, loading, delay }) => (
+const StatCard = ({ icon, value, label, sub, subColorClass = "text-text-muted", colorClass, bgClass, loading, delay }) => (
   <div className="animate-fade-up bg-white rounded-[14px] px-5 py-[18px] border border-border flex flex-col gap-3 shadow-[0_1px_4px_rgba(0,0,0,0.04)]" style={{ animationDelay: delay || '0s' }}>
     <div className="flex items-start justify-between">
       <div className="text-xs font-semibold text-text-muted uppercase tracking-[0.06em] mt-1.5">{label}</div>
@@ -83,8 +98,11 @@ const StatCard = ({ icon, value, label, colorClass, bgClass, loading, delay }) =
         {icon}
       </div>
     </div>
-    <div className={`font-serif text-[28px] font-extrabold leading-none m-0 min-h-[28px] ${colorClass}`}>
-      {loading ? <div className="animate-pulse w-[60px] h-7 rounded-md bg-border" /> : value}
+    <div>
+      <div className="font-serif text-[28px] font-extrabold leading-none m-0 min-h-[28px] text-text-main">
+        {loading ? <div className="animate-pulse w-[60px] h-7 rounded-md bg-border" /> : value}
+      </div>
+      {sub && <div className={`text-[11px] font-semibold mt-1.5 ${subColorClass}`}>{sub}</div>}
     </div>
   </div>
 )
@@ -142,6 +160,8 @@ export default function StaffDashboard() {
   const navigate = useNavigate()
   const [activeNav, setActiveNav] = useState('overview')
   const [profileOpen, setProfileOpen] = useState(false)
+
+
 
   // Data states
   const [queue, setQueue] = useState([])
@@ -219,7 +239,7 @@ export default function StaffDashboard() {
   useEffect(() => {
     loadData()
     loadWindowData()
-    const t = setInterval(loadData, 5000)
+    const t = setInterval(loadData, 15000)
     const wt = setInterval(loadWindowData, 12000)
     return () => { clearInterval(t); clearInterval(wt) }
   }, [loadData])
@@ -251,19 +271,29 @@ export default function StaffDashboard() {
   const pendingAppts = Math.max(0, (apptStats.today_appointments || 0) - (apptStats.completed_today || 0))
 
   const stats = [
-    { icon: <Users size={20} />, value: activeInQueue.toString(), label: 'Active in Queue', colorClass: 'text-maroon', bgClass: 'bg-maroon-light', loading: loadingQueue, delay: '0.1s' },
-    { icon: <CheckSquare size={20} />, value: completedToday.toString(), label: 'Completed Today', colorClass: 'text-success', bgClass: 'bg-success-light', loading: loadingQueue, delay: '0.2s' },
-    { icon: <Clock size={20} />, value: `${avgWait}m`, label: 'Avg. Process Time', colorClass: 'text-gold', bgClass: 'bg-gold-light', loading: loadingQueue, delay: '0.3s' },
-    { icon: <CalendarClock size={20} />, value: pendingAppts.toString(), label: 'Pending Appts.', colorClass: 'text-blue', bgClass: 'bg-blue-light', loading: loadingQueue, delay: '0.4s' },
+    { icon: <Users size={20} />, value: activeInQueue.toString(), label: 'Active in Queue', sub: "Waiting students", colorClass: 'text-maroon', bgClass: 'bg-maroon-light', loading: loadingQueue, delay: '0.1s' },
+    { icon: <CheckSquare size={20} />, value: completedToday.toString(), label: 'Completed Today', sub: "Fully serviced", colorClass: 'text-gold', bgClass: 'bg-gold-light', loading: loadingQueue, delay: '0.2s' },
+    { icon: <Clock size={20} />, value: `${avgWait}m`, label: 'Avg. Process Time', sub: avgWait > 15 ? "High wait times" : "Processing efficiently", subColorClass: avgWait > 15 ? "text-danger" : "text-text-muted", colorClass: 'text-maroon', bgClass: 'bg-maroon-light', loading: loadingQueue, delay: '0.3s' },
+    { icon: <CalendarClock size={20} />, value: pendingAppts.toString(), label: 'Today\'s Appts.', sub: "Scheduled today", colorClass: 'text-gold', bgClass: 'bg-gold-light', loading: loadingQueue, delay: '0.4s' },
   ]
 
-  const navItems = [
-    { id: 'overview', icon: <BarChart2 size={18} />, label: 'Dashboard' },
-    { id: 'queue', icon: <Ticket size={18} />, label: 'Live Queue Management' },
-    { id: 'appointments', icon: <Calendar size={18} />, label: 'Appointments' },
-    { id: 'records', icon: <ClipboardList size={18} />, label: 'Student Records' },
-    { id: 'messages', icon: <MessageSquare size={18} />, label: 'Messages', badge: badgeStats.messages },
-    { id: 'id-requests', icon: <HelpCircle size={18} />, label: 'Id Requests', badge: badgeStats.idRequests },
+  const navGroups = [
+    {
+      title: 'Main Menu',
+      items: [
+        { id: 'overview', icon: <LayoutDashboard size={18} />, label: 'Overview' },
+        { id: 'queue', icon: <Ticket size={18} />, label: 'Live Queue' },
+        { id: 'appointments', icon: <Calendar size={18} />, label: 'Appointments' },
+      ]
+    },
+    {
+      title: 'Records & Actions',
+      items: [
+        { id: 'records', icon: <ClipboardList size={18} />, label: 'Student Records' },
+        { id: 'messages', icon: <MessageSquare size={18} />, label: 'Messages', badge: badgeStats.messages },
+        { id: 'id-requests', icon: <HelpCircle size={18} />, label: 'Id Requests', badge: badgeStats.idRequests },
+      ]
+    }
   ]
 
   return (
@@ -281,18 +311,26 @@ export default function StaffDashboard() {
         </div>
 
         {/* Nav */}
-        <div className="text-[10px] font-bold text-text-muted tracking-[0.08em] uppercase px-3.5 mb-1.5">Navigation</div>
-        <nav className="flex flex-col gap-[3px] flex-1">
-          {navItems.map(item => (
-            <SideItem
-              key={item.id}
-              icon={item.icon}
-              label={item.label}
-              active={activeNav === item.id}
-              onClick={() => myWindow ? setActiveNav(item.id) : null}
-              badge={item.badge}
-              disabled={!myWindow}
-            />
+        <nav className="flex-1 flex flex-col gap-6 px-1 overflow-y-auto pb-6 scrollbar-hide">
+          {navGroups.map((group, idx) => (
+            <div key={idx} className="flex flex-col gap-1.5">
+              <div className="text-[10px] font-extrabold text-text-muted uppercase tracking-[0.15em] px-4 mb-1">
+                {group.title}
+              </div>
+              <div className="flex flex-col gap-1 pl-3 pr-2">
+                {group.items.map(item => (
+                  <SideItem
+                    key={item.id}
+                    icon={item.icon}
+                    label={item.label}
+                    active={activeNav === item.id}
+                    onClick={() => myWindow ? setActiveNav(item.id) : null}
+                    badge={item.badge}
+                    disabled={!myWindow}
+                  />
+                ))}
+              </div>
+            </div>
           ))}
         </nav>
         {/* Window required hint in sidebar */}
@@ -308,20 +346,25 @@ export default function StaffDashboard() {
 
         {/* Top Bar */}
         <header className="bg-white border-b border-border px-7 h-[60px] flex items-center justify-between sticky top-0 z-40 shadow-[0_1px_4px_rgba(0,0,0,0.04)]">
-          <div>
-            {/* Empty space for layout balance */}
-          </div>
+          <StaffGlobalSearch setActiveNav={setActiveNav} />
 
           {/* Window Badge + Avatar */}
           <div className="flex items-center gap-3">
 
             {/* Active Window Badge */}
             {myWindow ? (
-              <div className="flex items-center gap-2 bg-success-light border-[1.5px] border-success-border rounded-[10px] px-3.5 py-1.5">
-                <Monitor size={16} className="text-success" />
-                <span className="text-[13px] font-bold text-success font-sans">
-                  Window {myWindow}
-                </span>
+              <div className="flex items-center gap-1.5 bg-white border border-border rounded-lg shadow-sm px-1.5 py-1.5 transition-all hover:shadow">
+                <div className="flex items-center gap-2 pl-2 pr-1">
+                  <div className="relative flex items-center justify-center">
+                    <span className="absolute inline-flex h-2 w-2 rounded-full bg-success opacity-40 animate-ping" style={{ animationDuration: '2s' }}></span>
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-success"></span>
+                  </div>
+                  <Monitor size={15} className="text-text-sub" strokeWidth={2.5} />
+                  <span className="text-[13px] font-bold text-text-main font-sans tracking-wide">
+                    Window {myWindow}
+                  </span>
+                </div>
+                <div className="w-px h-4 bg-border mx-0.5"></div>
                 <button
                   type="button"
                   onClick={(e) => {
@@ -330,9 +373,9 @@ export default function StaffDashboard() {
                     handleReleaseWindow()
                   }}
                   title="Release window"
-                  className="bg-transparent border-none cursor-pointer text-success flex items-center pl-1 opacity-60 hover:opacity-100 transition-opacity"
+                  className="flex items-center justify-center w-6 h-6 rounded-md border-none bg-transparent cursor-pointer text-text-muted hover:bg-danger-light hover:text-danger transition-colors outline-none"
                 >
-                  <MonitorX size={15} />
+                  <MonitorX size={14} strokeWidth={2.5} />
                 </button>
               </div>
             ) : (
@@ -346,16 +389,66 @@ export default function StaffDashboard() {
             {/* Avatar dropdown */}
             <div className="relative">
               {profileOpen && <div onClick={() => setProfileOpen(false)} className="fixed inset-0 z-105" />}
-              <button onClick={() => setProfileOpen(!profileOpen)} className="flex items-center justify-center p-0 rounded-full border-none bg-transparent cursor-pointer outline-none">
-                <div className="w-[38px] h-[38px] rounded-full bg-maroon-mid border-[1.5px] border-maroon-border flex items-center justify-center text-[15px] font-bold text-maroon transition-colors hover:bg-maroon-light">
-                  {user?.first_name?.[0]?.toUpperCase() || 'S'}
+              <button onClick={() => setProfileOpen(!profileOpen)} className="flex items-center gap-2.5 p-1 pr-2 rounded-full border-none bg-transparent cursor-pointer outline-none hover:bg-slate-50 transition-colors">
+                <div className="w-[38px] h-[38px] rounded-full bg-maroon-mid border-[1.5px] border-maroon-border flex items-center justify-center text-[15px] font-bold text-maroon overflow-hidden">
+                  {user?.profile_image ? (
+                    <img src={user.profile_image} alt="Profile" className="w-full h-full object-cover" />
+                  ) : (
+                    user?.first_name?.[0]?.toUpperCase() || 'S'
+                  )}
+                </div>
+                <div className="flex items-center gap-1.5 mr-1">
+                  <span className="text-[14px] font-bold text-text-main font-sans">
+                    {user?.first_name || 'Staff'}
+                  </span>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={`text-text-sub transition-transform duration-300 ${profileOpen ? 'rotate-180' : ''}`}>
+                    <polyline points="6 9 12 15 18 9"></polyline>
+                  </svg>
                 </div>
               </button>
               {profileOpen && (
-                <div className="absolute top-[44px] right-0 w-[200px] bg-white rounded-xl shadow-[0_8px_24px_rgba(0,0,0,0.12),0_0_0_1px_rgba(0,0,0,0.05)] p-3 z-110">
-                  <div className="text-[13px] font-semibold text-text-main mb-1">{user?.first_name} {user?.last_name}</div>
-                  <div className="text-[11px] text-text-muted mb-3 break-all">{user?.email}</div>
-                  <div className="h-px bg-border mb-2.5" />
+                <div className="absolute top-[44px] right-0 w-[280px] bg-white rounded-2xl shadow-[0_8px_30px_rgba(0,0,0,0.12)] p-4 z-110 border border-border">
+                  <div className="flex gap-3 mb-4 items-start">
+                    <div className="w-[42px] h-[42px] rounded-full bg-maroon-mid border-[1.5px] border-maroon-border flex items-center justify-center text-[16px] font-bold text-maroon overflow-hidden shrink-0">
+                      {user?.profile_image ? (
+                        <img src={user.profile_image} alt="Profile" className="w-full h-full object-cover" />
+                      ) : (
+                        user?.first_name?.[0]?.toUpperCase() || 'S'
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0 pt-0.5">
+                      <div className="text-[14px] font-bold text-text-main leading-tight truncate">
+                        {user?.first_name} {user?.last_name}
+                      </div>
+                      <div className="text-[11px] text-text-muted mt-1 truncate">
+                        {user?.email}
+                      </div>
+                      <div className="flex gap-1.5 mt-2 flex-wrap">
+                        <span className="text-[9px] font-bold text-maroon bg-maroon-light border border-maroon-border rounded px-1.5 py-0.5 uppercase tracking-wider">
+                          ID: {user?.staff_id || user?.id?.substring(0,8) || 'STAFF'}
+                        </span>
+                        <span className="text-[9px] font-bold text-gold bg-gold-light border border-gold-border rounded px-1.5 py-0.5 uppercase tracking-wider">
+                          {user?.role === 'admin' ? 'ADMIN' : 'STAFF'}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="h-px bg-border my-2" />
+
+                  <div className="flex flex-col gap-1 py-2">
+                    <button onClick={() => { setProfileOpen(false); setActiveNav('profile'); }} className="flex items-center gap-3 w-full px-3 py-2.5 rounded-lg border-none bg-transparent hover:bg-slate-50 cursor-pointer text-left transition-colors">
+                      <User size={16} className="text-text-main" />
+                      <span className="text-[13px] font-semibold text-text-main">Edit Profile</span>
+                    </button>
+                    <button onClick={() => { setProfileOpen(false); setActiveNav('settings'); }} className="flex items-center gap-3 w-full px-3 py-2.5 rounded-lg border-none bg-transparent hover:bg-slate-50 cursor-pointer text-left transition-colors">
+                      <Settings size={16} className="text-text-main" />
+                      <span className="text-[13px] font-semibold text-text-main">Account Settings</span>
+                    </button>
+                  </div>
+
+                  <div className="h-px bg-border my-2" />
+
                   <button onClick={async (e) => {
                     e.preventDefault();
                     e.stopPropagation();
@@ -369,8 +462,8 @@ export default function StaffDashboard() {
                       logout();
                       navigate('/login', { replace: true });
                     }
-                  }} className="w-full px-3 py-[9px] rounded-lg border-none bg-danger-light text-danger text-[13px] font-semibold cursor-pointer flex items-center gap-2 font-sans hover:bg-[#FCA5A5] transition-colors">
-                    <span className="flex items-center"><LogOut size={16} /></span> Log Out
+                  }} className="w-full mt-2 py-2.5 px-3 rounded-xl border-none bg-[#FFF0F0] text-[#D92D20] text-[13px] font-bold cursor-pointer flex items-center justify-center gap-2 font-sans hover:bg-[#FFE5E5] transition-colors">
+                    <LogOut size={16} /> Log Out
                   </button>
                 </div>
               )}
@@ -474,7 +567,9 @@ export default function StaffDashboard() {
                       <p className="text-[11px] font-bold text-gold tracking-widest uppercase m-0 mb-1">Inbox</p>
                       <h2 className="font-serif text-[18px] font-bold text-text-main m-0">AI Escalations</h2>
                     </div>
-                    <span className="bg-danger text-white text-[11px] font-bold px-2 py-0.5 rounded-full">New</span>
+                    {badgeStats.messages > 0 && (
+                      <span className="bg-danger text-white text-[11px] font-bold px-2 py-0.5 rounded-full">New</span>
+                    )}
                   </div>
                   <div className="flex-1 overflow-auto">
                     <CompactMessagesPreview />
@@ -510,6 +605,11 @@ export default function StaffDashboard() {
           {/* ──── ID REQUESTS VIEW ──── */}
           {activeNav === 'id-requests' && (
             <IdRequestsPage />
+          )}
+
+          {/* ──── PROFILE / SETTINGS VIEW ──── */}
+          {(activeNav === 'profile' || activeNav === 'settings') && (
+            <StaffProfilePage setActiveNav={setActiveNav} />
           )}
         </main>
       </div>

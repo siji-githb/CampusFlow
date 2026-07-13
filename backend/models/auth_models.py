@@ -62,6 +62,7 @@ class UserResponse(BaseModel):
     priority_class: str
     student_id: Optional[str] = None
     course: Optional[str] = None
+    profile_image: Optional[str] = None
 
 
 class TokenResponse(BaseModel):

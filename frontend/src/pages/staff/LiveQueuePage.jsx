@@ -565,6 +565,14 @@ export default function LiveQueuePage() {
             )}
           </div>
 
+          {!loading && displayed.length > 0 && (
+            <div className="mt-4 text-right px-2">
+              <span className="text-[12px] font-bold text-text-muted tracking-wide">
+                Showing {displayed.length} out of {active.length} active tickets
+              </span>
+            </div>
+          )}
+
           {/* Completed section */}
           {done.length > 0 && !loading && (
             <div className="mt-6">

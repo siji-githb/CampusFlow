@@ -1,9 +1,9 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '../context/useAuth'
 import { Calendar, Ticket, Route, Bot, Zap, BarChart3, ChevronRight, Menu, X } from 'lucide-react'
 import campusFlowLogo from '../assets/logo.png'
-import loginImage from '../assets/login.png'
+import loginImage from '../assets/landing_page.png'
 
 const FEATURES = [
   { icon: <Calendar size={20} strokeWidth={2.5} className="text-maroon" />, title: 'Online Appointment Booking', desc: 'Schedule TOR, COE, or Diploma requests anytime — no need to line up just to get a number.' },
@@ -24,6 +24,14 @@ export default function Landing() {
   const navigate  = useNavigate()
   const { user }  = useAuth()
   const [isMenuOpen, setIsMenuOpen] = useState(false)
+
+  useEffect(() => {
+    if (user) {
+      if (user.role === 'student') navigate('/student/dashboard', { replace: true })
+      else if (user.role === 'staff') navigate('/staff/dashboard', { replace: true })
+      else navigate('/admin/dashboard', { replace: true })
+    }
+  }, [user, navigate])
 
   const handlePrimary = () => {
     if (user) {

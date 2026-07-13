@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { useAuth } from '../../context/useAuth'
 import { getDashboardStats, getAllAppointments, updateAppointmentStatus } from '../../services/adminService'
 import { rescheduleAppointment, getAvailableSlots } from '../../services/appointmentService'
-import { AlertTriangle, Inbox, Check, X as XIcon, ChevronLeft, ChevronRight, ChevronDown, Filter, Calendar } from 'lucide-react'
+import { AlertTriangle, Inbox, Check, X as XIcon, ChevronLeft, ChevronRight, ChevronDown, Filter, Calendar, FolderOpen, CheckCircle, Clock, PieChart, Activity, Archive } from 'lucide-react'
 
 // ── Status Config ──────────────────────────────────────────────────────────────
 const STATUS_CFG = {
@@ -327,7 +327,7 @@ export default function AdminAppointmentsPage() {
   return (
     <div>
       {/* ── Page Header ── */}
-      <div className="flex items-start justify-between mb-7 flex-wrap gap-3">
+      <div className="flex items-end justify-between mb-7 flex-wrap gap-3">
         <div>
           <div className="text-[11px] font-bold text-gold uppercase tracking-[0.06em] mb-2">APPOINTMENT SCHEDULING</div>
           <h1 className="font-serif text-[26px] font-bold text-maroon m-0 mb-2 flex items-center gap-3">
@@ -339,15 +339,15 @@ export default function AdminAppointmentsPage() {
         </div>
         <div className="flex gap-2.5 items-center">
           {/* Filter pill */}
-          <div className="flex items-center gap-2">
-            <span className="text-[12px] font-semibold text-text-muted flex items-center gap-1">
-              <Filter size={14} /> STATUS
+          <div className="flex items-center gap-2.5 mr-1.5">
+            <span className="text-[10px] font-extrabold text-text-muted uppercase tracking-[0.08em] pt-0.5 flex items-center gap-1.5">
+              <Filter size={12} strokeWidth={3} /> STATUS
             </span>
             <div className="relative">
               <select
                 value={statusFilter}
                 onChange={e => { setStatusFilter(e.target.value); setPage(1) }}
-                className="appearance-none py-[9px] pr-8 pl-3.5 rounded-[9px] border border-border bg-white text-[13px] text-text-main outline-none cursor-pointer font-sans">
+                className="py-[9px] pr-9 pl-4 rounded-xl border border-border bg-white text-[13px] text-text-main outline-none cursor-pointer font-sans appearance-none font-bold shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:border-text-muted/30 transition-all">
                 <option value="all">All Statuses</option>
                 <option value="pending">Scheduled</option>
                 <option value="confirmed">Confirmed</option>
@@ -356,7 +356,7 @@ export default function AdminAppointmentsPage() {
                 <option value="cancelled">Cancelled</option>
                 <option value="no_show">No Show</option>
               </select>
-              <span className="absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none flex items-center text-text-muted"><ChevronDown size={14} /></span>
+              <span className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none flex items-center text-text-muted"><ChevronDown size={14} strokeWidth={2.5} /></span>
             </div>
           </div>
 
@@ -370,58 +370,29 @@ export default function AdminAppointmentsPage() {
 
       {/* ── Stat Cards ── */}
       <div className="grid grid-cols-4 gap-4 mb-7">
-
-        {/* Today's Total */}
-        <div className="animate-fade-up bg-white rounded-2xl p-6 border border-border shadow-sm" style={{ animationDelay: '0.1s' }}>
-          <div className="flex items-start justify-between mb-3">
-            <div className="text-[11px] font-semibold text-text-muted uppercase tracking-[0.06em]">Today's Total</div>
+        {[
+          { label: "Today's Total", value: stats?.today?.total ?? 0, icon: <Calendar size={18} />, bg: 'bg-maroon-light', fg: 'text-maroon', sub: 'Scheduled' },
+          { label: 'Active Queue', value: stats?.active_queue ?? 0, icon: <Activity size={18} />, bg: 'bg-gold-light', fg: 'text-gold', sub: 'In progress' },
+          { label: 'Completed', value: stats?.today?.completed ?? 0, icon: <CheckCircle size={18} />, bg: 'bg-success-light', fg: 'text-success', sub: 'Today' },
+          { label: 'Completion Rate', value: (() => {
+              const total = stats?.today?.total || 0;
+              const comp  = stats?.today?.completed || 0;
+              return total > 0 ? `${Math.round((comp / total) * 100)}%` : '0%';
+            })(), icon: <PieChart size={18} />, bg: 'bg-info-light', fg: 'text-info', sub: 'Of total scheduled' },
+        ].map((c, i) => (
+          <div key={i} className="animate-fade-up rounded-2xl p-[18px_20px] bg-white border border-border shadow-[0_1px_4px_rgba(0,0,0,0.04)] relative overflow-hidden" style={{ animationDelay: `${i * 0.1}s` }}>
+            <div className="flex items-start justify-between mb-3">
+              <div className="text-[10px] font-extrabold text-text-muted uppercase tracking-[0.08em]">{c.label}</div>
+              <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${c.bg} ${c.fg}`}>
+                {c.icon}
+              </div>
+            </div>
+            <div className="font-sans text-[28px] font-bold text-text-main leading-none">
+              {loading ? <div className="animate-pulse w-[60px] h-[36px] bg-border rounded-lg" /> : c.value}
+            </div>
+            <div className="text-[11px] font-medium text-text-muted mt-1.5">{c.sub}</div>
           </div>
-          <div className="font-serif text-[36px] font-bold text-maroon leading-none mb-1.5 min-h-[36px]">
-            {loading ? <div className="animate-pulse w-[60px] h-[36px] bg-border rounded-lg" /> : stats?.today?.total ?? 0}
-          </div>
-          <div className="text-[12px] text-text-muted">
-            Scheduled
-          </div>
-        </div>
-
-        {/* Upcoming */}
-        <div className="animate-fade-up bg-white rounded-2xl p-6 border border-border shadow-sm" style={{ animationDelay: '0.2s' }}>
-          <div className="flex items-start justify-between mb-3">
-            <div className="text-[11px] font-semibold text-text-muted uppercase tracking-[0.06em]">Active Queue</div>
-          </div>
-          <div className="font-serif text-[36px] font-bold text-maroon leading-none mb-1.5 min-h-[36px]">
-            {loading ? <div className="animate-pulse w-[60px] h-[36px] bg-border rounded-lg" /> : stats?.active_queue ?? 0}
-          </div>
-          <div className="text-[12px] text-text-muted">In progress</div>
-        </div>
-
-        {/* Completed */}
-        <div className="animate-fade-up bg-white rounded-2xl p-6 border border-border shadow-sm" style={{ animationDelay: '0.3s' }}>
-          <div className="flex items-start justify-between mb-3">
-            <div className="text-[11px] font-semibold text-text-muted uppercase tracking-[0.06em]">Completed</div>
-          </div>
-          <div className="font-serif text-[36px] font-bold text-success leading-none mb-1.5 min-h-[36px]">
-            {loading ? <div className="animate-pulse w-[60px] h-[36px] bg-border rounded-lg" /> : stats?.today?.completed ?? 0}
-          </div>
-          <div className="text-[12px] text-text-muted">
-            Today
-          </div>
-        </div>
-
-        {/* Fulfillment Rate */}
-        <div className="animate-fade-up bg-white rounded-2xl p-6 border border-border shadow-sm" style={{ animationDelay: '0.4s' }}>
-          <div className="flex items-start justify-between mb-3">
-            <div className="text-[11px] font-semibold text-text-muted uppercase tracking-[0.06em]">Completion Rate</div>
-          </div>
-          <div className="font-serif text-[36px] font-bold text-maroon leading-none mb-2.5 min-h-[36px]">
-            {loading ? <div className="animate-pulse w-[80px] h-[36px] bg-border rounded-lg" /> : (() => {
-              const total = stats?.today?.total || 0
-              const comp  = stats?.today?.completed || 0
-              return total > 0 ? `${Math.round((comp / total) * 100)}%` : '0%'
-            })()}
-          </div>
-          <div className="text-[12px] text-text-muted">Of total scheduled</div>
-        </div>
+        ))}
       </div>
 
       {/* ── Main Body: Calendar + Schedule ── */}
@@ -432,15 +403,14 @@ export default function AdminAppointmentsPage() {
           <MiniCalendar selectedDate={selectedDate} onSelect={setSelectedDate} />
 
           {/* Quick Actions */}
-          <div className="bg-white rounded-[14px] border border-border p-4 shadow-sm">
-            <p className="text-[11px] font-bold text-text-muted uppercase tracking-[0.06em] m-0 mb-3">Quick Actions</p>
-            <div className="flex flex-col gap-2">
+          <div className="bg-white rounded-2xl border border-border p-5 shadow-[0_2px_8px_rgba(0,0,0,0.04)]">
+            <p className="text-[10px] font-extrabold text-text-muted uppercase tracking-[0.08em] m-0 mb-4 pb-3 border-b border-border">Quick Actions</p>
+            <div className="flex flex-col gap-2.5">
               {[
                 { label: 'Block Time Slot', action: () => {} },
                 { label: 'Add Internal Note', action: () => {} },
-                { label: 'Export Schedule', action: () => {} },
               ].map((item, i) => (
-                <button key={i} onClick={item.action} className="py-[9px] px-3 rounded-[9px] border border-border bg-off-white text-text-main text-[13px] font-semibold cursor-pointer text-center font-sans transition-all hover:bg-maroon-light hover:border-maroon-border hover:text-maroon">
+                <button key={i} onClick={item.action} className="w-full py-[10px] px-4 rounded-xl border border-border bg-white text-text-main text-[13px] font-bold cursor-pointer text-left font-sans transition-all hover:border-text-muted/30 hover:bg-off-white hover:-translate-y-0.5 shadow-[0_2px_8px_rgba(0,0,0,0.04)]">
                   {item.label}
                 </button>
               ))}
@@ -449,19 +419,21 @@ export default function AdminAppointmentsPage() {
 
           {/* Selected Date Summary */}
           {!loading && stats && (
-            <div className="bg-maroon-light rounded-[14px] border border-maroon-border p-4">
-              <p className="text-[11px] font-bold text-maroon uppercase tracking-[0.06em] m-0 mb-3">Day Summary</p>
-              {[
-                { l: 'Confirmed',   v: stats?.today?.confirmed || 0, c: 'text-info'  },
-                { l: 'Completed',   v: stats?.today?.completed || 0, c: 'text-success' },
-                { l: 'Cancelled',   v: stats?.today?.cancelled || 0, c: 'text-danger'   },
-                { l: 'No Show',     v: stats?.today?.no_show || 0,   c: 'text-text-muted' },
-              ].map((s, i) => (
-                <div key={i} className="flex justify-between items-center mb-2">
-                  <span className="text-[12px] text-maroon/80">{s.l}</span>
-                  <span className={`font-serif text-[16px] font-bold ${s.c}`}>{s.v}</span>
-                </div>
-              ))}
+            <div className="bg-white rounded-2xl border border-border p-5 shadow-[0_2px_8px_rgba(0,0,0,0.04)]">
+              <p className="text-[10px] font-extrabold text-text-muted uppercase tracking-[0.08em] m-0 mb-4 pb-3 border-b border-border">Day Summary</p>
+              <div className="flex flex-col gap-3.5">
+                {[
+                  { l: 'Confirmed',   v: stats?.today?.confirmed || 0, c: 'text-info'  },
+                  { l: 'Completed',   v: stats?.today?.completed || 0, c: 'text-success' },
+                  { l: 'Cancelled',   v: stats?.today?.cancelled || 0, c: 'text-danger'   },
+                  { l: 'No Show',     v: stats?.today?.no_show || 0,   c: 'text-text-muted' },
+                ].map((s, i) => (
+                  <div key={i} className="flex justify-between items-center group">
+                    <span className="text-[13px] font-semibold text-text-sub group-hover:text-text-main transition-colors">{s.l}</span>
+                    <span className={`font-sans text-[16px] font-extrabold ${s.c}`}>{s.v}</span>
+                  </div>
+                ))}
+              </div>
             </div>
           )}
         </div>
@@ -483,16 +455,16 @@ export default function AdminAppointmentsPage() {
           {/* Table */}
           <div className="bg-white rounded-2xl border border-border overflow-hidden shadow-sm">
             {/* Header */}
-            <div className="grid grid-cols-[90px_1.5fr_1.5fr_110px_150px] p-[12px_20px] bg-surface border-b border-border">
+            <div className="grid grid-cols-[100px_1.5fr_1.5fr_120px_180px] p-[14px_24px] bg-off-white border-b border-border">
               {['Time', 'Student', 'Transaction', 'Status', 'Action'].map(h => (
-                <span key={h} className="text-[10px] font-bold text-text-muted uppercase tracking-[0.06em]">{h}</span>
+                <span key={h} className="text-[11px] font-bold text-text-muted uppercase tracking-[0.08em]">{h}</span>
               ))}
             </div>
 
             {/* Rows */}
             {apptLoading ? (
               [1, 2, 3, 4, 5].map((n, idx) => (
-                <div key={n} className={`grid grid-cols-[90px_1.5fr_1.5fr_110px_150px] p-[16px_20px] items-center ${idx === 4 ? 'border-none' : 'border-b border-border'} ${idx % 2 === 0 ? 'bg-white' : 'bg-[#FDFCFB]'}`}>
+                <div key={n} className={`grid grid-cols-[100px_1.5fr_1.5fr_120px_180px] p-[16px_24px] items-center ${idx === 4 ? 'border-none' : 'border-b border-border/60'} bg-white`}>
                   <div className="animate-pulse h-6 w-[50px] rounded bg-border" />
                   <div className="flex items-center gap-2.5">
                     <div className="animate-pulse w-[34px] h-[34px] rounded-full bg-border" />
@@ -504,13 +476,13 @@ export default function AdminAppointmentsPage() {
                 </div>
               ))
             ) : paginated.length === 0 ? (
-              <div className="p-[56px_24px] text-center">
-                <div className="flex justify-center mb-3 text-text-muted"><Inbox size={48} /></div>
-                <p className="text-[15px] font-semibold text-text-main m-0 mb-1.5">
+              <div className="p-[60px_24px] text-center">
+                <div className="flex justify-center mb-4 text-text-muted/50"><Inbox size={52} strokeWidth={1.5} /></div>
+                <p className="font-serif text-[18px] font-bold text-text-main m-0 mb-1">
                   No appointments {isToday ? 'today' : `on ${selectedDate}`}
                 </p>
-                <p className="text-[13px] text-text-muted m-0">
-                  {statusFilter !== 'all' ? 'Try changing the status filter.' : 'This date has no scheduled appointments yet.'}
+                <p className="text-[13px] text-text-muted m-0 max-w-[250px] mx-auto">
+                  {statusFilter !== 'all' ? 'Try changing the status filter to see other appointments.' : 'This date has no scheduled appointments yet.'}
                 </p>
               </div>
             ) : (
@@ -522,28 +494,28 @@ export default function AdminAppointmentsPage() {
                 const time    = formatTime(appt.time_slot)
 
                 return (
-                  <div key={appt.id} className={`grid grid-cols-[90px_1.5fr_1.5fr_110px_150px] p-[16px_20px] items-center transition-colors duration-100 hover:bg-off-white ${isLast ? 'border-none' : 'border-b border-border'} ${idx % 2 === 0 ? 'bg-white' : 'bg-[#FDFCFB]'}`}>
+                  <div key={appt.id} className={`group grid grid-cols-[100px_1.5fr_1.5fr_120px_180px] p-[16px_24px] items-center transition-all duration-200 hover:bg-surface border-l-2 border-l-transparent ${isLast ? 'border-none' : 'border-b border-border'} bg-white`}>
                     {/* Time */}
                     <div>
-                      <div className="font-sans text-[13px] font-bold text-text-main">{time}</div>
-                      <div className="text-[10px] text-text-muted mt-0.5">
+                      <div className="font-sans text-[13.5px] font-bold text-text-main">{time}</div>
+                      <div className="text-[10.5px] font-medium text-text-muted mt-0.5">
                         {appt.slot_duration_minutes ? `${appt.slot_duration_minutes}min` : ''}
                       </div>
                     </div>
 
                     {/* Student */}
-                    <div className="flex items-center gap-2.5 min-w-0">
+                    <div className="flex items-center gap-3 min-w-0">
                       <Av name={name} size={34} />
-                      <div className="min-w-0">
-                        <div className="text-[14px] font-semibold text-text-main whitespace-nowrap overflow-hidden text-ellipsis">{name}</div>
+                      <div className="min-w-0 pr-4">
+                        <div className="text-[14px] font-bold text-text-main whitespace-nowrap overflow-hidden text-ellipsis group-hover:text-maroon transition-colors">{name}</div>
                         {student?.student_id && (
-                          <div className="text-[11px] text-text-muted font-mono">{student.student_id}</div>
+                          <div className="text-[10.5px] font-medium text-text-muted font-mono mt-0.5">{student.student_id}</div>
                         )}
                       </div>
                     </div>
 
                     {/* Transaction */}
-                    <div className="text-[13px] text-text-sub overflow-hidden text-ellipsis whitespace-nowrap">{txName}</div>
+                    <div className="text-[13.5px] font-medium text-text-sub overflow-hidden text-ellipsis whitespace-nowrap pr-4">{txName}</div>
 
                     {/* Status */}
                     <div className="flex items-center">
@@ -551,28 +523,28 @@ export default function AdminAppointmentsPage() {
                     </div>
 
                     {/* Action */}
-                    <div className="flex gap-1.5">
+                    <div className="flex gap-1.5 flex-wrap">
                       {appt.status === 'pending' && (
-                        <button onClick={() => handleStatusChange(appt.id, 'confirmed')} className="py-1.5 px-3 rounded-md border-none bg-maroon-light text-maroon text-[11px] font-bold cursor-pointer font-sans">
+                        <button onClick={() => handleStatusChange(appt.id, 'confirmed')} className="py-1.5 px-3 rounded-lg border-none bg-maroon-light text-maroon text-[11px] font-bold cursor-pointer font-sans hover:bg-maroon hover:text-white transition-colors">
                           Confirm
                         </button>
                       )}
 
                       {(appt.status === 'pending' || appt.status === 'confirmed') && (
-                        <button onClick={() => setRescheduleTarget(appt)} className="py-1.5 px-3 rounded-md border-none bg-surface text-text-main text-[11px] font-bold cursor-pointer font-sans">
+                        <button onClick={() => setRescheduleTarget(appt)} className="py-1.5 px-3 rounded-lg border border-border bg-white text-text-main text-[11px] font-bold cursor-pointer font-sans hover:bg-surface transition-colors shadow-sm">
                           Reschedule
                         </button>
                       )}
                       {(appt.status === 'pending' || appt.status === 'confirmed') && (
-                        <button onClick={() => handleStatusChange(appt.id, 'cancelled')} className="py-1.5 px-3 rounded-md border-none bg-danger-light text-danger text-[11px] font-bold cursor-pointer font-sans">
+                        <button onClick={() => handleStatusChange(appt.id, 'cancelled')} className="py-1.5 px-3 rounded-lg border-none bg-danger-light text-danger text-[11px] font-bold cursor-pointer font-sans hover:bg-danger hover:text-white transition-colors">
                           Cancel
                         </button>
                       )}
                       {appt.status === 'completed' && (
-                        <div className="w-7 h-7 rounded-full bg-success-light text-success flex items-center justify-center border border-success-border"><Check size={16} /></div>
+                        <div className="w-7 h-7 rounded-full bg-success-light text-success flex items-center justify-center border border-success-border"><Check size={16} strokeWidth={3} /></div>
                       )}
                       {appt.status === 'cancelled' && (
-                        <div className="w-7 h-7 rounded-full bg-danger-light text-danger flex items-center justify-center border border-danger-border"><XIcon size={16} /></div>
+                        <div className="w-7 h-7 rounded-full bg-danger-light text-danger flex items-center justify-center border border-danger-border"><XIcon size={16} strokeWidth={3} /></div>
                       )}
                     </div>
                   </div>
