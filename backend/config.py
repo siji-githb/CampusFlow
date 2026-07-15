@@ -14,7 +14,7 @@ class Settings(BaseSettings):
     access_token_expire_minutes: int = 60
     resend_api_key: str = ""
     email_from: str = "CampusFlow Registrar <onboarding@resend.dev>"
-    frontend_url: str = "http://localhost:5173"
+    frontend_url: str = "https://campus-flow-iota.vercel.app"
 
     class Config:
         env_file = ".env"
