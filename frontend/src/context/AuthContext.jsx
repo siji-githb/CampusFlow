@@ -1,5 +1,6 @@
 import { createContext, useState, useEffect, useRef, useCallback } from 'react'
 import { refreshSession } from '../services/authService'
+import LogoutScreen from '../components/common/LogoutScreen'
 
 // eslint-disable-next-line react-refresh/only-export-components
 export const AuthContext = createContext(null)
@@ -33,13 +34,28 @@ export function AuthProvider({ children }) {
     localStorage.setItem('cf_user', JSON.stringify(updated))
   }
 
-  const logout = () => {
+  const [isLoggingOut, setIsLoggingOut] = useState(false)
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false)
+
+  const requestLogout = () => {
+    setShowLogoutConfirm(true)
+  }
+
+  const logout = async () => {
+    setShowLogoutConfirm(false)
+    setIsLoggingOut(true)
+    
+    // Smooth delay for animation
+    await new Promise(resolve => setTimeout(resolve, 1500))
+    
     setToken(null)
     setUser(null)
     refreshTokenRef.current = null
     localStorage.removeItem('cf_token')
     localStorage.removeItem('cf_user')
     localStorage.removeItem('cf_refresh')
+    
+    setIsLoggingOut(false)
   }
 
   const silentRefresh = useCallback(async () => {
@@ -63,8 +79,17 @@ export function AuthProvider({ children }) {
   }, [token, silentRefresh])
 
   return (
-    <AuthContext.Provider value={{ user, token, login, logout, updateUser }}>
+    <AuthContext.Provider value={{ user, token, login, logout, requestLogout, updateUser, isLoggingOut }}>
       {children}
+      
+      {/* Unified Premium Logout Modal & Loading Screen */}
+      {(showLogoutConfirm || isLoggingOut) && (
+        <LogoutScreen 
+          isConfirming={showLogoutConfirm} 
+          onConfirm={logout} 
+          onCancel={() => setShowLogoutConfirm(false)} 
+        />
+      )}
     </AuthContext.Provider>
   )
 }

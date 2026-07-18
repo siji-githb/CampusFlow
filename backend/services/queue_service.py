@@ -14,12 +14,19 @@ _queue_number_lock = threading.Lock()
 
 
 def generate_queue_number(transaction_name: str, count: int) -> str:
-    if "transcript" in transaction_name.lower() or "tor" in transaction_name.lower():
+    name = transaction_name.lower()
+    if "transcript" in name or "tor" in name:
         prefix = "TOR"
-    elif "enrollment" in transaction_name.lower() or "coe" in transaction_name.lower():
+    elif "enrollment" in name or "coe" in name:
         prefix = "COE"
-    elif "diploma" in transaction_name.lower():
+    elif "diploma" in name:
         prefix = "DIP"
+    elif "general weighted average" in name or "gwa" in name:
+        prefix = "GWA"
+    elif "completion form" in name and "request" in name:
+        prefix = "CFR"
+    elif "completion form" in name and "submission" in name:
+        prefix = "CFS"
     else:
         prefix = "TXN"
     return f"{prefix}-{str(count).zfill(3)}"
@@ -111,14 +118,26 @@ def activate_queue(appointment_id: str, student_id: str):
 
 
     # Create transaction steps
+    # processing_steps entries may be plain strings (legacy) or
+    # {"name": ..., "requires_presence": bool} objects (new format).
+    # Legacy strings default to requires_presence=True to preserve current behavior.
+    def _normalize_step(raw):
+        if isinstance(raw, dict):
+            return raw.get("name", ""), raw.get("requires_presence", True)
+        return raw, True
+
     steps_to_insert = []
-    for i, step_name in enumerate(processing_steps):
+    step_names_only = []
+    for i, raw_step in enumerate(processing_steps):
+        step_name, requires_presence = _normalize_step(raw_step)
+        step_names_only.append(step_name)
         steps_to_insert.append({
             "queue_ticket_id": ticket["id"],
             "step_number": i + 1,
             "step_name": step_name,
             "location": step_name.split(" - ")[0] if " - " in step_name else step_name,
-            "status": "in_progress" if i == 0 else "pending"
+            "status": "in_progress" if i == 0 else "pending",
+            "requires_presence": requires_presence,
         })
 
     steps_res = admin.table("transaction_steps").insert(steps_to_insert).execute()
@@ -130,10 +149,16 @@ def activate_queue(appointment_id: str, student_id: str):
         .execute()
 
     # Trigger notification
+    first_requires_presence = steps_to_insert[0]["requires_presence"] if steps_to_insert else True
+    first_message = (
+        f"Your ticket {queue_number} has been generated. Please proceed to: {step_names_only[0]}."
+        if first_requires_presence
+        else f"Your ticket {queue_number} has been generated. Your request is being processed — we'll notify you when it's ready."
+    )
     create_system_notification(
         user_id=student_id,
         title="Queue Activated",
-        message=f"Your ticket {queue_number} has been generated. Please proceed to the first step: {processing_steps[0] if processing_steps else 'Window'}.",
+        message=first_message,
         type="info"
     )
 
@@ -266,16 +291,26 @@ def confirm_step(queue_ticket_id: str, step_number: int, staff_id: str):
             .update({"current_step": next_step}) \
             .eq("id", queue_ticket_id) \
             .execute()
-        admin.table("transaction_steps") \
+
+        next_step_res = admin.table("transaction_steps") \
             .update({"status": "in_progress"}) \
             .eq("queue_ticket_id", queue_ticket_id) \
             .eq("step_number", next_step) \
             .execute()
-            
+
+        next_step_data = next_step_res.data[0] if next_step_res.data else {}
+        next_requires_presence = next_step_data.get("requires_presence", True)
+        next_step_name = next_step_data.get("step_name", f"Step {next_step}")
+
+        if next_requires_presence:
+            message = f"Step {step_number} confirmed. Please proceed to: {next_step_name}."
+        else:
+            message = f"Step {step_number} confirmed. Your request is now being processed — no need to wait in line, we'll notify you when it's ready."
+
         create_system_notification(
             user_id=ticket["student_id"],
             title="Step Confirmed",
-            message=f"Step {step_number} confirmed. Proceed to step {next_step}.",
+            message=message,
             type="info"
         )
         return {"message": f"Step {step_number} confirmed. Moved to step {next_step}.", "status": "in_progress"}

@@ -133,16 +133,16 @@ export default function Landing() {
             <div className="flex-1 max-w-[640px] text-center md:text-left">
 
 
-              <h1 className="font-serif font-extrabold text-slate-900 text-[clamp(28px,3.5vw,52px)] leading-[1.1] tracking-tight m-0 mb-12">
+              <h1 className="font-serif font-extrabold text-slate-900 text-[clamp(28px,3.5vw,52px)] leading-[1.1] tracking-tight m-0 mb-12 animate-fade-up" style={{ animationDelay: '0.1s' }}>
                 No More Long Lines<br />
                 at the <span className="text-maroon">Registrar's Office</span>
               </h1>
 
-              <p className="text-slate-500 text-[clamp(0.95rem,1.1vw,1rem)] leading-relaxed m-0 mb-8 max-w-[500px] mx-auto md:mx-0 font-medium">
+              <p className="text-slate-500 text-[clamp(0.95rem,1.1vw,1rem)] leading-relaxed m-0 mb-8 max-w-[500px] mx-auto md:mx-0 font-medium animate-fade-up" style={{ animationDelay: '0.2s' }}>
                 CampusFlow is an AI-powered appointment and queue management system guiding CRMC students through every registrar transaction seamlessly.
               </p>
 
-              <div className="flex flex-col sm:flex-row gap-4 justify-center md:justify-start">
+              <div className="flex flex-col sm:flex-row gap-4 justify-center md:justify-start animate-fade-up" style={{ animationDelay: '0.3s' }}>
                 <button onClick={handlePrimary} className="rounded-xl border-none bg-maroon text-white font-bold cursor-pointer font-sans shadow-[0_4px_16px_rgba(123,26,42,0.2)] py-3 px-6 text-[14.5px] hover:bg-maroon-dark hover:translate-y-[-2px] hover:shadow-[0_8px_24px_rgba(123,26,42,0.3)] transition-all flex items-center justify-center gap-2">
                   {user ? 'Go to Dashboard' : 'Book an Appointment'} <ChevronRight size={16} strokeWidth={2.5} />
                 </button>
@@ -154,7 +154,7 @@ export default function Landing() {
               </div>
 
               {/* Trust/Stats Mini-footer (Desktop) */}
-              <div className="hidden md:flex items-center justify-start gap-8 mt-12 pt-8 border-t border-slate-100">
+              <div className="hidden md:flex items-center justify-start gap-8 mt-12 pt-8 border-t border-slate-100 animate-fade-up" style={{ animationDelay: '0.4s' }}>
                 {[
                   { value: '3+', label: 'Transaction Types' },
                   { value: 'AI', label: 'Powered Assistant' },
@@ -169,8 +169,8 @@ export default function Landing() {
             </div>
 
             {/* Bottom Right: Hero Image & Mobile Stats */}
-            <div className="flex-1 w-full max-w-[500px] md:max-w-none flex flex-col items-center md:items-end justify-center">
-              <div className="relative w-full max-w-[600px] aspect-square md:aspect-auto md:h-[600px] rounded-[40px] bg-slate-50 border border-slate-100 shadow-2xl flex items-center justify-center p-8 overflow-hidden">
+            <div className="flex-1 w-full max-w-[500px] md:max-w-none flex flex-col items-center md:items-end justify-center animate-fade-up" style={{ animationDelay: '0.3s' }}>
+              <div className="relative w-full max-w-[600px] aspect-square md:aspect-auto md:h-[600px] rounded-[40px] bg-slate-50 border border-slate-100 shadow-2xl flex items-center justify-center p-8 overflow-hidden group">
                 <div className="absolute inset-0 bg-linear-to-br from-white/40 to-transparent z-10 pointer-events-none" />
                 <img 
                   src={loginImage} 
@@ -200,7 +200,7 @@ export default function Landing() {
         {/* ── Features Section (Enterprise Cards) ── */}
         <section id="features" className="py-24 px-6 bg-slate-50 border-t border-slate-200">
           <div className="max-w-[1280px] mx-auto">
-            <header className="text-center mb-16 max-w-[600px] mx-auto">
+            <header className="text-center mb-16 max-w-[600px] mx-auto animate-fade-up">
               <h2 className="text-[13px] font-bold text-maroon tracking-[0.15em] uppercase m-0 mb-3">
                 System Capabilities
               </h2>
@@ -211,7 +211,7 @@ export default function Landing() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
               {FEATURES.map((f, i) => (
-                <article key={i} className="bg-white rounded-3xl p-6 border border-slate-100 shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-[0_20px_40px_rgb(0,0,0,0.08)] hover:-translate-y-1 transition-all duration-300">
+                <article key={i} className="bg-white rounded-3xl p-6 border border-slate-100 shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-[0_20px_40px_rgb(0,0,0,0.08)] hover:-translate-y-1 transition-all duration-300 animate-fade-up" style={{ animationDelay: `${0.1 + (i * 0.1)}s` }}>
                   <div className="w-10 h-10 rounded-xl bg-maroon/5 border border-maroon/10 flex items-center justify-center mb-4">
                     {f.icon}
                   </div>
@@ -226,7 +226,7 @@ export default function Landing() {
         {/* ── Process Section ── */}
         <section id="process" className="py-24 px-6 bg-white border-t border-slate-200">
           <div className="max-w-[1280px] mx-auto">
-            <header className="text-center mb-16 max-w-[600px] mx-auto">
+            <header className="text-center mb-16 max-w-[600px] mx-auto animate-fade-up">
               <h2 className="text-[13px] font-bold text-maroon tracking-[0.15em] uppercase m-0 mb-3">
                 Simple Workflow
               </h2>
@@ -240,7 +240,7 @@ export default function Landing() {
               <div className="hidden md:block absolute top-[40px] left-[16%] right-[16%] h-px bg-slate-200" />
               
               {STEPS.map((s, i) => (
-                <article key={i} className="relative z-10 flex flex-col items-center text-center">
+                <article key={i} className="relative z-10 flex flex-col items-center text-center animate-fade-up" style={{ animationDelay: `${0.1 + (i * 0.1)}s` }}>
                   <div className="w-14 h-14 rounded-2xl border-2 border-maroon flex items-center justify-center font-serif font-bold text-lg text-maroon shadow-[0_8px_20px_rgba(123,26,42,0.15)] mb-5 bg-white">
                     {s.step}
                   </div>

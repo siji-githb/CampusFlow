@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom'
 import { useAuth } from '../../context/useAuth'
 import { getTodaysQueue, confirmStep } from '../../services/queueService'
 import { updateReleaseDate } from '../../services/adminService'
-import { Check, Circle, Clock, X, Search, RefreshCw, Users, CheckSquare, AlertTriangle, Download, Inbox, Play, Ticket } from 'lucide-react'
+import { Check, Circle, Clock, X, Search, RefreshCw, Users, CheckSquare, AlertTriangle, Download, Inbox, Play, Ticket, DoorOpen, Cog } from 'lucide-react'
 
 // ── Status config ──────────────────────────────────────────────────────────────
 const STATUS_CFG = {
@@ -49,6 +49,19 @@ const StepsBar = ({ steps, current, total }) => (
       )
     })}
   </div>
+)
+
+// ── Presence badge — shows whether a ticket's CURRENT step needs the
+//    student physically at a counter, or is being worked on back-office ──
+const PresenceBadge = ({ requiresPresence }) => (
+  <span
+    title={requiresPresence ? 'Student must be at the counter' : 'Back-office — no student presence needed'}
+    className={`inline-flex items-center gap-1 text-[9px] font-bold px-1.5 py-0.5 rounded-full uppercase tracking-[0.03em]
+      ${requiresPresence ? 'bg-maroon-light text-maroon' : 'bg-gray-100 text-gray-500'}`}
+  >
+    {requiresPresence ? <DoorOpen size={9} /> : <Cog size={9} />}
+    {requiresPresence ? 'Counter' : 'Back office'}
+  </span>
 )
 
 // ── Filter Sidebar ─────────────────────────────────────────────────────────────
@@ -232,12 +245,17 @@ const QueueDetailsModal = ({ ticketData, onClose, onConfirm, confirming, onSetRe
                   <div className={`flex-1 ${isLast ? 'pb-0' : 'pb-4'}`}>
                     <div className={`flex justify-between items-center rounded-xl ${isCurrent ? 'bg-gold-light p-3 border border-gold-border -mt-1.5' : 'bg-transparent py-1.5 border-none mt-0'}`}>
                       <div>
-                        <div className={`text-[15px] font-semibold ${step.status === 'completed' ? 'text-success' : 'text-text-main'}`}>{step.step_name}</div>
+                        <div className="flex items-center gap-2 mb-0.5">
+                          <div className={`text-[15px] font-semibold ${step.status === 'completed' ? 'text-success' : 'text-text-main'}`}>{step.step_name}</div>
+                          <PresenceBadge requiresPresence={step.requires_presence !== false} />
+                        </div>
                         {step.status === 'completed' && step.confirmed_at && (
                           <div className="text-xs text-text-muted mt-0.5">Confirmed at {new Date(step.confirmed_at).toLocaleTimeString()}</div>
                         )}
                         {isCurrent && (
-                          <div className="text-xs text-gold mt-0.5 font-semibold">Active Step</div>
+                          <div className="text-xs text-gold mt-0.5 font-semibold">
+                            {step.requires_presence !== false ? 'Active Step — student at counter' : 'Active Step — processing, no line'}
+                          </div>
                         )}
                       </div>
                       {isCurrent && (
@@ -356,7 +374,120 @@ export default function LiveQueuePage() {
     return statusOk && prioOk && txOk && srchOk
   })
 
+  // ── Split into "At the Counter" (physical line) vs "Processing" (back office) ──
+  // A ticket belongs in "At the Counter" if its CURRENT active step requires
+  // the student to be physically present. Otherwise it's sitting quietly in
+  // back-office processing — no one is standing in line for it.
+  // Completed tickets are excluded here since they already have their own section.
+  const getRequiresPresence = (steps) => {
+    const current = steps?.find(s => s.status === 'in_progress')
+    return current?.requires_presence !== false // default true if missing/undefined
+  }
+  const nonCompleted    = displayed.filter(({ ticket }) => ticket.status !== 'completed')
+  const atCounter       = nonCompleted.filter(({ steps }) => getRequiresPresence(steps))
+  const processingQueue = nonCompleted.filter(({ steps }) => !getRequiresPresence(steps))
+
   const currentTime = now.toLocaleTimeString('en-PH', { hour: '2-digit', minute: '2-digit' })
+
+  // ── Reusable row renderer — used by both "At the Counter" and "Processing" tables ──
+  const renderQueueRow = ({ ticket, steps }, idx, arrLength) => {
+    const student = ticket.users
+    const name    = student ? `${ticket.users.last_name}, ${ticket.users.first_name}` : 'Unknown'
+    const sid     = student?.student_id || '—'
+    const appt    = ticket.appointments
+    const txName  = appt?.transaction_types?.name || 'Transaction'
+    const pClass  = appt?.priority_class || 'regular'
+    const statusCfg = STATUS_CFG[ticket.status] || STATUS_CFG.pending
+    const isHighPrio = pClass === 'graduating' || pClass === 'pwd'
+    const inProgressStep = steps?.find(s => s.status === 'in_progress')
+    const confirmKey = inProgressStep ? `${ticket.id}-${inProgressStep.step_number}` : null
+    const isConfirming = confirming === confirmKey
+    const waitMins  = Math.floor(Math.random() * 20) + 5 // placeholder until API provides it
+
+    return (
+      <div key={ticket.id} className={`grid grid-cols-[100px_1fr_160px_180px_70px_160px] gap-0 p-4 items-center transition-colors duration-150
+        ${idx < arrLength - 1 ? 'border-b border-border' : ''}
+        ${ticket.status === 'in_progress' ? 'bg-success-light/30' : 'bg-white hover:bg-off-white/50'}
+      `}>
+
+        {/* Queue No. */}
+        <div>
+          <div className="font-serif text-[20px] font-extrabold text-maroon leading-none">{ticket.queue_number}</div>
+          {isHighPrio && (
+            <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-danger-light text-danger border border-danger-border mt-1 inline-block uppercase tracking-[0.04em]">
+              Priority
+            </span>
+          )}
+        </div>
+
+        {/* Student Details */}
+        <div>
+          <div className="text-[13px] font-semibold text-text-main mb-0.5">{name}</div>
+          <div className="text-[11px] text-text-muted font-mono">{sid}</div>
+          <div className="mt-1">
+            <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full capitalize bg-gold-light text-gold border border-gold-border">
+              {pClass}
+            </span>
+          </div>
+        </div>
+
+        {/* Transaction */}
+        <div>
+          <div className="text-xs font-semibold text-text-main leading-snug">{txName}</div>
+          <div className="text-[11px] text-text-muted mt-0.5">{appt?.time_slot || '—'}</div>
+        </div>
+
+        {/* Status + Progress */}
+        <div>
+          <div className="flex items-center gap-1.5 mb-1.5 flex-wrap">
+            <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full border whitespace-nowrap ${statusCfg.bg} ${statusCfg.color} ${statusCfg.border}`}>
+              {statusCfg.label}
+            </span>
+            {inProgressStep && <span className="text-[11px] text-text-muted">Step {inProgressStep.step_number}</span>}
+            {inProgressStep && <PresenceBadge requiresPresence={inProgressStep.requires_presence !== false} />}
+          </div>
+          {steps && steps.length > 0 && (
+            <StepsBar steps={steps} current={ticket.current_step} total={ticket.total_steps} />
+          )}
+        </div>
+
+        {/* Wait */}
+        <div>
+          <div className={`text-sm font-bold ${ticket.status === 'in_progress' ? 'text-success' : 'text-text-sub'}`}>{waitMins}m</div>
+        </div>
+
+        <div className="flex gap-1.5 flex-wrap">
+          {ticket.status === 'in_progress' && inProgressStep && (
+            <button
+              onClick={() => setViewingTicketId(ticket.id)}
+              className="px-3.5 py-2 rounded-lg border-none bg-maroon text-white text-xs font-bold cursor-pointer font-sans whitespace-nowrap hover:bg-maroon-dark transition-colors"
+            >
+              View Details
+            </button>
+          )}
+          {ticket.status === 'pending' && (
+            <button
+              onClick={() => handleConfirm(ticket.id, ticket.current_step)}
+              disabled={isConfirming}
+              className={`px-3.5 py-2 rounded-lg border text-xs font-bold font-sans whitespace-nowrap transition-colors
+                ${isConfirming ? 'bg-gold-light border-gold text-gold/50 cursor-not-allowed' : 'bg-gold-light border-gold text-gold cursor-pointer hover:bg-gold hover:text-white'}
+              `}
+            >
+              Call Next
+            </button>
+          )}
+          {ticket.status === 'completed' && (
+            <span className="text-xs font-semibold text-blue flex items-center gap-1"><Check size={12} /> Done</span>
+          )}
+          {ticket.status === 'no_show' && (
+            <span className="text-xs font-semibold text-gray-500">No Show</span>
+          )}
+        </div>
+      </div>
+    )
+  }
+
+  const columnHeaders = ['QUEUE NO.', 'STUDENT DETAILS', 'TRANSACTION', 'STATUS / PROGRESS', 'WAIT', 'ACTION']
 
   return (
     <div className="flex flex-col gap-6">
@@ -417,14 +548,17 @@ export default function LiveQueuePage() {
       {/* ── Main content: Table + Filter ── */}
       <div className="flex gap-5 items-start">
 
-        {/* Queue Table */}
+        {/* Queue Tables */}
         <div className="animate-fade-up flex-1 min-w-0" style={{ animationDelay: '0.4s' }}>
-          {/* Table header */}
+
+          {/* ═══ AT THE COUNTER — real physical line, call these in order ═══ */}
           <div className="flex items-center justify-between mb-3.5">
             <div>
-              <span className="text-[16px] font-serif font-bold text-text-main">Active Queue</span>
-              <span className="text-xs text-text-muted ml-2.5">
-                {loading ? 'Loading…' : `${displayed.length} records · Updated ${lastUpdated || '—'}`}
+              <span className="text-[16px] font-serif font-bold text-text-main flex items-center gap-2">
+                <DoorOpen size={17} className="text-maroon" /> At the Counter
+              </span>
+              <span className="text-xs text-text-muted ml-[25px] block mt-0.5">
+                Students physically waiting — call these in order
               </span>
             </div>
             <button className="px-3.5 py-1.5 rounded-lg border border-border bg-white text-text-sub text-xs font-semibold cursor-pointer font-sans flex items-center gap-1.5 hover:bg-off-white transition-colors">
@@ -432,19 +566,17 @@ export default function LiveQueuePage() {
             </button>
           </div>
 
-          {/* Column headers */}
           <div className="grid grid-cols-[100px_1fr_160px_180px_70px_160px] gap-0 px-4 py-2.5 rounded-t-[10px] bg-surface border border-b-0 border-border">
-            {['QUEUE NO.', 'STUDENT DETAILS', 'TRANSACTION', 'STATUS / PROGRESS', 'WAIT', 'ACTION'].map(col => (
+            {columnHeaders.map(col => (
               <div key={col} className="text-[10px] font-bold text-text-muted tracking-[0.06em] uppercase">{col}</div>
             ))}
           </div>
 
-          {/* Rows */}
           <div className="border border-border rounded-b-[14px] overflow-hidden bg-white">
             {loading ? (
               <div className="flex flex-col">
-                {[1, 2, 3, 4, 5].map(i => (
-                  <div key={i} className={`grid grid-cols-[100px_1fr_160px_180px_70px_160px] gap-0 p-4 ${i < 5 ? 'border-b border-border' : ''}`}>
+                {[1, 2, 3].map(i => (
+                  <div key={i} className={`grid grid-cols-[100px_1fr_160px_180px_70px_160px] gap-0 p-4 ${i < 3 ? 'border-b border-border' : ''}`}>
                     <div className="animate-pulse w-10 h-5 rounded bg-border" />
                     <div>
                       <div className="animate-pulse w-[120px] h-3.5 rounded bg-border mb-1.5" />
@@ -460,118 +592,60 @@ export default function LiveQueuePage() {
                   </div>
                 ))}
               </div>
-            ) : displayed.length === 0 ? (
-              <div className="p-12 text-center">
-                <div className="flex justify-center text-text-muted mb-3"><Inbox size={40} /></div>
-                <p className="text-sm font-semibold text-text-main m-0 mb-1">No tickets match the current filters</p>
-                <p className="text-[13px] text-text-muted m-0">Try adjusting the status or priority filters on the right.</p>
+            ) : atCounter.length === 0 ? (
+              <div className="p-10 text-center">
+                <div className="flex justify-center text-text-muted mb-2.5"><DoorOpen size={32} /></div>
+                <p className="text-sm font-semibold text-text-main m-0 mb-1">No one at the counter right now</p>
+                <p className="text-[13px] text-text-muted m-0">Students will appear here when they need to be physically served.</p>
               </div>
             ) : (
-              displayed.map(({ ticket, steps }, idx) => {
-                const student = ticket.users
-                const name    = student ? `${ticket.users.last_name}, ${ticket.users.first_name}` : 'Unknown'
-                const sid     = student?.student_id || '—'
-                const appt    = ticket.appointments
-                const txName  = appt?.transaction_types?.name || 'Transaction'
-                const pClass  = appt?.priority_class || 'regular'
-                const statusCfg = STATUS_CFG[ticket.status] || STATUS_CFG.pending
-                const isHighPrio = pClass === 'graduating' || pClass === 'pwd'
-                const inProgressStep = steps?.find(s => s.status === 'in_progress')
-                const confirmKey = inProgressStep ? `${ticket.id}-${inProgressStep.step_number}` : null
-                const isConfirming = confirming === confirmKey
-                const waitMins  = Math.floor(Math.random() * 20) + 5 // placeholder until API provides it
-
-                return (
-                  <div key={ticket.id} className={`grid grid-cols-[100px_1fr_160px_180px_70px_160px] gap-0 p-4 items-center transition-colors duration-150
-                    ${idx < displayed.length - 1 ? 'border-b border-border' : ''}
-                    ${ticket.status === 'in_progress' ? 'bg-success-light/30' : 'bg-white hover:bg-off-white/50'}
-                  `}>
-
-                    {/* Queue No. */}
-                    <div>
-                      <div className="font-serif text-[20px] font-extrabold text-maroon leading-none">{ticket.queue_number}</div>
-                      {isHighPrio && (
-                        <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-danger-light text-danger border border-danger-border mt-1 inline-block uppercase tracking-[0.04em]">
-                          Priority
-                        </span>
-                      )}
-                    </div>
-
-                    {/* Student Details */}
-                    <div>
-                      <div className="text-[13px] font-semibold text-text-main mb-0.5">{name}</div>
-                      <div className="text-[11px] text-text-muted font-mono">{sid}</div>
-                      <div className="mt-1">
-                        <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full capitalize bg-gold-light text-gold border border-gold-border">
-                          {pClass}
-                        </span>
-                      </div>
-                    </div>
-
-                    {/* Transaction */}
-                    <div>
-                      <div className="text-xs font-semibold text-text-main leading-snug">{txName}</div>
-                      <div className="text-[11px] text-text-muted mt-0.5">{appt?.time_slot || '—'}</div>
-                    </div>
-
-                    {/* Status + Progress */}
-                    <div>
-                      <div className="flex items-center gap-1.5 mb-1.5">
-                        <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full border whitespace-nowrap ${statusCfg.bg} ${statusCfg.color} ${statusCfg.border}`}>
-                          {statusCfg.label}
-                        </span>
-                        {inProgressStep && <span className="text-[11px] text-text-muted">Step {inProgressStep.step_number}</span>}
-                      </div>
-                      {steps && steps.length > 0 && (
-                        <StepsBar steps={steps} current={ticket.current_step} total={ticket.total_steps} />
-                      )}
-                    </div>
-
-                    {/* Wait */}
-                    <div>
-                      <div className={`text-sm font-bold ${ticket.status === 'in_progress' ? 'text-success' : 'text-text-sub'}`}>{waitMins}m</div>
-                    </div>
-
-                    <div className="flex gap-1.5 flex-wrap">
-                      {ticket.status === 'in_progress' && inProgressStep && (
-                        <button
-                          onClick={() => setViewingTicketId(ticket.id)}
-                          className="px-3.5 py-2 rounded-lg border-none bg-maroon text-white text-xs font-bold cursor-pointer font-sans whitespace-nowrap hover:bg-maroon-dark transition-colors"
-                        >
-                          View Details
-                        </button>
-                      )}
-                      {ticket.status === 'pending' && (
-                        <button
-                          onClick={() => handleConfirm(ticket.id, ticket.current_step)}
-                          disabled={isConfirming}
-                          className={`px-3.5 py-2 rounded-lg border text-xs font-bold font-sans whitespace-nowrap transition-colors
-                            ${isConfirming ? 'bg-gold-light border-gold text-gold/50 cursor-not-allowed' : 'bg-gold-light border-gold text-gold cursor-pointer hover:bg-gold hover:text-white'}
-                          `}
-                        >
-                          Call Next
-                        </button>
-                      )}
-                      {ticket.status === 'completed' && (
-                        <span className="text-xs font-semibold text-blue flex items-center gap-1"><Check size={12} /> Done</span>
-                      )}
-                      {ticket.status === 'no_show' && (
-                        <span className="text-xs font-semibold text-gray-500">No Show</span>
-                      )}
-                    </div>
-                  </div>
-                )
-              })
+              atCounter.map((item, idx) => renderQueueRow(item, idx, atCounter.length))
             )}
           </div>
 
-          {!loading && displayed.length > 0 && (
+          {!loading && atCounter.length > 0 && (
             <div className="mt-4 text-right px-2">
               <span className="text-[12px] font-bold text-text-muted tracking-wide">
-                Showing {displayed.length} out of {active.length} active tickets
+                {atCounter.length} at the counter · Updated {lastUpdated || '—'}
               </span>
             </div>
           )}
+
+          {/* ═══ PROCESSING — back office, no line, work at own pace ═══ */}
+          <div className="mt-8">
+            <div className="flex items-center justify-between mb-3.5">
+              <div>
+                <span className="text-[16px] font-serif font-bold text-text-main flex items-center gap-2">
+                  <Cog size={17} className="text-text-muted" /> Processing
+                </span>
+                <span className="text-xs text-text-muted ml-[25px] block mt-0.5">
+                  No one is waiting for these — work through them whenever you're free
+                </span>
+              </div>
+            </div>
+
+            {!loading && processingQueue.length > 0 && (
+              <div className="grid grid-cols-[100px_1fr_160px_180px_70px_160px] gap-0 px-4 py-2.5 rounded-t-[10px] bg-surface border border-b-0 border-border opacity-80">
+                {columnHeaders.map(col => (
+                  <div key={col} className="text-[10px] font-bold text-text-muted tracking-[0.06em] uppercase">{col}</div>
+                ))}
+              </div>
+            )}
+
+            <div className="border border-border rounded-b-[14px] overflow-hidden bg-white opacity-90">
+              {loading ? (
+                <div className="p-6 text-center text-xs text-text-muted">Loading…</div>
+              ) : processingQueue.length === 0 ? (
+                <div className="p-8 text-center border border-border rounded-[14px]">
+                  <div className="flex justify-center text-text-muted mb-2"><Cog size={28} /></div>
+                  <p className="text-sm font-semibold text-text-main m-0 mb-1">Nothing in back-office processing</p>
+                  <p className="text-[13px] text-text-muted m-0">Tickets land here after being submitted, before release.</p>
+                </div>
+              ) : (
+                processingQueue.map((item, idx) => renderQueueRow(item, idx, processingQueue.length))
+              )}
+            </div>
+          </div>
 
           {/* Completed section */}
           {done.length > 0 && !loading && (

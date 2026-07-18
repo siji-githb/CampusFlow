@@ -516,7 +516,7 @@ function OverviewTab() {
 // MAIN ADMIN DASHBOARD
 // ─────────────────────────────────────────────────────────────────────────────
 export default function AdminDashboard() {
-  const { user, logout } = useAuth()
+  const { user, requestLogout } = useAuth()
   const navigate = useNavigate()
   const [activeNav, setActiveNav] = useState('overview')
   const [profileOpen, setProfileOpen] = useState(false)
@@ -642,7 +642,7 @@ export default function AdminDashboard() {
                     </div>
                   </div>
                   <div className="h-px bg-border mb-3" />
-                  <button onClick={() => { logout(); navigate('/login') }} className="w-full py-2.5 px-3 rounded-xl border-none bg-danger-light text-danger text-[13px] font-bold cursor-pointer flex items-center justify-center gap-2 font-sans hover:bg-danger-border transition-colors">
+                  <button onClick={() => { requestLogout(); }} className="w-full py-2.5 px-3 rounded-xl border-none bg-danger-light text-danger text-[13px] font-bold cursor-pointer flex items-center justify-center gap-2 font-sans hover:bg-danger-border transition-colors">
                     <LogOut size={16} strokeWidth={2.5} /> Log Out
                   </button>
                 </div>

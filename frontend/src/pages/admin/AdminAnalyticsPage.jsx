@@ -503,8 +503,11 @@ export default function AdminAnalyticsPage() {
         </div>
         {insights ? (
           <>
+            {/* Narrative paragraph */}
             <p className="text-[15px] text-text-main font-medium leading-[1.65] m-0 mb-6">{insights.insight}</p>
-            <div className="grid grid-cols-5 gap-3">
+
+            {/* ── Today's 5-stat grid (unchanged) ── */}
+            <div className="grid grid-cols-5 gap-3 mb-5">
               {[
                 { l: 'Total',      v: insights.total,                c: 'text-text-main'  },
                 { l: 'Completed',  v: insights.completed,            c: 'text-success' },
@@ -518,6 +521,105 @@ export default function AdminAnalyticsPage() {
                 </div>
               ))}
             </div>
+
+            {/* ── Predictive analytics row (M6 + M7) ── */}
+            <div className="text-[10px] font-extrabold text-text-muted uppercase tracking-[0.08em] mb-3 mt-1">Predictive Analytics</div>
+            <div className="grid grid-cols-3 gap-3 mb-5">
+
+              {/* Tomorrow's Forecast */}
+              <div className="bg-white rounded-2xl p-4 border border-border shadow-sm hover:-translate-y-0.5 transition-transform">
+                <div className="flex items-center gap-2 mb-2">
+                  <Clock size={14} className="text-info" />
+                  <span className="text-[10px] font-extrabold text-text-muted uppercase tracking-[0.08em]">Tomorrow's Forecast</span>
+                </div>
+                {insights.forecast?.insufficient_data ? (
+                  <div className="text-[12px] text-text-sub font-medium leading-snug">
+                    Not enough history yet
+                    <div className="text-[10px] text-text-muted mt-0.5">{insights.forecast?.sample_count != null ? `(${insights.forecast.sample_count} sample${insights.forecast.sample_count !== 1 ? 's' : ''})` : ''}</div>
+                  </div>
+                ) : (
+                  <>
+                    <div className="font-serif text-[28px] font-bold text-info leading-none mb-1">
+                      {insights.forecast?.predicted_count ?? '—'}
+                    </div>
+                    <div className="text-[11px] text-text-sub font-medium">
+                      {insights.forecast?.weekday}
+                      {insights.forecast?.top_transaction_type ? ` · ${insights.forecast.top_transaction_type}` : ''}
+                    </div>
+                    <div className="text-[10px] text-text-muted mt-0.5">based on {insights.forecast?.based_on_occurrences} historical {insights.forecast?.weekday}s</div>
+                  </>
+                )}
+              </div>
+
+              {/* No-show Risk Count */}
+              <div className="bg-white rounded-2xl p-4 border border-border shadow-sm hover:-translate-y-0.5 transition-transform">
+                <div className="flex items-center gap-2 mb-2">
+                  <AlertTriangle size={14} className="text-danger" />
+                  <span className="text-[10px] font-extrabold text-text-muted uppercase tracking-[0.08em]">No-show Risk</span>
+                </div>
+                {insights.no_show_risk?.insufficient_data ? (
+                  <div className="text-[12px] text-text-sub font-medium leading-snug">Not enough history yet to score risk</div>
+                ) : (
+                  <>
+                    <div className={`font-serif text-[28px] font-bold leading-none mb-1 ${insights.no_show_risk?.flagged_count > 0 ? 'text-danger' : 'text-success'}`}>
+                      {insights.no_show_risk?.flagged_count ?? 0}
+                    </div>
+                    <div className="text-[11px] text-text-sub font-medium">flagged in next 3 days</div>
+                    <div className="text-[10px] text-text-muted mt-0.5">≥40% blended risk score</div>
+                  </>
+                )}
+              </div>
+
+              {/* 14-Day Volume Trend */}
+              <div className="bg-white rounded-2xl p-4 border border-border shadow-sm hover:-translate-y-0.5 transition-transform">
+                <div className="flex items-center gap-2 mb-2">
+                  <Activity size={14} className="text-gold" />
+                  <span className="text-[10px] font-extrabold text-text-muted uppercase tracking-[0.08em]">14-Day Trend</span>
+                </div>
+                {insights.trend?.insufficient_data ? (
+                  <div className="text-[12px] text-text-sub font-medium leading-snug">Not enough history yet</div>
+                ) : (
+                  <>
+                    <div className={`font-serif text-[28px] font-bold leading-none mb-1 ${
+                      insights.trend?.direction === 'up' ? 'text-success' :
+                      insights.trend?.direction === 'down' ? 'text-danger' : 'text-text-main'
+                    }`}>
+                      {insights.trend?.direction === 'up' ? '+' : insights.trend?.direction === 'down' ? '-' : ''}
+                      {Math.abs(insights.trend?.percent_change ?? 0)}%
+                    </div>
+                    <div className="text-[11px] text-text-sub font-medium capitalize">{insights.trend?.direction}</div>
+                    {insights.trend?.driving_type && (
+                      <div className="text-[10px] text-text-muted mt-0.5">driven by: {insights.trend.driving_type}</div>
+                    )}
+                  </>
+                )}
+              </div>
+            </div>
+
+            {/* ── Flagged no-show risk detail list ── */}
+            {!insights.no_show_risk?.insufficient_data && insights.no_show_risk?.appointments?.length > 0 && (
+              <div>
+                <div className="text-[10px] font-extrabold text-text-muted uppercase tracking-[0.08em] mb-2">High-Risk Appointments</div>
+                <div className="rounded-2xl border border-border overflow-hidden">
+                  <div className="grid grid-cols-[2fr_2fr_1.2fr_1.2fr_1fr] bg-surface px-4 py-2.5 gap-3">
+                    {['Student', 'Transaction', 'Date', 'Time', 'Risk'].map(h => (
+                      <div key={h} className="text-[10px] font-extrabold text-text-muted uppercase tracking-[0.08em]">{h}</div>
+                    ))}
+                  </div>
+                  {insights.no_show_risk.appointments.map((appt, i) => (
+                    <div key={appt.appointment_id} className={`grid grid-cols-[2fr_2fr_1.2fr_1.2fr_1fr] px-4 py-3 gap-3 items-center transition-colors hover:bg-surface/60 ${i < insights.no_show_risk.appointments.length - 1 ? 'border-b border-border' : ''}`}>
+                      <div className="text-[13px] font-semibold text-text-main truncate">{appt.student_name}</div>
+                      <div className="text-[12px] text-text-sub truncate">{appt.transaction_type}</div>
+                      <div className="text-[12px] text-text-sub">{appt.appointment_date}</div>
+                      <div className="text-[12px] text-text-sub">{appt.time_slot}</div>
+                      <div className={`text-[13px] font-bold ${appt.risk_score >= 60 ? 'text-danger' : 'text-gold'}`}>
+                        {appt.risk_score}%
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </>
         ) : (
           <p className="text-[14px] text-text-sub font-medium m-0">Click Refresh to generate today's AI-powered insight.</p>

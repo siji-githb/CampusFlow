@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, Request
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from services.ai_service import chat, clear_session, get_or_create_session
 from config import get_settings
 from deps import get_current_user
@@ -10,7 +10,7 @@ router = APIRouter(prefix="/ai", tags=["AI Assistant"])
 
 
 class ChatRequest(BaseModel):
-    message: str
+    message: str = Field(..., min_length=1, max_length=1000, description="Student's chat message")
 
 
 @router.post("/chat")

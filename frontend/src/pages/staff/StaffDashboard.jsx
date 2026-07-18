@@ -156,7 +156,7 @@ function CompactMessagesPreview() {
 
 // ── Main StaffDashboard ────────────────────────────────────────────────────────
 export default function StaffDashboard() {
-  const { user, logout, token } = useAuth()
+  const { user, requestLogout, token } = useAuth()
   const navigate = useNavigate()
   const [activeNav, setActiveNav] = useState('overview')
   const [profileOpen, setProfileOpen] = useState(false)
@@ -459,8 +459,7 @@ export default function StaffDashboard() {
                     } catch (err) {
                       console.error('Failed to release window on logout', err);
                     } finally {
-                      logout();
-                      navigate('/login', { replace: true });
+                      requestLogout();
                     }
                   }} className="w-full mt-2 py-2.5 px-3 rounded-xl border-none bg-[#FFF0F0] text-[#D92D20] text-[13px] font-bold cursor-pointer flex items-center justify-center gap-2 font-sans hover:bg-[#FFE5E5] transition-colors">
                     <LogOut size={16} /> Log Out

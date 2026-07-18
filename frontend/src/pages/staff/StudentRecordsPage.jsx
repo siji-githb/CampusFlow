@@ -21,6 +21,7 @@ export default function StudentRecordsPage() {
   const [isDeleting, setIsDeleting] = useState(null)
   const [courseFilter, setCourseFilter] = useState('All')
   const [searchQuery, setSearchQuery] = useState('')
+  const [currentPage, setCurrentPage] = useState(1)
 
   const displayedRecords = records.filter(r => {
     const matchCourse = courseFilter === 'All' || r.course === courseFilter
@@ -30,6 +31,15 @@ export default function StudentRecordsPage() {
       `${r.first_name} ${r.last_name}`.toLowerCase().includes(searchLower)
     return matchCourse && matchSearch
   })
+
+  // Reset page to 1 when filters change
+  useEffect(() => { setCurrentPage(1) }, [courseFilter, searchQuery])
+
+  const itemsPerPage = 10
+  const totalPages = Math.ceil(displayedRecords.length / itemsPerPage) || 1
+  const startIndex = (currentPage - 1) * itemsPerPage
+  const endIndex = Math.min(startIndex + itemsPerPage, displayedRecords.length)
+  const currentRecords = displayedRecords.slice(startIndex, startIndex + itemsPerPage)
 
   const fetchRecords = async () => {
     setLoading(true)
@@ -271,10 +281,10 @@ export default function StudentRecordsPage() {
                     </td>
                   </tr>
                 ))
-              ) : displayedRecords.length === 0 ? (
+              ) : currentRecords.length === 0 ? (
                 <tr><td colSpan={5} className="p-6 text-center text-text-muted">No matching student records found.</td></tr>
               ) : (
-                displayedRecords.map((record, index) => (
+                currentRecords.map((record, index) => (
                   <tr key={record.student_id} className="group border-b border-border transition-colors hover:bg-maroon-light/50 animate-fade-up" style={{ animationDelay: `${index * 0.05}s`, opacity: 0, animationFillMode: 'forwards' }}>
                     <td className="px-6 py-3 font-medium text-maroon">{record.student_id}</td>
                     <td className="px-6 py-3 text-text-main">{record.first_name} {record.last_name}</td>
@@ -293,6 +303,29 @@ export default function StudentRecordsPage() {
               )}
             </tbody>
           </table>
+        </div>
+        
+        {/* Pagination Controls */}
+        <div className="px-6 py-4 border-t border-border flex justify-between items-center bg-off-white">
+          <div className="text-[13px] text-text-sub font-medium">
+            Showing <span className="font-bold text-text-main">{displayedRecords.length === 0 ? 0 : startIndex + 1}-{endIndex}</span> of <span className="font-bold text-text-main">{displayedRecords.length}</span> records
+          </div>
+          <div className="flex gap-2">
+            <button 
+              onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+              disabled={currentPage === 1}
+              className="px-3 py-1.5 rounded-lg border border-border bg-white text-text-main text-[12px] font-semibold cursor-pointer hover:bg-surface disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              Prev
+            </button>
+            <button 
+              onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+              disabled={currentPage === totalPages}
+              className="px-3 py-1.5 rounded-lg border border-border bg-white text-text-main text-[12px] font-semibold cursor-pointer hover:bg-surface disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              Next
+            </button>
+          </div>
         </div>
       </div>
     </div>

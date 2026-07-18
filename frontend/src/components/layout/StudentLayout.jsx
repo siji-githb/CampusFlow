@@ -103,7 +103,7 @@ const SideNavItem = ({ icon, label, path, active, navigate, collapsed }) => (
 );
 
 export function ProfileDropdown() {
-  const { user, logout } = useAuth();
+  const { user, requestLogout } = useAuth();
   const navigate = useNavigate();
   const isDesktop = useWindowWidth() >= 768;
   const [profileOpen, setProfileOpen] = useState(false);
@@ -278,7 +278,7 @@ export function ProfileDropdown() {
                 </div>
                 <div style={{ height: '1px', background: M.border, margin: '16px 0 12px' }} />
                 <button
-                  onClick={() => { setProfileOpen(false); logout(); navigate('/login'); }}
+                  onClick={() => { setProfileOpen(false); requestLogout(); }}
                   style={{
                     width: '100%', minHeight: '44px', padding: '10px 12px', borderRadius: '10px',
                     border: 'none', background: M.redLight, color: M.red,
@@ -390,7 +390,7 @@ export function ProfileDropdown() {
                   </button>
                 </div>
                 <button
-                  onClick={() => { setProfileOpen(false); logout(); navigate('/login'); }}
+                  onClick={() => { setProfileOpen(false); requestLogout(); }}
                   style={{
                     width: '100%', minHeight: '52px', padding: '14px', borderRadius: '12px',
                     border: 'none', background: M.redLight, color: M.red,
@@ -413,15 +413,15 @@ export function ProfileDropdown() {
 }
 
 export default function StudentLayout({ children, activeTab, mobileTitle, backTo }) {
-  const width = useWindowWidth();
-  const isDesktop = width >= 768;
+  const location = useLocation();
+  const isDesktop = useWindowWidth() >= 768;
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [isChatOpen, setIsChatOpen] = useState(false);
-  const navigate = useNavigate();
-
-  // Draggable and expanding widget logic
-  const [isDragging, setIsDragging] = useState(false);
   const [position, setPosition] = useState(null);
+  const [isDragging, setIsDragging] = useState(false);
+  
+  const [initialAiQuery, setInitialAiQuery] = useState('');
+  const navigate = useNavigate();
   const hasDragged = useRef(false);
   const startPos = useRef({ x: 0, y: 0, btnX: 0, btnY: 0 });
 
@@ -444,10 +444,7 @@ export default function StudentLayout({ children, activeTab, mobileTitle, backTo
   }, [position, isChatOpen]);
 
   const onPointerDown = (e) => {
-    // Don't drag if clicking a button (like close or clear)
     if (e.target.closest('button')) return;
-
-    // Only drag by the drag-handle when open, or anywhere when closed
     if (isChatOpen && !e.target.closest('.drag-handle')) return;
     
     setIsDragging(true);
@@ -475,7 +472,6 @@ export default function StudentLayout({ children, activeTab, mobileTitle, backTo
       let newX = startPos.current.btnX + dx;
       let newY = startPos.current.btnY + dy;
       
-      // Determine max bounds based on mobile or desktop and open/closed state
       const w = isChatOpen ? (isDesktop ? 380 : window.innerWidth - 64) : 60;
       const h = isChatOpen ? 600 : 60;
       
@@ -494,12 +490,17 @@ export default function StudentLayout({ children, activeTab, mobileTitle, backTo
   };
 
   const toggleChat = (e) => {
-    if (hasDragged.current) {
+    if (e && e.type === 'click' && hasDragged.current) {
       e.preventDefault();
       e.stopPropagation();
       return;
     }
     setIsChatOpen(prev => !prev);
+  };
+
+  const handleAiPrompt = (query) => {
+    setInitialAiQuery(query);
+    setIsChatOpen(true);
   };
 
   // Chat Modal logic (transforming widget)
@@ -593,7 +594,7 @@ export default function StudentLayout({ children, activeTab, mobileTitle, backTo
         }}
         onPointerDown={e => e.stopPropagation()} 
       >
-        {isChatOpen && <AiChat asWidget headless onClose={() => {}} />}
+        <AiChat asWidget headless onClose={() => setIsChatOpen(false)} initialQuery={initialAiQuery} />
       </div>
     </div>
   );
@@ -652,7 +653,7 @@ export default function StudentLayout({ children, activeTab, mobileTitle, backTo
             </div>
           </div>
           <div className="flex items-center gap-3">
-            <GlobalSearch isMobile={true} />
+            <GlobalSearch isMobile={true} onAiPrompt={handleAiPrompt} />
             <NotificationDropdown isMobile={true} mobileRoute="/student/notifications" />
             <ProfileDropdown />
           </div>
@@ -661,7 +662,7 @@ export default function StudentLayout({ children, activeTab, mobileTitle, backTo
         {/* Desktop Top Bar (Hidden on Mobile) */}
         <header className="hidden md:flex items-center justify-end sticky top-0 z-40 bg-white border-b border-border h-[70px]" style={{ background: M.white, borderBottom: `1px solid ${M.border}`, height: '70px', position: 'sticky', top: 0, zIndex: 40 }}>
           <div style={{ maxWidth: '1200px', margin: '0 auto', width: '100%', height: '100%', padding: '0 40px', display: 'flex', alignItems: 'center', gap: '24px' }}>
-            <GlobalSearch />
+            <GlobalSearch onAiPrompt={handleAiPrompt} />
             <NotificationDropdown />
             <ProfileDropdown />
           </div>

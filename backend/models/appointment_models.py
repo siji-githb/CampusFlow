@@ -46,3 +46,4 @@ class SlotsResponse(BaseModel):
     transaction_type_id: str
     daily_cap: int
     slots: List[AvailableSlot]
+    note: Optional[str] = None

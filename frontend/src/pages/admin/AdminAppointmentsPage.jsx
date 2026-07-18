@@ -1,8 +1,8 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useAuth } from '../../context/useAuth'
-import { getDashboardStats, getAllAppointments, updateAppointmentStatus } from '../../services/adminService'
+import { getDashboardStats, getAllAppointments, updateAppointmentStatus, getOfficeConfig, setDateOverride } from '../../services/adminService'
 import { rescheduleAppointment, getAvailableSlots } from '../../services/appointmentService'
-import { AlertTriangle, Inbox, Check, X as XIcon, ChevronLeft, ChevronRight, ChevronDown, Filter, Calendar, FolderOpen, CheckCircle, Clock, PieChart, Activity, Archive } from 'lucide-react'
+import { AlertTriangle, Inbox, Check, X as XIcon, ChevronLeft, ChevronRight, ChevronDown, Filter, Calendar, FolderOpen, CheckCircle, Clock, PieChart, Activity, Archive, Info } from 'lucide-react'
 
 // ── Status Config ──────────────────────────────────────────────────────────────
 const STATUS_CFG = {
@@ -223,6 +223,83 @@ const RescheduleModal = ({ appt, onClose, onConfirm }) => {
   )
 }
 
+// ── Override Modal ─────────────────────────────────────────────────────────────
+const OverrideModal = ({ isOpen, type, selectedDate, currentNote, onClose, onSave, saving }) => {
+  const [note, setNote] = useState(currentNote || '')
+  if (!isOpen) return null
+
+  const isBlock = type === 'block'
+  const title = isBlock ? 'Block Date' : 'Add Notice Note'
+  const desc = isBlock 
+    ? 'This will prevent new appointments on this date and automatically reschedule any existing ones to the next available date. A reason is required.'
+    : 'This adds a visible notice for this date without blocking slots. Good for half-days or special instructions.'
+
+  // Format date nicely, handling timezones by appending T00:00:00
+  const dateObj = new Date(`${selectedDate}T00:00:00`)
+  const formattedDate = dateObj.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-black/60 transition-opacity" onClick={onClose} />
+      <div className="animate-fade-up relative w-full max-w-[480px] bg-white rounded-3xl p-8 shadow-[0_20px_60px_rgba(0,0,0,0.15)] border border-white/20">
+        
+        {/* Header Section */}
+        <div className="flex items-start justify-between mb-6">
+          <div className="flex items-center gap-4">
+            <div className={`w-14 h-14 rounded-2xl flex items-center justify-center shadow-inner ${isBlock ? 'bg-danger/10 text-danger' : 'bg-info/10 text-info'}`}>
+              {isBlock ? <AlertTriangle size={28} strokeWidth={2.5} /> : <Info size={28} strokeWidth={2.5} />}
+            </div>
+            <div>
+              <h3 className="font-serif text-[26px] font-bold text-text-main m-0 leading-tight">{title}</h3>
+              <p className="text-[14px] font-medium text-text-muted mt-1 flex items-center gap-2">
+                <Calendar size={14} /> {formattedDate}
+              </p>
+            </div>
+          </div>
+          <button onClick={onClose} className="text-text-muted hover:text-text-main transition-colors p-1 cursor-pointer bg-transparent border-none">
+            <XIcon size={20} />
+          </button>
+        </div>
+
+        <p className="text-[14px] text-text-sub m-0 mb-8 leading-relaxed bg-surface/50 p-4 rounded-xl border border-border/50">
+          {desc}
+        </p>
+        
+        {/* Input Section */}
+        <div className="mb-8">
+          <label className="block text-[13px] font-extrabold text-text-muted uppercase tracking-wider mb-3">
+            {isBlock ? 'Reason (Required)' : 'Notice Note (Required)'}
+          </label>
+          <textarea 
+            value={note} 
+            onChange={e => setNote(e.target.value)} 
+            placeholder={isBlock ? "e.g., University Holiday, System Maintenance" : "e.g., Registrar office available for half-day only"}
+            className="w-full p-4 rounded-2xl border-[1.5px] border-border font-sans text-[15px] outline-none text-text-main min-h-[120px] resize-y focus:border-maroon/50 focus:ring-4 focus:ring-maroon/5 transition-all shadow-inner bg-off-white/50"
+          />
+        </div>
+
+        {/* Footer Buttons */}
+        <div className="flex gap-4 justify-end">
+          <button 
+            onClick={onClose} 
+            disabled={saving} 
+            className="py-3 px-6 rounded-xl border-[1.5px] border-border bg-white text-text-main cursor-pointer font-sans font-bold text-[14px] hover:bg-surface hover:text-text-main transition-all duration-200"
+          >
+            Cancel
+          </button>
+          <button 
+            onClick={() => onSave(note)} 
+            disabled={saving || !note.trim()} 
+            className={`py-3 px-8 rounded-xl border-none text-white font-sans font-bold text-[14px] shadow-[0_4px_12px_rgba(0,0,0,0.1)] transition-all duration-200 ${isBlock ? 'bg-danger hover:bg-danger-hover hover:shadow-[0_6px_16px_rgba(220,38,38,0.2)]' : 'bg-maroon hover:bg-maroon-hover hover:shadow-[0_6px_16px_rgba(123,26,42,0.2)]'} ${(!note.trim() || saving) ? 'cursor-not-allowed opacity-60 grayscale-[0.3] hover:shadow-[0_4px_12px_rgba(0,0,0,0.1)]' : 'cursor-pointer hover:-translate-y-0.5'}`}
+          >
+            {saving ? 'Processing...' : 'Confirm Action'}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // MAIN AdminAppointmentsPage
 // ─────────────────────────────────────────────────────────────────────────────
@@ -240,6 +317,11 @@ export default function AdminAppointmentsPage() {
   const [statusFilter, setStatusFilter] = useState('all')
   const [page, setPage]               = useState(1)
   const [rescheduleTarget, setRescheduleTarget] = useState(null)
+  
+  const [dateOverrides, setDateOverrides] = useState({})
+  const [overrideModal, setOverrideModal] = useState({ isOpen: false, type: null })
+  const [overrideSaving, setOverrideSaving] = useState(false)
+
   const PER_PAGE = 6
 
   const handleRescheduleSubmit = async (appointmentId, newDate, newTime) => {
@@ -271,6 +353,13 @@ export default function AdminAppointmentsPage() {
       .then(setStats)
       .catch(e => setError(e.message))
       .finally(() => setLoading(false))
+
+    getOfficeConfig(token)
+      .then(res => {
+        const row = res.find(r => r.key === 'date_overrides')
+        if (row && row.value) setDateOverrides(JSON.parse(row.value))
+      })
+      .catch(console.error)
   }, [token])
 
   // Load appointments whenever date changes
@@ -407,8 +496,8 @@ export default function AdminAppointmentsPage() {
             <p className="text-[10px] font-extrabold text-text-muted uppercase tracking-[0.08em] m-0 mb-4 pb-3 border-b border-border">Quick Actions</p>
             <div className="flex flex-col gap-2.5">
               {[
-                { label: 'Block Time Slot', action: () => {} },
-                { label: 'Add Internal Note', action: () => {} },
+                { label: 'Block Date', action: () => setOverrideModal({ isOpen: true, type: 'block' }) },
+                { label: 'Add Notice Note', action: () => setOverrideModal({ isOpen: true, type: 'note' }) },
               ].map((item, i) => (
                 <button key={i} onClick={item.action} className="w-full py-[10px] px-4 rounded-xl border border-border bg-white text-text-main text-[13px] font-bold cursor-pointer text-left font-sans transition-all hover:border-text-muted/30 hover:bg-off-white hover:-translate-y-0.5 shadow-[0_2px_8px_rgba(0,0,0,0.04)]">
                   {item.label}
@@ -419,21 +508,50 @@ export default function AdminAppointmentsPage() {
 
           {/* Selected Date Summary */}
           {!loading && stats && (
-            <div className="bg-white rounded-2xl border border-border p-5 shadow-[0_2px_8px_rgba(0,0,0,0.04)]">
-              <p className="text-[10px] font-extrabold text-text-muted uppercase tracking-[0.08em] m-0 mb-4 pb-3 border-b border-border">Day Summary</p>
-              <div className="flex flex-col gap-3.5">
-                {[
-                  { l: 'Confirmed',   v: stats?.today?.confirmed || 0, c: 'text-info'  },
-                  { l: 'Completed',   v: stats?.today?.completed || 0, c: 'text-success' },
-                  { l: 'Cancelled',   v: stats?.today?.cancelled || 0, c: 'text-danger'   },
-                  { l: 'No Show',     v: stats?.today?.no_show || 0,   c: 'text-text-muted' },
-                ].map((s, i) => (
-                  <div key={i} className="flex justify-between items-center group">
-                    <span className="text-[13px] font-semibold text-text-sub group-hover:text-text-main transition-colors">{s.l}</span>
-                    <span className={`font-sans text-[16px] font-extrabold ${s.c}`}>{s.v}</span>
-                  </div>
-                ))}
+            <div className="bg-white rounded-2xl border border-border p-5 shadow-[0_2px_8px_rgba(0,0,0,0.04)] flex flex-col gap-4">
+              <div>
+                <p className="text-[10px] font-extrabold text-text-muted uppercase tracking-[0.08em] m-0 mb-4 pb-3 border-b border-border">Day Summary</p>
+                <div className="flex flex-col gap-3.5">
+                  {[
+                    { l: 'Confirmed',   v: stats?.today?.confirmed || 0, c: 'text-info'  },
+                    { l: 'Completed',   v: stats?.today?.completed || 0, c: 'text-success' },
+                    { l: 'Cancelled',   v: stats?.today?.cancelled || 0, c: 'text-danger'   },
+                    { l: 'No Show',     v: stats?.today?.no_show || 0,   c: 'text-text-muted' },
+                  ].map((s, i) => (
+                    <div key={i} className="flex justify-between items-center group">
+                      <span className="text-[13px] font-semibold text-text-sub group-hover:text-text-main transition-colors">{s.l}</span>
+                      <span className={`font-sans text-[16px] font-extrabold ${s.c}`}>{s.v}</span>
+                    </div>
+                  ))}
+                </div>
               </div>
+              
+              {/* Overrides / Notice Note */}
+              {dateOverrides[selectedDate] && (
+                <div className={`p-4 rounded-xl border ${dateOverrides[selectedDate].is_blocked ? 'bg-danger-light border-danger-border' : 'bg-info-light border-info-border'}`}>
+                  <div className="flex items-center gap-2 mb-2">
+                    {dateOverrides[selectedDate].is_blocked ? <AlertTriangle size={16} className="text-danger" /> : <Info size={16} className="text-info" />}
+                    <span className={`text-[12px] font-bold uppercase tracking-wider ${dateOverrides[selectedDate].is_blocked ? 'text-danger' : 'text-info'}`}>
+                      {dateOverrides[selectedDate].is_blocked ? 'Date Blocked' : 'Notice Note'}
+                    </span>
+                  </div>
+                  <p className="text-[13px] text-text-main m-0 leading-relaxed font-medium">
+                    {dateOverrides[selectedDate].note}
+                  </p>
+                  <button 
+                    onClick={async () => {
+                      try {
+                        await setDateOverride(token, selectedDate, false, "")
+                        setDateOverrides(prev => { const n = {...prev}; delete n[selectedDate]; return n; })
+                        loadAppointments(selectedDate)
+                      } catch (err) { setError(err.message) }
+                    }}
+                    className="mt-3 py-1.5 px-3 rounded-lg border border-border bg-white text-text-main text-[11px] font-bold cursor-pointer font-sans hover:bg-surface transition-colors shadow-sm"
+                  >
+                    Remove
+                  </button>
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -586,6 +704,29 @@ export default function AdminAppointmentsPage() {
           onConfirm={handleRescheduleSubmit} 
         />
       )}
+
+      <OverrideModal 
+        isOpen={overrideModal.isOpen}
+        type={overrideModal.type}
+        selectedDate={selectedDate}
+        currentNote={dateOverrides[selectedDate]?.note}
+        saving={overrideSaving}
+        onClose={() => setOverrideModal({ isOpen: false, type: null })}
+        onSave={async (note) => {
+          setOverrideSaving(true)
+          try {
+            const isBlocked = overrideModal.type === 'block'
+            await setDateOverride(token, selectedDate, isBlocked, note)
+            setDateOverrides(prev => ({ ...prev, [selectedDate]: { is_blocked: isBlocked, note } }))
+            setOverrideModal({ isOpen: false, type: null })
+            loadAppointments(selectedDate)
+          } catch (err) {
+            setError(err.message)
+          } finally {
+            setOverrideSaving(false)
+          }
+        }}
+      />
     </div>
   )
 }

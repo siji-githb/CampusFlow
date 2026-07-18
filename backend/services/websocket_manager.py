@@ -30,26 +30,23 @@ class ConnectionManager:
                 del self.active_connections[user_id]
 
     async def send_personal_message(self, message: dict, user_id: str):
-        print(f"[WS] Attempting to send message to {user_id}. Connections: {len(self.active_connections.get(user_id, []))}")
+        logger.debug(f"Attempting to send message to {user_id}. Connections: {len(self.active_connections.get(user_id, []))}")
         if user_id in self.active_connections:
             for connection in self.active_connections[user_id]:
                 try:
                     await connection.send_json(message)
-                    print(f"[WS] Message successfully sent to {user_id}")
+                    logger.debug(f"Message successfully sent to {user_id}")
                 except Exception as e:
-                    print(f"[WS] Error sending message: {e}")
                     logger.error(f"Error sending WebSocket message to {user_id}: {e}")
 
     def send_personal_message_sync(self, message: dict, user_id: str):
         """Thread-safe method to send a message from a synchronous route/thread."""
-        print(f"[WS] Sync push called for {user_id}. Active: {user_id in self.active_connections}, Loop exists: {self.loop is not None}")
+        logger.debug(f"Sync push called for {user_id}. Active: {user_id in self.active_connections}, Loop exists: {self.loop is not None}")
         if user_id in self.active_connections and self.loop:
-            future = asyncio.run_coroutine_threadsafe(self.send_personal_message(message, user_id), self.loop)
             try:
-                # We don't block for long, but we can check if it raises immediately
-                # future.result(timeout=1) # Blocking here might be dangerous if the loop is busy
-                print(f"[WS] Coroutine scheduled successfully for {user_id}")
+                asyncio.run_coroutine_threadsafe(self.send_personal_message(message, user_id), self.loop)
+                logger.debug(f"Coroutine scheduled successfully for {user_id}")
             except Exception as e:
-                print(f"[WS] Error scheduling coroutine: {e}")
+                logger.error(f"Error scheduling coroutine for {user_id}: {e}")
 
 manager = ConnectionManager()

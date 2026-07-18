@@ -42,9 +42,7 @@ export default function AppRouter() {
         <Route path="/student/queue" element={
           <ProtectedRoute allowedRoles={['student']}><MyQueue /></ProtectedRoute>
         } />
-        <Route path="/student/ai-chat" element={
-          <ProtectedRoute allowedRoles={['student']}><AiChat /></ProtectedRoute>
-        } />
+
         <Route path="/student/notifications" element={
           <ProtectedRoute allowedRoles={['student']}><StudentNotifications /></ProtectedRoute>
         } />

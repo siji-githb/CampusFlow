@@ -1,4 +1,5 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Request
+from typing import Optional
 from services.admin_service import (
     get_dashboard_stats,
     get_reports,
@@ -20,6 +21,7 @@ from models.appointment_models import ReleaseDateUpdate
 from pydantic import BaseModel
 from services.appointment_service import get_all_appointments, update_appointment_status, set_release_date
 from deps import require_admin, require_staff_or_admin
+from rate_limit import limiter
 
 router = APIRouter(prefix="/admin", tags=["Admin"])
 
@@ -100,6 +102,16 @@ def ai_insights(user=Depends(require_admin)):
     """Today's appointment stats + AI-generated summary for the Reports tab."""
     return get_ai_insights()
 
+class DateOverrideRequest(BaseModel):
+    date: str
+    is_blocked: bool
+    note: Optional[str] = None
+
+@router.post("/date-overrides")
+def set_date_override(req: DateOverrideRequest, user=Depends(require_admin)):
+    """Block a date or add a notice note, automatically rescheduling existing appointments if blocked."""
+    from services.admin_service import apply_date_override
+    return apply_date_override(req.date, req.is_blocked, req.note, user.id)
 
 @router.get("/id-requests")
 def get_all_id_requests(user=Depends(require_staff_or_admin)):
@@ -114,7 +126,8 @@ class SendEmailBody(BaseModel):
     body: str
 
 @router.post("/id-requests/{request_id}/send-email")
-def send_id_email(request_id: str, data: SendEmailBody, user=Depends(require_staff_or_admin)):
+@limiter.limit("10/minute")
+def send_id_email(request: Request, request_id: str, data: SendEmailBody, user=Depends(require_staff_or_admin)):
     """Send an email directly via backend SMTP, skipping local mail clients."""
     from deps import get_supabase_admin
     from services.email_service import send_email
@@ -147,6 +160,19 @@ def update_id_request(request_id: str, data: dict, user=Depends(require_staff_or
     if not res.data:
         raise HTTPException(status_code=404, detail="ID Request not found")
     return {"message": "Request updated", "data": res.data[0]}
+
+
+@router.delete("/id-requests/{request_id}")
+def delete_id_request(request_id: str, user=Depends(require_staff_or_admin)):
+    """Delete an ID request (used for clearing history)."""
+    from deps import get_supabase_admin
+    from fastapi import HTTPException
+    admin = get_supabase_admin()
+    
+    res = admin.table("id_requests").delete().eq("id", request_id).execute()
+    if not res.data:
+        raise HTTPException(status_code=404, detail="ID Request not found")
+    return {"message": "Request deleted successfully"}
 
 
 # ── Window Assignment ─────────────────────────────────────────────────────────

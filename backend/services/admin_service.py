@@ -256,6 +256,75 @@ def update_user_role(user_id: str, role: str, actor_id: str = None):
         raise HTTPException(status_code=500, detail=str(e))
 
 
+def apply_date_override(target_date: str, is_blocked: bool, note: str, actor_id: str):
+    admin = get_admin()
+    
+    # 1. Update office_config
+    try:
+        config_res = admin.table("office_config").select("value").eq("key", "date_overrides").execute()
+        import json
+        overrides = {}
+        if config_res.data:
+            overrides = json.loads(config_res.data[0]["value"])
+            
+        if not is_blocked and not note:
+            # Unblocking and no note -> remove it
+            overrides.pop(target_date, None)
+        else:
+            overrides[target_date] = {"is_blocked": is_blocked, "note": note}
+        
+        # Save back
+        if config_res.data:
+            admin.table("office_config").update({"value": json.dumps(overrides)}).eq("key", "date_overrides").execute()
+        else:
+            admin.table("office_config").insert({"key": "date_overrides", "value": json.dumps(overrides)}).execute()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to save override: {str(e)}")
+
+    # 2. Re-schedule existing appointments if blocked
+    rescheduled_count = 0
+    if is_blocked:
+        try:
+            appts_res = admin.table("appointments").select("id, transaction_type_id").eq("appointment_date", target_date).in_("status", ["pending", "confirmed"]).execute()
+            appts = appts_res.data
+            
+            if appts:
+                from services.appointment_service import get_available_slots
+                from datetime import datetime, timedelta
+                
+                for appt in appts:
+                    search_date = datetime.strptime(target_date, "%Y-%m-%d").date() + timedelta(days=1)
+                    moved = False
+                    for _ in range(30):
+                        if search_date.weekday() == 6:
+                            search_date += timedelta(days=1)
+                            continue
+                        
+                        avail = get_available_slots(appt["transaction_type_id"], search_date)
+                        has_slot = False
+                        for s in avail["slots"]:
+                            if s["available"]:
+                                admin.table("appointments").update({
+                                    "appointment_date": str(search_date),
+                                    "time_slot": s["time_slot"]
+                                }).eq("id", appt["id"]).execute()
+                                moved = True
+                                rescheduled_count += 1
+                                break
+                        if moved:
+                            break
+                        search_date += timedelta(days=1)
+        except Exception as e:
+            pass
+            
+    # Audit log
+    action = f"{'Blocked' if is_blocked else 'Added notice to'} date {target_date}"
+    log_audit_action(user_id=actor_id, action=action, table_name="office_config", changes=note, severity="Warning" if is_blocked else "Info")
+    
+    return {"message": "Date override applied", "rescheduled_count": rescheduled_count}
+
+
+
 def toggle_user_status(target_user_id: str, is_active: bool, actor_id: str = None):
     admin = get_admin()
     try:

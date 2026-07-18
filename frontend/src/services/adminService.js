@@ -51,6 +51,17 @@ export const updateOfficeConfig = async (token, key, value) => {
   return data
 }
 
+export const setDateOverride = async (token, date, is_blocked, note) => {
+  const res = await fetch(`${API_URL}/admin/date-overrides`, {
+    method: 'POST',
+    headers: authHeader(token),
+    body: JSON.stringify({ date, is_blocked, note })
+  })
+  const data = await res.json()
+  if (!res.ok) throw new Error(data.detail || 'Failed to set date override')
+  return data
+}
+
 export const getAllUsers = async (token) => {
   const res = await fetch(`${API_URL}/admin/users`, { headers: authHeader(token) })
   const data = await res.json()
@@ -242,6 +253,16 @@ export const updateIdRequestStatus = async (token, requestId, status) => {
   })
   const data = await res.json()
   if (!res.ok) throw new Error(data.detail || 'Failed to update request status')
+  return data
+}
+
+export const deleteIdRequest = async (token, requestId) => {
+  const res = await fetch(`${API_URL}/admin/id-requests/${requestId}`, {
+    method: 'DELETE',
+    headers: authHeader(token)
+  })
+  const data = await res.json()
+  if (!res.ok) throw new Error(data.detail || 'Failed to delete request')
   return data
 }
 

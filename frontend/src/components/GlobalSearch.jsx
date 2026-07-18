@@ -12,7 +12,7 @@ const SEARCH_ITEMS = [
   { id: 'settings', label: 'Account Settings', icon: Settings, path: '#', type: 'page' },
 ];
 
-export default function GlobalSearch({ isMobile = false }) {
+export default function GlobalSearch({ isMobile = false, onAiPrompt }) {
   const [query, setQuery] = useState('');
   const [isOpen, setIsOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState(0);
@@ -72,7 +72,11 @@ export default function GlobalSearch({ isMobile = false }) {
   const handleSelect = (item) => {
     if (item.path !== '#') {
       if (item.isPrompt) {
-        navigate(item.path, { state: { initialQuery: query } });
+        if (onAiPrompt) {
+          onAiPrompt(query);
+        } else {
+          navigate(item.path, { state: { initialQuery: query } });
+        }
       } else {
         navigate(item.path);
       }

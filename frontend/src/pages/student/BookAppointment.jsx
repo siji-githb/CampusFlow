@@ -3,7 +3,7 @@ import { useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '../../context/useAuth'
 import StudentLayout from '../../components/layout/StudentLayout'
 import { getTransactionTypes, getAvailableSlots, bookAppointment, uploadMedia } from '../../services/appointmentService'
-import { CheckCircle, Calendar, Users, CloudSun, Sun, Image as ImageIcon, FileText, Clock, MapPin, Mail, HelpCircle, ChevronLeft } from 'lucide-react'
+import { CheckCircle, Calendar, Users, CloudSun, Sun, Image as ImageIcon, FileText, Clock, MapPin, Mail, HelpCircle, ChevronLeft, Info, AlertTriangle } from 'lucide-react'
 
 // ── Status Styles ──
 const STATUS_STYLES = {
@@ -495,9 +495,33 @@ export default function BookAppointment() {
                     {new Date(selectedDate + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}
                   </h3>
                   <span className="text-[12px] text-text-sub flex items-center gap-1">
-                    <Users size={14} /> {slotsData.daily_cap - slotsData.total_booked} of {slotsData.daily_cap} available
+                    {slotsData.daily_cap === 0 ? (
+                      <span className="text-danger font-bold uppercase tracking-wider text-[10px]">Date Blocked</span>
+                    ) : (
+                      <><Users size={14} /> {slotsData.daily_cap - slotsData.total_booked} of {slotsData.daily_cap} available</>
+                    )}
                   </span>
                 </div>
+
+                {slotsData.note && (
+                  <div className={`p-4 rounded-xl border mb-5 flex items-start gap-3 ${slotsData.daily_cap === 0 ? 'bg-danger-light border-danger-border text-danger' : 'bg-info-light border-info-border text-info'}`}>
+                    {slotsData.daily_cap === 0 ? <AlertTriangle size={18} className="mt-0.5 shrink-0" /> : <Info size={18} className="mt-0.5 shrink-0" />}
+                    <div>
+                      <p className="text-[12px] font-bold uppercase tracking-widest m-0 mb-1">
+                        {slotsData.daily_cap === 0 ? 'Date Blocked' : 'Important Notice'}
+                      </p>
+                      <p className="text-[13px] m-0 font-medium leading-relaxed">
+                        {slotsData.note}
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {slotsData.slots.length === 0 && !slotsData.note && (
+                  <div className="p-6 text-center text-text-sub text-[14px]">
+                    No available slots for this date.
+                  </div>
+                )}
 
                 {morningSlots.length > 0 && (
                   <div className="mb-5">

@@ -60,6 +60,21 @@ def get_available_slots(transaction_type_id: str, appointment_date: date):
     except Exception:
         raise HTTPException(status_code=404, detail="Transaction type not found")
 
+    import json
+    date_overrides = json.loads(config.get("date_overrides", "{}"))
+    override = date_overrides.get(str(appointment_date), {})
+    
+    if override.get("is_blocked"):
+        return {
+            "date": str(appointment_date),
+            "transaction_type_id": transaction_type_id,
+            "daily_cap": 0,
+            "total_booked": 0,
+            "slots": [],
+            "note": override.get("note")
+        }
+
+
     staff_count = int(config.get("staff_count", 2))
     lunch_start = config.get("lunch_break_start", "12:00")
     lunch_end = config.get("lunch_break_end", "13:00")
@@ -105,7 +120,8 @@ def get_available_slots(transaction_type_id: str, appointment_date: date):
         "transaction_type_id": transaction_type_id,
         "daily_cap": daily_cap,
         "total_booked": total_booked,
-        "slots": result
+        "slots": result,
+        "note": override.get("note")
     }
 
 
@@ -126,6 +142,13 @@ def create_appointment(student_id: str, priority_class: str, data: AppointmentCr
     # Check if date is a weekday
     if data.appointment_date.weekday() == 6:
         raise HTTPException(status_code=400, detail="Appointments cannot be booked on Sundays")
+
+    import json
+    date_overrides = json.loads(config.get("date_overrides", "{}"))
+    override = date_overrides.get(str(data.appointment_date), {})
+    if override.get("is_blocked"):
+        raise HTTPException(status_code=400, detail=f"This date is blocked: {override.get('note', '')}")
+
 
     # Get transaction type
     try:

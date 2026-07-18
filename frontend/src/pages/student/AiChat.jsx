@@ -26,7 +26,7 @@ const SendIcon = () => (
   </svg>
 )
 
-export default function AiChat({ asWidget, headless, onClose }) {
+export default function AiChat({ asWidget, headless, onClose, initialQuery }) {
   const { token } = useAuth()
   // eslint-disable-next-line no-unused-vars
   const navigate  = useNavigate()
@@ -36,7 +36,13 @@ export default function AiChat({ asWidget, headless, onClose }) {
     content: "Hi! I'm the CampusFlow AI Assistant 👋 I can help you with appointment booking, transaction requirements, and registrar procedures. How can I help you today?",
   }
   const [messages, setMessages] = useState([DEFAULT_MESSAGE])
-  const [input,   setInput]   = useState('')
+  const [input,   setInput]   = useState(initialQuery || '')
+
+  useEffect(() => {
+    if (initialQuery) {
+      setInput(initialQuery);
+    }
+  }, [initialQuery]);
 
   useEffect(() => {
     const loadHistory = async () => {
@@ -132,8 +138,9 @@ export default function AiChat({ asWidget, headless, onClose }) {
       setMessages(prev => [...prev, { role: 'assistant', content: reply, escalated: data.escalated }])
       speakResponse(reply)
     } catch (e) {
-      setError(e.message)
-      setMessages(prev => [...prev, { role: 'assistant', content: "Sorry, I'm having trouble connecting. Please try again.", isError: true }])
+      const isLengthError = e.message.includes('1000 characters') || msg.length > 1000
+      setError(isLengthError ? "Your message is too long — please keep it under 1000 characters." : e.message)
+      setMessages(prev => [...prev, { role: 'assistant', content: isLengthError ? "Message was too long to send." : "Sorry, I'm having trouble connecting. Please try again.", isError: true }])
     } finally { setLoading(false) }
   }
 
@@ -246,7 +253,8 @@ export default function AiChat({ asWidget, headless, onClose }) {
           </div>
 
           {/* Status bar */}
-          <div className="flex items-center justify-center gap-4 mt-2 h-[16px]">
+          <div className="flex items-center justify-between mt-2 h-[16px] px-2">
+            <div className="flex items-center gap-4 flex-1 justify-center">
             {isListening ? (
               <span className="text-[11px] text-maroon flex items-center gap-1.5 font-medium">
                 <span className="w-1.5 h-1.5 rounded-full bg-maroon animate-pulse"></span>
@@ -266,6 +274,13 @@ export default function AiChat({ asWidget, headless, onClose }) {
                 Enter to send · Shift+Enter for new line{voiceSupported ? ' · Mic for voice' : ''}
               </p>
             )}
+            </div>
+
+            {input.length > 800 && (
+              <div className={`text-[11px] font-medium transition-colors ${input.length > 1000 ? 'text-red-500' : 'text-gold'}`}>
+                {input.length} / 1000
+              </div>
+            )}
           </div>
 
         </div>
@@ -273,35 +288,24 @@ export default function AiChat({ asWidget, headless, onClose }) {
     </>
   )
 
-  if (asWidget) {
-    return (
-      <div className="w-full h-full flex flex-col font-sans bg-white">
-        {!headless && (
-          <div className="bg-maroon text-white p-3 flex justify-between items-center shrink-0 drag-handle" style={{ cursor: 'move', touchAction: 'none' }}>
-            <div className="flex items-center gap-2">
-              <div className="w-7 h-7 rounded-full bg-white/20 flex items-center justify-center">
-                <span className="font-serif font-bold text-gold text-[11px]">AE</span>
-              </div>
-              <span className="font-bold text-[14px]">Aether</span>
-            </div>
-            <div className="flex items-center gap-3">
-              <button onClick={handleClear} className="text-[11px] text-white/70 hover:text-white bg-transparent border-none cursor-pointer">Clear</button>
-              <button onClick={onClose} className="text-white hover:text-white/80 bg-transparent border-none cursor-pointer flex items-center justify-center">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-              </button>
-            </div>
-          </div>
-        )}
-        {chatContent}
-      </div>
-    )
-  }
-
   return (
-    <div className="h-screen flex flex-col bg-off-white font-sans">
-      <Navbar backTo="/student/dashboard" title="Aether">
-        <button onClick={handleClear} className="text-[12px] text-white/40 bg-transparent border-none cursor-pointer">Clear chat</button>
-      </Navbar>
+    <div className="w-full h-full flex flex-col font-sans bg-white">
+      {!headless && (
+        <div className="bg-maroon text-white p-3 flex justify-between items-center shrink-0 drag-handle" style={{ cursor: 'move', touchAction: 'none' }}>
+          <div className="flex items-center gap-2">
+            <div className="w-7 h-7 rounded-full bg-white/20 flex items-center justify-center">
+              <span className="font-serif font-bold text-gold text-[11px]">AE</span>
+            </div>
+            <span className="font-bold text-[14px]">Aether</span>
+          </div>
+          <div className="flex items-center gap-3">
+            <button onClick={handleClear} className="text-[11px] text-white/70 hover:text-white bg-transparent border-none cursor-pointer">Clear</button>
+            <button onClick={onClose} className="text-white hover:text-white/80 bg-transparent border-none cursor-pointer flex items-center justify-center">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+            </button>
+          </div>
+        </div>
+      )}
       {chatContent}
     </div>
   )
