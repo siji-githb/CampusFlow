@@ -345,7 +345,10 @@ function OverviewTab() {
   const DOC_COLOR_MAP = {
     'Transcript of Records (TOR)': '#7B1A2A',
     'Certificate of Enrollment (COE)': '#B8900A',
-    'Diploma Release': '#1D4ED8'
+    'Diploma Release': '#1D4ED8',
+    'General Weighted Average (GWA)': '#15803D',
+    'Completion Form - Request': '#6D28D9',
+    'Completion Form - Submission': '#EA580C'
   }
   const donutColors = txTypes.slice(0, 5).map((t, i) => DOC_COLOR_MAP[t.name] || TX_COLORS[i % TX_COLORS.length])
 

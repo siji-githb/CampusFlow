@@ -7,7 +7,7 @@ from services.queue_service import (
     get_time_estimate,
     get_live_queue_stats,
 )
-from models.queue_models import ConfirmStepRequest
+from models.queue_models import ConfirmStepRequest, CallTicketRequest, SendToProcessingRequest
 from deps import get_current_user, require_staff_or_admin
 
 router = APIRouter(prefix="/queue", tags=["Queue Management"])
@@ -29,6 +29,18 @@ def my_queue(user=Depends(get_current_user)):
 @router.post("/confirm-step")
 def confirm(data: ConfirmStepRequest, user=Depends(require_staff_or_admin)):
     return confirm_step(data.queue_ticket_id, data.step_number, user.id)
+
+
+@router.post("/call-ticket")
+def call_ticket_endpoint(data: CallTicketRequest, user=Depends(require_staff_or_admin)):
+    from services.queue_service import call_ticket
+    return call_ticket(data.queue_ticket_id, user.id)
+
+
+@router.post("/send-to-processing")
+def send_to_processing_endpoint(data: SendToProcessingRequest, user=Depends(require_staff_or_admin)):
+    from services.queue_service import send_to_processing
+    return send_to_processing(data.queue_ticket_id, user.id)
 
 
 @router.get("/today")

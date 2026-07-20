@@ -12,8 +12,11 @@ export const getDashboardStats = async (token) => {
   return data
 }
 
-export const getReports = async (token, days = 7) => {
-  const res = await fetch(`${API_URL}/admin/reports?days=${days}`, { headers: authHeader(token) })
+export const getReports = async (token, days = 7, docType = 'all') => {
+  const url = docType && docType !== 'all'
+    ? `${API_URL}/admin/reports?days=${days}&doc_type=${encodeURIComponent(docType)}`
+    : `${API_URL}/admin/reports?days=${days}`
+  const res = await fetch(url, { headers: authHeader(token) })
   const data = await res.json()
   if (!res.ok) throw new Error(data.detail || 'Failed to fetch reports')
   return data

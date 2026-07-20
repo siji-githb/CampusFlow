@@ -24,7 +24,7 @@ export default function LogoutScreen({ isConfirming, onConfirm, onCancel }) {
       <div 
         className={`bg-white/95 backdrop-blur-xl rounded-[32px] w-full max-w-[400px] shadow-[0_24px_60px_-12px_rgba(0,0,0,0.3)] border border-white/50 relative overflow-hidden transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] ${
           mounted ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-95 translate-y-8'
-        } ${isConfirming ? 'h-[280px]' : 'h-[200px]'}`}
+        } ${isConfirming ? 'h-[360px] sm:h-[320px]' : 'h-[240px]'}`}
       >
         {/* State 1: Confirmation */}
         <div 

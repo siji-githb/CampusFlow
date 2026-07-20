@@ -35,8 +35,8 @@ def dashboard_stats(user=Depends(require_admin)):
 
 
 @router.get("/reports")
-def reports(days: int = 7, user=Depends(require_admin)):
-    return get_reports(days)
+def reports(days: int = 7, doc_type: str = None, user=Depends(require_admin)):
+    return get_reports(days, doc_type)
 
 
 @router.get("/records")
@@ -90,7 +90,7 @@ def change_appointment_status(appointment_id: str, data: StatusUpdate, user=Depe
 
 
 @router.patch("/appointments/{appointment_id}/release-date")
-def update_release_date(appointment_id: str, data: ReleaseDateUpdate, user=Depends(require_admin)):
+def update_release_date(appointment_id: str, data: ReleaseDateUpdate, user=Depends(require_staff_or_admin)):
     return set_release_date(appointment_id, data.release_date, user.id)
 
 

@@ -29,3 +29,11 @@ class StepResponse(BaseModel):
 class ConfirmStepRequest(BaseModel):
     queue_ticket_id: str
     step_number: int
+
+
+class CallTicketRequest(BaseModel):
+    queue_ticket_id: str
+
+
+class SendToProcessingRequest(BaseModel):
+    queue_ticket_id: str

@@ -119,10 +119,11 @@ export default function AppointmentsPage() {
     return () => clearInterval(t)
   }, [loadAppointments])
 
-  const renderStep = (stepStr, idx) => {
+  const renderStep = (stepData, idx) => {
+    const stepName = typeof stepData === 'object' ? stepData.name : stepData
     return (
       <div key={idx} className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-off-white border border-border text-[11px] font-semibold text-text-muted whitespace-nowrap">
-        <span className="flex items-center"><Circle size={10} className="text-gold" /></span> {stepStr}
+        <span className="flex items-center"><Circle size={10} className="text-gold" /></span> {stepName}
       </div>
     )
   }
@@ -418,6 +419,20 @@ export default function AppointmentsPage() {
                     </span>
                   </div>
                 </div>
+
+                {/* Required Documents */}
+                {viewDetailsModal.transaction_types?.required_documents?.length > 0 && (
+                  <div className="border-t border-border pt-6 mb-6">
+                    <p className="text-[11px] font-bold text-text-muted uppercase tracking-[0.06em] m-0 mb-3">Required Documents</p>
+                    <div className="flex flex-wrap gap-2">
+                      {viewDetailsModal.transaction_types.required_documents.map((doc, idx) => (
+                        <div key={idx} className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-maroon-light border border-maroon-border text-[11px] font-semibold text-maroon whitespace-nowrap">
+                          <FileText size={10} /> {doc}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
 
                 {/* Processing Steps */}
                 {!['completed', 'cancelled'].includes(viewDetailsModal.status) && (

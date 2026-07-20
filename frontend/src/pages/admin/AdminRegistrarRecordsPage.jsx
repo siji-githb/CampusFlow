@@ -93,7 +93,10 @@ export default function AdminRegistrarRecordsPage() {
   const PREFERRED_ORDER = [
     'Transcript of Records (TOR)',
     'Certificate of Enrollment (COE)',
-    'Diploma Release'
+    'Diploma Release',
+    'General Weighted Average (GWA)',
+    'Completion Form - Request',
+    'Completion Form - Submission'
   ]
   
   const typeNames = [...new Set(records.map(r => r.type))].sort((a, b) => {

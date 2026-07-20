@@ -101,7 +101,7 @@ export default function StudentNotifications() {
                         {n.title}
                       </p>
                       <span className="shrink-0 text-[11px] text-text-muted pt-0.5">
-                        {new Date(n.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        {new Date(n.created_at).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
                       </span>
                     </div>
                     <p className="m-0 text-[13px] text-text-sub leading-relaxed">

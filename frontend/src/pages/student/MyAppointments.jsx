@@ -113,14 +113,14 @@ export default function MyAppointments() {
 
   return (
     <StudentLayout activeTab="appointments" mobileTitle="My Appointments" backTo="/student/dashboard">
-      <div className="w-full max-w-[480px] mx-auto py-5 px-4 md:max-w-[1050px] md:mx-0 md:py-0 md:px-0">
+      <div className="w-full max-w-120 mx-auto py-5 px-4 md:max-w-262.5 md:mx-0 md:py-0 md:px-0">
         <div className="hidden md:flex justify-between items-start mb-8">
           <div>
             <div className="text-[11px] font-bold text-gold uppercase tracking-[0.06em] mb-2">APPOINTMENTS</div>
             <h1 className="font-serif text-[26px] font-bold text-maroon m-0 mb-2 flex items-center gap-3">
               <Calendar className="text-maroon" size={24} /> My Appointments
             </h1>
-            <p className="text-[12px] text-text-sub m-0 leading-relaxed max-w-[650px]">
+            <p className="text-[12px] text-text-sub m-0 leading-relaxed max-w-162.5">
               View and manage your scheduled appointments.
             </p>
           </div>
@@ -138,7 +138,7 @@ export default function MyAppointments() {
           {/* ── Confirmation Modal for Clear All Cancelled ── */}
       {showClearConfirm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-fade-in">
-          <div className="bg-white rounded-2xl p-6 w-full max-w-[360px] shadow-xl animate-scale-up">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-90 shadow-xl animate-scale-up">
             <div className="w-12 h-12 rounded-full bg-maroon-light flex items-center justify-center mb-4 text-maroon mx-auto">
               <Trash2 size={24} />
             </div>
@@ -167,17 +167,17 @@ export default function MyAppointments() {
       )}
 
       {/* ── Confirmation Modal for Single Cancel ── */}
-          <div className="md:w-[420px] shrink-0">
+          <div className="md:w-105 shrink-0">
             {successMsg && <div className="py-2.5 px-3.5 rounded-lg bg-success-light text-success border border-success-border text-[13px] mb-4 font-medium animate-fade-in">{successMsg}</div>}
 
             {/* ── Filter Dropdown & Clear Button ── */}
             <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
               <div className="flex items-center gap-3 w-full sm:w-auto flex-1">
-                <div className="relative inline-block w-full sm:max-w-[220px]">
+                <div className="relative inline-block w-full sm:max-w-55">
                   <select 
                     value={filter}
                     onChange={(e) => { setFilter(e.target.value); setSelectedAppt(null); }}
-                    className="appearance-none w-full bg-white border-[1.5px] border-border text-text-main text-[13.5px] font-bold py-2.5 pl-10 pr-8 rounded-[12px] shadow-[0_2px_8px_rgba(0,0,0,0.04)] outline-none focus:border-maroon focus:ring-4 focus:ring-maroon/10 cursor-pointer hover:border-text-sub transition-all font-sans"
+                    className="appearance-none w-full bg-white border-[1.5px] border-border text-text-main text-[13.5px] font-bold py-2.5 pl-10 pr-8 rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.04)] outline-none focus:border-maroon focus:ring-4 focus:ring-maroon/10 cursor-pointer hover:border-text-sub transition-all font-sans"
                   >
                     <option value="all">All Appointments</option>
                     <option value="pending">Pending</option>
@@ -196,7 +196,7 @@ export default function MyAppointments() {
                 {appointments.some(a => a.status === 'cancelled') && (
                   <button
                     onClick={() => setShowClearConfirm(true)}
-                    className="flex items-center justify-center gap-2 px-3 py-2.5 rounded-[12px] border-[1.5px] border-border bg-white text-text-sub text-[12px] font-bold cursor-pointer hover:border-maroon hover:text-maroon transition-all shadow-[0_2px_8px_rgba(0,0,0,0.04)]"
+                    className="flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl border-[1.5px] border-border bg-white text-text-sub text-[12px] font-bold cursor-pointer hover:border-maroon hover:text-maroon transition-all shadow-[0_2px_8px_rgba(0,0,0,0.04)]"
                     title="Clear all cancelled appointments"
                   >
                     <Trash2 size={16} />
@@ -214,11 +214,11 @@ export default function MyAppointments() {
                 {[1, 2, 3].map(i => (
                   <div key={i} className="bg-white rounded-2xl p-4 shadow-[0_2px_8px_rgba(0,0,0,0.06)] border border-border">
                     <div className="flex justify-between items-center mb-2.5">
-                      <div className="animate-pulse w-[120px] h-[18px] rounded bg-border" />
-                      <div className="animate-pulse w-[60px] h-[18px] rounded-full bg-border" />
+                      <div className="animate-pulse w-30 h-4.5 rounded bg-border" />
+                      <div className="animate-pulse w-15 h-4.5 rounded-full bg-border" />
                     </div>
-                    <div className="animate-pulse w-[160px] h-[14px] rounded bg-border mb-1.5" />
-                    <div className="animate-pulse w-[100px] h-[14px] rounded bg-border mb-4" />
+                    <div className="animate-pulse w-40 h-3.5 rounded bg-border mb-1.5" />
+                    <div className="animate-pulse w-25 h-3.5 rounded bg-border mb-4" />
                     <div className="animate-pulse w-full h-8 rounded-lg bg-border" />
                   </div>
                 ))}
@@ -255,12 +255,22 @@ export default function MyAppointments() {
                       
                       {/* MOBILE ONLY Details & Actions */}
                       <div className="md:hidden">
+                        {appt.transaction_types?.required_documents?.length > 0 && (
+                          <div className="pt-3 pb-1 border-t border-border mt-3">
+                            <p className="text-[10px] font-bold text-maroon m-0 mb-2 uppercase tracking-[0.04em]">Bring These Documents</p>
+                            <div className="flex flex-wrap gap-1.5">
+                              {appt.transaction_types.required_documents.map((doc, i) => (
+                                <span key={i} className="text-[11px] bg-maroon-light text-maroon py-1 px-2.5 rounded-full font-medium">{doc}</span>
+                              ))}
+                            </div>
+                          </div>
+                        )}
                         {appt.transaction_types?.processing_steps && (
                           <div className="pt-3 pb-1 border-t border-border mt-3">
                             <p className="text-[10px] font-bold text-gold m-0 mb-2 uppercase tracking-[0.04em]">Processing Steps</p>
                             <div className="flex flex-wrap gap-1.5">
                               {appt.transaction_types.processing_steps.map((step, i) => (
-                                <span key={i} className="text-[11px] bg-surface text-text-sub py-1 px-2.5 rounded-full font-medium">{i + 1}. {step}</span>
+                                <span key={i} className="text-[11px] bg-surface text-text-sub py-1 px-2.5 rounded-full font-medium">{i + 1}. {typeof step === 'object' ? step.name : step}</span>
                               ))}
                             </div>
                           </div>
@@ -270,13 +280,13 @@ export default function MyAppointments() {
                             <button 
                               onClick={(e) => { e.stopPropagation(); setReschedulingAppt(appt) }} 
                               disabled={cancelling === appt.id || !canReschedule(appt.appointment_date, appt.time_slot)}
-                              className={`flex-1 min-h-[44px] text-[13px] font-semibold text-text-main bg-white border border-border rounded-[10px] font-sans ${(!canReschedule(appt.appointment_date, appt.time_slot) || cancelling === appt.id) ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:bg-off-white'}`}>
+                              className={`flex-1 min-h-11 text-[13px] font-semibold text-text-main bg-white border border-border rounded-[10px] font-sans ${(!canReschedule(appt.appointment_date, appt.time_slot) || cancelling === appt.id) ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:bg-off-white'}`}>
                               Reschedule
                             </button>
                             <button 
                               onClick={(e) => { e.stopPropagation(); setConfirmCancelId(appt.id) }} 
                               disabled={cancelling === appt.id}
-                              className={`flex-1 min-h-[44px] text-[13px] font-semibold text-maroon bg-transparent border border-maroon-border rounded-[10px] font-sans ${cancelling === appt.id ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:bg-maroon-light'}`}>
+                              className={`flex-1 min-h-11 text-[13px] font-semibold text-maroon bg-transparent border border-maroon-border rounded-[10px] font-sans ${cancelling === appt.id ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:bg-maroon-light'}`}>
                               {cancelling === appt.id ? 'Cancelling...' : 'Cancel'}
                             </button>
                           </div>
@@ -314,7 +324,7 @@ export default function MyAppointments() {
           </div>
 
           {/* ── Right Column: Details (Desktop Only) ── */}
-          <div className="hidden md:flex flex-col flex-1 bg-white border border-border rounded-[24px] p-8 shadow-sm sticky top-24 min-h-[400px]">
+          <div className="hidden md:flex flex-col flex-1 bg-white border border-border rounded-3xl p-8 shadow-sm sticky top-24 min-h-100">
             {selectedAppt ? (
               <div className="animate-fade-up flex flex-col h-full">
                 <div className="flex items-start justify-between mb-6 pb-5 border-b border-border">
@@ -344,6 +354,20 @@ export default function MyAppointments() {
                   </div>
                 </div>
 
+                {selectedAppt.transaction_types?.required_documents?.length > 0 && (
+                  <div className="mb-8">
+                    <p className="text-[10px] font-bold text-text-muted tracking-widest uppercase m-0 mb-3">REQUIRED DOCUMENTS TO BRING</p>
+                    <div className="flex flex-col gap-2">
+                      {selectedAppt.transaction_types.required_documents.map((doc, i) => (
+                        <div key={i} className="flex items-center gap-2.5 text-[14px] text-text-main">
+                          <div className="w-4.5 h-4.5 rounded-full bg-success-light border border-success-border text-success flex items-center justify-center text-[10px] font-bold shrink-0">✓</div>
+                          {doc}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
                 {selectedAppt.transaction_types?.processing_steps && (
                   <div className="mb-8">
                     <p className="text-[10px] font-bold text-text-muted tracking-widest uppercase m-0 mb-3">PROCESSING STEPS</p>
@@ -351,7 +375,7 @@ export default function MyAppointments() {
                       {selectedAppt.transaction_types.processing_steps.map((step, i) => (
                         <div key={i} className="flex items-center gap-3 text-[14px] font-medium text-text-main">
                           <div className="w-6 h-6 rounded-full bg-off-white border border-border flex items-center justify-center text-[11px] font-bold text-text-sub shrink-0">{i + 1}</div>
-                          <span>{step}</span>
+                          <span>{typeof step === 'object' ? step.name : step}</span>
                         </div>
                       ))}
                     </div>

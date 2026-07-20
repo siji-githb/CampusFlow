@@ -12,8 +12,8 @@ class Settings(BaseSettings):
     secret_key: str
     algorithm: str = "HS256"
     access_token_expire_minutes: int = 60
-    resend_api_key: str = ""
-    email_from: str = "CampusFlow Registrar <onboarding@resend.dev>"
+    brevo_api_key: str = ""
+    email_from: str = "CampusFlow Registrar <registrar@campusflow.app>"
     frontend_url: str = "https://campus-flow-iota.vercel.app"
 
     class Config:

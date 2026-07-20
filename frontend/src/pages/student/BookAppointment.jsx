@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '../../context/useAuth'
 import StudentLayout from '../../components/layout/StudentLayout'
-import { getTransactionTypes, getAvailableSlots, bookAppointment, uploadMedia } from '../../services/appointmentService'
+import { getTransactionTypes, getAvailableSlots, bookAppointment, uploadMedia, getBookingConfig } from '../../services/appointmentService'
 import { CheckCircle, Calendar, Users, CloudSun, Sun, Image as ImageIcon, FileText, Clock, MapPin, Mail, HelpCircle, ChevronLeft, Info, AlertTriangle } from 'lucide-react'
 
 // ── Status Styles ──
@@ -36,7 +36,7 @@ function CalendarWidget({ selectedDate, onDateSelect, minDateStr, maxDateStr }) 
   const maxD = new Date(maxDateStr + 'T00:00:00').getTime()
 
   return (
-    <div className="max-w-[360px] mx-auto">
+    <div className="max-w-90 mx-auto">
       {/* Month header */}
       <div className="flex justify-between items-center mb-4">
         <h3 className="font-serif text-[20px] font-bold text-text-main m-0">
@@ -66,7 +66,7 @@ function CalendarWidget({ selectedDate, onDateSelect, minDateStr, maxDateStr }) 
           const dateStr    = `${year}-${String(month + 1).padStart(2,'0')}-${String(d).padStart(2,'0')}`
           const t          = new Date(dateStr + 'T00:00:00').getTime()
           const dow        = new Date(dateStr + 'T00:00:00').getDay()
-          const isDisabled = dow === 0 || t < minD || t > maxD
+          const isDisabled = dow === 0 || dow === 6 || t < minD || t > maxD
           const isSelected = selectedDate === dateStr
           return (
             <button key={i} type="button" disabled={isDisabled}
@@ -109,7 +109,7 @@ function Stepper({ step }) {
                 }`}>{label}</span>
               </div>
               {i < 2 && (
-                <div className={`flex-1 h-[2px] mx-2 self-start mt-[13px] transition-colors duration-300 ${done ? 'bg-maroon' : 'bg-border'}`} />
+                <div className={`flex-1 h-0.5 mx-2 self-start mt-3.25 transition-colors duration-300 ${done ? 'bg-maroon' : 'bg-border'}`} />
               )}
             </div>
           )
@@ -120,7 +120,7 @@ function Stepper({ step }) {
       <div className="hidden md:block bg-white rounded-2xl border border-border p-6 shadow-sm">
         <h3 className="text-[12px] font-bold text-text-main m-0 mb-6 uppercase tracking-wider">Booking Progress</h3>
         <div className="flex flex-col gap-6 relative">
-          <div className="absolute left-[13px] top-[14px] bottom-[14px] w-[2px] bg-border z-0" />
+          <div className="absolute left-3.25 top-3.5 bottom-3.5 w-0.5 bg-border z-0" />
           
           {STEPS.map((label, i) => {
             const num    = i + 1
@@ -224,13 +224,39 @@ export default function BookAppointment() {
   const [selectedFile, setSelectedFile] = useState(null)
   const [isUploading, setIsUploading]   = useState(false)
 
+  // ── GWA-specific booking info (semester/year, not a document) ──
+  const [gwaSemester, setGwaSemester]     = useState('')
+  const [gwaYearLevel, setGwaYearLevel]   = useState('')
+  const [gwaSchoolYear, setGwaSchoolYear] = useState('')
+
+  const [bookingConfig, setBookingConfig] = useState(null)
+
   const todayDate  = new Date()
-  const minDate    = todayDate.toISOString().split('T')[0]
-  const maxDateObj = new Date(); maxDateObj.setDate(maxDateObj.getDate() + 30)
+  const cutoffDays = bookingConfig?.booking_cutoff_days ?? 1
+  const minDateObj = new Date(todayDate)
+  minDateObj.setDate(minDateObj.getDate() + cutoffDays)
+  const minDate    = minDateObj.toISOString().split('T')[0]
+  
+  const windowDays = bookingConfig?.booking_window_days ?? 30
+  const maxDateObj = new Date(todayDate)
+  maxDateObj.setDate(maxDateObj.getDate() + windowDays)
   const maxDate    = maxDateObj.toISOString().split('T')[0]
+
+  // ── GWA is booking metadata, not a document — check by name ──
+  const isGWA = selectedType?.name?.toLowerCase().includes('gwa')
+    || selectedType?.name?.toLowerCase().includes('general weighted average')
+
+  // Recent school years (GWA is always for an already-completed semester)
+  const currentCalYear = todayDate.getFullYear()
+  const schoolYearBase  = todayDate.getMonth() >= 5 ? currentCalYear : currentCalYear - 1 // PH school year starts ~June
+  const schoolYearOptions = [0, 1, 2].map(offset => {
+    const start = schoolYearBase - offset
+    return `${start}-${start + 1}`
+  })
 
   useEffect(() => {
     getTransactionTypes().then(setTypes).catch(e => setError(e.message))
+    getBookingConfig().then(setBookingConfig).catch(e => setError(e.message))
   }, [])
 
   const handleDateSelect = async (dateStr) => {
@@ -249,6 +275,10 @@ export default function BookAppointment() {
     setLoading(true); setError(''); setIsUploading(true);
     try {
       let finalNotes = notes
+      if (isGWA && gwaSemester && gwaYearLevel && gwaSchoolYear) {
+        const gwaLine = `GWA_REQUEST: ${gwaSemester} | ${gwaYearLevel} | S.Y. ${gwaSchoolYear}`
+        finalNotes = finalNotes ? `${gwaLine}\n\n${finalNotes}` : gwaLine
+      }
       if (selectedFile) {
         const uploadRes = await uploadMedia(token, selectedFile)
         finalNotes = finalNotes ? `${finalNotes}\n\nMEDIA_URL: ${uploadRes.url}` : `MEDIA_URL: ${uploadRes.url}`
@@ -295,8 +325,8 @@ export default function BookAppointment() {
   if (success) return (
     <StudentLayout activeTab="book" mobileTitle="Appointment Booked" backTo="/student/dashboard">
       <div className="flex-1 flex flex-col items-center justify-center p-6 text-center">
-      <div className="bg-white rounded-[20px] border border-border py-12 px-10 max-w-[440px] w-full text-center shadow-[0_4px_24px_rgba(0,0,0,0.06)]">
-        <div className="w-[72px] h-[72px] rounded-full bg-success-light border-2 border-success-border flex items-center justify-center mx-auto mb-6 text-success">
+      <div className="bg-white rounded-[20px] border border-border py-12 px-10 max-w-110 w-full text-center shadow-[0_4px_24px_rgba(0,0,0,0.06)]">
+        <div className="w-18 h-18 rounded-full bg-success-light border-2 border-success-border flex items-center justify-center mx-auto mb-6 text-success">
           <CheckCircle size={28} />
         </div>
         <h2 className="font-serif text-[26px] font-bold text-maroon m-0 mb-2">Appointment Confirmed!</h2>
@@ -326,7 +356,7 @@ export default function BookAppointment() {
     <StudentLayout activeTab="book" mobileTitle="Book Appointment" backTo="/student/dashboard">
 
       {/* ── Content ── */}
-      <div className="w-full max-w-[660px] mx-auto pt-12 px-6 pb-20 box-border md:max-w-[1050px] md:mx-0 md:pt-0 md:px-0">
+      <div className="w-full max-w-165 mx-auto pt-12 px-6 pb-20 box-border md:max-w-262.5 md:mx-0 md:pt-0 md:px-0">
 
         <div className="hidden md:flex justify-between items-start mb-8">
           <div>
@@ -334,7 +364,7 @@ export default function BookAppointment() {
             <h1 className="font-serif text-[26px] font-bold text-maroon m-0 mb-2 flex items-center gap-3">
               <Calendar className="text-maroon" size={24} /> Book Appointment
             </h1>
-            <p className="text-[12px] text-text-sub m-0 leading-relaxed max-w-[650px]">
+            <p className="text-[12px] text-text-sub m-0 leading-relaxed max-w-162.5">
               Schedule a visit with campus offices for your registrar needs.
             </p>
           </div>
@@ -348,11 +378,11 @@ export default function BookAppointment() {
         <div className="md:flex md:gap-8 md:items-start">
           
           {/* ── Left Column: Tracker & Summary ── */}
-          <div className="md:w-[280px] shrink-0 md:sticky md:top-24 mb-10 md:mb-0">
+          <div className="md:w-70 shrink-0 md:sticky md:top-24 mb-10 md:mb-0">
             <Stepper step={step} />
             
             <div className="hidden md:block mt-6 bg-white rounded-2xl border border-border shadow-sm overflow-hidden">
-              <div className="h-[4px] bg-maroon" />
+              <div className="h-1 bg-maroon" />
               <div className="p-5">
                 <p className="text-[10px] font-bold text-text-muted tracking-widest uppercase m-0 mb-4">Appointment Summary</p>
                 <div className="flex flex-col gap-4">
@@ -389,7 +419,7 @@ export default function BookAppointment() {
           </div>
 
           {/* ── Right Column: Form Area ── */}
-          <div className="flex-1 md:min-w-0 md:bg-white md:p-8 md:rounded-[24px] md:border md:border-border md:shadow-sm">
+          <div className="flex-1 md:min-w-0 md:bg-white md:p-8 md:rounded-3xl md:border md:border-border md:shadow-sm">
 
         {error && (
           <div className="py-3 px-4 rounded-[10px] bg-danger-light border border-danger-border text-danger text-[13px] mb-6 font-medium">
@@ -412,12 +442,12 @@ export default function BookAppointment() {
                 {[1, 2, 3, 4].map(i => (
                   <div key={i} className="bg-white border-[1.5px] border-border rounded-xl py-5 px-6 flex justify-between items-start gap-3">
                     <div className="flex-1">
-                      <div className="animate-pulse w-[180px] h-[18px] rounded bg-border mb-2" />
-                      <div className="animate-pulse w-full h-[12px] rounded bg-border mb-1.5" />
-                      <div className="animate-pulse w-[80%] h-[12px] rounded bg-border mb-4" />
+                      <div className="animate-pulse w-45 h-4.5 rounded bg-border mb-2" />
+                      <div className="animate-pulse w-full h-3 rounded bg-border mb-1.5" />
+                      <div className="animate-pulse w-[80%] h-3 rounded bg-border mb-4" />
                       <div className="flex gap-1.5">
-                        <div className="animate-pulse w-16 h-[18px] rounded-full bg-border" />
-                        <div className="animate-pulse w-20 h-[18px] rounded-full bg-border" />
+                        <div className="animate-pulse w-16 h-4.5 rounded-full bg-border" />
+                        <div className="animate-pulse w-20 h-4.5 rounded-full bg-border" />
                       </div>
                     </div>
                     <div className="animate-pulse w-5 h-5 rounded bg-border mt-0.5 md:hidden" />
@@ -440,7 +470,7 @@ export default function BookAppointment() {
                     <p className="text-[13px] text-text-sub m-0 mb-3.5 leading-normal">{t.description}</p>
                     <div className="flex flex-wrap gap-1.5">
                       {t.required_documents?.map((doc, j) => (
-                        <span key={j} className="text-[11px] text-text-sub bg-off-white py-[3px] px-2.5 rounded-full border border-border font-medium">{doc}</span>
+                        <span key={j} className="text-[11px] text-text-sub bg-off-white py-0.75 px-2.5 rounded-full border border-border font-medium">{doc}</span>
                       ))}
                     </div>
                   </div>
@@ -460,6 +490,56 @@ export default function BookAppointment() {
               Choose an available slot for your visit to the Registrar's Office.
             </p>
 
+            {/* GWA-specific: semester/year selection — booking info, not a document */}
+            {isGWA && (
+              <div className="bg-white rounded-[14px] border-[1.5px] border-border p-6 mb-5 shadow-[0_1px_4px_rgba(0,0,0,0.03)]">
+                <p className="text-[12px] font-bold text-text-main m-0 mb-1 uppercase tracking-wider">Which grades do you need averaged?</p>
+                <p className="text-[12px] text-text-sub m-0 mb-4">Select the semester, year level, and school year for this GWA request.</p>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div>
+                    <label className="block text-[11px] font-semibold text-text-sub mb-1.5">Semester</label>
+                    <select
+                      value={gwaSemester}
+                      onChange={e => setGwaSemester(e.target.value)}
+                      className="w-full p-2.5 rounded-lg border-[1.5px] border-border bg-off-white text-[13px] text-text-main font-sans focus:outline-none focus:border-maroon-border"
+                    >
+                      <option value="">Select…</option>
+                      <option value="1st Semester">1st Semester</option>
+                      <option value="2nd Semester">2nd Semester</option>
+                      <option value="Summer">Summer</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-semibold text-text-sub mb-1.5">Year Level</label>
+                    <select
+                      value={gwaYearLevel}
+                      onChange={e => setGwaYearLevel(e.target.value)}
+                      className="w-full p-2.5 rounded-lg border-[1.5px] border-border bg-off-white text-[13px] text-text-main font-sans focus:outline-none focus:border-maroon-border"
+                    >
+                      <option value="">Select…</option>
+                      <option value="1st Year">1st Year</option>
+                      <option value="2nd Year">2nd Year</option>
+                      <option value="3rd Year">3rd Year</option>
+                      <option value="4th Year">4th Year</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-semibold text-text-sub mb-1.5">School Year</label>
+                    <select
+                      value={gwaSchoolYear}
+                      onChange={e => setGwaSchoolYear(e.target.value)}
+                      className="w-full p-2.5 rounded-lg border-[1.5px] border-border bg-off-white text-[13px] text-text-main font-sans focus:outline-none focus:border-maroon-border"
+                    >
+                      <option value="">Select…</option>
+                      {schoolYearOptions.map(sy => (
+                        <option key={sy} value={sy}>{sy}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Calendar card */}
             <div className="bg-white rounded-[14px] border-[1.5px] border-border p-6 mb-5 shadow-[0_1px_4px_rgba(0,0,0,0.03)]">
               <CalendarWidget selectedDate={selectedDate} onDateSelect={handleDateSelect} minDateStr={minDate} maxDateStr={maxDate} />
@@ -469,17 +549,17 @@ export default function BookAppointment() {
             {slotsLoading && (
               <div className="bg-white rounded-[14px] border-[1.5px] border-border p-6 mb-5">
                 <div className="flex items-center justify-between mb-5">
-                  <div className="animate-pulse h-[18px] w-[140px] rounded bg-border" />
-                  <div className="animate-pulse h-[14px] w-[100px] rounded bg-border" />
+                  <div className="animate-pulse h-4.5 w-35 rounded bg-border" />
+                  <div className="animate-pulse h-3.5 w-25 rounded bg-border" />
                 </div>
                 <div className="mb-5">
-                  <div className="animate-pulse h-[14px] w-[80px] rounded bg-border mb-2.5" />
+                  <div className="animate-pulse h-3.5 w-20 rounded bg-border mb-2.5" />
                   <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
                     {[1, 2, 3, 4].map(i => <div key={i} className="animate-pulse h-10 rounded-lg border-[1.5px] border-border bg-border/20" />)}
                   </div>
                 </div>
                 <div>
-                  <div className="animate-pulse h-[14px] w-[90px] rounded bg-border mb-2.5" />
+                  <div className="animate-pulse h-3.5 w-22.5 rounded bg-border mb-2.5" />
                   <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
                     {[1, 2, 3, 4].map(i => <div key={i} className="animate-pulse h-10 rounded-lg border-[1.5px] border-border bg-border/20" />)}
                   </div>
@@ -553,7 +633,7 @@ export default function BookAppointment() {
                       placeholder="Add any urgent requests here or upload... "
                       value={notes}
                       onChange={e => setNotes(e.target.value)}
-                      className="w-full min-h-[80px] p-3 rounded-[10px] border-[1.5px] border-border bg-off-white text-[13px] text-text-main font-sans resize-y focus:outline-none focus:border-maroon-border"
+                      className="w-full min-h-20 p-3 rounded-[10px] border-[1.5px] border-border bg-off-white text-[13px] text-text-main font-sans resize-y focus:outline-none focus:border-maroon-border"
                     />
                     <div className="border-[1.5px] border-dashed border-border-strong rounded-[10px] flex flex-col items-center justify-center p-4 text-center bg-white cursor-pointer relative hover:bg-off-white transition-colors">
                       <span className="text-text-muted mb-1"><ImageIcon size={24} /></span>
@@ -577,15 +657,15 @@ export default function BookAppointment() {
             {/* Nav buttons */}
             <div className="flex justify-between items-center mt-2">
               <button type="button"
-                onClick={() => { setStep(1); setSelectedType(null); setSelectedDate(''); setSelectedSlot(''); setSlotsData(null) }}
+                onClick={() => { setStep(1); setSelectedType(null); setSelectedDate(''); setSelectedSlot(''); setSlotsData(null); setGwaSemester(''); setGwaYearLevel(''); setGwaSchoolYear('') }}
                 className="py-3 px-4 md:px-7 rounded-[10px] border-[1.5px] border-maroon-border bg-white text-maroon text-[14px] font-semibold cursor-pointer font-sans hover:bg-maroon-light transition-colors">
                 Back
               </button>
               <button type="button"
                 onClick={() => setStep(3)}
-                disabled={!selectedSlot}
+                disabled={!selectedSlot || (isGWA && (!gwaSemester || !gwaYearLevel || !gwaSchoolYear))}
                 className={`py-3 px-4 md:px-7 rounded-[10px] border-none text-[14px] font-bold font-sans transition-all duration-200 ${
-                  selectedSlot ? 'bg-maroon text-white cursor-pointer hover:opacity-90' : 'bg-border-strong text-white cursor-not-allowed'
+                  (selectedSlot && !(isGWA && (!gwaSemester || !gwaYearLevel || !gwaSchoolYear))) ? 'bg-maroon text-white cursor-pointer hover:opacity-90' : 'bg-border-strong text-white cursor-not-allowed'
                 }`}>
                 Next: Confirm →
               </button>
@@ -608,7 +688,7 @@ export default function BookAppointment() {
             {/* Summary card */}
             <div className="bg-white rounded-2xl border-[1.5px] border-border overflow-hidden shadow-[0_4px_16px_rgba(0,0,0,0.04)] mb-4">
               {/* Maroon accent top bar */}
-              <div className="h-[5px] bg-maroon" />
+              <div className="h-1.25 bg-maroon" />
 
               <div className="p-7">
                 {/* Transaction header */}
@@ -618,7 +698,7 @@ export default function BookAppointment() {
                     <div className="w-11 h-11 rounded-[10px] bg-maroon-mid text-maroon flex items-center justify-center shrink-0"><FileText size={20} /></div>
                     <div>
                       <h3 className="font-serif text-[18px] font-bold text-text-main m-0 mb-1.5">{selectedType.name}</h3>
-                      <span className="text-[11px] font-semibold text-gold bg-gold-light py-[3px] px-2.5 rounded-full border border-gold-border inline-flex items-center gap-1">
+                      <span className="text-[11px] font-semibold text-gold bg-gold-light py-0.75 px-2.5 rounded-full border border-gold-border inline-flex items-center gap-1">
                         ⚠ Requires physical documents
                       </span>
                     </div>
@@ -642,19 +722,25 @@ export default function BookAppointment() {
                       <MapPin size={16} className="text-gold mt-0.5" />
                       <div>
                         <div className="font-semibold">
-                          Registrar's Office – Window {(() => {
-                            const slotObj = slotsData?.slots?.find(s => s.time_slot === selectedSlot)
-                            const staffCount = slotsData && slotsData.slots?.length > 0 
-                              ? Math.round(slotsData.daily_cap / slotsData.slots.length) 
-                              : 2
-                            return slotObj ? (staffCount - slotObj.remaining) + 1 : 1
-                          })()}
+                          Registrar's Office
                         </div>
-                        <div className="text-[12px] text-text-sub mt-0.5">CRMC Elementary School</div>
+                        <div className="text-[12px] text-text-sub mt-0.5">CRMC Upper Pandan Campus</div>
                       </div>
                     </div>
                   </div>
                 </div>
+
+                {/* GWA request details */}
+                {isGWA && gwaSemester && gwaYearLevel && gwaSchoolYear && (
+                  <div className="mb-6 pb-5 border-b border-border">
+                    <p className="text-[10px] font-bold text-text-muted tracking-widest uppercase m-0 mb-2.5">GWA REQUEST FOR</p>
+                    <div className="flex flex-wrap gap-1.5">
+                      <span className="text-[12px] font-semibold text-maroon bg-maroon-light py-1 px-2.5 rounded-full border border-maroon-border">{gwaSemester}</span>
+                      <span className="text-[12px] font-semibold text-maroon bg-maroon-light py-1 px-2.5 rounded-full border border-maroon-border">{gwaYearLevel}</span>
+                      <span className="text-[12px] font-semibold text-maroon bg-maroon-light py-1 px-2.5 rounded-full border border-maroon-border">S.Y. {gwaSchoolYear}</span>
+                    </div>
+                  </div>
+                )}
 
                 {/* Notes & Media */}
                 {(notes || selectedFile) && (
@@ -675,7 +761,7 @@ export default function BookAppointment() {
                   <div className="flex flex-col gap-2">
                     {selectedType.required_documents?.map((doc, i) => (
                       <div key={i} className="flex items-center gap-2.5 text-[14px] text-text-main">
-                        <div className="w-[18px] h-[18px] rounded-full bg-success-light border border-success-border text-success flex items-center justify-center text-[10px] font-bold shrink-0">✓</div>
+                        <div className="w-4.5 h-4.5 rounded-full bg-success-light border border-success-border text-success flex items-center justify-center text-[10px] font-bold shrink-0">✓</div>
                         {doc}
                       </div>
                     ))}
@@ -700,7 +786,7 @@ export default function BookAppointment() {
               <button type="button"
                 onClick={handleConfirmClick}
                 disabled={loading || isUploading}
-                className={`py-3 px-4 md:px-7 rounded-[10px] border-none text-[14px] font-bold font-sans flex items-center gap-2 min-w-0 md:min-w-[140px] justify-center transition-all duration-200 shadow-[0_4px_12px_rgba(123,26,42,0.15)] ${
+                className={`py-3 px-4 md:px-7 rounded-[10px] border-none text-[14px] font-bold font-sans flex items-center gap-2 min-w-0 md:min-w-35 justify-center transition-all duration-200 shadow-[0_4px_12px_rgba(123,26,42,0.15)] ${
                   (loading || isUploading) ? 'bg-[#B8667A] text-white cursor-not-allowed' : 'bg-maroon text-white cursor-pointer hover:opacity-90'
                 }`}>
                 {isUploading ? 'Uploading Media...' : loading ? 'Appointing...' : 'Confirm & Appoint'}
@@ -710,7 +796,7 @@ export default function BookAppointment() {
         )}
 
         {confirmingBook && (
-          <div className="fixed inset-0 z-110 flex items-center justify-center">
+          <div className="fixed inset-0 z-1000 flex items-center justify-center">
             <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => !loading && setConfirmingBook(false)} />
             <div className="animate-fade-up relative w-[90%] max-w-[320px] bg-white rounded-[20px] p-6 text-center shadow-[0_10px_40px_rgba(0,0,0,0.2)]">
               <div className="w-12 h-12 rounded-full bg-gold-light text-gold flex items-center justify-center mx-auto mb-4">

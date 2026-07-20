@@ -64,3 +64,25 @@ export const getTimeEstimate = async (token, appointmentId) => {
   if (!res.ok) throw new Error(data.detail || 'Failed to fetch time estimate')
   return data
 }
+
+export const callTicket = async (token, queueTicketId) => {
+  const res = await fetch(`${API_URL}/queue/call-ticket`, {
+    method: 'POST',
+    headers: authHeader(token),
+    body: JSON.stringify({ queue_ticket_id: queueTicketId })
+  })
+  const data = await res.json()
+  if (!res.ok) throw new Error(data.detail || 'Failed to call ticket')
+  return data
+}
+
+export const sendToProcessing = async (token, queueTicketId) => {
+  const res = await fetch(`${API_URL}/queue/send-to-processing`, {
+    method: 'POST',
+    headers: authHeader(token),
+    body: JSON.stringify({ queue_ticket_id: queueTicketId })
+  })
+  const data = await res.json()
+  if (!res.ok) throw new Error(data.detail || 'Failed to send to processing')
+  return data
+}

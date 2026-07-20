@@ -136,8 +136,7 @@ def activate_queue(appointment_id: str, student_id: str):
             "step_number": i + 1,
             "step_name": step_name,
             "location": step_name.split(" - ")[0] if " - " in step_name else step_name,
-            "status": "in_progress" if i == 0 else "pending",
-            "requires_presence": requires_presence,
+            "status": "in_progress" if i == 0 else "pending"
         })
 
     steps_res = admin.table("transaction_steps").insert(steps_to_insert).execute()
@@ -149,7 +148,10 @@ def activate_queue(appointment_id: str, student_id: str):
         .execute()
 
     # Trigger notification
-    first_requires_presence = steps_to_insert[0]["requires_presence"] if steps_to_insert else True
+    if processing_steps:
+        _, first_requires_presence = _normalize_step(processing_steps[0])
+    else:
+        first_requires_presence = True
     first_message = (
         f"Your ticket {queue_number} has been generated. Please proceed to: {step_names_only[0]}."
         if first_requires_presence
@@ -209,6 +211,43 @@ def get_student_queue(student_id: str):
         return {"ticket": ticket, "steps": steps_res.data}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+def call_ticket(queue_ticket_id: str, staff_id: str):
+    """Staff calls a ticket, assigning it to their current window."""
+    admin = get_admin()
+    
+    # 1. Get staff's assigned window
+    from services.admin_service import get_window_assignments
+    assignments = get_window_assignments()
+    window_num = assignments.get("assignments", {}).get(staff_id)
+    window_label = f"Window {window_num}" if window_num else "Counter"
+
+    # 2. Update ticket status to in_progress
+    admin.table("queue_tickets").update({"status": "in_progress"}).eq("id", queue_ticket_id).execute()
+
+    # 3. Update current step's location
+    steps_res = admin.table("transaction_steps").select("*").eq("queue_ticket_id", queue_ticket_id).order("step_number").execute()
+    steps = steps_res.data or []
+    current_step = next((s for s in steps if s["status"] == "in_progress"), None)
+    if current_step:
+        admin.table("transaction_steps").update({"location": window_label}).eq("id", current_step["id"]).execute()
+
+    return {"message": "Ticket called successfully", "location": window_label}
+
+
+def send_to_processing(queue_ticket_id: str, staff_id: str):
+    """Staff moves a ticket to back-office processing without completing the step."""
+    admin = get_admin()
+    
+    # Update current step's location to "Back Office"
+    steps_res = admin.table("transaction_steps").select("*").eq("queue_ticket_id", queue_ticket_id).order("step_number").execute()
+    steps = steps_res.data or []
+    current_step = next((s for s in steps if s["status"] == "in_progress"), None)
+    if current_step:
+        admin.table("transaction_steps").update({"location": "Back Office"}).eq("id", current_step["id"]).execute()
+
+    return {"message": "Ticket sent to processing"}
 
 
 def confirm_step(queue_ticket_id: str, step_number: int, staff_id: str):
@@ -325,6 +364,7 @@ def get_todays_queue(date_filter: str = None):
         tickets_res = admin.table("queue_tickets") \
             .select("*, appointments!inner(appointment_date, time_slot, transaction_types(name)), users(first_name, last_name, student_id), transaction_steps(*)") \
             .eq("appointments.appointment_date", today) \
+            .neq("status", "cancelled") \
             .order("created_at") \
             .execute()
 
@@ -353,7 +393,7 @@ def get_time_estimate(appointment_id: str, student_id: str):
     # Get appointment + transaction type info
     try:
         appt_res = admin.table("appointments") \
-            .select("*, transaction_types(id, total_steps)") \
+            .select("*, transaction_types(id, processing_steps)") \
             .eq("id", appointment_id) \
             .eq("student_id", student_id) \
             .single() \
@@ -366,7 +406,7 @@ def get_time_estimate(appointment_id: str, student_id: str):
         return {"estimates": []}
 
     tx_type_id = appt["transaction_type_id"]
-    total_steps = appt["transaction_types"]["total_steps"]
+    total_steps = len(appt["transaction_types"].get("processing_steps") or [])
 
     ticket_ids_res = admin.table("queue_tickets") \
         .select("id, appointments!inner(transaction_type_id)") \
@@ -423,7 +463,7 @@ def get_live_queue_stats():
         today = str(date.today())
         from datetime import datetime
 
-        # 1. Avg Wait Time
+        # 1. Avg Wait Time — computed from real step durations
         recent_steps = admin.table("transaction_steps") \
             .select("created_at, confirmed_at") \
             .not_.is_("confirmed_at", "null") \
@@ -431,20 +471,23 @@ def get_live_queue_stats():
             .limit(50) \
             .execute()
             
-        total_mins = 0
+        total_seconds = 0
         valid_steps = 0
         for row in (recent_steps.data or []):
             try:
                 start = datetime.fromisoformat(row["created_at"].replace("Z", "+00:00"))
                 end = datetime.fromisoformat(row["confirmed_at"].replace("Z", "+00:00"))
-                mins = (end - start).total_seconds() / 60
-                if 0 < mins < 120:
-                    total_mins += mins
+                secs = (end - start).total_seconds()
+                if 0 < secs < 7200:  # ignore outliers over 2 hours
+                    total_seconds += secs
                     valid_steps += 1
             except Exception:
                 pass
-                
-        avg_mins = round(total_mins / valid_steps) if valid_steps > 0 else 8
+
+        # Default fallback: 8 minutes (480 seconds) when no history exists yet
+        avg_total_secs = round(total_seconds / valid_steps) if valid_steps > 0 else 480
+        avg_mins = avg_total_secs // 60
+        avg_secs = avg_total_secs % 60
 
         # 2. Peak Forecast
         today_appts = admin.table("appointments") \
@@ -470,7 +513,7 @@ def get_live_queue_stats():
             
         return {
             "avg_wait_minutes": avg_mins,
-            "avg_wait_seconds": 0,
+            "avg_wait_seconds": avg_secs,
             "peak_forecast": peak_hour_str
         }
     except Exception as e:

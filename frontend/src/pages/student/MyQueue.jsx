@@ -1,10 +1,11 @@
 import { useState, useEffect, useRef } from 'react'
+import { createPortal } from 'react-dom'
 import { useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '../../context/useAuth'
 import StudentLayout from '../../components/layout/StudentLayout'
 import { getMyQueue, activateQueue, getTimeEstimate } from '../../services/queueService'
-import { getMyAppointments } from '../../services/appointmentService'
-import { Clock, Hourglass, PartyPopper, Ticket, Calendar, Inbox } from 'lucide-react'
+import { getMyAppointments, cancelAppointment } from '../../services/appointmentService'
+import { Clock, Hourglass, PartyPopper, Ticket, Calendar, Inbox, Cog } from 'lucide-react'
 
 const STEP_STYLE = {
   pending:     { bg: '#F9F9F9', color: '#706B65' }, // text-text-sub
@@ -22,7 +23,20 @@ export default function MyQueue() {
   const [error, setError]           = useState('')
   const [estimates, setEstimates]   = useState([])
   const [activeTab, setActiveTab]   = useState('active')
+  const [cancelConfirmId, setCancelConfirmId] = useState(null)
+  const [activateConfirmId, setActivateConfirmId] = useState(null)
   const today    = new Date().toISOString().split('T')[0]
+
+  const fmt12h = (t) => {
+    if (!t) return ''
+    const parts = t.split(':')
+    if (parts.length < 2) return t
+    const h = parseInt(parts[0], 10)
+    const m = parts[1]
+    const ampm = h >= 12 ? 'PM' : 'AM'
+    const h12 = h % 12 || 12
+    return `${h12}:${m} ${ampm}`
+  }
   const pollRef  = useRef(null)
 
   const fetchQueue = async () => {
@@ -60,27 +74,51 @@ export default function MyQueue() {
     }
   }, [queueData?.ticket?.appointment_id])
 
-  const handleActivate = async (id) => {
-    setActivating(id); setError('')
-    try { await activateQueue(token, id); await Promise.all([fetchQueue(), fetchAppts()]) }
+  const handleActivate = async () => {
+    if (!activateConfirmId) return
+    setActivating(activateConfirmId); setError('')
+    try { 
+      await activateQueue(token, activateConfirmId) 
+      await Promise.all([fetchQueue(), fetchAppts()]) 
+    }
     catch (e) { setError(e.message) }
-    finally { setActivating(null) }
+    finally { 
+      setActivating(null)
+      setActivateConfirmId(null)
+    }
+  }
+
+  const handleCancelQueue = async () => {
+    if (!cancelConfirmId) return
+    try {
+      await cancelAppointment(token, cancelConfirmId)
+      await Promise.all([fetchQueue(), fetchAppts()])
+    } catch (e) {
+      setError(e.message)
+    } finally {
+      setCancelConfirmId(null)
+    }
   }
 
   const ticket = queueData?.ticket
   const steps  = queueData?.steps || []
 
+  // ── Is the CURRENT active step one that needs the student physically
+  //    present, or is it back-office processing with no line to stand in? ──
+  const currentStep = steps.find(s => s.status === 'in_progress')
+  const currentRequiresPresence = currentStep?.requires_presence !== false // default true if missing/undefined
+
   return (
     <StudentLayout activeTab="queue" mobileTitle="My Queue" backTo="/student/dashboard">
 
-      <div className="w-full max-w-[560px] mx-auto pt-6 px-4 pb-20 md:max-w-[900px] md:mx-0 md:pt-0 md:px-0">
+      <div className="w-full max-w-140 mx-auto pt-6 px-4 pb-20 md:max-w-225 md:mx-0 md:pt-0 md:px-0">
         <div className="hidden md:flex justify-between items-start mb-8">
           <div>
             <div className="text-[11px] font-bold text-gold uppercase tracking-[0.06em] mb-2">LIVE TRACKING</div>
             <h1 className="font-serif text-[26px] font-bold text-maroon m-0 mb-2 flex items-center gap-3">
               <Ticket className="text-maroon" size={24} /> My Queue
             </h1>
-            <p className="text-[12px] text-text-sub m-0 leading-relaxed max-w-[650px]">
+            <p className="text-[12px] text-text-sub m-0 leading-relaxed max-w-162.5">
               Monitor your active processing status and upcoming appointments.
             </p>
           </div>
@@ -119,25 +157,25 @@ export default function MyQueue() {
               <div className="bg-white rounded-2xl p-6 border border-border shadow-sm">
                 <div className="flex justify-between items-start mb-4">
                   <div>
-                    <div className="animate-pulse w-[80px] h-[12px] rounded bg-border mb-2" />
-                    <div className="animate-pulse w-[60px] h-[48px] rounded-lg bg-border" />
+                    <div className="animate-pulse w-20 h-3 rounded bg-border mb-2" />
+                    <div className="animate-pulse w-15 h-12 rounded-lg bg-border" />
                   </div>
-                  <div className="animate-pulse w-[90px] h-[24px] rounded-full bg-border" />
+                  <div className="animate-pulse w-22.5 h-6 rounded-full bg-border" />
                 </div>
-                <div className="animate-pulse w-[180px] h-[14px] rounded bg-border mb-1.5" />
-                <div className="animate-pulse w-[140px] h-[12px] rounded bg-border" />
+                <div className="animate-pulse w-45 h-3.5 rounded bg-border mb-1.5" />
+                <div className="animate-pulse w-35 h-3 rounded bg-border" />
               </div>
               <div className="bg-white rounded-2xl p-6 border border-border shadow-sm">
-                <div className="animate-pulse w-[150px] h-[16px] rounded bg-border mb-6" />
+                <div className="animate-pulse w-37.5 h-4 rounded bg-border mb-6" />
                 {[1, 2, 3].map(i => (
                   <div key={i} className="flex gap-3.5 mb-4 last:mb-0">
                     <div className="animate-pulse w-7 h-7 rounded-full bg-border shrink-0" />
                     <div className="flex-1">
                       <div className="flex justify-between mb-2">
-                        <div className="animate-pulse w-[100px] h-[14px] rounded bg-border" />
-                        <div className="animate-pulse w-[60px] h-[16px] rounded-full bg-border" />
+                        <div className="animate-pulse w-25 h-3.5 rounded bg-border" />
+                        <div className="animate-pulse w-15 h-4 rounded-full bg-border" />
                       </div>
-                      <div className="animate-pulse w-[140px] h-[12px] rounded bg-border" />
+                      <div className="animate-pulse w-35 h-3 rounded bg-border" />
                     </div>
                   </div>
                 ))}
@@ -146,23 +184,37 @@ export default function MyQueue() {
           ) : ticket ? (
             <div className="animate-fade-up">
               {/* Queue ticket card */}
-              <div className="bg-linear-to-br from-maroon to-maroon-dark rounded-2xl p-7 mb-4 text-white shadow-lg relative overflow-hidden">
-                <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full -mr-10 -mt-10 blur-xl" />
-                <div className="relative z-10 flex justify-between items-start mb-4">
+              <div className="bg-maroon rounded-2xl p-7 mb-4 shadow-lg border border-maroon-light/20 relative overflow-hidden">
+                <div className="absolute -top-20 -right-20 w-64 h-64 bg-gold/10 rounded-full blur-[60px] pointer-events-none" />
+                <div className="absolute top-1/2 left-1/4 w-32 h-32 bg-white/5 rounded-full blur-2xl pointer-events-none" />
+                
+                <div className="relative z-10 flex justify-between items-start mb-5">
                   <div>
-                    <p className="text-[11px] text-white/50 m-0 mb-1 uppercase tracking-[0.08em]">Queue Number</p>
-                    <div className="font-serif text-[48px] font-bold text-gold leading-none">{ticket.queue_number}</div>
+                    <p className="text-[11px] text-maroon-light/60 m-0 mb-1.5 uppercase tracking-widest font-medium">Queue Number</p>
+                    <div className="font-serif text-[52px] font-bold text-white leading-none drop-shadow-md">{ticket.queue_number}</div>
                   </div>
-                  <span className={`text-[12px] font-semibold py-1 px-3 rounded-full border ${
-                    ticket.status === 'completed' 
-                      ? 'bg-success-light text-success border-success-border' 
-                      : 'bg-gold/20 text-gold border-gold/30'
-                  }`}>
-                    {ticket.status === 'in_progress' ? 'In Progress' : ticket.status === 'completed' ? 'Completed' : ticket.status}
-                  </span>
                 </div>
-                <p className="text-[13px] text-white/70 m-0 mb-1 relative z-10">{ticket.appointments?.transaction_types?.name}</p>
-                <p className="text-[12px] text-white/45 m-0 relative z-10">{ticket.appointments?.appointment_date} at {ticket.appointments?.time_slot}</p>
+                
+                <div className="relative z-10 flex justify-between items-end mt-3">
+                  <div className="flex flex-col gap-1.5">
+                    <p className="text-[16px] font-medium text-white m-0 drop-shadow-sm">{ticket.appointments?.transaction_types?.name}</p>
+                    <p className="text-[13px] text-white/70 m-0 font-light tracking-wide">{ticket.appointments?.appointment_date} <span className="text-white/30 mx-1.5">|</span> {fmt12h(ticket.appointments?.time_slot)}</p>
+                  </div>
+                  <button 
+                    onClick={() => setCancelConfirmId(ticket.appointment_id)} 
+                    className="bg-white/10 hover:bg-danger text-white text-[12px] font-medium py-1.5 px-4 rounded-full transition-colors border border-white/20 hover:border-danger cursor-pointer"
+                  >
+                    Cancel Queue
+                  </button>
+                </div>
+
+                {ticket.status === 'in_progress' && !currentRequiresPresence && (
+                  <div className="mt-4 pt-3 border-t border-white/10 relative z-10">
+                    <p className="text-[12px] text-white/80 m-0 flex items-center gap-2">
+                      <Cog size={14} className="text-gold" /> No need to wait in line — we'll notify you when it's your turn.
+                    </p>
+                  </div>
+                )}
               </div>
 
               {/* Step tracker */}
@@ -172,6 +224,7 @@ export default function MyQueue() {
                   {steps.map((step, idx) => {
                     const isLast = idx === steps.length - 1
                     const est = estimates.find(e => e.step === step.step_number)
+                    const stepRequiresPresence = step.requires_presence !== false
 
                     return (
                       <div key={step.id} className="flex gap-3.5">
@@ -185,7 +238,7 @@ export default function MyQueue() {
                             {step.status === 'completed' ? '✓' : step.step_number}
                           </div>
                           {!isLast && (
-                            <div className={`w-0.5 flex-1 min-h-[24px] my-1 ${step.status === 'completed' ? 'bg-maroon' : 'bg-border'}`} />
+                            <div className={`w-0.5 flex-1 min-h-6 my-1 ${step.status === 'completed' ? 'bg-maroon' : 'bg-border'}`} />
                           )}
                         </div>
 
@@ -198,7 +251,7 @@ export default function MyQueue() {
                                background: STEP_STYLE[step.status]?.bg || '#F9F9F9',
                                color: STEP_STYLE[step.status]?.color || '#706B65'
                             }}>
-                              {step.status === 'in_progress' ? 'In Progress' : step.status === 'completed' ? 'Done' : 'Pending'}
+                              {step.status === 'in_progress' ? (stepRequiresPresence ? 'In Progress' : 'Processing') : step.status === 'completed' ? 'Done' : 'Pending'}
                             </span>
                           </div>
 
@@ -211,12 +264,16 @@ export default function MyQueue() {
                             </div>
                           )}
 
-                          {/* Sub-labels */}
-                          {step.status === 'in_progress' && (
+                          {/* Sub-labels — this is the core fix: back-office steps no
+                              longer tell the student to "proceed to a counter" */}
+                          {step.status === 'in_progress' && stepRequiresPresence && (
                             <p className="text-[12px] text-gold m-0 flex items-center gap-1 font-medium"><Hourglass size={12} className="text-gold animate-pulse" /> Please proceed to this counter</p>
                           )}
+                          {step.status === 'in_progress' && !stepRequiresPresence && (
+                            <p className="text-[12px] text-text-sub m-0 flex items-center gap-1 font-medium"><Cog size={12} className="text-text-muted" /> Being processed — no need to wait in line</p>
+                          )}
                           {step.status === 'completed' && step.confirmed_at && (
-                            <p className="text-[11px] text-text-muted m-0">✓ Confirmed at {new Date(step.confirmed_at).toLocaleTimeString()}</p>
+                            <p className="text-[11px] text-text-muted m-0">✓ Confirmed at {new Date(step.confirmed_at).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}</p>
                           )}
                         </div>
                       </div>
@@ -250,11 +307,11 @@ export default function MyQueue() {
               {[1, 2, 3].map(i => (
                 <div key={i} className="bg-white rounded-[14px] p-5 border border-border shadow-sm">
                   <div className="flex justify-between mb-3">
-                    <div className="animate-pulse w-[140px] h-[16px] rounded bg-border" />
-                    <div className="animate-pulse w-[70px] h-[20px] rounded-full bg-border" />
+                    <div className="animate-pulse w-35 h-4 rounded bg-border" />
+                    <div className="animate-pulse w-17.5 h-5 rounded-full bg-border" />
                   </div>
-                  <div className="animate-pulse w-[120px] h-[14px] rounded bg-border mb-4" />
-                  <div className="animate-pulse w-full h-[44px] rounded-lg bg-border" />
+                  <div className="animate-pulse w-30 h-3.5 rounded bg-border mb-4" />
+                  <div className="animate-pulse w-full h-11 rounded-lg bg-border" />
                 </div>
               ))}
             </div>
@@ -270,7 +327,7 @@ export default function MyQueue() {
                         <h3 className="text-[15px] font-semibold text-text-main m-0">{appt.transaction_types?.name}</h3>
                         <span className="text-[11px] font-semibold py-0.5 px-2.5 rounded-full bg-success-light text-success border border-success-border">Confirmed</span>
                       </div>
-                      <p className="text-[13px] text-text-sub m-0 mb-4 flex items-center gap-1.5"><Calendar size={13} className="text-gold" /> {appt.appointment_date} at {appt.time_slot}</p>
+                      <p className="text-[13px] text-text-sub m-0 mb-4 flex items-center gap-1.5"><Calendar size={13} className="text-gold" /> {appt.appointment_date} at {fmt12h(appt.time_slot)}</p>
                       {ticket && ticket.appointment_id === appt.id ? (
                         <div className="flex gap-2">
                           <button
@@ -288,13 +345,14 @@ export default function MyQueue() {
                         </div>
                       ) : (
                         <button
-                          onClick={() => handleActivate(appt.id)}
+                          onClick={() => setActivateConfirmId(appt.id)}
                           disabled={activating === appt.id || !isToday || ticket}
                           title={ticket ? "You already have an active queue ticket" : ""}
-                          className={`w-full py-3 rounded-lg border-none text-[14px] font-bold font-sans flex items-center justify-center gap-2 transition-colors ${
-                            (!isToday || ticket) ? 'bg-border text-text-sub cursor-not-allowed' : 
-                            activating === appt.id ? 'bg-[#B8667A] text-white cursor-not-allowed' : 
-                            'bg-maroon text-white cursor-pointer hover:bg-maroon-dark shadow-sm'
+                          className={`w-full py-3 px-4 rounded-lg border-none text-[14px] font-bold font-sans transition-colors ${
+                            activating === appt.id ? 'bg-maroon-mid text-text-muted cursor-wait' :
+                            !isToday ? 'bg-border text-text-sub cursor-not-allowed' :
+                            ticket ? 'bg-border text-text-sub cursor-not-allowed' :
+                            'bg-gold text-white cursor-pointer hover:bg-gold-light hover:text-gold shadow-sm'
                           }`}
                         >
                           {activating === appt.id ? 'Activating...' : !isToday ? 'Available on Appointment Date' : <><Ticket size={16} className="text-gold" /> Get Queue Number</>}
@@ -317,6 +375,62 @@ export default function MyQueue() {
           )}
         </div>
       </div>
+
+      {/* Cancel Confirmation Modal */}
+      {cancelConfirmId && createPortal(
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 p-4 animate-fade-in pointer-events-auto">
+          <div className="bg-white rounded-2xl p-7 max-w-sm w-full shadow-2xl animate-fade-up">
+            <h3 className="text-[18px] font-bold text-text-main m-0 mb-2">Cancel Queue Ticket?</h3>
+            <p className="text-[14px] text-text-sub m-0 mb-6">
+              Are you sure you want to cancel this active queue ticket? This action cannot be undone and you will lose your spot in line.
+            </p>
+            <div className="flex gap-3">
+              <button 
+                onClick={() => setCancelConfirmId(null)}
+                className="flex-1 py-2.5 px-4 rounded-lg border border-border text-text-main font-semibold hover:bg-surface transition-colors cursor-pointer"
+              >
+                Go Back
+              </button>
+              <button 
+                onClick={handleCancelQueue}
+                className="flex-1 py-2.5 px-4 rounded-lg bg-danger text-white font-semibold hover:bg-danger-dark transition-colors border-none cursor-pointer"
+              >
+                Yes, Cancel
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {/* Activate Confirmation Modal */}
+      {activateConfirmId && createPortal(
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 p-4 animate-fade-in pointer-events-auto">
+          <div className="bg-white rounded-2xl p-7 max-w-sm w-full shadow-2xl animate-fade-up">
+            <h3 className="text-[18px] font-bold text-text-main m-0 mb-2">Get Queue Number?</h3>
+            <p className="text-[14px] text-text-sub m-0 mb-6">
+              Are you sure you want to activate your queue ticket now? Make sure you are already at the Campus or heading there shortly.
+            </p>
+            <div className="flex gap-3">
+              <button 
+                onClick={() => setActivateConfirmId(null)}
+                className="flex-1 py-2.5 px-4 rounded-lg border border-border text-text-main font-semibold hover:bg-surface transition-colors cursor-pointer"
+              >
+                Go Back
+              </button>
+              <button 
+                onClick={handleActivate}
+                disabled={activating === activateConfirmId}
+                className="flex-1 py-2.5 px-4 rounded-lg bg-gold text-white font-semibold hover:bg-gold-dark transition-colors border-none cursor-pointer disabled:opacity-50 disabled:cursor-wait"
+              >
+                {activating === activateConfirmId ? 'Activating...' : 'Yes, Activate'}
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+
     </StudentLayout>
   )
 }

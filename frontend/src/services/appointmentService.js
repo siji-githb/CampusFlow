@@ -110,3 +110,10 @@ export const uploadMedia = async (token, file) => {
   if (!res.ok) throw new Error(data.detail || 'Failed to upload media')
   return data
 }
+
+export const getBookingConfig = async () => {
+  const res = await fetch(`${API_URL}/appointments/booking-config`)
+  const data = await res.json()
+  if (!res.ok) throw new Error(data.detail || 'Failed to fetch booking config')
+  return data
+}

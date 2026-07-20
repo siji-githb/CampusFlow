@@ -1,22 +1,34 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { createPortal } from 'react-dom'
 import { useAuth } from '../../context/useAuth'
-import { getTodaysQueue, confirmStep } from '../../services/queueService'
+import { getTodaysQueue, confirmStep, callTicket, sendToProcessing } from '../../services/queueService'
 import { updateReleaseDate } from '../../services/adminService'
-import { Check, Circle, Clock, X, Search, RefreshCw, Users, CheckSquare, AlertTriangle, Download, Inbox, Play, Ticket, DoorOpen, Cog } from 'lucide-react'
+import { Check, Circle, Clock, X, Users, CheckSquare, AlertTriangle, Download, Inbox, Play, Ticket, DoorOpen, Cog } from 'lucide-react'
 
 // ── Status config ──────────────────────────────────────────────────────────────
 const STATUS_CFG = {
   in_progress: { label: 'Serving Now',  bg: 'bg-success-light',  color: 'text-success',  border: 'border-success-border'  },
-  pending:     { label: 'Waiting',      bg: 'bg-gold-light',   color: 'text-gold',   border: 'border-gold-border'   },
+  waiting:     { label: 'Waiting',      bg: 'bg-gold-light',   color: 'text-gold',   border: 'border-gold-border'   },
+  pending:     { label: 'Pending',      bg: 'bg-gold-light',   color: 'text-gold',   border: 'border-gold-border'   },
   completed:   { label: 'Completed',    bg: 'bg-blue-light',   color: 'text-blue',   border: 'border-blue-border'   },
   no_show:     { label: 'No Show',      bg: 'bg-gray-50',     color: 'text-gray-500',border: 'border-gray-200'      },
   cancelled:   { label: 'Cancelled',    bg: 'bg-danger-light',    color: 'text-danger',    border: 'border-danger-border'    },
 }
 
+const fmt12h = (t) => {
+  if (!t) return ''
+  const parts = t.split(':')
+  if (parts.length < 2) return t
+  const h = parseInt(parts[0], 10)
+  const m = parts[1]
+  const ampm = h >= 12 ? 'PM' : 'AM'
+  const h12 = h % 12 || 12
+  return `${h12}:${m} ${ampm}`
+}
+
 // ── Small Stat Card ────────────────────────────────────────────────────────────
 const MiniStat = ({ icon, value, label, sub, subColorClass = 'text-success', loading, delay }) => (
-  <div className="animate-fade-up bg-white rounded-[14px] px-5 py-[18px] border border-border shadow-[0_1px_4px_rgba(0,0,0,0.04)] flex flex-col gap-3 flex-1" style={{ animationDelay: delay || '0s' }}>
+  <div className="animate-fade-up bg-white rounded-[14px] px-5 py-4.5 border border-border shadow-[0_1px_4px_rgba(0,0,0,0.04)] flex flex-col gap-3 flex-1" style={{ animationDelay: delay || '0s' }}>
     <div className="flex items-start justify-between">
       <div className="text-xs font-semibold text-text-muted uppercase tracking-[0.06em] mt-1.5">{label}</div>
       <div className="w-9 h-9 rounded-[10px] bg-maroon-light flex items-center justify-center text-maroon shrink-0">
@@ -24,8 +36,8 @@ const MiniStat = ({ icon, value, label, sub, subColorClass = 'text-success', loa
       </div>
     </div>
     <div>
-      <div className="font-serif text-[28px] font-extrabold text-maroon leading-none m-0 min-h-[28px]">
-        {loading ? <div className="animate-pulse w-[60px] h-7 rounded-md bg-border" /> : value}
+      <div className="font-serif text-[28px] font-extrabold text-maroon leading-none m-0 min-h-7">
+        {loading ? <div className="animate-pulse w-15 h-7 rounded-md bg-border" /> : value}
       </div>
       {sub && <div className={`text-[11px] font-semibold mt-1.5 ${subColorClass}`}>{sub}</div>}
     </div>
@@ -41,7 +53,7 @@ const StepsBar = ({ steps, current, total }) => (
       const active  = stepNum === current
       return (
         <div key={i} className="flex items-center gap-1">
-          <div className={`w-[22px] h-[22px] rounded-full shrink-0 flex items-center justify-center text-[10px] font-bold ${done ? 'bg-success text-white' : active ? 'bg-maroon text-white border-2 border-maroon-dark' : 'bg-border text-text-muted'}`}>
+          <div className={`w-5.5 h-5.5 rounded-full shrink-0 flex items-center justify-center text-[10px] font-bold ${done ? 'bg-success text-white' : active ? 'bg-maroon text-white border-2 border-maroon-dark' : 'bg-border text-text-muted'}`}>
             {done ? <Check size={10} /> : stepNum}
           </div>
           {i < total - 1 && <div className={`w-3 h-0.5 rounded-[1px] ${done ? 'bg-success' : 'bg-border'}`} />}
@@ -65,98 +77,67 @@ const PresenceBadge = ({ requiresPresence }) => (
 )
 
 // ── Filter Sidebar ─────────────────────────────────────────────────────────────
-const FilterSidebar = ({ filters, onChange, highPriorityCount, onReset }) => {
-  const statuses = ['in_progress', 'pending', 'completed', 'no_show']
-
+const FilterBar = ({ filters, onChange, onReset }) => {
   return (
-    <aside className="w-[220px] shrink-0 bg-white border border-border rounded-2xl px-4 py-5 h-fit sticky top-5 shadow-[0_1px_4px_rgba(0,0,0,0.04)]">
-      <div className="font-serif text-[17px] font-bold text-text-main mb-5">Filters</div>
-
-      {/* Status */}
-      <div className="mb-5">
-        <div className="text-[10px] font-bold text-text-muted uppercase tracking-[0.08em] mb-2.5">Status</div>
-        <div className="flex flex-col gap-1.5">
-          {statuses.map(s => {
-            const cfg = STATUS_CFG[s]
-            const checked = filters.statuses.includes(s)
-            return (
-              <label key={s} className="flex items-center gap-2 cursor-pointer text-[13px] text-text-sub">
-                <input
-                  type="checkbox"
-                  checked={checked}
-                  onChange={() => {
-                    const next = checked
-                      ? filters.statuses.filter(x => x !== s)
-                      : [...filters.statuses, s]
-                    onChange({ ...filters, statuses: next })
-                  }}
-                  className="accent-maroon w-3.5 h-3.5"
-                />
-                <span className="flex-1">{cfg.label}</span>
-                <span className={`text-[10px] font-semibold px-1.5 py-px rounded-full border flex items-center ${cfg.bg} ${cfg.color} ${cfg.border}`}>
-                  {s === 'in_progress' ? <Play size={10} fill="currentColor" /> : s === 'pending' ? <Clock size={10} /> : s === 'completed' ? <Check size={10} /> : <X size={10} />}
-                </span>
-              </label>
-            )
-          })}
-        </div>
+    <div className="bg-white rounded-2xl border border-border shadow-sm px-6 py-5 flex flex-wrap items-center gap-5 animate-fade-up" style={{ animationDelay: '0.4s' }}>
+      <div className="text-[11px] font-bold text-text-muted uppercase tracking-[0.08em] mr-2">Filters</div>
+      
+      {/* Status Dropdown */}
+      <div className="flex-1 min-w-[160px]">
+        <select
+          value={filters.status}
+          onChange={e => onChange({ ...filters, status: e.target.value })}
+          className="w-full px-4 py-2.5 rounded-xl border border-border bg-off-white text-[13px] text-text-main font-semibold outline-none cursor-pointer font-sans focus:border-maroon focus:ring-1 focus:ring-maroon transition-all shadow-[inset_0_1px_2px_rgba(0,0,0,0.02)] appearance-none bg-[url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2214%22%20height%3D%2214%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%2357534E%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpolyline%20points%3D%226%209%2012%2015%2018%209%22%3E%3C%2Fpolyline%3E%3C%2Fsvg%3E')] bg-no-repeat bg-[position:calc(100%-12px)_center]"
+        >
+          <option value="active">Active (Serving & Waiting)</option>
+          <option value="in_progress">Serving Now</option>
+          <option value="pending">Pending</option>
+          <option value="waiting">Waiting</option>
+          <option value="completed">Completed</option>
+          <option value="no_show">No Show</option>
+          <option value="cancelled">Cancelled</option>
+          <option value="all">All Statuses</option>
+        </select>
       </div>
 
-      {/* Priority */}
-      <div className="mb-5">
-        <div className="text-[10px] font-bold text-text-muted uppercase tracking-[0.08em] mb-2.5">Priority Level</div>
-        <div className="flex flex-col gap-1.5">
-          {[
-            { val: 'high', lbl: 'High Priority', badgeBg: 'bg-danger-light', badgeColor: 'text-danger', badgeBorder: 'border-danger-border' },
-            { val: 'regular', lbl: 'Regular', badgeBg: 'bg-off-white', badgeColor: 'text-text-sub', badgeBorder: 'border-transparent' }
-          ].map(({ val, lbl, badgeBg, badgeColor, badgeBorder }) => {
-            const checked = filters.priority === val || filters.priority === 'all'
-            return (
-              <label key={val} className="flex items-center gap-2 cursor-pointer text-[13px] text-text-sub">
-                <input type="radio" name="priority" checked={filters.priority === val} onChange={() => onChange({ ...filters, priority: val })}
-                  className="accent-maroon w-3.5 h-3.5" />
-                <span className="flex-1">{lbl}</span>
-                {val === 'high' && highPriorityCount > 0 && (
-                  <span className={`text-[10px] font-bold px-1.5 py-px rounded-full border ${badgeBg} ${badgeColor} ${badgeBorder}`}>
-                    {highPriorityCount}
-                  </span>
-                )}
-              </label>
-            )
-          })}
-          <label className="flex items-center gap-2 cursor-pointer text-[13px] text-text-sub">
-            <input type="radio" name="priority" checked={filters.priority === 'all'} onChange={() => onChange({ ...filters, priority: 'all' })}
-              className="accent-maroon w-3.5 h-3.5" />
-            <span>All</span>
-          </label>
-        </div>
+      {/* Priority Dropdown */}
+      <div className="flex-1 min-w-[160px]">
+        <select
+          value={filters.priority}
+          onChange={e => onChange({ ...filters, priority: e.target.value })}
+          className="w-full px-4 py-2.5 rounded-xl border border-border bg-off-white text-[13px] text-text-main font-semibold outline-none cursor-pointer font-sans focus:border-maroon focus:ring-1 focus:ring-maroon transition-all shadow-[inset_0_1px_2px_rgba(0,0,0,0.02)] appearance-none bg-[url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2214%22%20height%3D%2214%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%2357534E%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpolyline%20points%3D%226%209%2012%2015%2018%209%22%3E%3C%2Fpolyline%3E%3C%2Fsvg%3E')] bg-no-repeat bg-[position:calc(100%-12px)_center]"
+        >
+          <option value="all">All Priorities</option>
+          <option value="high">High Priority</option>
+          <option value="regular">Regular Priority</option>
+        </select>
       </div>
 
-      {/* Transaction Type */}
-      <div className="mb-5">
-        <div className="text-[10px] font-bold text-text-muted uppercase tracking-[0.08em] mb-2.5">Transaction Type</div>
+      {/* Transaction Type Dropdown */}
+      <div className="flex-1 min-w-[160px]">
         <select
           value={filters.transactionType}
           onChange={e => onChange({ ...filters, transactionType: e.target.value })}
-          className="w-full px-2.5 py-2 rounded-lg border border-border bg-off-white text-[12px] text-text-main outline-none cursor-pointer font-sans"
+          className="w-full px-4 py-2.5 rounded-xl border border-border bg-off-white text-[13px] text-text-main font-semibold outline-none cursor-pointer font-sans focus:border-maroon focus:ring-1 focus:ring-maroon transition-all shadow-[inset_0_1px_2px_rgba(0,0,0,0.02)] appearance-none bg-[url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2214%22%20height%3D%2214%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%2357534E%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpolyline%20points%3D%226%209%2012%2015%2018%209%22%3E%3C%2Fpolyline%3E%3C%2Fsvg%3E')] bg-no-repeat bg-[position:calc(100%-12px)_center]"
         >
           <option value="all">All Transactions</option>
           <option value="TOR">Transcript of Records</option>
           <option value="COE">Certificate of Enrollment</option>
           <option value="Diploma">Diploma Release</option>
-          <option value="Grades">Grades</option>
+          <option value="GWA">General Weighted Average</option>
+          <option value="Completion Form">Completion Form</option>
         </select>
       </div>
 
-      <button onClick={onReset} className="w-full p-2.5 rounded-xl border border-border bg-off-white text-text-sub text-[13px] font-semibold cursor-pointer font-sans hover:bg-border transition-colors">
-        Reset Filters
+      <button onClick={onReset} className="px-5 py-2.5 rounded-xl border border-border bg-white text-text-main text-[13px] font-bold cursor-pointer font-sans hover:bg-surface hover:border-maroon-border hover:text-maroon transition-colors shadow-sm whitespace-nowrap">
+        Reset
       </button>
-    </aside>
+    </div>
   )
 }
 
 // ── Queue Details Modal ────────────────────────────────────────────────────────
-const QueueDetailsModal = ({ ticketData, onClose, onConfirm, confirming, onSetReleaseDate }) => {
+const QueueDetailsModal = ({ ticketData, onClose, onConfirm, onSendToProcessing, confirming, onSetReleaseDate }) => {
   const { ticket, steps } = ticketData
   const student = ticket.users
   const name    = student ? `${student.last_name}, ${student.first_name}` : 'Unknown'
@@ -168,7 +149,7 @@ const QueueDetailsModal = ({ ticketData, onClose, onConfirm, confirming, onSetRe
   return createPortal((
     <div className="fixed inset-0 z-1000 flex items-center justify-center">
       <div className="absolute inset-0 bg-black/20 backdrop-blur-sm" onClick={onClose} />
-      <div className="animate-fade-up relative w-full max-w-[680px] bg-white rounded-3xl p-7 max-h-[90vh] overflow-y-auto">
+      <div className="animate-fade-up relative w-full max-w-170 bg-white rounded-3xl p-7 max-h-[90vh] overflow-y-auto">
         
         {/* Header */}
         <div className="flex justify-between items-start mb-6">
@@ -194,7 +175,7 @@ const QueueDetailsModal = ({ ticketData, onClose, onConfirm, confirming, onSetRe
 
         {/* Release Date */}
         <div className="mb-7 bg-off-white p-4 rounded-[14px] border border-border flex items-end gap-3 flex-wrap">
-          <div className="flex-1 min-w-[200px]">
+          <div className="flex-1 min-w-50">
             <label className="block text-[11px] font-bold text-text-muted uppercase tracking-[0.04em] mb-1.5">Document Release Date</label>
             <input 
               type="date" 
@@ -210,7 +191,7 @@ const QueueDetailsModal = ({ ticketData, onClose, onConfirm, confirming, onSetRe
               setSavingDate(false)
             }}
             disabled={savingDate || releaseDate === (appt?.release_date || '')}
-            className={`px-4.5 py-2.5 rounded-lg border-none text-[13px] font-bold h-[42px] font-sans whitespace-nowrap transition-colors
+            className={`px-4.5 py-2.5 rounded-lg border-none text-[13px] font-bold h-10.5 font-sans whitespace-nowrap transition-colors
               ${(savingDate || releaseDate === (appt?.release_date || '')) 
                 ? 'bg-border text-text-muted cursor-not-allowed' 
                 : 'bg-maroon text-white cursor-pointer hover:bg-maroon-dark'}
@@ -240,7 +221,7 @@ const QueueDetailsModal = ({ ticketData, onClose, onConfirm, confirming, onSetRe
                     >
                       {step.status === 'completed' ? <Check size={14} /> : step.step_number}
                     </div>
-                    {!isLast && <div className={`w-[2px] flex-1 min-h-[36px] my-1 ${step.status === 'completed' ? 'bg-success' : 'bg-border'}`} />}
+                    {!isLast && <div className={`w-0.5 flex-1 min-h-9 my-1 ${step.status === 'completed' ? 'bg-success' : 'bg-border'}`} />}
                   </div>
                   <div className={`flex-1 ${isLast ? 'pb-0' : 'pb-4'}`}>
                     <div className={`flex justify-between items-center rounded-xl ${isCurrent ? 'bg-gold-light p-3 border border-gold-border -mt-1.5' : 'bg-transparent py-1.5 border-none mt-0'}`}>
@@ -250,7 +231,7 @@ const QueueDetailsModal = ({ ticketData, onClose, onConfirm, confirming, onSetRe
                           <PresenceBadge requiresPresence={step.requires_presence !== false} />
                         </div>
                         {step.status === 'completed' && step.confirmed_at && (
-                          <div className="text-xs text-text-muted mt-0.5">Confirmed at {new Date(step.confirmed_at).toLocaleTimeString()}</div>
+                          <div className="text-xs text-text-muted mt-0.5">Confirmed at {new Date(step.confirmed_at).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}</div>
                         )}
                         {isCurrent && (
                           <div className="text-xs text-gold mt-0.5 font-semibold">
@@ -259,15 +240,28 @@ const QueueDetailsModal = ({ ticketData, onClose, onConfirm, confirming, onSetRe
                         )}
                       </div>
                       {isCurrent && (
-                        <button
-                          onClick={() => onConfirm(ticket.id, step.step_number)}
-                          disabled={isConfirming}
-                          className={`px-4.5 py-2.5 rounded-[10px] border-none text-[13px] font-bold font-sans transition-colors
-                            ${isConfirming ? 'bg-maroon/50 text-white cursor-not-allowed' : 'bg-maroon text-white cursor-pointer hover:bg-maroon-dark'}
-                          `}
-                        >
-                          {isConfirming ? 'Confirming...' : 'Confirm Step'}
-                        </button>
+                        <div className="flex items-center gap-2">
+                          {step.location !== 'Back Office' && (
+                            <button
+                              onClick={() => onSendToProcessing(ticket.id)}
+                              disabled={isConfirming}
+                              className={`px-4 py-2.5 rounded-[10px] border-none text-[13px] font-bold font-sans transition-colors
+                                ${isConfirming ? 'bg-gray-200 text-text-muted cursor-not-allowed' : 'bg-surface text-text-main cursor-pointer hover:bg-border'}
+                              `}
+                            >
+                              Send to Processing
+                            </button>
+                          )}
+                          <button
+                            onClick={() => onConfirm(ticket.id, step.step_number)}
+                            disabled={isConfirming}
+                            className={`px-4.5 py-2.5 rounded-[10px] border-none text-[13px] font-bold font-sans transition-colors
+                              ${isConfirming ? 'bg-maroon/50 text-white cursor-not-allowed' : 'bg-maroon text-white cursor-pointer hover:bg-maroon-dark'}
+                            `}
+                          >
+                            {isConfirming ? 'Confirming...' : 'Confirm Step'}
+                          </button>
+                        </div>
                       )}
                     </div>
                   </div>
@@ -291,8 +285,17 @@ export default function LiveQueuePage() {
   const [lastUpdated, setLastUpdated] = useState(null)
   const [now, setNow]           = useState(new Date())
   const [search, setSearch]     = useState('')
-  const [filters, setFilters]   = useState({ statuses: ['in_progress', 'pending'], priority: 'all', transactionType: 'all' })
+  const [filters, setFilters]   = useState({ status: 'active', priority: 'all', transactionType: 'all' })
   const [viewingTicketId, setViewingTicketId] = useState(null)
+
+  const availableTxTypes = useMemo(() => {
+    const types = new Set()
+    queue.forEach(q => {
+      const name = q.ticket.appointments?.transaction_types?.name
+      if (name) types.add(name)
+    })
+    return Array.from(types).sort()
+  }, [queue])
 
   // Clock tick
   useEffect(() => {
@@ -303,7 +306,7 @@ export default function LiveQueuePage() {
   const fetchQueue = useCallback(async () => {
     try {
       setQueue(await getTodaysQueue(token))
-      setLastUpdated(new Date().toLocaleTimeString('en-PH', { hour: '2-digit', minute: '2-digit' }))
+      setLastUpdated(new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }))
     } catch (e) { setError(e.message) }
     finally { setLoading(false) }
   }, [token])
@@ -331,11 +334,33 @@ export default function LiveQueuePage() {
     }
   }
 
+  const handleCallTicket = async (ticketId) => {
+    setConfirming(ticketId); setError('')
+    try { 
+      await callTicket(token, ticketId)
+      await fetchQueue()
+      setViewingTicketId(ticketId) // automatically open details modal
+    }
+    catch (e) { setError(e.message) }
+    finally { setConfirming(null) }
+  }
+
+  const handleSendToProcessing = async (ticketId) => {
+    setConfirming(ticketId); setError('')
+    try { 
+      await sendToProcessing(token, ticketId)
+      await fetchQueue()
+      setViewingTicketId(null) // close modal on success
+    }
+    catch (e) { setError(e.message) }
+    finally { setConfirming(null) }
+  }
+
   // ── Derived stats ──
   const active    = queue.filter(q => q.ticket.status !== 'completed')
   const done      = queue.filter(q => q.ticket.status === 'completed')
   const serving   = queue.filter(q => q.ticket.status === 'in_progress')
-  const waiting   = queue.filter(q => q.ticket.status === 'pending')
+  const waiting   = queue.filter(q => q.ticket.status === 'pending' || q.ticket.status === 'waiting')
   const highPrio  = queue.filter(q => {
     const pc = q.ticket.appointments?.priority_class
     return pc === 'graduating' || pc === 'pwd'
@@ -363,7 +388,15 @@ export default function LiveQueuePage() {
 
   // ── Filtered & searched queue ──
   const displayed = queue.filter(({ ticket, steps }) => {
-    const statusOk = filters.statuses.includes(ticket.status)
+    let statusOk = false
+    if (filters.status === 'active') {
+      statusOk = ['in_progress', 'pending', 'waiting'].includes(ticket.status)
+    } else if (filters.status === 'all') {
+      statusOk = true
+    } else {
+      statusOk = ticket.status === filters.status
+    }
+
     const prioOk = filters.priority === 'all'
       || (filters.priority === 'high' && (ticket.appointments?.priority_class === 'graduating' || ticket.appointments?.priority_class === 'pwd'))
       || (filters.priority === 'regular' && ticket.appointments?.priority_class === 'regular')
@@ -381,16 +414,17 @@ export default function LiveQueuePage() {
   // Completed tickets are excluded here since they already have their own section.
   const getRequiresPresence = (steps) => {
     const current = steps?.find(s => s.status === 'in_progress')
+    if (current?.location === 'Back Office') return false
     return current?.requires_presence !== false // default true if missing/undefined
   }
   const nonCompleted    = displayed.filter(({ ticket }) => ticket.status !== 'completed')
   const atCounter       = nonCompleted.filter(({ steps }) => getRequiresPresence(steps))
   const processingQueue = nonCompleted.filter(({ steps }) => !getRequiresPresence(steps))
 
-  const currentTime = now.toLocaleTimeString('en-PH', { hour: '2-digit', minute: '2-digit' })
+  const currentTime = now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
 
   // ── Reusable row renderer — used by both "At the Counter" and "Processing" tables ──
-  const renderQueueRow = ({ ticket, steps }, idx, arrLength) => {
+  const renderQueueRow = ({ ticket, steps }, idx, arrLength, actionLabel = 'Confirm') => {
     const student = ticket.users
     const name    = student ? `${ticket.users.last_name}, ${ticket.users.first_name}` : 'Unknown'
     const sid     = student?.student_id || '—'
@@ -402,7 +436,13 @@ export default function LiveQueuePage() {
     const inProgressStep = steps?.find(s => s.status === 'in_progress')
     const confirmKey = inProgressStep ? `${ticket.id}-${inProgressStep.step_number}` : null
     const isConfirming = confirming === confirmKey
-    const waitMins  = Math.floor(Math.random() * 20) + 5 // placeholder until API provides it
+    
+    let waitMins = 0
+    if (ticket.created_at) {
+      waitMins = Math.max(0, Math.floor((now.getTime() - new Date(ticket.created_at).getTime()) / 60000))
+    } else {
+      waitMins = Math.max(3, (idx + 1) * 5)
+    }
 
     return (
       <div key={ticket.id} className={`grid grid-cols-[100px_1fr_160px_180px_70px_160px] gap-0 p-4 items-center transition-colors duration-150
@@ -434,7 +474,7 @@ export default function LiveQueuePage() {
         {/* Transaction */}
         <div>
           <div className="text-xs font-semibold text-text-main leading-snug">{txName}</div>
-          <div className="text-[11px] text-text-muted mt-0.5">{appt?.time_slot || '—'}</div>
+          <div className="text-[11px] text-text-muted mt-0.5">{fmt12h(appt?.time_slot) || '—'}</div>
         </div>
 
         {/* Status + Progress */}
@@ -444,7 +484,12 @@ export default function LiveQueuePage() {
               {statusCfg.label}
             </span>
             {inProgressStep && <span className="text-[11px] text-text-muted">Step {inProgressStep.step_number}</span>}
-            {inProgressStep && <PresenceBadge requiresPresence={inProgressStep.requires_presence !== false} />}
+            {inProgressStep?.location && inProgressStep.location.startsWith('Window') && (
+              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-maroon-light text-maroon border border-maroon-border uppercase tracking-wide">
+                {inProgressStep.location}
+              </span>
+            )}
+            {inProgressStep && <PresenceBadge requiresPresence={inProgressStep.requires_presence !== false && inProgressStep.location !== 'Back Office'} />}
           </div>
           {steps && steps.length > 0 && (
             <StepsBar steps={steps} current={ticket.current_step} total={ticket.total_steps} />
@@ -457,24 +502,40 @@ export default function LiveQueuePage() {
         </div>
 
         <div className="flex gap-1.5 flex-wrap">
-          {ticket.status === 'in_progress' && inProgressStep && (
-            <button
-              onClick={() => setViewingTicketId(ticket.id)}
-              className="px-3.5 py-2 rounded-lg border-none bg-maroon text-white text-xs font-bold cursor-pointer font-sans whitespace-nowrap hover:bg-maroon-dark transition-colors"
-            >
-              View Details
-            </button>
-          )}
-          {ticket.status === 'pending' && (
-            <button
-              onClick={() => handleConfirm(ticket.id, ticket.current_step)}
-              disabled={isConfirming}
-              className={`px-3.5 py-2 rounded-lg border text-xs font-bold font-sans whitespace-nowrap transition-colors
-                ${isConfirming ? 'bg-gold-light border-gold text-gold/50 cursor-not-allowed' : 'bg-gold-light border-gold text-gold cursor-pointer hover:bg-gold hover:text-white'}
-              `}
-            >
-              Call Next
-            </button>
+          {(ticket.status === 'in_progress' || ticket.status === 'waiting' || ticket.status === 'pending') && inProgressStep && (
+            <>
+              {ticket.status === 'waiting' || ticket.status === 'pending' ? (
+                <button
+                  onClick={() => handleCallTicket(ticket.id)}
+                  disabled={confirming === ticket.id}
+                  className={`px-3.5 py-2 rounded-lg border text-[12px] font-bold cursor-pointer font-sans whitespace-nowrap transition-all shadow-sm hover:-translate-y-0.5
+                    ${confirming === ticket.id
+                      ? 'border-border bg-off-white text-text-muted cursor-not-allowed'
+                      : 'border-blue-border bg-blue-light text-blue hover:bg-blue hover:text-white'}
+                  `}
+                >
+                  {confirming === ticket.id ? '...' : 'Call'}
+                </button>
+              ) : (
+                <button
+                  onClick={() => handleConfirm(ticket.id, ticket.current_step)}
+                  disabled={isConfirming}
+                  className={`px-3.5 py-2 rounded-lg border text-[12px] font-bold cursor-pointer font-sans whitespace-nowrap transition-all shadow-sm hover:-translate-y-0.5
+                    ${isConfirming
+                      ? 'border-border bg-off-white text-text-muted cursor-not-allowed'
+                      : 'border-maroon-border bg-maroon-light text-maroon hover:bg-maroon hover:text-white'}
+                  `}
+                >
+                  {isConfirming ? '...' : actionLabel}
+                </button>
+              )}
+              <button
+                onClick={() => setViewingTicketId(ticket.id)}
+                className="px-3.5 py-2 rounded-lg border-none bg-surface border-border text-text-main text-xs font-bold cursor-pointer font-sans whitespace-nowrap hover:bg-off-white transition-colors"
+              >
+                Details
+              </button>
+            </>
           )}
           {ticket.status === 'completed' && (
             <span className="text-xs font-semibold text-blue flex items-center gap-1"><Check size={12} /> Done</span>
@@ -504,22 +565,9 @@ export default function LiveQueuePage() {
           </p>
         </div>
         <div className="flex items-center gap-2.5">
-          {/* Search */}
-          <div className="relative">
-            <input
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-              placeholder="Search student or ticket…"
-              className="py-[9px] pr-3.5 pl-[34px] rounded-[9px] border border-border bg-white text-[13px] text-text-main outline-none w-[220px] font-sans focus:border-maroon transition-colors"
-            />
-            <span className="absolute left-2.5 top-1/2 -translate-y-1/2 flex items-center"><Search size={14} className="text-text-muted" /></span>
-          </div>
-          {/* Refresh */}
-          <button onClick={fetchQueue} title="Refresh Queue" className="p-0 rounded-full border border-border bg-white text-text-sub text-[15px] cursor-pointer flex items-center justify-center w-[34px] h-[34px] hover:bg-off-white transition-colors">
-            <RefreshCw size={15} />
-          </button>
           {/* Current time */}
-          <div className="bg-maroon text-white px-4 py-[9px] rounded-[9px] text-sm font-bold font-serif">
+          <div className="bg-white border border-border shadow-sm text-text-main px-4 py-2.25 rounded-xl text-[15px] font-bold font-sans flex items-center gap-2 mt-8">
+            <Clock size={18} strokeWidth={2.5} className="text-maroon" />
             {currentTime}
           </div>
         </div>
@@ -531,13 +579,19 @@ export default function LiveQueuePage() {
           icon={<Clock size={20} />} 
           value={`${avgWait}m`} 
           label="Average Wait Time" 
-          sub={avgWait > 15 ? "↑ Higher than avg" : "↓ Fast processing"} 
-          subColorClass={avgWait > 15 ? 'text-orange' : 'text-success'} 
+          sub={avgWait > 15 ? "↑ Higher than avg" : "Fast processing"} 
+          subColorClass={avgWait > 15 ? 'text-orange' : 'text-text-muted'} 
           loading={loading} delay="0.1s"
         />
-        <MiniStat icon={<Users size={20} />} value={waiting.length} label="Waiting in Queue" sub={`${serving.length} serving now`} subColorClass="text-success" loading={loading} delay="0.2s" />
-        <MiniStat icon={<CheckSquare size={20} />} value={done.length} label="Total Serviced" sub={done.length >= 80 ? 'High volume — Important' : 'Normal volume'} subColorClass={done.length >= 80 ? 'text-danger' : 'text-success'} loading={loading} delay="0.3s" />
+        <MiniStat icon={<Users size={20} />} value={waiting.length} label="Waiting in Queue" sub={`${serving.length} serving now`} subColorClass="text-text-muted" loading={loading} delay="0.2s" />
+        <MiniStat icon={<CheckSquare size={20} />} value={done.length} label="Total Serviced" sub={done.length >= 80 ? 'High volume — Important' : 'Normal volume'} subColorClass={done.length >= 80 ? 'text-danger' : 'text-text-muted'} loading={loading} delay="0.3s" />
       </div>
+
+      <FilterBar
+        filters={filters}
+        onChange={setFilters}
+        onReset={() => setFilters({ status: 'active', priority: 'all', transactionType: 'all' })}
+      />
 
       {error && (
         <div className="px-4 py-3 rounded-[10px] bg-danger-light border border-danger-border text-danger text-[13px] flex items-center">
@@ -557,13 +611,10 @@ export default function LiveQueuePage() {
               <span className="text-[16px] font-serif font-bold text-text-main flex items-center gap-2">
                 <DoorOpen size={17} className="text-maroon" /> At the Counter
               </span>
-              <span className="text-xs text-text-muted ml-[25px] block mt-0.5">
+              <span className="text-xs text-text-muted ml-6.25 block mt-0.5">
                 Students physically waiting — call these in order
               </span>
             </div>
-            <button className="px-3.5 py-1.5 rounded-lg border border-border bg-white text-text-sub text-xs font-semibold cursor-pointer font-sans flex items-center gap-1.5 hover:bg-off-white transition-colors">
-              <Download size={14} /> Export
-            </button>
           </div>
 
           <div className="grid grid-cols-[100px_1fr_160px_180px_70px_160px] gap-0 px-4 py-2.5 rounded-t-[10px] bg-surface border border-b-0 border-border">
@@ -579,16 +630,16 @@ export default function LiveQueuePage() {
                   <div key={i} className={`grid grid-cols-[100px_1fr_160px_180px_70px_160px] gap-0 p-4 ${i < 3 ? 'border-b border-border' : ''}`}>
                     <div className="animate-pulse w-10 h-5 rounded bg-border" />
                     <div>
-                      <div className="animate-pulse w-[120px] h-3.5 rounded bg-border mb-1.5" />
+                      <div className="animate-pulse w-30 h-3.5 rounded bg-border mb-1.5" />
                       <div className="animate-pulse w-20 h-3 rounded bg-border" />
                     </div>
                     <div>
-                      <div className="animate-pulse w-[100px] h-3.5 rounded bg-border mb-1.5" />
-                      <div className="animate-pulse w-[60px] h-3 rounded bg-border" />
+                      <div className="animate-pulse w-25 h-3.5 rounded bg-border mb-1.5" />
+                      <div className="animate-pulse w-15 h-3 rounded bg-border" />
                     </div>
-                    <div className="animate-pulse w-[100px] h-5 rounded-full bg-border" />
-                    <div className="animate-pulse w-[30px] h-4 rounded bg-border" />
-                    <div className="animate-pulse w-[80px] h-7 rounded-lg bg-border" />
+                    <div className="animate-pulse w-25 h-5 rounded-full bg-border" />
+                    <div className="animate-pulse w-7.5 h-4 rounded bg-border" />
+                    <div className="animate-pulse w-20 h-7 rounded-lg bg-border" />
                   </div>
                 ))}
               </div>
@@ -599,7 +650,7 @@ export default function LiveQueuePage() {
                 <p className="text-[13px] text-text-muted m-0">Students will appear here when they need to be physically served.</p>
               </div>
             ) : (
-              atCounter.map((item, idx) => renderQueueRow(item, idx, atCounter.length))
+              atCounter.map((item, idx) => renderQueueRow(item, idx, atCounter.length, 'Call Next'))
             )}
           </div>
 
@@ -615,10 +666,10 @@ export default function LiveQueuePage() {
           <div className="mt-8">
             <div className="flex items-center justify-between mb-3.5">
               <div>
-                <span className="text-[16px] font-serif font-bold text-text-main flex items-center gap-2">
+                <span className="text-base font-serif font-bold text-text-main flex items-center gap-2">
                   <Cog size={17} className="text-text-muted" /> Processing
                 </span>
-                <span className="text-xs text-text-muted ml-[25px] block mt-0.5">
+                <span className="text-xs text-text-muted ml-6 block mt-0.5">
                   No one is waiting for these — work through them whenever you're free
                 </span>
               </div>
@@ -642,7 +693,7 @@ export default function LiveQueuePage() {
                   <p className="text-[13px] text-text-muted m-0">Tickets land here after being submitted, before release.</p>
                 </div>
               ) : (
-                processingQueue.map((item, idx) => renderQueueRow(item, idx, processingQueue.length))
+                processingQueue.map((item, idx) => renderQueueRow(item, idx, processingQueue.length, 'Mark Complete'))
               )}
             </div>
           </div>
@@ -666,31 +717,19 @@ export default function LiveQueuePage() {
             </div>
           )}
         </div>
-
-        <div className="animate-fade-up" style={{ animationDelay: '0.5s' }}>
-          <FilterSidebar
-            filters={filters}
-            onChange={setFilters}
-            highPriorityCount={highPrio.length}
-            onReset={() => setFilters({ statuses: ['in_progress', 'pending'], priority: 'all', transactionType: 'all' })}
-          />
-        </div>
       </div>
 
       {/* ── Modals ── */}
-      {viewingTicketId && (() => {
-        const activeModalData = queue.find(q => q.ticket.id === viewingTicketId)
-        if (!activeModalData) return null
-        return (
-          <QueueDetailsModal
-            ticketData={activeModalData}
-            onClose={() => setViewingTicketId(null)}
-            onConfirm={(ticketId, stepNum) => handleConfirm(ticketId, stepNum)}
-            confirming={confirming}
-            onSetReleaseDate={handleSetReleaseDate}
-          />
-        )
-      })()}
+      {viewingTicketId && queue.find(q => q.ticket.id === viewingTicketId) && (
+        <QueueDetailsModal 
+          ticketData={queue.find(q => q.ticket.id === viewingTicketId)} 
+          onClose={() => setViewingTicketId(null)} 
+          onConfirm={handleConfirm}
+          onSendToProcessing={handleSendToProcessing}
+          confirming={confirming}
+          onSetReleaseDate={handleSetReleaseDate}
+        />
+      )}
 
     </div>
   )

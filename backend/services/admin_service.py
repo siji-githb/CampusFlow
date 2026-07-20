@@ -77,7 +77,7 @@ def get_dashboard_stats():
         raise HTTPException(status_code=500, detail=str(e))
 
 
-def get_reports(days: int = 7):
+def get_reports(days: int = 7, doc_type: str = None):
     admin = get_admin()
     start_date = date.today() - timedelta(days=days)
 
@@ -101,11 +101,15 @@ def get_reports(days: int = 7):
         from datetime import datetime
 
         for appt in appts.data:
-            d = appt["appointment_date"]
-            by_date[d] = by_date.get(d, 0) + 1
-
             tt_name = appt.get("transaction_types", {}).get("name", "Unknown") \
                 if appt.get("transaction_types") else "Unknown"
+            
+            if doc_type and doc_type.lower() != "all":
+                if doc_type.lower() not in tt_name.lower():
+                    continue
+
+            d = appt["appointment_date"]
+            by_date[d] = by_date.get(d, 0) + 1
             by_type[tt_name] = by_type.get(tt_name, 0) + 1
 
             status = appt["status"]
@@ -120,7 +124,7 @@ def get_reports(days: int = 7):
                 except Exception:
                     pass
 
-        total     = len(appts.data)
+        total     = sum(by_date.values())
         completed = by_status.get("completed", 0)
         cancelled = by_status.get("cancelled", 0)
         no_show   = by_status.get("no_show", 0)
@@ -425,6 +429,11 @@ def get_ai_insights():
                 f"{pending} appointment{'s' if pending != 1 else ''} still pending."
             )
 
+    from services.predictive_service import compute_forecast, compute_no_show_risks, compute_volume_trend
+    forecast = compute_forecast(admin)
+    no_show_risk = compute_no_show_risks(admin)
+    trend = compute_volume_trend(admin)
+
     return {
         "date":            today,
         "total":           total,
@@ -434,6 +443,9 @@ def get_ai_insights():
         "pending":         pending,
         "completion_rate": completion_rate,
         "insight":         insight,
+        "forecast":        forecast,
+        "no_show_risk":    no_show_risk,
+        "trend":           trend,
     }
 
 

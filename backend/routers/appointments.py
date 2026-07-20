@@ -5,6 +5,7 @@ from models.appointment_models import AppointmentCreate
 from services.appointment_service import (
     get_transaction_types,
     get_available_slots,
+    get_booking_config,
     create_appointment,
     get_student_appointments,
     cancel_appointment,
@@ -41,6 +42,12 @@ ALLOWED_UPLOAD_TYPES = {
 @router.get("/transaction-types")
 def list_transaction_types():
     return get_transaction_types()
+
+
+@router.get("/booking-config")
+def get_booking_config_endpoint():
+    """Public endpoint — returns constraints students need before selecting a date."""
+    return get_booking_config()
 
 
 @router.get("/slots")

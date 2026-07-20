@@ -32,6 +32,15 @@ def get_office_config():
         raise HTTPException(status_code=500, detail=str(e))
 
 
+def get_booking_config():
+    """Public subset of office config needed by students before booking."""
+    config = get_office_config()
+    return {
+        "booking_cutoff_days": int(config.get("booking_cutoff_days", 1)),
+        "booking_window_days": int(config.get("booking_window_days", 30)),
+    }
+
+
 # ── UPDATED: Slot generation (lunch breaks & processing time) ──
 def generate_time_slots(open_time: str, close_time: str, duration_minutes: int, lunch_start: str = "12:00", lunch_end: str = "13:00"):
     slots = []
@@ -139,9 +148,9 @@ def create_appointment(student_id: str, priority_class: str, data: AppointmentCr
             detail=f"Appointments must be booked at least {cutoff_days} day(s) in advance"
         )
 
-    # Check if date is a weekday
-    if data.appointment_date.weekday() == 6:
-        raise HTTPException(status_code=400, detail="Appointments cannot be booked on Sundays")
+    # Check if date is a weekend
+    if data.appointment_date.weekday() >= 5:
+        raise HTTPException(status_code=400, detail="Appointments cannot be booked on weekends")
 
     import json
     date_overrides = json.loads(config.get("date_overrides", "{}"))
@@ -293,6 +302,22 @@ def cancel_appointment(appointment_id: str, student_id: str):
             
         # Automatically mark the confirmation notification as read
         try:
+            total_seconds = 0
+            valid_steps = 0
+            for row in (recent_steps.data or []):
+                try:
+                    start = datetime.fromisoformat(row["created_at"].replace("Z", "+00:00"))
+                    end = datetime.fromisoformat(row["confirmed_at"].replace("Z", "+00:00"))
+                    secs = (end - start).total_seconds()
+                    if 0 < secs < 7200:  # ignore outliers over 2 hours
+                        total_seconds += secs
+                        valid_steps += 1
+                except Exception:
+                    pass
+
+            avg_total_secs = round(total_seconds / valid_steps) if valid_steps > 0 else 480
+            avg_mins = avg_total_secs // 60
+            avg_secs = avg_total_secs % 60
             admin.table("notifications") \
                 .update({"is_read": True}) \
                 .eq("user_id", student_id) \
@@ -387,8 +412,53 @@ def get_appointment_stats():
         month_start = str(date.today().replace(day=1))
         res_month = admin.table("appointments").select("id").gte("appointment_date", month_start).execute()
         month_count = len(res_month.data) if res_month.data else 0
+
+        # Avg wait minutes — derived from completed appointments this month that have both created_at and updated_at
+        from datetime import datetime as dt
+        res_times = admin.table("appointments") \
+            .select("created_at, updated_at") \
+            .gte("appointment_date", month_start) \
+            .eq("status", "completed") \
+            .execute()
+        
+        total_mins = 0
+        counted = 0
+        for row in (res_times.data or []):
+            try:
+                c = dt.fromisoformat(row["created_at"].replace("Z", "+00:00"))
+                u = dt.fromisoformat(row["updated_at"].replace("Z", "+00:00"))
+                diff_mins = max(0, (u - c).total_seconds() / 60.0)
+                total_mins += diff_mins
+                counted += 1
+            except Exception:
+                pass
+        
+        avg_mins = round(total_mins / counted) if counted > 0 else 0
+        avg_secs = avg_mins * 60
+
+        # Peak hour — find most common time_slot for today
+        res_slots = admin.table("appointments").select("time_slot").eq("appointment_date", today).execute()
+        slot_counts: dict = {}
+        for row in (res_slots.data or []):
+            ts = row.get("time_slot") or ""
+            if ts:
+                slot_counts[ts] = slot_counts.get(ts, 0) + 1
+
+        if slot_counts:
+            peak_slot = max(slot_counts, key=slot_counts.__getitem__)
+            # Format "HH:MM:SS" -> "H:MM AM/PM"
+            try:
+                h, m = int(peak_slot.split(":")[0]), int(peak_slot.split(":")[1])
+                peak_hour_str = f"{h % 12 or 12}:{str(m).zfill(2)} {'AM' if h < 12 else 'PM'}"
+            except Exception:
+                peak_hour_str = peak_slot
+        else:
+            peak_hour_str = "N/A"
         
         return {
+            "avg_wait_minutes": avg_mins,
+            "avg_wait_seconds": avg_secs,
+            "peak_forecast": peak_hour_str,
             "today_appointments": today_count,
             "completed_today": comp_count,
             "total_monthly": month_count

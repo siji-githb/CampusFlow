@@ -160,7 +160,7 @@ const RescheduleModal = ({ appt, onClose, onConfirm }) => {
       
       {/* Main Modal */}
       {!showConfirm && (
-        <div className="animate-fade-up relative w-[600px] bg-white rounded-2xl p-8 shadow-[0_4px_24px_rgba(0,0,0,0.1)]">
+        <div className="animate-fade-up relative w-150 bg-white rounded-2xl p-8 shadow-[0_4px_24px_rgba(0,0,0,0.1)]">
           <h3 className="font-serif text-[24px] text-maroon m-0 mb-5">Reschedule Appointment</h3>
           
           <div className="mb-5">
@@ -173,7 +173,7 @@ const RescheduleModal = ({ appt, onClose, onConfirm }) => {
             <div className="mb-7">
               <label className="block text-[13px] font-semibold text-text-muted mb-2">Select Time Slot</label>
               {loadingSlots ? <div className="text-[14px] text-text-sub">Loading slots...</div> : (
-                <div className="grid grid-cols-3 gap-2.5 max-h-[240px] overflow-y-auto pr-1">
+                <div className="grid grid-cols-3 gap-2.5 max-h-60 overflow-y-auto pr-1">
                   {slots.length === 0 ? <div className="text-[14px] text-text-sub">No slots available</div> : slots.map(s => {
                     const available = s.available
                     const selected = time === s.time_slot
@@ -200,7 +200,7 @@ const RescheduleModal = ({ appt, onClose, onConfirm }) => {
 
       {/* Confirmation Modal */}
       {showConfirm && (
-        <div className="animate-fade-up relative w-[400px] bg-white rounded-2xl p-8 shadow-[0_4px_24px_rgba(0,0,0,0.1)] text-center">
+        <div className="animate-fade-up relative w-100 bg-white rounded-2xl p-8 shadow-[0_4px_24px_rgba(0,0,0,0.1)] text-center">
           <div className="w-12 h-12 rounded-full bg-maroon-light text-maroon flex items-center justify-center mx-auto mb-4">
             <AlertTriangle size={24} />
           </div>
@@ -241,7 +241,7 @@ const OverrideModal = ({ isOpen, type, selectedDate, currentNote, onClose, onSav
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/60 transition-opacity" onClick={onClose} />
-      <div className="animate-fade-up relative w-full max-w-[480px] bg-white rounded-3xl p-8 shadow-[0_20px_60px_rgba(0,0,0,0.15)] border border-white/20">
+      <div className="animate-fade-up relative w-full max-w-120 bg-white rounded-3xl p-8 shadow-[0_20px_60px_rgba(0,0,0,0.15)] border border-white/20">
         
         {/* Header Section */}
         <div className="flex items-start justify-between mb-6">
@@ -274,7 +274,7 @@ const OverrideModal = ({ isOpen, type, selectedDate, currentNote, onClose, onSav
             value={note} 
             onChange={e => setNote(e.target.value)} 
             placeholder={isBlock ? "e.g., University Holiday, System Maintenance" : "e.g., Registrar office available for half-day only"}
-            className="w-full p-4 rounded-2xl border-[1.5px] border-border font-sans text-[15px] outline-none text-text-main min-h-[120px] resize-y focus:border-maroon/50 focus:ring-4 focus:ring-maroon/5 transition-all shadow-inner bg-off-white/50"
+            className="w-full p-4 rounded-2xl border-[1.5px] border-border font-sans text-[15px] outline-none text-text-main min-h-30 resize-y focus:border-maroon/50 focus:ring-4 focus:ring-maroon/5 transition-all shadow-inner bg-off-white/50"
           />
         </div>
 
@@ -422,7 +422,7 @@ export default function AdminAppointmentsPage() {
           <h1 className="font-serif text-[26px] font-bold text-maroon m-0 mb-2 flex items-center gap-3">
             <Calendar className="text-maroon" size={24} /> Appointments Management
           </h1>
-          <p className="text-[12px] text-text-sub m-0 leading-relaxed max-w-[650px]">
+          <p className="text-[12px] text-text-sub m-0 leading-relaxed max-w-162.5">
             Manage student requests, review schedules, and confirm or reschedule appointments.
           </p>
         </div>
@@ -436,7 +436,7 @@ export default function AdminAppointmentsPage() {
               <select
                 value={statusFilter}
                 onChange={e => { setStatusFilter(e.target.value); setPage(1) }}
-                className="py-[9px] pr-9 pl-4 rounded-xl border border-border bg-white text-[13px] text-text-main outline-none cursor-pointer font-sans appearance-none font-bold shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:border-text-muted/30 transition-all">
+                className="py-2.25 pr-9 pl-4 rounded-xl border border-border bg-white text-[13px] text-text-main outline-none cursor-pointer font-sans appearance-none font-bold shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:border-text-muted/30 transition-all">
                 <option value="all">All Statuses</option>
                 <option value="pending">Scheduled</option>
                 <option value="confirmed">Confirmed</option>
@@ -477,7 +477,7 @@ export default function AdminAppointmentsPage() {
               </div>
             </div>
             <div className="font-sans text-[28px] font-bold text-text-main leading-none">
-              {loading ? <div className="animate-pulse w-[60px] h-[36px] bg-border rounded-lg" /> : c.value}
+              {loading ? <div className="animate-pulse w-15 h-9 bg-border rounded-lg" /> : c.value}
             </div>
             <div className="text-[11px] font-medium text-text-muted mt-1.5">{c.sub}</div>
           </div>
@@ -499,7 +499,7 @@ export default function AdminAppointmentsPage() {
                 { label: 'Block Date', action: () => setOverrideModal({ isOpen: true, type: 'block' }) },
                 { label: 'Add Notice Note', action: () => setOverrideModal({ isOpen: true, type: 'note' }) },
               ].map((item, i) => (
-                <button key={i} onClick={item.action} className="w-full py-[10px] px-4 rounded-xl border border-border bg-white text-text-main text-[13px] font-bold cursor-pointer text-left font-sans transition-all hover:border-text-muted/30 hover:bg-off-white hover:-translate-y-0.5 shadow-[0_2px_8px_rgba(0,0,0,0.04)]">
+                <button key={i} onClick={item.action} className="w-full py-2.5 px-4 rounded-xl border border-border bg-white text-text-main text-[13px] font-bold cursor-pointer text-left font-sans transition-all hover:border-text-muted/30 hover:bg-off-white hover:-translate-y-0.5 shadow-[0_2px_8px_rgba(0,0,0,0.04)]">
                   {item.label}
                 </button>
               ))}
@@ -583,14 +583,14 @@ export default function AdminAppointmentsPage() {
             {apptLoading ? (
               [1, 2, 3, 4, 5].map((n, idx) => (
                 <div key={n} className={`grid grid-cols-[100px_1.5fr_1.5fr_120px_180px] p-[16px_24px] items-center ${idx === 4 ? 'border-none' : 'border-b border-border/60'} bg-white`}>
-                  <div className="animate-pulse h-6 w-[50px] rounded bg-border" />
+                  <div className="animate-pulse h-6 w-12.5 rounded bg-border" />
                   <div className="flex items-center gap-2.5">
-                    <div className="animate-pulse w-[34px] h-[34px] rounded-full bg-border" />
-                    <div className="animate-pulse h-[18px] w-[60%] rounded bg-border" />
+                    <div className="animate-pulse w-8.5 h-8.5 rounded-full bg-border" />
+                    <div className="animate-pulse h-4.5 w-[60%] rounded bg-border" />
                   </div>
                   <div className="animate-pulse h-4 w-[70%] rounded bg-border" />
-                  <div className="animate-pulse h-[22px] w-[70px] rounded-full bg-border" />
-                  <div className="animate-pulse h-[26px] w-[60px] rounded-md bg-border" />
+                  <div className="animate-pulse h-5.5 w-17.5 rounded-full bg-border" />
+                  <div className="animate-pulse h-6.5 w-15 rounded-md bg-border" />
                 </div>
               ))
             ) : paginated.length === 0 ? (
@@ -599,7 +599,7 @@ export default function AdminAppointmentsPage() {
                 <p className="font-serif text-[18px] font-bold text-text-main m-0 mb-1">
                   No appointments {isToday ? 'today' : `on ${selectedDate}`}
                 </p>
-                <p className="text-[13px] text-text-muted m-0 max-w-[250px] mx-auto">
+                <p className="text-[13px] text-text-muted m-0 max-w-62.5 mx-auto">
                   {statusFilter !== 'all' ? 'Try changing the status filter to see other appointments.' : 'This date has no scheduled appointments yet.'}
                 </p>
               </div>
@@ -633,7 +633,19 @@ export default function AdminAppointmentsPage() {
                     </div>
 
                     {/* Transaction */}
-                    <div className="text-[13.5px] font-medium text-text-sub overflow-hidden text-ellipsis whitespace-nowrap pr-4">{txName}</div>
+                    <div className="pr-4 min-w-0">
+                      <div className="text-[13.5px] font-medium text-text-sub overflow-hidden text-ellipsis whitespace-nowrap">{txName}</div>
+                      {appt.transaction_types?.required_documents?.length > 0 && (
+                        <div className="flex flex-wrap gap-1 mt-1">
+                          {appt.transaction_types.required_documents.slice(0, 2).map((doc, i) => (
+                            <span key={i} className="text-[9.5px] font-medium text-text-muted bg-off-white px-1.5 py-px rounded-full whitespace-nowrap">{doc}</span>
+                          ))}
+                          {appt.transaction_types.required_documents.length > 2 && (
+                            <span className="text-[9.5px] font-medium text-text-muted">+{appt.transaction_types.required_documents.length - 2} more</span>
+                          )}
+                        </div>
+                      )}
+                    </div>
 
                     {/* Status */}
                     <div className="flex items-center">
@@ -682,7 +694,7 @@ export default function AdminAppointmentsPage() {
                     Prev
                   </button>
                   {Array.from({ length: totalPages }, (_, i) => (
-                    <button key={i} onClick={() => setPage(i + 1)} className={`w-[30px] h-[30px] rounded-md text-[12px] font-semibold cursor-pointer font-sans border ${page === i + 1 ? 'border-maroon bg-maroon text-white' : 'border-border bg-white text-text-main'}`}>
+                    <button key={i} onClick={() => setPage(i + 1)} className={`w-7.5 h-7.5 rounded-md text-[12px] font-semibold cursor-pointer font-sans border ${page === i + 1 ? 'border-maroon bg-maroon text-white' : 'border-border bg-white text-text-main'}`}>
                       {i + 1}
                     </button>
                   ))}
