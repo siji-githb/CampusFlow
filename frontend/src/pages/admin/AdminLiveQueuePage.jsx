@@ -27,18 +27,6 @@ const PriorityBadge = ({ level }) => {
   )
 }
 
-// ── Presence badge — same convention as staff's Live Queue page ────────────────
-const PresenceBadge = ({ requiresPresence }) => (
-  <span
-    title={requiresPresence ? 'Student must be at the counter' : 'Back-office — no student presence needed'}
-    className={`inline-flex items-center gap-1 text-[9px] font-bold px-1.5 py-0.5 rounded-full uppercase tracking-[0.03em]
-      ${requiresPresence ? 'bg-maroon-light text-maroon' : 'bg-gray-100 text-gray-500'}`}
-  >
-    {requiresPresence ? <DoorOpen size={9} /> : <Cog size={9} />}
-    {requiresPresence ? 'Counter' : 'Back office'}
-  </span>
-)
-
 // ─────────────────────────────────────────────────────────────────────────────
 // MAIN AdminLiveQueuePage
 // ─────────────────────────────────────────────────────────────────────────────
@@ -104,7 +92,7 @@ export default function AdminLiveQueuePage() {
   const currentTime = now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
 
   // ── Reusable row for both sections ──
-  const renderRow = ({ ticket, steps }, idx, arrLength) => {
+  const renderRow = ({ ticket, steps }, idx, arrLength, showWait = true) => {
     const student  = ticket.users
     const name     = student ? `${student.first_name} ${student.last_name}` : 'Unknown'
     const txName   = ticket.appointments?.transaction_types?.name || 'Transaction'
@@ -115,24 +103,18 @@ export default function AdminLiveQueuePage() {
     const confirmKey = `${ticket.id}-${ticket.current_step}`
 
     return (
-      <div key={ticket.id} className={`group grid grid-cols-[120px_1.5fr_1.5fr_100px_120px] p-[16px_24px] items-center transition-all duration-200 hover:bg-surface border-l-2 border-l-transparent ${isLast ? 'border-none' : 'border-b border-border'} bg-white`}>
+      <div key={ticket.id} className={`group grid ${showWait ? 'grid-cols-[120px_1.5fr_1.5fr_100px_120px]' : 'grid-cols-[120px_1.5fr_1.5fr_120px]'} p-[16px_24px] items-center transition-all duration-200 hover:bg-surface border-l-2 border-l-transparent ${isLast ? 'border-none' : 'border-b border-border'} bg-white`}>
         <span className="font-serif text-[18px] font-bold text-maroon">{ticket.queue_number}</span>
         <div>
           <span className="text-[14px] font-bold text-text-main group-hover:text-maroon transition-colors block">{name}</span>
-          {currentStep && (
-            <div className="mt-1 flex items-center gap-1.5 flex-wrap">
-              {currentStep?.location && currentStep.location.startsWith('Window') && (
-                <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-maroon-light text-maroon border border-maroon-border uppercase tracking-wide">
-                  {currentStep.location}
-                </span>
-              )}
-              <PresenceBadge requiresPresence={currentStep.requires_presence !== false && currentStep.location !== 'Back Office'} />
+          {currentStep && currentStep.location && (
+            <div className="text-[11px] font-bold text-text-sub mt-1 flex items-center gap-1 uppercase tracking-[0.04em]">
+              {currentStep.location} serving
             </div>
           )}
         </div>
         <span className="text-[13.5px] font-medium text-text-sub">{txName}</span>
-        <span className="text-[13.5px] font-bold text-text-main">{waitMin}</span>
-        <div className="flex items-center"><PriorityBadge level={priority} /></div>
+        {showWait && <span className="text-[13.5px] font-bold text-text-main">{waitMin}</span>}
         <div className="flex items-center"><PriorityBadge level={priority} /></div>
       </div>
     )
@@ -262,8 +244,8 @@ export default function AdminLiveQueuePage() {
           </div>
 
           {processingQueue.length > 0 && (
-            <div className="grid grid-cols-[120px_1.5fr_1.5fr_100px_120px] gap-0 px-[24px] py-[12px] rounded-t-[14px] bg-surface border border-b-0 border-border">
-              {['Queue No.', 'Student Name', 'Transaction', 'Wait Time', 'Priority'].map(h => (
+            <div className="grid grid-cols-[120px_1.5fr_1.5fr_120px] gap-0 px-[24px] py-[12px] rounded-t-[14px] bg-surface border border-b-0 border-border">
+              {['Queue No.', 'Student Name', 'Transaction', 'Priority'].map(h => (
                 <div key={h} className="text-[10px] font-bold text-text-muted tracking-[0.08em] uppercase">{h}</div>
               ))}
             </div>
@@ -279,7 +261,7 @@ export default function AdminLiveQueuePage() {
                 <span className="text-xs text-text-muted ml-6 block mt-0.5">Tickets land here after being submitted, before release.</span>
               </div>
             ) : (
-              processingQueue.map((item, i) => renderRow(item, i, processingQueue.length))
+              processingQueue.map((item, i) => renderRow(item, i, processingQueue.length, false))
             )}
           </div>
         </div>

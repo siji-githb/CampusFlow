@@ -49,7 +49,10 @@ export default function MyQueue() {
   const fetchAppts = async () => {
     try {
       const all = await getMyAppointments(token)
-      setUpcomingAppts(all.filter(a => a.appointment_date >= today && a.status === 'confirmed'))
+      setUpcomingAppts(all.filter(a => {
+        const hasActiveTicket = a.queue_tickets?.some(qt => qt.status !== 'cancelled');
+        return a.appointment_date >= today && a.status === 'confirmed' && !hasActiveTicket;
+      }))
     } catch (e) { setError(e.message) }
   }
 
@@ -217,6 +220,21 @@ export default function MyQueue() {
                 )}
               </div>
 
+              {/* Release Date Card (if set) */}
+              {ticket.appointments?.release_date && (
+                <div className="bg-white rounded-2xl border border-border p-6 shadow-sm mb-4 flex items-center justify-between">
+                  <div>
+                    <p className="text-[11px] font-bold text-text-muted uppercase tracking-[0.06em] mb-1">Document Release Date</p>
+                    <p className="text-[16px] font-bold text-text-main m-0">
+                      {new Date(ticket.appointments.release_date).toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' })}
+                    </p>
+                  </div>
+                  <div className="w-10 h-10 rounded-full bg-gold/10 flex items-center justify-center text-gold">
+                    <Calendar size={18} strokeWidth={2.5} />
+                  </div>
+                </div>
+              )}
+
               {/* Step tracker */}
               <div className="bg-white rounded-2xl border border-border p-6 shadow-sm">
                 <h3 className="text-[14px] font-bold text-text-main m-0 mb-5 uppercase tracking-wider">Transaction Progress</h3>
@@ -267,7 +285,14 @@ export default function MyQueue() {
                           {/* Sub-labels — this is the core fix: back-office steps no
                               longer tell the student to "proceed to a counter" */}
                           {step.status === 'in_progress' && stepRequiresPresence && (
-                            <p className="text-[12px] text-gold m-0 flex items-center gap-1 font-medium"><Hourglass size={12} className="text-gold animate-pulse" /> Please proceed to this counter</p>
+                            <div className="mt-1.5 p-3 bg-gold/10 border border-gold/20 rounded-xl">
+                              <p className="text-[13px] text-gold-dark m-0 flex items-center gap-1.5 font-bold tracking-wide">
+                                <Hourglass size={14} className="text-gold animate-pulse" /> Please proceed to {step.location}
+                              </p>
+                              <p className="text-[11px] text-gold-dark/80 m-0 mt-1 ml-5">
+                                Present your queue number to the staff.
+                              </p>
+                            </div>
                           )}
                           {step.status === 'in_progress' && !stepRequiresPresence && (
                             <p className="text-[12px] text-text-sub m-0 flex items-center gap-1 font-medium"><Cog size={12} className="text-text-muted" /> Being processed — no need to wait in line</p>
@@ -317,47 +342,40 @@ export default function MyQueue() {
             </div>
           ) : upcomingAppts.length > 0 ? (
             <div className="animate-fade-up">
-              <p className="text-[13px] text-text-sub m-0 mb-5 leading-relaxed bg-off-white p-3 rounded-lg border border-border">Activate your queue number when you arrive at the Registrar's Office on your appointment date.</p>
-              <div className="flex flex-col gap-3">
+              <p className="text-[13px] text-text-sub m-0 mb-6 flex items-center gap-2 bg-blue-50 text-blue-800 p-3.5 rounded-xl border border-blue-100">
+                <Ticket size={16} className="text-blue-500" />
+                Activate your queue number when you arrive at the Registrar's Office.
+              </p>
+              <div className="flex flex-col gap-4">
                 {upcomingAppts.map(appt => {
                   const isToday = appt.appointment_date === today;
                   return (
-                    <div key={appt.id} className="bg-white rounded-2xl border border-border p-5 shadow-[0_1px_4px_rgba(0,0,0,0.04)]">
-                      <div className="flex justify-between mb-2">
-                        <h3 className="text-[15px] font-semibold text-text-main m-0">{appt.transaction_types?.name}</h3>
-                        <span className="text-[11px] font-semibold py-0.5 px-2.5 rounded-full bg-success-light text-success border border-success-border">Confirmed</span>
-                      </div>
-                      <p className="text-[13px] text-text-sub m-0 mb-4 flex items-center gap-1.5"><Calendar size={13} className="text-gold" /> {appt.appointment_date} at {fmt12h(appt.time_slot)}</p>
-                      {ticket && ticket.appointment_id === appt.id ? (
-                        <div className="flex gap-2">
-                          <button
-                            disabled
-                            className="flex-1 py-3 px-4 rounded-lg border border-border bg-success-light text-success text-[14px] font-bold cursor-default font-sans text-center"
-                          >
-                            ✓ Activated
-                          </button>
-                          <button
-                            onClick={() => setActiveTab('active')}
-                            className="flex-1 py-3 px-4 rounded-lg border-none bg-maroon text-white text-[14px] font-bold cursor-pointer font-sans transition-colors hover:bg-maroon-dark text-center"
-                          >
-                            View Details
-                          </button>
+                    <div key={appt.id} className="bg-white rounded-2xl border border-border p-6 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden group">
+                      <div className="absolute top-0 left-0 w-1 h-full bg-border group-hover:bg-maroon transition-colors" />
+                      
+                      <div className="flex justify-between items-start mb-4">
+                        <div>
+                          <h3 className="text-[16px] font-bold text-text-main m-0 mb-1.5">{appt.transaction_types?.name}</h3>
+                          <span className="inline-flex items-center gap-1.5 text-[12px] font-semibold py-1 px-3 rounded-full bg-surface text-text-muted border border-border">
+                            <Calendar size={12} className="text-text-muted" /> {new Date(appt.appointment_date).toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' })} at {fmt12h(appt.time_slot)}
+                          </span>
                         </div>
-                      ) : (
-                        <button
-                          onClick={() => setActivateConfirmId(appt.id)}
-                          disabled={activating === appt.id || !isToday || ticket}
-                          title={ticket ? "You already have an active queue ticket" : ""}
-                          className={`w-full py-3 px-4 rounded-lg border-none text-[14px] font-bold font-sans transition-colors ${
-                            activating === appt.id ? 'bg-maroon-mid text-text-muted cursor-wait' :
-                            !isToday ? 'bg-border text-text-sub cursor-not-allowed' :
-                            ticket ? 'bg-border text-text-sub cursor-not-allowed' :
-                            'bg-gold text-white cursor-pointer hover:bg-gold-light hover:text-gold shadow-sm'
-                          }`}
-                        >
-                          {activating === appt.id ? 'Activating...' : !isToday ? 'Available on Appointment Date' : <><Ticket size={16} className="text-gold" /> Get Queue Number</>}
-                        </button>
-                      )}
+                        <span className="text-[11px] font-bold py-1 px-3 rounded-full bg-success-light text-success uppercase tracking-wider">Confirmed</span>
+                      </div>
+                      
+                      <button
+                        onClick={() => setActivateConfirmId(appt.id)}
+                        disabled={activating === appt.id || !isToday || ticket}
+                        title={ticket ? "You already have an active queue ticket" : ""}
+                        className={`w-full py-3.5 px-4 rounded-xl border text-[14px] font-bold font-sans transition-all flex items-center justify-center gap-2 ${
+                          activating === appt.id ? 'bg-surface text-text-muted border-border cursor-wait' :
+                          !isToday ? 'bg-surface text-text-sub border-border cursor-not-allowed opacity-70' :
+                          ticket ? 'bg-surface text-text-sub border-border cursor-not-allowed opacity-70' :
+                          'bg-gold text-white border-gold-dark cursor-pointer hover:bg-gold-light hover:text-gold hover:border-gold-light shadow-sm hover:-translate-y-0.5'
+                        }`}
+                      >
+                        {activating === appt.id ? 'Activating...' : !isToday ? 'Available on Appointment Date' : <><Ticket size={16} /> Get Queue Number</>}
+                      </button>
                     </div>
                   )
                 })}
@@ -409,7 +427,7 @@ export default function MyQueue() {
           <div className="bg-white rounded-2xl p-7 max-w-sm w-full shadow-2xl animate-fade-up">
             <h3 className="text-[18px] font-bold text-text-main m-0 mb-2">Get Queue Number?</h3>
             <p className="text-[14px] text-text-sub m-0 mb-6">
-              Are you sure you want to activate your queue ticket now? Make sure you are already at the Campus or heading there shortly.
+              Are you sure you want to activate your queue ticket now? Make sure you are already at the Campus and you already have the receipt or documents needed.
             </p>
             <div className="flex gap-3">
               <button 

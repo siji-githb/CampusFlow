@@ -1,9 +1,10 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { createPortal } from 'react-dom'
 import { useAuth } from '../../context/useAuth'
-import { getTodaysQueue, confirmStep, callTicket, sendToProcessing } from '../../services/queueService'
+import { getTodaysQueue, confirmStep, callTicket, sendToProcessing, remindStudent } from '../../services/queueService'
 import { updateReleaseDate } from '../../services/adminService'
 import { Check, Circle, Clock, X, Users, CheckSquare, AlertTriangle, Download, Inbox, Play, Ticket, DoorOpen, Cog } from 'lucide-react'
+import QueueDetailsModal from '../../components/QueueDetailsModal'
 
 // ── Status config ──────────────────────────────────────────────────────────────
 const STATUS_CFG = {
@@ -26,17 +27,16 @@ const fmt12h = (t) => {
   return `${h12}:${m} ${ampm}`
 }
 
-// ── Small Stat Card ────────────────────────────────────────────────────────────
-const MiniStat = ({ icon, value, label, sub, subColorClass = 'text-success', loading, delay }) => (
-  <div className="animate-fade-up bg-white rounded-[14px] px-5 py-4.5 border border-border shadow-[0_1px_4px_rgba(0,0,0,0.04)] flex flex-col gap-3 flex-1" style={{ animationDelay: delay || '0s' }}>
+const MiniStat = ({ icon, value, label, sub, subColorClass = 'text-text-muted', loading, delay = '0s' }) => (
+  <div className="flex-1 bg-white rounded-[14px] border border-border shadow-[0_1px_4px_rgba(0,0,0,0.02)] px-5 py-4.5 flex flex-col gap-3 animate-fade-up" style={{ animationDelay: delay }}>
     <div className="flex items-start justify-between">
-      <div className="text-xs font-semibold text-text-muted uppercase tracking-[0.06em] mt-1.5">{label}</div>
+      <div className="text-[11px] font-bold text-text-muted uppercase tracking-[0.06em] mt-1.5">{label}</div>
       <div className="w-9 h-9 rounded-[10px] bg-maroon-light flex items-center justify-center text-maroon shrink-0">
         {icon}
       </div>
     </div>
     <div>
-      <div className="font-serif text-[28px] font-extrabold text-maroon leading-none m-0 min-h-7">
+      <div className="font-serif text-[28px] font-extrabold text-text-main leading-none m-0 min-h-7">
         {loading ? <div className="animate-pulse w-15 h-7 rounded-md bg-border" /> : value}
       </div>
       {sub && <div className={`text-[11px] font-semibold mt-1.5 ${subColorClass}`}>{sub}</div>}
@@ -63,31 +63,19 @@ const StepsBar = ({ steps, current, total }) => (
   </div>
 )
 
-// ── Presence badge — shows whether a ticket's CURRENT step needs the
-//    student physically at a counter, or is being worked on back-office ──
-const PresenceBadge = ({ requiresPresence }) => (
-  <span
-    title={requiresPresence ? 'Student must be at the counter' : 'Back-office — no student presence needed'}
-    className={`inline-flex items-center gap-1 text-[9px] font-bold px-1.5 py-0.5 rounded-full uppercase tracking-[0.03em]
-      ${requiresPresence ? 'bg-maroon-light text-maroon' : 'bg-gray-100 text-gray-500'}`}
-  >
-    {requiresPresence ? <DoorOpen size={9} /> : <Cog size={9} />}
-    {requiresPresence ? 'Counter' : 'Back office'}
-  </span>
-)
 
 // ── Filter Sidebar ─────────────────────────────────────────────────────────────
 const FilterBar = ({ filters, onChange, onReset }) => {
   return (
-    <div className="bg-white rounded-2xl border border-border shadow-sm px-6 py-5 flex flex-wrap items-center gap-5 animate-fade-up" style={{ animationDelay: '0.4s' }}>
-      <div className="text-[11px] font-bold text-text-muted uppercase tracking-[0.08em] mr-2">Filters</div>
+    <div className="bg-white/80 backdrop-blur-md rounded-2xl border border-border shadow-[0_2px_8px_rgba(0,0,0,0.02)] px-5 py-4 flex flex-wrap items-center gap-4 animate-fade-up" style={{ animationDelay: '0.4s' }}>
+      <div className="text-[11px] font-bold text-text-muted uppercase tracking-[0.08em] mr-2 flex items-center gap-1.5"><Cog size={14} /> Filters</div>
       
       {/* Status Dropdown */}
-      <div className="flex-1 min-w-[160px]">
+      <div className="flex-1 min-w-[150px]">
         <select
           value={filters.status}
           onChange={e => onChange({ ...filters, status: e.target.value })}
-          className="w-full px-4 py-2.5 rounded-xl border border-border bg-off-white text-[13px] text-text-main font-semibold outline-none cursor-pointer font-sans focus:border-maroon focus:ring-1 focus:ring-maroon transition-all shadow-[inset_0_1px_2px_rgba(0,0,0,0.02)] appearance-none bg-[url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2214%22%20height%3D%2214%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%2357534E%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpolyline%20points%3D%226%209%2012%2015%2018%209%22%3E%3C%2Fpolyline%3E%3C%2Fsvg%3E')] bg-no-repeat bg-[position:calc(100%-12px)_center]"
+          className="w-full px-4 py-2 rounded-full border border-border bg-white text-[12.5px] text-text-main font-semibold outline-none cursor-pointer font-sans hover:border-maroon-border focus:border-maroon focus:ring-2 focus:ring-maroon/20 transition-all shadow-sm appearance-none bg-[url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2214%22%20height%3D%2214%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%2357534E%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpolyline%20points%3D%226%209%2012%2015%2018%209%22%3E%3C%2Fpolyline%3E%3C%2Fsvg%3E')] bg-no-repeat bg-[position:calc(100%-12px)_center]"
         >
           <option value="active">Active (Serving & Waiting)</option>
           <option value="in_progress">Serving Now</option>
@@ -101,11 +89,11 @@ const FilterBar = ({ filters, onChange, onReset }) => {
       </div>
 
       {/* Priority Dropdown */}
-      <div className="flex-1 min-w-[160px]">
+      <div className="flex-1 min-w-[150px]">
         <select
           value={filters.priority}
           onChange={e => onChange({ ...filters, priority: e.target.value })}
-          className="w-full px-4 py-2.5 rounded-xl border border-border bg-off-white text-[13px] text-text-main font-semibold outline-none cursor-pointer font-sans focus:border-maroon focus:ring-1 focus:ring-maroon transition-all shadow-[inset_0_1px_2px_rgba(0,0,0,0.02)] appearance-none bg-[url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2214%22%20height%3D%2214%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%2357534E%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpolyline%20points%3D%226%209%2012%2015%2018%209%22%3E%3C%2Fpolyline%3E%3C%2Fsvg%3E')] bg-no-repeat bg-[position:calc(100%-12px)_center]"
+          className="w-full px-4 py-2 rounded-full border border-border bg-white text-[12.5px] text-text-main font-semibold outline-none cursor-pointer font-sans hover:border-maroon-border focus:border-maroon focus:ring-2 focus:ring-maroon/20 transition-all shadow-sm appearance-none bg-[url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2214%22%20height%3D%2214%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%2357534E%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpolyline%20points%3D%226%209%2012%2015%2018%209%22%3E%3C%2Fpolyline%3E%3C%2Fsvg%3E')] bg-no-repeat bg-[position:calc(100%-12px)_center]"
         >
           <option value="all">All Priorities</option>
           <option value="high">High Priority</option>
@@ -114,11 +102,11 @@ const FilterBar = ({ filters, onChange, onReset }) => {
       </div>
 
       {/* Transaction Type Dropdown */}
-      <div className="flex-1 min-w-[160px]">
+      <div className="flex-1 min-w-[150px]">
         <select
           value={filters.transactionType}
           onChange={e => onChange({ ...filters, transactionType: e.target.value })}
-          className="w-full px-4 py-2.5 rounded-xl border border-border bg-off-white text-[13px] text-text-main font-semibold outline-none cursor-pointer font-sans focus:border-maroon focus:ring-1 focus:ring-maroon transition-all shadow-[inset_0_1px_2px_rgba(0,0,0,0.02)] appearance-none bg-[url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2214%22%20height%3D%2214%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%2357534E%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpolyline%20points%3D%226%209%2012%2015%2018%209%22%3E%3C%2Fpolyline%3E%3C%2Fsvg%3E')] bg-no-repeat bg-[position:calc(100%-12px)_center]"
+          className="w-full px-4 py-2 rounded-full border border-border bg-white text-[12.5px] text-text-main font-semibold outline-none cursor-pointer font-sans hover:border-maroon-border focus:border-maroon focus:ring-2 focus:ring-maroon/20 transition-all shadow-sm appearance-none bg-[url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2214%22%20height%3D%2214%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%2357534E%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpolyline%20points%3D%226%209%2012%2015%2018%209%22%3E%3C%2Fpolyline%3E%3C%2Fsvg%3E')] bg-no-repeat bg-[position:calc(100%-12px)_center]"
         >
           <option value="all">All Transactions</option>
           <option value="TOR">Transcript of Records</option>
@@ -129,150 +117,11 @@ const FilterBar = ({ filters, onChange, onReset }) => {
         </select>
       </div>
 
-      <button onClick={onReset} className="px-5 py-2.5 rounded-xl border border-border bg-white text-text-main text-[13px] font-bold cursor-pointer font-sans hover:bg-surface hover:border-maroon-border hover:text-maroon transition-colors shadow-sm whitespace-nowrap">
+      <button onClick={onReset} className="px-5 py-2 rounded-full border border-border bg-off-white text-text-main text-[12.5px] font-bold cursor-pointer font-sans hover:bg-white hover:border-maroon-border hover:text-maroon hover:shadow-sm transition-all whitespace-nowrap">
         Reset
       </button>
     </div>
   )
-}
-
-// ── Queue Details Modal ────────────────────────────────────────────────────────
-const QueueDetailsModal = ({ ticketData, onClose, onConfirm, onSendToProcessing, confirming, onSetReleaseDate }) => {
-  const { ticket, steps } = ticketData
-  const student = ticket.users
-  const name    = student ? `${student.last_name}, ${student.first_name}` : 'Unknown'
-  const appt    = ticket.appointments
-  
-  const [releaseDate, setReleaseDate] = useState(appt?.release_date || '')
-  const [savingDate, setSavingDate] = useState(false)
-
-  return createPortal((
-    <div className="fixed inset-0 z-1000 flex items-center justify-center">
-      <div className="absolute inset-0 bg-black/20 backdrop-blur-sm" onClick={onClose} />
-      <div className="animate-fade-up relative w-full max-w-170 bg-white rounded-3xl p-7 max-h-[90vh] overflow-y-auto">
-        
-        {/* Header */}
-        <div className="flex justify-between items-start mb-6">
-          <div>
-            <div className="text-xs font-bold text-gold uppercase tracking-[0.08em] mb-1.5">Queue Details</div>
-            <h2 className="font-serif text-[28px] font-extrabold text-maroon m-0 leading-none">{ticket.queue_number}</h2>
-          </div>
-          <button onClick={onClose} className="bg-transparent border-none cursor-pointer text-text-muted flex items-center justify-center hover:text-text-main transition-colors"><X size={24} /></button>
-        </div>
-
-        {/* Info Cards */}
-        <div className="grid grid-cols-2 gap-3.5 mb-7">
-          <div className="p-4 bg-surface rounded-[14px] border border-border">
-            <div className="text-[11px] text-text-muted uppercase font-bold tracking-[0.04em] mb-1.5">Student</div>
-            <div className="text-[15px] font-bold text-text-main mb-0.5">{name}</div>
-            <div className="text-[13px] text-text-sub font-mono">{student?.student_id || '—'}</div>
-          </div>
-          <div className="p-4 bg-surface rounded-[14px] border border-border">
-            <div className="text-[11px] text-text-muted uppercase font-bold tracking-[0.04em] mb-1.5">Transaction</div>
-            <div className="text-[14px] font-semibold text-text-main leading-snug">{appt?.transaction_types?.name}</div>
-          </div>
-        </div>
-
-        {/* Release Date */}
-        <div className="mb-7 bg-off-white p-4 rounded-[14px] border border-border flex items-end gap-3 flex-wrap">
-          <div className="flex-1 min-w-50">
-            <label className="block text-[11px] font-bold text-text-muted uppercase tracking-[0.04em] mb-1.5">Document Release Date</label>
-            <input 
-              type="date" 
-              value={releaseDate} 
-              onChange={e => setReleaseDate(e.target.value)}
-              className="w-full px-3.5 py-2.5 rounded-lg border border-border bg-white text-sm outline-none text-text-main font-sans focus:border-maroon transition-colors"
-            />
-          </div>
-          <button 
-            onClick={async () => {
-              setSavingDate(true)
-              await onSetReleaseDate(appt?.id, releaseDate)
-              setSavingDate(false)
-            }}
-            disabled={savingDate || releaseDate === (appt?.release_date || '')}
-            className={`px-4.5 py-2.5 rounded-lg border-none text-[13px] font-bold h-10.5 font-sans whitespace-nowrap transition-colors
-              ${(savingDate || releaseDate === (appt?.release_date || '')) 
-                ? 'bg-border text-text-muted cursor-not-allowed' 
-                : 'bg-maroon text-white cursor-pointer hover:bg-maroon-dark'}
-            `}
-          >
-            {savingDate ? 'Saving...' : 'Set Date'}
-          </button>
-        </div>
-
-        {/* Steps */}
-        <div>
-          <h3 className="text-sm font-bold text-text-main uppercase tracking-[0.06em] mb-5">Processing Steps</h3>
-          <div className="flex flex-col gap-0">
-            {steps.map((step, idx) => {
-              const isLast = idx === steps.length - 1
-              const isCurrent = ticket.status === 'in_progress' && step.status === 'in_progress'
-              const confirmKey = `${ticket.id}-${step.step_number}`
-              const isConfirming = confirming === confirmKey
-              
-              return (
-                <div key={step.id} className="flex gap-4">
-                  <div className="flex flex-col items-center">
-                    <div className={`w-8 h-8 rounded-full shrink-0 flex items-center justify-center text-[13px] font-bold
-                      ${step.status === 'completed' ? 'bg-success text-white' : 
-                        step.status === 'in_progress' ? 'bg-gold text-white border-2 border-gold-border' : 
-                        'bg-border text-text-muted'}`}
-                    >
-                      {step.status === 'completed' ? <Check size={14} /> : step.step_number}
-                    </div>
-                    {!isLast && <div className={`w-0.5 flex-1 min-h-9 my-1 ${step.status === 'completed' ? 'bg-success' : 'bg-border'}`} />}
-                  </div>
-                  <div className={`flex-1 ${isLast ? 'pb-0' : 'pb-4'}`}>
-                    <div className={`flex justify-between items-center rounded-xl ${isCurrent ? 'bg-gold-light p-3 border border-gold-border -mt-1.5' : 'bg-transparent py-1.5 border-none mt-0'}`}>
-                      <div>
-                        <div className="flex items-center gap-2 mb-0.5">
-                          <div className={`text-[15px] font-semibold ${step.status === 'completed' ? 'text-success' : 'text-text-main'}`}>{step.step_name}</div>
-                          <PresenceBadge requiresPresence={step.requires_presence !== false} />
-                        </div>
-                        {step.status === 'completed' && step.confirmed_at && (
-                          <div className="text-xs text-text-muted mt-0.5">Confirmed at {new Date(step.confirmed_at).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}</div>
-                        )}
-                        {isCurrent && (
-                          <div className="text-xs text-gold mt-0.5 font-semibold">
-                            {step.requires_presence !== false ? 'Active Step — student at counter' : 'Active Step — processing, no line'}
-                          </div>
-                        )}
-                      </div>
-                      {isCurrent && (
-                        <div className="flex items-center gap-2">
-                          {step.location !== 'Back Office' && (
-                            <button
-                              onClick={() => onSendToProcessing(ticket.id)}
-                              disabled={isConfirming}
-                              className={`px-4 py-2.5 rounded-[10px] border-none text-[13px] font-bold font-sans transition-colors
-                                ${isConfirming ? 'bg-gray-200 text-text-muted cursor-not-allowed' : 'bg-surface text-text-main cursor-pointer hover:bg-border'}
-                              `}
-                            >
-                              Send to Processing
-                            </button>
-                          )}
-                          <button
-                            onClick={() => onConfirm(ticket.id, step.step_number)}
-                            disabled={isConfirming}
-                            className={`px-4.5 py-2.5 rounded-[10px] border-none text-[13px] font-bold font-sans transition-colors
-                              ${isConfirming ? 'bg-maroon/50 text-white cursor-not-allowed' : 'bg-maroon text-white cursor-pointer hover:bg-maroon-dark'}
-                            `}
-                          >
-                            {isConfirming ? 'Confirming...' : 'Confirm Step'}
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              )
-            })}
-          </div>
-        </div>
-      </div>
-    </div>
-  ), document.body)
 }
 
 // ── Main LiveQueuePage ─────────────────────────────────────────────────────────
@@ -281,12 +130,20 @@ export default function LiveQueuePage() {
   const [queue, setQueue]       = useState([])
   const [loading, setLoading]   = useState(true)
   const [confirming, setConfirming] = useState(null)
+  const [reminding, setReminding] = useState(null)
   const [error, setError]       = useState('')
   const [lastUpdated, setLastUpdated] = useState(null)
   const [now, setNow]           = useState(new Date())
   const [search, setSearch]     = useState('')
   const [filters, setFilters]   = useState({ status: 'active', priority: 'all', transactionType: 'all' })
   const [viewingTicketId, setViewingTicketId] = useState(null)
+  const [completedPage, setCompletedPage] = useState(1)
+  const [toastMsg, setToastMsg] = useState(null)
+
+  const showToast = (msg) => {
+    setToastMsg(msg)
+    setTimeout(() => setToastMsg(null), 4000)
+  }
 
   const availableTxTypes = useMemo(() => {
     const types = new Set()
@@ -317,10 +174,26 @@ export default function LiveQueuePage() {
     return () => clearInterval(t)
   }, [fetchQueue])
 
-  const handleConfirm = async (ticketId, stepNum) => {
+  const handleConfirm = async (ticketId, stepNum, txName, studentName, confirmLabel, releaseDateToSet) => {
     const key = `${ticketId}-${stepNum}`
     setConfirming(key); setError('')
-    try { await confirmStep(token, ticketId, stepNum); await fetchQueue() }
+    try { 
+      await confirmStep(token, ticketId, stepNum)
+      
+      if (releaseDateToSet) {
+        const ticketItem = queue.find(q => q.ticket.id === ticketId)
+        if (ticketItem && ticketItem.ticket.appointments?.id) {
+          await updateReleaseDate(token, ticketItem.ticket.appointments.id, releaseDateToSet)
+        }
+      }
+
+      await fetchQueue()
+      if (confirmLabel === 'Mark as Done') {
+        showToast(`${txName} for ${studentName} is successfully done`)
+      } else {
+        showToast(`Step ${stepNum} for ${studentName} is confirmed`)
+      }
+    }
     catch (e) { setError(e.message) }
     finally { setConfirming(null) }
   }
@@ -345,15 +218,33 @@ export default function LiveQueuePage() {
     finally { setConfirming(null) }
   }
 
-  const handleSendToProcessing = async (ticketId) => {
+  const handleSendToProcessing = async (ticketId, txName, studentName, releaseDateToSet) => {
     setConfirming(ticketId); setError('')
     try { 
       await sendToProcessing(token, ticketId)
+      
+      if (releaseDateToSet) {
+        const ticketItem = queue.find(q => q.ticket.id === ticketId)
+        if (ticketItem && ticketItem.ticket.appointments?.id) {
+          await updateReleaseDate(token, ticketItem.ticket.appointments.id, releaseDateToSet)
+        }
+      }
+
       await fetchQueue()
-      setViewingTicketId(null) // close modal on success
+      showToast(`${txName} for ${studentName} is being moved for processing`)
     }
     catch (e) { setError(e.message) }
     finally { setConfirming(null) }
+  }
+
+  const handleRemind = async (ticketId) => {
+    setReminding(ticketId); setError('')
+    try { 
+      await remindStudent(token, ticketId)
+      // fetchQueue() isn't strictly necessary for a notification, but keeps UI synced
+    }
+    catch (e) { setError(e.message) }
+    finally { setReminding(null) }
   }
 
   // ── Derived stats ──
@@ -424,7 +315,7 @@ export default function LiveQueuePage() {
   const currentTime = now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
 
   // ── Reusable row renderer — used by both "At the Counter" and "Processing" tables ──
-  const renderQueueRow = ({ ticket, steps }, idx, arrLength, actionLabel = 'Confirm') => {
+  const renderQueueRow = ({ ticket, steps }, idx, arrLength, actionLabel = 'Confirm', showWait = true) => {
     const student = ticket.users
     const name    = student ? `${ticket.users.last_name}, ${ticket.users.first_name}` : 'Unknown'
     const sid     = student?.student_id || '—'
@@ -445,9 +336,9 @@ export default function LiveQueuePage() {
     }
 
     return (
-      <div key={ticket.id} className={`grid grid-cols-[100px_1fr_160px_180px_70px_160px] gap-0 p-4 items-center transition-colors duration-150
-        ${idx < arrLength - 1 ? 'border-b border-border' : ''}
-        ${ticket.status === 'in_progress' ? 'bg-success-light/30' : 'bg-white hover:bg-off-white/50'}
+      <div key={ticket.id} className={`grid ${showWait ? 'grid-cols-[110px_1.2fr_1.2fr_220px_70px_160px]' : 'grid-cols-[110px_1.2fr_1.2fr_220px_160px]'} gap-0 px-5 py-4 items-center transition-all duration-300
+        ${idx < arrLength - 1 ? 'border-b border-border/60' : ''}
+        ${ticket.status === 'in_progress' ? 'bg-success-light/30' : 'bg-white hover:bg-off-white/80 hover:shadow-sm hover:-translate-y-[1px]'}
       `}>
 
         {/* Queue No. */}
@@ -457,6 +348,11 @@ export default function LiveQueuePage() {
             <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-danger-light text-danger border border-danger-border mt-1 inline-block uppercase tracking-[0.04em]">
               Priority
             </span>
+          )}
+          {ticket.status === 'in_progress' && inProgressStep?.location && (
+            <div className="text-[11px] font-bold text-text-sub mt-1.5 flex items-center gap-1 uppercase tracking-[0.04em]">
+              {inProgressStep.location} serving
+            </div>
           )}
         </div>
 
@@ -475,6 +371,11 @@ export default function LiveQueuePage() {
         <div>
           <div className="text-xs font-semibold text-text-main leading-snug">{txName}</div>
           <div className="text-[11px] text-text-muted mt-0.5">{fmt12h(appt?.time_slot) || '—'}</div>
+          {!getRequiresPresence(steps) && (
+            <div className="text-[12px] font-bold text-maroon mt-1.5">
+              Release: {appt?.release_date ? new Date(appt.release_date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : 'Not set'}
+            </div>
+          )}
         </div>
 
         {/* Status + Progress */}
@@ -484,12 +385,6 @@ export default function LiveQueuePage() {
               {statusCfg.label}
             </span>
             {inProgressStep && <span className="text-[11px] text-text-muted">Step {inProgressStep.step_number}</span>}
-            {inProgressStep?.location && inProgressStep.location.startsWith('Window') && (
-              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-maroon-light text-maroon border border-maroon-border uppercase tracking-wide">
-                {inProgressStep.location}
-              </span>
-            )}
-            {inProgressStep && <PresenceBadge requiresPresence={inProgressStep.requires_presence !== false && inProgressStep.location !== 'Back Office'} />}
           </div>
           {steps && steps.length > 0 && (
             <StepsBar steps={steps} current={ticket.current_step} total={ticket.total_steps} />
@@ -497,44 +392,58 @@ export default function LiveQueuePage() {
         </div>
 
         {/* Wait */}
-        <div>
-          <div className={`text-sm font-bold ${ticket.status === 'in_progress' ? 'text-success' : 'text-text-sub'}`}>{waitMins}m</div>
-        </div>
+        {showWait && (
+          <div>
+            <div className={`text-sm font-bold ${ticket.status === 'in_progress' ? 'text-success' : 'text-text-sub'}`}>{waitMins}m</div>
+          </div>
+        )}
 
         <div className="flex gap-1.5 flex-wrap">
           {(ticket.status === 'in_progress' || ticket.status === 'waiting' || ticket.status === 'pending') && inProgressStep && (
             <>
               {ticket.status === 'waiting' || ticket.status === 'pending' ? (
-                <button
-                  onClick={() => handleCallTicket(ticket.id)}
-                  disabled={confirming === ticket.id}
-                  className={`px-3.5 py-2 rounded-lg border text-[12px] font-bold cursor-pointer font-sans whitespace-nowrap transition-all shadow-sm hover:-translate-y-0.5
-                    ${confirming === ticket.id
-                      ? 'border-border bg-off-white text-text-muted cursor-not-allowed'
-                      : 'border-blue-border bg-blue-light text-blue hover:bg-blue hover:text-white'}
-                  `}
-                >
-                  {confirming === ticket.id ? '...' : 'Call'}
-                </button>
+                <>
+                  <button
+                    onClick={() => handleCallTicket(ticket.id)}
+                    disabled={confirming === ticket.id}
+                    className={`px-4 py-2 rounded-full border text-[12px] font-bold cursor-pointer font-sans whitespace-nowrap transition-all shadow-sm hover:-translate-y-0.5
+                      ${confirming === ticket.id
+                        ? 'border-border bg-off-white text-text-muted cursor-not-allowed'
+                        : 'border-blue-border bg-blue-light text-blue hover:bg-blue hover:text-white'}
+                    `}
+                  >
+                    {confirming === ticket.id ? '...' : 'Call'}
+                  </button>
+                  <button
+                    onClick={() => setViewingTicketId(ticket.id)}
+                    className="px-4 py-2 rounded-full border border-border bg-white text-text-main text-[12px] font-bold cursor-pointer font-sans whitespace-nowrap hover:bg-surface transition-all shadow-sm hover:-translate-y-0.5"
+                  >
+                    Details
+                  </button>
+                </>
               ) : (
-                <button
-                  onClick={() => handleConfirm(ticket.id, ticket.current_step)}
-                  disabled={isConfirming}
-                  className={`px-3.5 py-2 rounded-lg border text-[12px] font-bold cursor-pointer font-sans whitespace-nowrap transition-all shadow-sm hover:-translate-y-0.5
-                    ${isConfirming
-                      ? 'border-border bg-off-white text-text-muted cursor-not-allowed'
-                      : 'border-maroon-border bg-maroon-light text-maroon hover:bg-maroon hover:text-white'}
-                  `}
-                >
-                  {isConfirming ? '...' : actionLabel}
-                </button>
+                <>
+                  {!getRequiresPresence(steps) && (
+                    <button
+                      onClick={() => handleRemind(ticket.id)}
+                      disabled={reminding === ticket.id}
+                      className={`px-4 py-2 rounded-full border text-[12px] font-bold cursor-pointer font-sans whitespace-nowrap transition-all shadow-sm hover:-translate-y-0.5 mr-1.5
+                        ${reminding === ticket.id
+                          ? 'border-border bg-off-white text-text-muted cursor-not-allowed'
+                          : 'border-gold-border bg-gold-light text-gold hover:bg-gold hover:text-white'}
+                      `}
+                    >
+                      {reminding === ticket.id ? '...' : 'Remind Student'}
+                    </button>
+                  )}
+                  <button
+                    onClick={() => setViewingTicketId(ticket.id)}
+                    className="px-4 py-2 rounded-full border border-maroon-border bg-maroon-light text-maroon text-[12px] font-bold cursor-pointer font-sans whitespace-nowrap hover:bg-maroon hover:text-white transition-all shadow-sm hover:-translate-y-0.5"
+                  >
+                    View Progress
+                  </button>
+                </>
               )}
-              <button
-                onClick={() => setViewingTicketId(ticket.id)}
-                className="px-3.5 py-2 rounded-lg border-none bg-surface border-border text-text-main text-xs font-bold cursor-pointer font-sans whitespace-nowrap hover:bg-off-white transition-colors"
-              >
-                Details
-              </button>
             </>
           )}
           {ticket.status === 'completed' && (
@@ -617,17 +526,17 @@ export default function LiveQueuePage() {
             </div>
           </div>
 
-          <div className="grid grid-cols-[100px_1fr_160px_180px_70px_160px] gap-0 px-4 py-2.5 rounded-t-[10px] bg-surface border border-b-0 border-border">
+          <div className="grid grid-cols-[110px_1.2fr_1.2fr_220px_70px_160px] gap-0 px-5 py-3 rounded-t-2xl bg-surface/50 backdrop-blur-sm border border-b-0 border-border">
             {columnHeaders.map(col => (
               <div key={col} className="text-[10px] font-bold text-text-muted tracking-[0.06em] uppercase">{col}</div>
             ))}
           </div>
 
-          <div className="border border-border rounded-b-[14px] overflow-hidden bg-white">
+          <div className="border border-border rounded-b-2xl overflow-hidden bg-white shadow-[0_4px_16px_rgba(0,0,0,0.02)]">
             {loading ? (
               <div className="flex flex-col">
                 {[1, 2, 3].map(i => (
-                  <div key={i} className={`grid grid-cols-[100px_1fr_160px_180px_70px_160px] gap-0 p-4 ${i < 3 ? 'border-b border-border' : ''}`}>
+                  <div key={i} className={`grid grid-cols-[110px_1.2fr_1.2fr_220px_70px_160px] gap-0 p-4 ${i < 3 ? 'border-b border-border' : ''}`}>
                     <div className="animate-pulse w-10 h-5 rounded bg-border" />
                     <div>
                       <div className="animate-pulse w-30 h-3.5 rounded bg-border mb-1.5" />
@@ -670,20 +579,20 @@ export default function LiveQueuePage() {
                   <Cog size={17} className="text-text-muted" /> Processing
                 </span>
                 <span className="text-xs text-text-muted ml-6 block mt-0.5">
-                  No one is waiting for these — work through them whenever you're free
+                  This is where the processing is done — work through them before the release date
                 </span>
               </div>
             </div>
 
             {!loading && processingQueue.length > 0 && (
-              <div className="grid grid-cols-[100px_1fr_160px_180px_70px_160px] gap-0 px-4 py-2.5 rounded-t-[10px] bg-surface border border-b-0 border-border opacity-80">
-                {columnHeaders.map(col => (
+              <div className="grid grid-cols-[110px_1.2fr_1.2fr_220px_160px] gap-0 px-5 py-3 rounded-t-2xl bg-surface/50 backdrop-blur-sm border border-b-0 border-border opacity-80">
+                {['QUEUE NO.', 'STUDENT DETAILS', 'TRANSACTION', 'STATUS / PROGRESS', 'ACTION'].map(col => (
                   <div key={col} className="text-[10px] font-bold text-text-muted tracking-[0.06em] uppercase">{col}</div>
                 ))}
               </div>
             )}
 
-            <div className="border border-border rounded-b-[14px] overflow-hidden bg-white opacity-90">
+            <div className="border border-border rounded-b-2xl overflow-hidden bg-white opacity-90 shadow-[0_4px_16px_rgba(0,0,0,0.02)]">
               {loading ? (
                 <div className="p-6 text-center text-xs text-text-muted">Loading…</div>
               ) : processingQueue.length === 0 ? (
@@ -693,7 +602,7 @@ export default function LiveQueuePage() {
                   <p className="text-[13px] text-text-muted m-0">Tickets land here after being submitted, before release.</p>
                 </div>
               ) : (
-                processingQueue.map((item, idx) => renderQueueRow(item, idx, processingQueue.length, 'Mark Complete'))
+                processingQueue.map((item, idx) => renderQueueRow(item, idx, processingQueue.length, 'Mark Complete', false))
               )}
             </div>
           </div>
@@ -701,9 +610,34 @@ export default function LiveQueuePage() {
           {/* Completed section */}
           {done.length > 0 && !loading && (
             <div className="mt-6">
-              <p className="text-[11px] font-bold text-text-muted uppercase tracking-[0.06em] m-0 mb-2.5">Completed Today — {done.length} tickets</p>
+              <div className="flex items-center justify-between mb-2.5">
+                <p className="text-[11px] font-bold text-text-muted uppercase tracking-[0.06em] m-0">Completed Today — {done.length} tickets</p>
+                {done.length > 10 && (
+                  <div className="flex items-center gap-3">
+                    <span className="text-[11px] font-bold text-text-muted">
+                      Showing {(completedPage - 1) * 10 + 1}-{Math.min(completedPage * 10, done.length)} / {done.length}
+                    </span>
+                    <div className="flex gap-1">
+                      <button 
+                        onClick={() => setCompletedPage(p => Math.max(1, p - 1))}
+                        disabled={completedPage === 1}
+                        className="px-2.5 py-1 text-[11px] font-bold rounded bg-surface text-text-main border border-border disabled:opacity-50 disabled:cursor-not-allowed hover:bg-border transition-colors cursor-pointer"
+                      >
+                        Prev
+                      </button>
+                      <button 
+                        onClick={() => setCompletedPage(p => Math.min(Math.ceil(done.length / 10), p + 1))}
+                        disabled={completedPage >= Math.ceil(done.length / 10)}
+                        className="px-2.5 py-1 text-[11px] font-bold rounded bg-surface text-text-main border border-border disabled:opacity-50 disabled:cursor-not-allowed hover:bg-border transition-colors cursor-pointer"
+                      >
+                        Next
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
               <div className="flex flex-col gap-1.5">
-                {done.map(({ ticket }) => (
+                {done.slice((completedPage - 1) * 10, completedPage * 10).map(({ ticket }) => (
                   <div key={ticket.id} className="flex items-center justify-between px-4 py-3 rounded-[10px] bg-white border border-border hover:border-maroon-border transition-colors">
                     <div className="flex items-center gap-3.5">
                       <span className="font-serif font-bold text-text-muted text-[16px]">{ticket.queue_number}</span>
@@ -729,6 +663,16 @@ export default function LiveQueuePage() {
           confirming={confirming}
           onSetReleaseDate={handleSetReleaseDate}
         />
+      )}
+
+      {/* ── Toast Notification ── */}
+      {toastMsg && (
+        <div className="fixed top-8 left-1/2 -translate-x-1/2 bg-success text-white px-6 py-3.5 rounded-full shadow-[0_8px_30px_rgba(34,197,94,0.4)] border border-green-500 z-[2000] animate-fade-down font-sans text-[14.5px] font-bold flex items-center gap-3 whitespace-nowrap">
+          <div className="bg-white text-success rounded-full p-0.5">
+            <Check size={14} strokeWidth={4} />
+          </div>
+          {toastMsg}
+        </div>
       )}
 
     </div>

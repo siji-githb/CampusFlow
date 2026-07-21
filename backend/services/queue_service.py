@@ -102,7 +102,7 @@ def activate_queue(appointment_id: str, student_id: str):
                     "queue_number": queue_number,
                     "current_step": 1,
                     "total_steps": len(processing_steps),
-                    "status": "in_progress"
+                    "status": "waiting"
                 }).execute()
                 ticket = ticket_res.data[0]
                 break  # success — exit retry loop
@@ -185,10 +185,12 @@ def get_student_queue(student_id: str):
         pass
 
     try:
+        today_str = str(date.today())
         tickets_res = admin.table("queue_tickets") \
             .select("*, appointments(appointment_date, time_slot, status, transaction_types(name))") \
             .eq("student_id", student_id) \
-            .in_("status", ["waiting", "in_progress"]) \
+            .in_("status", ["waiting", "in_progress", "completed"]) \
+            .gte("created_at", today_str) \
             .order("created_at", desc=True) \
             .limit(1) \
             .execute()
@@ -248,6 +250,33 @@ def send_to_processing(queue_ticket_id: str, staff_id: str):
         admin.table("transaction_steps").update({"location": "Back Office"}).eq("id", current_step["id"]).execute()
 
     return {"message": "Ticket sent to processing"}
+
+
+def remind_student(queue_ticket_id: str, staff_id: str):
+    """Sends a reminder to the student that their document is ready for release."""
+    admin = get_admin()
+    
+    # Get ticket info
+    ticket_res = admin.table("queue_tickets").select("student_id, queue_number").eq("id", queue_ticket_id).execute()
+    if not ticket_res.data:
+        raise HTTPException(status_code=404, detail="Ticket not found")
+        
+    ticket = ticket_res.data[0]
+    
+    # 1. Get staff's assigned window
+    from services.admin_service import get_window_assignments
+    assignments = get_window_assignments()
+    window_num = assignments.get("assignments", {}).get(staff_id)
+    window_label = f"Window {window_num}" if window_num else "Counter"
+
+    create_system_notification(
+        user_id=ticket["student_id"],
+        title="Document Ready for Release",
+        message=f"Your ticket {ticket['queue_number']} is ready. Please proceed to {window_label} to claim your document.",
+        type="info"
+    )
+
+    return {"message": "Reminder sent successfully"}
 
 
 def confirm_step(queue_ticket_id: str, step_number: int, staff_id: str):
@@ -467,6 +496,7 @@ def get_live_queue_stats():
         recent_steps = admin.table("transaction_steps") \
             .select("created_at, confirmed_at") \
             .not_.is_("confirmed_at", "null") \
+            .neq("location", "Back Office") \
             .order("confirmed_at", desc=True) \
             .limit(50) \
             .execute()

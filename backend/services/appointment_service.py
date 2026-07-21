@@ -84,7 +84,7 @@ def get_available_slots(transaction_type_id: str, appointment_date: date):
         }
 
 
-    staff_count = int(config.get("staff_count", 2))
+    num_windows = int(config.get("num_windows", 2))
     lunch_start = config.get("lunch_break_start", "12:00")
     lunch_end = config.get("lunch_break_end", "13:00")
     open_time = config.get("office_open_time", "08:00")
@@ -94,7 +94,7 @@ def get_available_slots(transaction_type_id: str, appointment_date: date):
     duration = tt.get("processing_time", int(config.get("slot_duration_minutes", 30)))
 
     all_slots = generate_time_slots(open_time, close_time, duration, lunch_start, lunch_end)
-    daily_cap = len(all_slots) * staff_count
+    daily_cap = len(all_slots) * num_windows
 
     # Get existing bookings for this date across ALL types (capacity is shared by staff)
     try:
@@ -117,7 +117,7 @@ def get_available_slots(transaction_type_id: str, appointment_date: date):
     result = []
     for slot in all_slots:
         booked_in_slot = slot_counts.get(slot, 0)
-        remaining = max(0, staff_count - booked_in_slot)
+        remaining = max(0, num_windows - booked_in_slot)
         result.append({
             "time_slot": slot,
             "available": remaining > 0,
@@ -166,7 +166,7 @@ def create_appointment(student_id: str, priority_class: str, data: AppointmentCr
     except Exception:
         raise HTTPException(status_code=404, detail="Transaction type not found")
 
-    staff_count = int(config.get("staff_count", 2))
+    num_windows = int(config.get("num_windows", 2))
 
     # Check slot capacity across ALL transaction types at that exact time
     try:
@@ -176,7 +176,7 @@ def create_appointment(student_id: str, priority_class: str, data: AppointmentCr
             .eq("time_slot", data.time_slot) \
             .neq("status", "cancelled") \
             .execute()
-        if len(count_res.data) >= staff_count:
+        if len(count_res.data) >= num_windows:
             raise HTTPException(status_code=400, detail="This time slot is full")
     except HTTPException:
         raise
@@ -265,7 +265,7 @@ def get_student_appointments(student_id: str):
 
     try:
         res = admin.table("appointments") \
-            .select("*, transaction_types(name, processing_steps, required_documents)") \
+            .select("*, transaction_types(name, processing_steps, required_documents), queue_tickets(id, status)") \
             .eq("student_id", student_id) \
             .order("appointment_date", desc=True) \
             .execute()

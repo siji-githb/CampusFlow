@@ -7,7 +7,7 @@ from services.queue_service import (
     get_time_estimate,
     get_live_queue_stats,
 )
-from models.queue_models import ConfirmStepRequest, CallTicketRequest, SendToProcessingRequest
+from models.queue_models import ConfirmStepRequest, CallTicketRequest, SendToProcessingRequest, RemindStudentRequest
 from deps import get_current_user, require_staff_or_admin
 
 router = APIRouter(prefix="/queue", tags=["Queue Management"])
@@ -41,6 +41,12 @@ def call_ticket_endpoint(data: CallTicketRequest, user=Depends(require_staff_or_
 def send_to_processing_endpoint(data: SendToProcessingRequest, user=Depends(require_staff_or_admin)):
     from services.queue_service import send_to_processing
     return send_to_processing(data.queue_ticket_id, user.id)
+
+
+@router.post("/remind-student")
+def remind_student_endpoint(data: RemindStudentRequest, user=Depends(require_staff_or_admin)):
+    from services.queue_service import remind_student
+    return remind_student(data.queue_ticket_id, user.id)
 
 
 @router.get("/today")

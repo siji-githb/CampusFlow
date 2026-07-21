@@ -86,3 +86,14 @@ export const sendToProcessing = async (token, queueTicketId) => {
   if (!res.ok) throw new Error(data.detail || 'Failed to send to processing')
   return data
 }
+
+export const remindStudent = async (token, queueTicketId) => {
+  const res = await fetch(`${API_URL}/queue/remind-student`, {
+    method: 'POST',
+    headers: authHeader(token),
+    body: JSON.stringify({ queue_ticket_id: queueTicketId })
+  })
+  const data = await res.json()
+  if (!res.ok) throw new Error(data.detail || 'Failed to send reminder')
+  return data
+}

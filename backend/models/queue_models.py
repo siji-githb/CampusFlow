@@ -37,3 +37,7 @@ class CallTicketRequest(BaseModel):
 
 class SendToProcessingRequest(BaseModel):
     queue_ticket_id: str
+
+
+class RemindStudentRequest(BaseModel):
+    queue_ticket_id: str
