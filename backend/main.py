@@ -5,6 +5,7 @@ from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
 from routers import auth, appointments, queue, admin, ai, messages, school_records, notifications
 from rate_limit import limiter
+from routers import priority
 
 app = FastAPI(
     title="CampusFlow API",
@@ -41,6 +42,7 @@ app.include_router(ai.router)
 app.include_router(messages.router)
 app.include_router(school_records.router)
 app.include_router(notifications.router)
+app.include_router(priority.router)
 
 
 @app.get("/")

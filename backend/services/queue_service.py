@@ -178,7 +178,7 @@ def get_student_queue(student_id: str):
         admin.table("queue_tickets") \
             .update({"status": "cancelled"}) \
             .eq("student_id", student_id) \
-            .in_("status", ["waiting", "in_progress"]) \
+            .eq("status", "waiting") \
             .lt("created_at", today_str) \
             .execute()
     except Exception:
@@ -190,7 +190,7 @@ def get_student_queue(student_id: str):
             .select("*, appointments(appointment_date, time_slot, status, transaction_types(name))") \
             .eq("student_id", student_id) \
             .in_("status", ["waiting", "in_progress", "completed"]) \
-            .gte("created_at", today_str) \
+            .or_(f"created_at.gte.{today_str},status.eq.in_progress") \
             .order("created_at", desc=True) \
             .limit(1) \
             .execute()
@@ -234,6 +234,19 @@ def call_ticket(queue_ticket_id: str, staff_id: str):
     current_step = next((s for s in steps if s["status"] == "in_progress"), None)
     if current_step:
         admin.table("transaction_steps").update({"location": window_label}).eq("id", current_step["id"]).execute()
+
+    # 4. Trigger notification
+    try:
+        ticket_res = admin.table("queue_tickets").select("queue_number, student_id").eq("id", queue_ticket_id).single().execute()
+        if ticket_res.data:
+            create_system_notification(
+                user_id=ticket_res.data["student_id"],
+                title="Ticket Called",
+                message=f"Your ticket {ticket_res.data['queue_number']} has been called to {window_label}. Please proceed.",
+                type="info"
+            )
+    except Exception:
+        pass
 
     return {"message": "Ticket called successfully", "location": window_label}
 
@@ -392,8 +405,8 @@ def get_todays_queue(date_filter: str = None):
         # Use an inner join to filter by today's appointment date and fetch steps all at once
         tickets_res = admin.table("queue_tickets") \
             .select("*, appointments!inner(appointment_date, time_slot, transaction_types(name)), users(first_name, last_name, student_id), transaction_steps(*)") \
-            .eq("appointments.appointment_date", today) \
-            .neq("status", "cancelled") \
+            .in_("status", ["waiting", "in_progress", "completed"]) \
+            .or_(f"created_at.gte.{today},status.eq.in_progress") \
             .order("created_at") \
             .execute()
 

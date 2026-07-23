@@ -10,7 +10,7 @@ export default function Register() {
   
   const [form, setForm] = useState({
     first_name: '', last_name: '', email: '',
-    password: '', confirm_password: '', student_id: '', priority_class: 'regular', course: '',
+    password: '', confirm_password: '', student_id: '', course: '',
   })
   
   const [error, setError] = useState('')
@@ -82,7 +82,7 @@ export default function Register() {
     <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4 md:p-8 font-sans">
       
       {/* ── Main Elevated Card ── */}
-      <div className="w-full max-w-[1040px] bg-white rounded-3xl shadow-[0_20px_40px_-15px_rgba(0,0,0,0.05)] border border-slate-100 flex flex-col md:flex-row overflow-hidden relative">
+      <div className="w-full max-w-260 bg-white rounded-3xl shadow-[0_20px_40px_-15px_rgba(0,0,0,0.05)] border border-slate-100 flex flex-col md:flex-row overflow-hidden relative">
         
         {/* ── Branding Panel (Left side on desktop, Top on mobile) ── */}
         <div className="w-full md:w-[45%] bg-slate-50/50 pt-14 pb-10 px-6 md:p-12 flex flex-col items-center justify-center md:justify-center relative border-b md:border-b-0 md:border-r border-slate-100 z-10 shrink-0">
@@ -118,7 +118,7 @@ export default function Register() {
             <img 
               src={loginImage} 
               alt="CampusFlow Illustration" 
-              className="w-full max-w-[240px] md:max-w-[280px] h-auto mb-8 object-contain drop-shadow-xl hover:scale-[1.02] transition-transform duration-500" 
+              className="w-full max-w-60 md:max-w-70 h-auto mb-8 object-contain drop-shadow-xl hover:scale-[1.02] transition-transform duration-500" 
             />
 
             <h1 className="font-serif text-[clamp(26px,7vw,32px)] font-bold text-slate-800 m-0 mb-2 leading-[1.1] md:hidden tracking-tight">
@@ -131,7 +131,7 @@ export default function Register() {
             <div className="hidden md:block w-full border-t border-slate-200 pt-6 mt-4">
               {['Book appointments online', 'Real-time queue tracking', 'AI-guided step-by-step'].map((item, i) => (
                 <div key={i} className="flex items-center gap-3 py-2.5">
-                  <div className="w-[20px] h-[20px] rounded-full bg-emerald-50 border border-emerald-100 flex items-center justify-center shrink-0 shadow-sm">
+                  <div className="w-5 h-5 rounded-full bg-emerald-50 border border-emerald-100 flex items-center justify-center shrink-0 shadow-sm">
                     <span className="text-emerald-500 text-[10px] font-bold">✓</span>
                   </div>
                   <span className="text-[12.5px] font-medium text-slate-600">{item}</span>
@@ -143,7 +143,7 @@ export default function Register() {
 
         {/* ── Form Panel (Right side) ── */}
         <div className="flex-1 p-8 md:p-12 lg:p-16 flex flex-col justify-center relative bg-white z-20">
-          <div className="w-full max-w-[380px] mx-auto">
+          <div className="w-full max-w-95 mx-auto">
             
             <Link to="/" className="hidden md:inline-flex items-center gap-1.5 text-[12px] font-medium text-slate-500 hover:text-slate-800 transition-colors mb-10">
               <ChevronLeft size={14} /> Back to home
@@ -270,15 +270,7 @@ export default function Register() {
                   </div>
                 </div>
 
-                <div className="mb-8">
-                  <label className={lblClass}>Priority Classification</label>
-                  <select name="priority_class" value={form.priority_class} onChange={handleChange} className={`${inpClass} appearance-none bg-[url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20width%3D%2220%22%20height%3D%2220%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%3E%3Cpath%20d%3D%22M5%207.5l5%205%205-5%22%20stroke%3D%22%2364748b%22%20stroke-width%3D%221.5%22%20fill%3D%22none%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%2F%3E%3C%2Fsvg%3E')] bg-size-[20px] bg-position-[right_12px_center] bg-no-repeat`}>
-                    <option value="regular">Regular Student</option>
-                    <option value="graduating">Graduating Student</option>
-                    <option value="pwd">PWD</option>
-                    <option value="transferee">Transferee</option>
-                  </select>
-                </div>
+
 
                 <button type="submit" disabled={loading} className={btnClass}>
                   {loading ? <span className="spinner" /> : <>Complete Registration <ChevronRight size={16} strokeWidth={2.5} /></>}
@@ -297,7 +289,7 @@ export default function Register() {
             <div className="mt-8 bg-slate-50 rounded-2xl shadow-sm border border-slate-100 overflow-hidden md:hidden">
               {['Book appointments online', 'Real-time queue tracking', 'AI-guided step-by-step'].map((perk, i, arr) => (
                 <div key={i} className={`flex items-center gap-3 py-3.5 px-4 ${i < arr.length - 1 ? 'border-b border-slate-100' : 'border-none'}`}>
-                  <div className="w-[20px] h-[20px] rounded-full shrink-0 bg-emerald-50 border border-emerald-100 flex items-center justify-center">
+                  <div className="w-5 h-5 rounded-full shrink-0 bg-emerald-50 border border-emerald-100 flex items-center justify-center">
                     <span className="text-emerald-500 text-[10px] font-bold">✓</span>
                   </div>
                   <span className="text-[13px] font-medium text-slate-600">{perk}</span>

@@ -102,6 +102,19 @@
   animation: fadeUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
+@keyframes bounceCustom {
+  0%, 80%, 100% {
+    transform: translateY(0);
+  }
+  40% {
+    transform: translateY(-4px);
+  }
+}
+
+.animate-bounce-custom {
+  animation: bounceCustom 1s infinite ease-in-out both;
+}
+
 /* --- Print Styles --- */
 @media print {
   .no-print { display: none !important; }

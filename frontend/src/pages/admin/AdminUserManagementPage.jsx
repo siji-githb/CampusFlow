@@ -16,7 +16,7 @@ const getPriorityClass = (user) => {
   if (!pc) return user.role === 'student' ? 'Regular' : 'N/A'
   const MAP = {
     graduating: 'Graduating', pwd: 'PWD', regular: 'Regular',
-    irregular: 'Irregular', transferee: 'Transferee',
+    irregular: 'Irregular', transferee: 'Transferee', pregnant: 'Pregnant',
   }
   return MAP[pc.toLowerCase()] || pc
 }
@@ -50,7 +50,7 @@ const RoleBadge = ({ role }) => {
 // ── Priority Badge ─────────────────────────────────────────────────────────────
 const PriorityBadge = ({ label }) => {
   if (!label || label === 'N/A') return <span className="text-[12px] text-text-muted">N/A</span>
-  const colorMap = { Graduating: 'text-maroon', PWD: 'text-gold', Regular: 'text-text-sub', Irregular: 'text-info', Transferee: 'text-success' }
+  const colorMap = { Graduating: 'text-maroon', PWD: 'text-gold', Regular: 'text-text-sub', Irregular: 'text-info', Transferee: 'text-success', Pregnant: 'text-pink-600' }
   const color = colorMap[label] || 'text-text-sub'
   return <span className={`text-[12px] font-semibold ${color}`}>{label}</span>
 }
@@ -61,7 +61,7 @@ function EditRoleModal({ user, onSave, onClose, saving }) {
   return (
     <>
       <div onClick={onClose} className="fixed inset-0 bg-black/40 z-200" />
-      <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-210 w-[420px] bg-white rounded-2xl p-7 shadow-[0_20px_60px_rgba(0,0,0,0.2)]">
+      <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-210 w-105 bg-white rounded-2xl p-7 shadow-[0_20px_60px_rgba(0,0,0,0.2)]">
         {/* Header */}
         <div className="flex items-center gap-3.5 mb-6">
           <Avatar name={`${user.first_name} ${user.last_name}`} role={user.role} size={44} />
@@ -207,7 +207,7 @@ export default function AdminUserManagementPage() {
         <h1 className="font-serif text-[26px] font-bold text-maroon m-0 mb-2 flex items-center gap-3">
           <Users className="text-maroon" size={24} /> User Management
         </h1>
-        <p className="text-[12px] text-text-sub m-0 leading-relaxed max-w-[650px]">
+        <p className="text-[12px] text-text-sub m-0 leading-relaxed max-w-162.5">
           Manage system accounts, adjust roles, and export the user directory.
         </p>
       </div>
@@ -231,8 +231,8 @@ export default function AdminUserManagementPage() {
                 {c.icon}
               </div>
             </div>
-            <div className="font-sans text-[36px] font-extrabold leading-none m-0 min-h-[36px] text-text-main">
-              {statsLoading ? <div className="animate-pulse w-[60px] h-[36px] rounded-lg bg-border" /> : c.value}
+            <div className="font-sans text-[36px] font-extrabold leading-none m-0 min-h-9 text-text-main">
+              {statsLoading ? <div className="animate-pulse w-15 h-9 rounded-lg bg-border" /> : c.value}
             </div>
           </div>
         ))}
@@ -248,7 +248,7 @@ export default function AdminUserManagementPage() {
             {TABS.map(t => (
               <button key={t.key} onClick={() => { setActiveTab(t.key); setPage(1) }} className={`py-3.5 px-4 bg-transparent border-none border-b-2 text-[13px] cursor-pointer font-sans transition-colors duration-150 whitespace-nowrap flex items-center gap-1.5 ${activeTab === t.key ? 'border-maroon text-maroon font-bold' : 'border-transparent text-text-muted font-normal hover:text-maroon/80'}`}>
                 {t.label}
-                <span className={`text-[11px] font-bold py-px px-[7px] rounded-full ${activeTab === t.key ? 'bg-maroon-light text-maroon' : 'bg-surface text-text-muted'}`}>{counts[t.key]}</span>
+                <span className={`text-[11px] font-bold py-px px-1.75 rounded-full ${activeTab === t.key ? 'bg-maroon-light text-maroon' : 'bg-surface text-text-muted'}`}>{counts[t.key]}</span>
               </button>
             ))}
           </div>
@@ -259,7 +259,7 @@ export default function AdminUserManagementPage() {
               <input
                 value={search} onChange={e => { setSearch(e.target.value); setPage(1) }}
                 placeholder="Search by name, ID, email…"
-                className="py-2 pr-3.5 pl-8.5 rounded-[9px] border border-border bg-off-white text-[13px] text-text-main outline-none w-[220px] font-sans focus:border-maroon transition-colors"
+                className="py-2 pr-3.5 pl-8.5 rounded-[9px] border border-border bg-off-white text-[13px] text-text-main outline-none w-55 font-sans focus:border-maroon transition-colors"
               />
               <span className="absolute left-2.5 top-1/2 -translate-y-1/2 flex items-center text-text-muted"><Search size={14} /></span>
               {search && (
@@ -280,21 +280,21 @@ export default function AdminUserManagementPage() {
         {loading ? (
           [1, 2, 3, 4, 5].map((n, idx) => (
             <div key={n} className={`grid grid-cols-[120px_1.6fr_1.4fr_130px_100px] p-[16px_24px] items-center ${idx === 4 ? 'border-none' : 'border-b border-border/60'} bg-white`}>
-              <div className="animate-pulse h-4 w-[70px] rounded bg-border" />
+              <div className="animate-pulse h-4 w-17.5 rounded bg-border" />
               <div className="flex items-center gap-4">
                 <div className="animate-pulse w-10 h-10 rounded-full bg-border" />
                 <div className="animate-pulse h-5 w-[60%] rounded bg-border" />
               </div>
               <div className="animate-pulse h-4 w-[80%] rounded bg-border" />
-              <div className="animate-pulse h-6 w-[70px] rounded-full bg-border" />
-              <div className="animate-pulse h-8 w-[60px] rounded bg-border" />
+              <div className="animate-pulse h-6 w-17.5 rounded-full bg-border" />
+              <div className="animate-pulse h-8 w-15 rounded bg-border" />
             </div>
           ))
         ) : paginated.length === 0 ? (
           <div className="p-[60px_24px] text-center">
             <div className="flex justify-center mb-4 text-text-muted/50"><Users size={52} strokeWidth={1.5} /></div>
             <p className="font-serif text-[18px] font-bold text-text-main m-0 mb-1">No users found</p>
-            <p className="text-[13px] text-text-muted m-0 max-w-[250px] mx-auto">
+            <p className="text-[13px] text-text-muted m-0 max-w-62.5 mx-auto">
               {search ? 'Try adjusting your search query or filters to find what you are looking for.' : 'No accounts have been registered in the system yet.'}
             </p>
           </div>
@@ -314,7 +314,7 @@ export default function AdminUserManagementPage() {
                   <div className="shadow-sm rounded-full bg-white"><Avatar name={name} role={user.role} size={38} /></div>
                   <div className="flex flex-col gap-0.5 min-w-0">
                     <div className="text-[14px] font-bold text-text-main whitespace-nowrap overflow-hidden text-ellipsis group-hover:text-maroon transition-colors">{name}</div>
-                    {user.is_active === false && <span className="text-[10px] font-bold text-danger bg-danger-light py-[2px] px-1.5 rounded-[4px] w-fit border border-danger-border leading-none">SUSPENDED</span>}
+                    {user.is_active === false && <span className="text-[10px] font-bold text-danger bg-danger-light py-0.5 px-1.5 rounded-sm w-fit border border-danger-border leading-none">SUSPENDED</span>}
                   </div>
                 </div>
 
@@ -342,7 +342,7 @@ export default function AdminUserManagementPage() {
                   ><MoreVertical size={16} /></button>
                   
                   {dropdownOpen === user.id && (
-                    <div className="absolute top-full right-0 mt-2 bg-white border border-border rounded-xl shadow-[0_8px_24px_rgba(0,0,0,0.12)] p-1.5 z-10 min-w-[140px] animate-fade-up" style={{ animationDuration: '0.15s' }}>
+                    <div className="absolute top-full right-0 mt-2 bg-white border border-border rounded-xl shadow-[0_8px_24px_rgba(0,0,0,0.12)] p-1.5 z-10 min-w-35 animate-fade-up" style={{ animationDuration: '0.15s' }}>
                       <button
                         onClick={() => handleToggleStatus(user.id, user.is_active !== false)}
                         className={`w-full py-2 px-3 border-none bg-transparent text-left text-[13px] cursor-pointer rounded-lg flex items-center gap-2.5 transition-colors duration-150 font-sans font-semibold ${user.is_active !== false ? 'text-danger hover:bg-danger-light' : 'text-success hover:bg-success-light'}`}
@@ -376,7 +376,7 @@ export default function AdminUserManagementPage() {
                   : page - 3 + i
                 if (p < 1 || p > totalPages) return null
                 return (
-                  <button key={p} onClick={() => setPage(p)} className={`w-[30px] h-[30px] rounded-md text-[12px] font-semibold cursor-pointer font-sans border ${page === p ? 'border-maroon bg-maroon text-white' : 'border-border bg-white text-text-main hover:bg-off-white'}`}>
+                  <button key={p} onClick={() => setPage(p)} className={`w-7.5 h-7.5 rounded-md text-[12px] font-semibold cursor-pointer font-sans border ${page === p ? 'border-maroon bg-maroon text-white' : 'border-border bg-white text-text-main hover:bg-off-white'}`}>
                     {p}
                   </button>
                 )

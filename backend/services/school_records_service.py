@@ -35,6 +35,13 @@ async def upload_student_records(file: UploadFile) -> dict:
         except StopIteration:
             raise HTTPException(status_code=400, detail=f"Missing required column: {col}")
 
+    # Optional column
+    priority_col_idx = None
+    try:
+        priority_col_idx = next(i for i, h in enumerate(headers) if "priority class" in h)
+    except StopIteration:
+        pass
+
     admin = get_supabase_admin()
     
     records_to_upsert = []
@@ -46,11 +53,16 @@ async def upload_student_records(file: UploadFile) -> dict:
         if not student_id or student_id == 'None':
             continue
             
+        priority = "regular"
+        if priority_col_idx is not None and row[priority_col_idx]:
+            priority = str(row[priority_col_idx]).strip().lower()
+
         records_to_upsert.append({
             "student_id": student_id,
             "first_name": str(row[col_indices["first name"]]).strip() if row[col_indices["first name"]] else "",
             "last_name": str(row[col_indices["last name"]]).strip() if row[col_indices["last name"]] else "",
-            "course": str(row[col_indices["course"]]).strip() if row[col_indices["course"]] else ""
+            "course": str(row[col_indices["course"]]).strip() if row[col_indices["course"]] else "",
+            "priority_class": priority
         })
 
     if not records_to_upsert:
@@ -70,14 +82,15 @@ async def upload_student_records(file: UploadFile) -> dict:
     return {"message": f"Successfully imported {inserted} student records."}
 
 
-async def add_student_record(student_id: str, first_name: str, last_name: str, course: str) -> dict:
+async def add_student_record(student_id: str, first_name: str, last_name: str, course: str, priority_class: str) -> dict:
     admin = get_supabase_admin()
     try:
         admin.table("school_students").upsert({
             "student_id": student_id,
             "first_name": first_name,
             "last_name": last_name,
-            "course": course
+            "course": course,
+            "priority_class": priority_class
         }).execute()
         return {"message": "Record added successfully"}
     except Exception as e:
@@ -100,13 +113,14 @@ async def delete_student_record(student_id: str) -> dict:
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to delete record: {str(e)}")
 
-async def update_student_record(student_id: str, first_name: str, last_name: str, course: str) -> dict:
+async def update_student_record(student_id: str, first_name: str, last_name: str, course: str, priority_class: str) -> dict:
     admin = get_supabase_admin()
     try:
         admin.table("school_students").update({
             "first_name": first_name,
             "last_name": last_name,
-            "course": course
+            "course": course,
+            "priority_class": priority_class
         }).eq("student_id", student_id).execute()
         
         # Also try to update their actual user profile if they have one
@@ -114,7 +128,8 @@ async def update_student_record(student_id: str, first_name: str, last_name: str
             admin.table("users").update({
                 "first_name": first_name,
                 "last_name": last_name,
-                "course": course
+                "course": course,
+                "priority_class": priority_class
             }).eq("student_id", student_id).execute()
         except Exception:
             pass # Ignore if they don't have a user account yet

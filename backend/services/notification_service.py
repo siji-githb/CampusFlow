@@ -30,12 +30,12 @@ def create_system_notification(user_id: str, title: str, message: str, type: str
 
 def notify_staff_urgent_message(student_name: str):
     """
-    Finds all staff and admin users and sends them an urgent notification.
+    Finds all staff users and sends them an urgent notification.
     """
     try:
         admin = get_admin_client()
-        # Fetch staff and admin users
-        res = admin.table("users").select("id").in_("role", ["staff", "admin"]).execute()
+        # Fetch staff users only
+        res = admin.table("users").select("id").eq("role", "staff").execute()
         if not res.data:
             return
             
@@ -55,11 +55,11 @@ def notify_staff_urgent_message(student_name: str):
 
 def notify_staff_id_request(student_name: str):
     """
-    Finds all staff and admin users and sends them a notification about a new ID request.
+    Finds all staff users and sends them a notification about a new ID request.
     """
     try:
         admin = get_admin_client()
-        res = admin.table("users").select("id").in_("role", ["staff", "admin"]).execute()
+        res = admin.table("users").select("id").eq("role", "staff").execute()
         if not res.data:
             return
             

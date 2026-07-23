@@ -4,11 +4,12 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/useAuth';
 import campusFlowLogo from '../../assets/logo.png';
 import BottomNav from './BottomNav';
-import { LogOut, ClipboardList, Ticket, Home, Calendar, BotMessageSquare, User, Settings, Search, ChevronLeft } from 'lucide-react';
+import { LogOut, ClipboardList, Ticket, Home, Calendar, BotMessageSquare, User, Settings, Search, ChevronLeft, Eraser } from 'lucide-react';
 import NotificationDropdown from '../NotificationDropdown';
 import Navbar from './Navbar';
 import AiChat from '../../pages/student/AiChat';
 import GlobalSearch from '../GlobalSearch';
+import { clearChat } from '../../services/aiService';
 
 // eslint-disable-next-line react-refresh/only-export-components
 export function useWindowWidth() {
@@ -421,6 +422,9 @@ export default function StudentLayout({ children, activeTab, mobileTitle, backTo
   const [isDragging, setIsDragging] = useState(false);
   
   const [initialAiQuery, setInitialAiQuery] = useState('');
+  const [chatKey, setChatKey] = useState(0);
+  const [showClearConfirm, setShowClearConfirm] = useState(false);
+  const { token } = useAuth();
   const navigate = useNavigate();
   const hasDragged = useRef(false);
   const startPos = useRef({ x: 0, y: 0, btnX: 0, btnY: 0 });
@@ -569,7 +573,29 @@ export default function StudentLayout({ children, activeTab, mobileTitle, backTo
                 <span className="text-[10px] text-text-sub tracking-wider uppercase block leading-tight">AI Assistant</span>
               </div>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 relative">
+              <button 
+                onClick={(e) => { 
+                  e.stopPropagation(); 
+                  setShowClearConfirm(!showClearConfirm);
+                }} 
+                title="Clear Chat"
+                className="text-text-sub hover:text-text-main hover:bg-black/5 p-1.5 rounded-lg bg-transparent border-none cursor-pointer flex items-center justify-center transition-colors"
+              >
+                <Eraser size={16} />
+              </button>
+              {showClearConfirm && (
+                <div className="absolute top-[120%] right-6 bg-white rounded-lg shadow-lg p-3 z-50 w-45 border border-border" onClick={e => e.stopPropagation()}>
+                  <p className="m-0 mb-3 text-[12px] text-text-main font-medium text-left">Clear chat history?</p>
+                  <div className="flex justify-end gap-2">
+                    <button onClick={() => setShowClearConfirm(false)} className="px-3 py-1.5 rounded bg-black/5 hover:bg-black/10 text-text-sub text-[11px] border-none cursor-pointer">Cancel</button>
+                    <button onClick={async () => {
+                      try { await clearChat(token); setChatKey(prev => prev + 1); setShowClearConfirm(false); } 
+                      catch(err) { console.error(err); }
+                    }} className="px-3 py-1.5 rounded bg-maroon hover:bg-maroon-dark text-white text-[11px] border-none cursor-pointer font-medium">Clear</button>
+                  </div>
+                </div>
+              )}
               <button onClick={(e) => { e.stopPropagation(); toggleChat(e); }} className="text-text-sub hover:text-text-main hover:bg-black/5 p-1.5 rounded-lg bg-transparent border-none cursor-pointer flex items-center justify-center transition-colors">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
               </button>
@@ -594,7 +620,7 @@ export default function StudentLayout({ children, activeTab, mobileTitle, backTo
         }}
         onPointerDown={e => e.stopPropagation()} 
       >
-        <AiChat asWidget headless onClose={() => setIsChatOpen(false)} initialQuery={initialAiQuery} />
+        <AiChat key={chatKey} asWidget headless onClose={() => setIsChatOpen(false)} initialQuery={initialAiQuery} />
       </div>
     </div>
   );
@@ -660,7 +686,7 @@ export default function StudentLayout({ children, activeTab, mobileTitle, backTo
         </header>
 
         {/* Desktop Top Bar (Hidden on Mobile) */}
-        <header className="hidden md:flex items-center justify-end sticky top-0 z-40 bg-white border-b border-border h-[70px]" style={{ background: M.white, borderBottom: `1px solid ${M.border}`, height: '70px', position: 'sticky', top: 0, zIndex: 40 }}>
+        <header className="hidden md:flex items-center justify-end sticky top-0 z-40 bg-white border-b border-border h-17.5" style={{ background: M.white, borderBottom: `1px solid ${M.border}`, height: '70px', position: 'sticky', top: 0, zIndex: 40 }}>
           <div style={{ maxWidth: '1200px', margin: '0 auto', width: '100%', height: '100%', padding: '0 40px', display: 'flex', alignItems: 'center', gap: '24px' }}>
             <GlobalSearch onAiPrompt={handleAiPrompt} />
             <NotificationDropdown />
@@ -669,7 +695,7 @@ export default function StudentLayout({ children, activeTab, mobileTitle, backTo
         </header>
 
         {/* Body */}
-        <main className="flex-1 w-full max-w-[1200px] mx-auto p-0 md:p-[40px] pb-[88px] md:pb-[40px]" style={{ maxWidth: '1200px', margin: '0 auto', width: '100%' }}>
+        <main className="flex-1 w-full max-w-300 mx-auto p-0 md:p-10 pb-22 md:pb-10" style={{ maxWidth: '1200px', margin: '0 auto', width: '100%' }}>
           {children}
         </main>
 

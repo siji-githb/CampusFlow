@@ -53,6 +53,6 @@ def reply_to_message(message_id: str, data: ReplyRequest, user=Depends(require_s
         "staff_name": f"{profile.get('first_name', 'Staff')} {profile.get('last_name', '')}".strip()
     })
 
-    save_messages(session["id"], history[-20:])
+    save_messages(session["id"], history[-12:])
 
     return {"success": True}

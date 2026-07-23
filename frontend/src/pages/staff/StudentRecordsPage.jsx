@@ -13,11 +13,11 @@ export default function StudentRecordsPage() {
   const [success, setSuccess] = useState('')
   const fileInputRef = useRef()
 
-  const [form, setForm] = useState({ student_id: '', first_name: '', last_name: '', course: '' })
+  const [form, setForm] = useState({ student_id: '', first_name: '', last_name: '', course: '', priority_class: 'regular' })
 
   // Edit State
   const [editingRecord, setEditingRecord] = useState(null)
-  const [editForm, setEditForm] = useState({ first_name: '', last_name: '', course: '' })
+  const [editForm, setEditForm] = useState({ first_name: '', last_name: '', course: '', priority_class: 'regular' })
   const [isDeleting, setIsDeleting] = useState(null)
   const [courseFilter, setCourseFilter] = useState('All')
   const [searchQuery, setSearchQuery] = useState('')
@@ -80,7 +80,7 @@ export default function StudentRecordsPage() {
     try {
       await addStudentRecord(token, form)
       setSuccess('Student added successfully')
-      setForm({ student_id: '', first_name: '', last_name: '', course: '' })
+      setForm({ student_id: '', first_name: '', last_name: '', course: '', priority_class: 'regular' })
       fetchRecords()
     } catch (err) {
       setError(err.message)
@@ -104,7 +104,7 @@ export default function StudentRecordsPage() {
 
   const startEdit = (record) => {
     setEditingRecord(record.student_id)
-    setEditForm({ first_name: record.first_name, last_name: record.last_name, course: record.course })
+    setEditForm({ first_name: record.first_name, last_name: record.last_name, course: record.course, priority_class: record.priority_class || 'regular' })
   }
 
   const handleEditSubmit = async (e) => {
@@ -136,7 +136,7 @@ export default function StudentRecordsPage() {
       {/* Edit Modal */}
       {editingRecord && createPortal((
         <div className="fixed inset-0 bg-black/20 backdrop-blur-sm z-100 flex items-center justify-center animate-fade-up">
-          <div className="bg-white p-6 rounded-2xl w-full max-w-[400px] shadow-[0_8px_32px_rgba(0,0,0,0.1)] animate-fade-up">
+          <div className="bg-white p-6 rounded-2xl w-full max-w-100 shadow-[0_8px_32px_rgba(0,0,0,0.1)] animate-fade-up">
             <h3 className="text-[18px] font-bold text-maroon m-0 mb-4 font-serif">Edit Record: {editingRecord}</h3>
             <form onSubmit={handleEditSubmit} className="grid gap-3">
               <div>
@@ -160,6 +160,13 @@ export default function StudentRecordsPage() {
                   <option value="Bachelor of Science in Tourism Management">Bachelor of Science in Tourism Management</option>
                 </select>
               </div>
+              <div>
+                <label className="text-[11px] font-semibold text-text-sub mb-1 block">Priority Class</label>
+                <select required value={editForm.priority_class} onChange={e => setEditForm({ ...editForm, priority_class: e.target.value })} className="px-3.5 py-2.5 rounded-lg border border-border text-[13px] outline-none bg-white text-text-main w-full transition-colors appearance-none focus:border-maroon">
+                  <option value="regular">Regular</option>
+                  <option value="graduating">Graduating</option>
+                </select>
+              </div>
               <div className="flex gap-2 mt-3">
                 <button type="button" onClick={() => setEditingRecord(null)} className="flex-1 p-2.5 rounded-lg border border-border bg-off-white text-text-sub font-semibold cursor-pointer hover:bg-border transition-colors">Cancel</button>
                 <button type="submit" className="flex-1 p-2.5 rounded-lg border-none bg-maroon text-white font-semibold cursor-pointer hover:bg-maroon-dark transition-colors">Save Changes</button>
@@ -177,7 +184,7 @@ export default function StudentRecordsPage() {
         {/* Upload Excel */}
         <div className="bg-white p-6 rounded-2xl shadow-[0_4px_12px_rgba(0,0,0,0.05)] border border-border">
           <h3 className="text-base font-semibold text-text-main m-0 mb-4 font-serif">Bulk Import via Excel</h3>
-          <p className="text-[13px] text-text-sub mb-5">Upload an `.xlsx` file containing headers: <strong>Student ID, First Name, Last Name, Course</strong>.</p>
+          <p className="text-[13px] text-text-sub mb-5">Upload an `.xlsx` file containing headers: <strong>Student ID, First Name, Last Name, Course, Priority Class</strong>.</p>
 
           <div className="border-2 border-dashed border-maroon-border bg-maroon-light p-8 rounded-xl text-center cursor-pointer transition-colors hover:bg-maroon-mid/30" onClick={() => fileInputRef.current?.click()}>
             <input type="file" accept=".xlsx" ref={fileInputRef} onChange={handleFileUpload} className="hidden" />
@@ -211,6 +218,12 @@ export default function StudentRecordsPage() {
                 <option value="Bachelor of Science in Tourism Management">Bachelor of Science in Tourism Management</option>
               </select>
             </div>
+            <div className="col-span-2">
+              <select required value={form.priority_class} onChange={e => setForm({ ...form, priority_class: e.target.value })} className="px-3.5 py-2.5 rounded-lg border border-border text-[13px] outline-none bg-white w-full transition-colors appearance-none focus:border-maroon text-text-main">
+                <option value="regular">Regular Student</option>
+                <option value="graduating">Graduating Student</option>
+              </select>
+            </div>
             <div className="col-span-2 mt-2">
               <button type="submit" className="w-full bg-gold text-white border-none p-3 rounded-lg font-semibold cursor-pointer font-sans transition-transform active:scale-95 hover:opacity-90">
                 Add Student
@@ -231,7 +244,7 @@ export default function StudentRecordsPage() {
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
                 placeholder="Search name or ID..."
-                className="py-1.5 pr-3 pl-8 rounded-lg border border-border bg-off-white text-[12px] text-text-main outline-none w-[200px] font-sans focus:border-maroon transition-colors"
+                className="py-1.5 pr-3 pl-8 rounded-lg border border-border bg-off-white text-[12px] text-text-main outline-none w-50 font-sans focus:border-maroon transition-colors"
               />
               <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-text-muted"><Search size={14} /></span>
             </div>
@@ -262,6 +275,7 @@ export default function StudentRecordsPage() {
                 <th className="px-6 py-3">Student ID</th>
                 <th className="px-6 py-3">Name</th>
                 <th className="px-6 py-3">Course</th>
+                <th className="px-6 py-3">Priority</th>
                 <th className="px-6 py-3">Date Added</th>
                 <th className="px-6 py-3 text-right">Actions</th>
               </tr>
@@ -275,6 +289,7 @@ export default function StudentRecordsPage() {
                         <div className="animate-pulse h-5 w-[20%] rounded bg-border" />
                         <div className="animate-pulse h-5 w-[30%] rounded bg-border" />
                         <div className="animate-pulse h-5 w-[15%] rounded bg-border" />
+                        <div className="animate-pulse h-5 w-[10%] rounded bg-border" />
                         <div className="animate-pulse h-5 w-[15%] rounded bg-border" />
                         <div className="animate-pulse h-5 w-[10%] rounded bg-border ml-auto" />
                       </div>
@@ -289,6 +304,17 @@ export default function StudentRecordsPage() {
                     <td className="px-6 py-3 font-medium text-maroon">{record.student_id}</td>
                     <td className="px-6 py-3 text-text-main">{record.first_name} {record.last_name}</td>
                     <td className="px-6 py-3 text-text-sub">{record.course}</td>
+                    <td className="px-6 py-3">
+                      {record.priority_class === 'graduating' ? (
+                        <span className="bg-maroon-light text-maroon font-bold px-2 py-1 rounded text-[11px] uppercase tracking-wide">Graduating</span>
+                      ) : record.priority_class === 'pwd' ? (
+                        <span className="bg-[#fffbeb] text-gold font-bold px-2 py-1 rounded text-[11px] uppercase tracking-wide">PWD</span>
+                      ) : record.priority_class === 'pregnant' ? (
+                        <span className="bg-pink-50 text-pink-600 font-bold px-2 py-1 rounded text-[11px] uppercase tracking-wide">Pregnant</span>
+                      ) : (
+                        <span className="bg-slate-100 text-slate-500 font-bold px-2 py-1 rounded text-[11px] uppercase tracking-wide">Regular</span>
+                      )}
+                    </td>
                     <td className="px-6 py-3 text-text-muted text-xs">{new Date(record.created_at).toLocaleDateString()}</td>
                     <td className="px-6 py-3 text-right flex gap-2 justify-end">
                       <button className="bg-transparent border-none cursor-pointer px-2 py-1 rounded text-xs font-semibold text-blue transition-colors hover:bg-blue-light flex items-center gap-1" onClick={() => startEdit(record)}>

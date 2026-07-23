@@ -75,8 +75,8 @@ export default function NotificationDropdown({ isMobile = false, mobileRoute }) 
         }
       };
       
-      ws.onerror = (error) => {
-        console.error('WebSocket error:', error);
+      ws.onerror = () => {
+        // Silencing websocket error logs as reconnects are handled in onclose
       };
 
       ws.onclose = () => {
@@ -167,7 +167,7 @@ export default function NotificationDropdown({ isMobile = false, mobileRoute }) 
       </button>
 
       {isOpen && (
-        <div className="absolute right-0 top-[35px] w-[90vw] max-w-[320px] bg-white rounded-xl shadow-[0_10px_40px_rgba(0,0,0,0.15)] border border-border overflow-hidden animate-fade-up z-9999" ref={dropdownRef}>
+        <div className="absolute right-0 top-8.75 w-[90vw] max-w-[320px] bg-white rounded-xl shadow-[0_10px_40px_rgba(0,0,0,0.15)] border border-border overflow-hidden animate-fade-up z-9999" ref={dropdownRef}>
           <div className="flex items-center justify-between p-3 border-b border-border bg-off-white">
             <h3 className="m-0 text-[14px] font-semibold text-text-main font-sans">Notifications</h3>
             {unreadCount > 0 && (
@@ -180,7 +180,7 @@ export default function NotificationDropdown({ isMobile = false, mobileRoute }) 
             )}
           </div>
           
-          <div className="max-h-[360px] overflow-y-auto">
+          <div className="max-h-90 overflow-y-auto">
             {notifications.length === 0 ? (
               <div className="p-6 text-center text-text-muted text-[13px]">
                 <Bell size={24} className="mx-auto mb-2 opacity-50" />

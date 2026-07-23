@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/useAuth'
 import Navbar from '../../components/layout/Navbar'
 import { sendMessage, clearChat, getChatHistory } from '../../services/aiService'
-import { BotMessageSquare } from 'lucide-react'
+import { BotMessageSquare, Eraser } from 'lucide-react'
 
 const SUGGESTED = [
   'What documents do I need for a TOR?',
@@ -59,6 +59,7 @@ export default function AiChat({ asWidget, headless, onClose, initialQuery }) {
   }, [token])
   const [loading, setLoading] = useState(false)
   const [error,   setError]   = useState('')
+  const [showConfirm, setShowConfirm] = useState(false)
 
   const [isListening, setIsListening] = useState(false)
   const [isSpeaking,  setIsSpeaking]  = useState(false)
@@ -145,9 +146,9 @@ export default function AiChat({ asWidget, headless, onClose, initialQuery }) {
   }
 
   const handleClear = async () => {
-    if (!confirm('Clear chat history?')) return
     window.speechSynthesis?.cancel()
     setIsSpeaking(false)
+    setShowConfirm(false)
     try {
       await clearChat(token)
       setMessages([{ role: 'assistant', content: 'Chat cleared! How can I help you today?' }])
@@ -157,7 +158,7 @@ export default function AiChat({ asWidget, headless, onClose, initialQuery }) {
   const chatContent = (
     <>
       {/* Chat area */}
-      <div className={`flex-1 overflow-y-auto p-5 w-full box-border bg-[#F9FAFB] ${asWidget ? '' : 'max-w-[680px] mx-auto'}`}>
+      <div className={`flex-1 overflow-y-auto p-5 w-full box-border bg-[#F9FAFB] ${asWidget ? '' : 'max-w-170 mx-auto'}`}>
 
         {messages.length === 1 && (
           <div className="mb-8 mt-4">
@@ -212,10 +213,10 @@ export default function AiChat({ asWidget, headless, onClose, initialQuery }) {
         </div>
       </div>      {/* Input area */}
       <div className="bg-white p-4 pt-3 pb-5 shrink-0 shadow-[0_-4px_24px_rgba(0,0,0,0.02)] z-10 relative">
-        <div className={`mx-auto ${asWidget ? 'w-full' : 'max-w-[680px]'}`}>
+        <div className={`mx-auto ${asWidget ? 'w-full px-4' : 'max-w-170'} py-4 flex flex-col gap-5`}>
           {error && <p className="text-[12px] text-red-500 mb-2 px-2 flex items-center gap-1"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg> {error}</p>}
 
-          <div className={`flex items-end gap-1.5 bg-[#F3F4F6] p-1.5 rounded-[24px] border transition-all ${
+          <div className={`flex items-end gap-1.5 bg-[#F3F4F6] p-1.5 rounded-3xl border transition-all ${
             isListening ? 'border-maroon/40 shadow-[0_0_0_3px_rgba(123,26,42,0.1)]' : 'border-transparent focus-within:border-maroon/30 focus-within:bg-white focus-within:shadow-[0_4px_16px_rgba(0,0,0,0.04)]'
           }`}>
             <textarea
@@ -224,7 +225,7 @@ export default function AiChat({ asWidget, headless, onClose, initialQuery }) {
               onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend() } }}
               placeholder={isListening ? 'Listening...' : 'Ask Aether anything...'}
               rows={1}
-              className="flex-1 py-2.5 px-4 bg-transparent text-[14px] resize-none outline-none font-sans text-text-main min-h-[44px] max-h-[120px] box-border leading-relaxed placeholder:text-text-sub/70"
+              className="flex-1 bg-transparent border-none outline-none resize-none px-3 py-2 text-[14px] text-text-main placeholder-text-muted min-h-11 max-h-30 box-border leading-relaxed"
             />
 
             {/* Mic button */}
@@ -232,7 +233,7 @@ export default function AiChat({ asWidget, headless, onClose, initialQuery }) {
               <button
                 onClick={isListening ? stopListening : startListening}
                 title={isListening ? 'Stop listening' : 'Tap to speak'}
-                className={`w-[42px] h-[42px] rounded-full shrink-0 flex items-center justify-center cursor-pointer transition-all duration-200 border-none ${
+                className={`w-10.5 h-10.5 rounded-full bg-transparent hover:bg-black/5 text-text-sub flex items-center justify-center shrink-0 transition-colors border-none cursor-pointer ${
                   isListening ? 'bg-maroon text-white animate-pulse-ring' : 'bg-transparent text-text-sub hover:bg-black/5 hover:text-text-main'
                 }`}
               >
@@ -244,7 +245,7 @@ export default function AiChat({ asWidget, headless, onClose, initialQuery }) {
             <button
               onClick={() => handleSend()}
               disabled={!input.trim() || loading}
-              className={`w-[42px] h-[42px] rounded-full border-none shrink-0 flex items-center justify-center transition-all duration-200 ${
+              className={`w-10.5 h-10.5 rounded-full border-none shrink-0 flex items-center justify-center transition-all duration-200 ${
                 !input.trim() || loading ? 'bg-black/5 text-text-sub/50 cursor-not-allowed' : 'bg-maroon text-white cursor-pointer shadow-md hover:bg-maroon-dark hover:-translate-y-0.5'
               }`}
             >
@@ -253,7 +254,7 @@ export default function AiChat({ asWidget, headless, onClose, initialQuery }) {
           </div>
 
           {/* Status bar */}
-          <div className="flex items-center justify-between mt-2 h-[16px] px-2">
+          <div className="flex items-center justify-between mt-2 h-4 px-2">
             <div className="flex items-center gap-4 flex-1 justify-center">
             {isListening ? (
               <span className="text-[11px] text-maroon flex items-center gap-1.5 font-medium">
@@ -265,7 +266,7 @@ export default function AiChat({ asWidget, headless, onClose, initialQuery }) {
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>
                 Speaking...
                 <button onClick={() => { window.speechSynthesis?.cancel(); setIsSpeaking(false) }}
-                  className="ml-1 px-1.5 py-0.5 rounded-[4px] text-[10px] bg-maroon-light text-maroon hover:bg-maroon hover:text-white transition-colors border-none cursor-pointer">
+                  className="ml-1 px-1.5 py-0.5 rounded-sm text-[10px] bg-maroon-light text-maroon hover:bg-maroon hover:text-white transition-colors border-none cursor-pointer">
                   Stop
                 </button>
               </span>
@@ -298,8 +299,19 @@ export default function AiChat({ asWidget, headless, onClose, initialQuery }) {
             </div>
             <span className="font-bold text-[14px]">Aether</span>
           </div>
-          <div className="flex items-center gap-3">
-            <button onClick={handleClear} className="text-[11px] text-white/70 hover:text-white bg-transparent border-none cursor-pointer">Clear</button>
+          <div className="flex items-center gap-3 relative">
+            <button onClick={() => setShowConfirm(!showConfirm)} title="Clear Chat" className="text-white/70 hover:text-white bg-transparent border-none cursor-pointer flex items-center justify-center">
+              <Eraser size={16} />
+            </button>
+            {showConfirm && (
+              <div className="absolute top-[120%] right-6 bg-white rounded-lg shadow-lg p-3 z-50 w-45 border border-border" onClick={e => e.stopPropagation()}>
+                <p className="m-0 mb-3 text-[12px] text-text-main font-medium text-left">Clear chat history?</p>
+                <div className="flex justify-end gap-2">
+                  <button onClick={() => setShowConfirm(false)} className="px-3 py-1.5 rounded bg-black/5 hover:bg-black/10 text-text-sub text-[11px] border-none cursor-pointer">Cancel</button>
+                  <button onClick={handleClear} className="px-3 py-1.5 rounded bg-maroon hover:bg-maroon-dark text-white text-[11px] border-none cursor-pointer font-medium">Clear</button>
+                </div>
+              </div>
+            )}
             <button onClick={onClose} className="text-white hover:text-white/80 bg-transparent border-none cursor-pointer flex items-center justify-center">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
             </button>

@@ -57,6 +57,8 @@ def available_slots(transaction_type_id: str, appointment_date: date):
 
 @router.post("/book")
 def book_appointment(data: AppointmentCreate, user=Depends(get_current_user)):
+    from services.priority_service import sync_priority_status
+    sync_priority_status(user.id)
     profile = get_user_profile(user.id)
     return create_appointment(user.id, profile["priority_class"], data)
 

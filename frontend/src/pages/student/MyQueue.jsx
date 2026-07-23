@@ -50,7 +50,7 @@ export default function MyQueue() {
     try {
       const all = await getMyAppointments(token)
       setUpcomingAppts(all.filter(a => {
-        const hasActiveTicket = a.queue_tickets?.some(qt => qt.status !== 'cancelled');
+        const hasActiveTicket = Array.isArray(a.queue_tickets) && a.queue_tickets.some(qt => qt.status !== 'cancelled');
         return a.appointment_date >= today && a.status === 'confirmed' && !hasActiveTicket;
       }))
     } catch (e) { setError(e.message) }
@@ -185,6 +185,20 @@ export default function MyQueue() {
               </div>
             </div>
           ) : ticket ? (
+            ticket.status === 'completed' ? (
+              <div className="animate-fade-up text-center py-16 px-8 bg-white rounded-2xl border border-border shadow-sm">
+                <div className="w-16 h-16 bg-success/10 rounded-full flex items-center justify-center text-success mx-auto mb-5 shadow-sm border border-success/20">
+                  <PartyPopper size={32} />
+                </div>
+                <h2 className="font-serif text-[26px] font-bold text-success-dark m-0 mb-3">Transaction Completed</h2>
+                <p className="text-[14px] text-text-sub m-0 mb-6 max-w-sm mx-auto leading-relaxed">
+                  Your transaction <strong className="text-maroon font-serif text-[18px]">{ticket.queue_number}</strong> is fully complete. Thank you!
+                </p>
+                <button onClick={() => setActiveTab('upcoming')} className="py-2.5 px-6 rounded-lg border border-border bg-off-white text-text-main text-[14px] font-semibold cursor-pointer hover:bg-white transition-colors">
+                  View Upcoming Appointments
+                </button>
+              </div>
+            ) : (
             <div className="animate-fade-up">
               {/* Queue ticket card */}
               <div className="bg-maroon rounded-2xl p-7 mb-4 shadow-lg border border-maroon-light/20 relative overflow-hidden">
@@ -203,12 +217,14 @@ export default function MyQueue() {
                     <p className="text-[16px] font-medium text-white m-0 drop-shadow-sm">{ticket.appointments?.transaction_types?.name}</p>
                     <p className="text-[13px] text-white/70 m-0 font-light tracking-wide">{ticket.appointments?.appointment_date} <span className="text-white/30 mx-1.5">|</span> {fmt12h(ticket.appointments?.time_slot)}</p>
                   </div>
-                  <button 
-                    onClick={() => setCancelConfirmId(ticket.appointment_id)} 
-                    className="bg-white/10 hover:bg-danger text-white text-[12px] font-medium py-1.5 px-4 rounded-full transition-colors border border-white/20 hover:border-danger cursor-pointer"
-                  >
-                    Cancel Queue
-                  </button>
+                  {ticket.status !== 'completed' && (
+                    <button 
+                      onClick={() => setCancelConfirmId(ticket.appointment_id)} 
+                      className="bg-white/10 hover:bg-danger text-white text-[12px] font-medium py-1.5 px-4 rounded-full transition-colors border border-white/20 hover:border-danger cursor-pointer"
+                    >
+                      Cancel Queue
+                    </button>
+                  )}
                 </div>
 
                 {ticket.status === 'in_progress' && !currentRequiresPresence && (
@@ -306,14 +322,9 @@ export default function MyQueue() {
                   })}
                 </div>
 
-                {ticket.status === 'completed' && (
-                  <div className="mt-4 p-4 bg-maroon-light rounded-xl text-center border border-maroon-border animate-fade-up">
-                    <p className="text-[15px] font-bold text-maroon m-0 mb-1 flex items-center justify-center gap-1.5"><PartyPopper size={18} className="text-gold" /> Transaction Complete!</p>
-                    <p className="text-[12px] text-text-sub m-0">All steps have been processed.</p>
-                  </div>
-                )}
               </div>
             </div>
+            )
           ) : (
             <div className="animate-fade-up text-center py-16 px-8 bg-white rounded-2xl border border-border shadow-sm">
               <div className="text-text-muted mb-4 flex justify-center"><Ticket size={48} className="text-gold" /></div>
@@ -342,7 +353,7 @@ export default function MyQueue() {
             </div>
           ) : upcomingAppts.length > 0 ? (
             <div className="animate-fade-up">
-              <p className="text-[13px] text-text-sub m-0 mb-6 flex items-center gap-2 bg-blue-50 text-blue-800 p-3.5 rounded-xl border border-blue-100">
+              <p className="text-[13px] m-0 mb-6 flex items-center gap-2 bg-blue-50 text-blue-800 p-3.5 rounded-xl border border-blue-100">
                 <Ticket size={16} className="text-blue-500" />
                 Activate your queue number when you arrive at the Registrar's Office.
               </p>
@@ -396,7 +407,7 @@ export default function MyQueue() {
 
       {/* Cancel Confirmation Modal */}
       {cancelConfirmId && createPortal(
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 p-4 animate-fade-in pointer-events-auto">
+        <div className="fixed inset-0 z-9999 flex items-center justify-center bg-black/60 p-4 animate-fade-in pointer-events-auto">
           <div className="bg-white rounded-2xl p-7 max-w-sm w-full shadow-2xl animate-fade-up">
             <h3 className="text-[18px] font-bold text-text-main m-0 mb-2">Cancel Queue Ticket?</h3>
             <p className="text-[14px] text-text-sub m-0 mb-6">
@@ -423,7 +434,7 @@ export default function MyQueue() {
 
       {/* Activate Confirmation Modal */}
       {activateConfirmId && createPortal(
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 p-4 animate-fade-in pointer-events-auto">
+        <div className="fixed inset-0 z-9999 flex items-center justify-center bg-black/60 p-4 animate-fade-in pointer-events-auto">
           <div className="bg-white rounded-2xl p-7 max-w-sm w-full shadow-2xl animate-fade-up">
             <h3 className="text-[18px] font-bold text-text-main m-0 mb-2">Get Queue Number?</h3>
             <p className="text-[14px] text-text-sub m-0 mb-6">

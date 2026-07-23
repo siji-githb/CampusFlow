@@ -12,7 +12,7 @@ const PRIORITY_CFG = {
 }
 const getPriority = (ticket) => {
   const pc = ticket.appointments?.priority_class
-  if (pc === 'graduating' || pc === 'pwd') return 'high'
+  if (pc === 'graduating' || pc === 'pwd' || pc === 'pregnant') return 'high'
   if (ticket.status === 'completed') return 'resolved'
   return 'normal'
 }
@@ -244,7 +244,7 @@ export default function AdminLiveQueuePage() {
           </div>
 
           {processingQueue.length > 0 && (
-            <div className="grid grid-cols-[120px_1.5fr_1.5fr_120px] gap-0 px-[24px] py-[12px] rounded-t-[14px] bg-surface border border-b-0 border-border">
+            <div className="grid grid-cols-[120px_1.5fr_1.5fr_120px] gap-0 px-6 py-3 rounded-t-[14px] bg-surface border border-b-0 border-border">
               {['Queue No.', 'Student Name', 'Transaction', 'Priority'].map(h => (
                 <div key={h} className="text-[10px] font-bold text-text-muted tracking-[0.08em] uppercase">{h}</div>
               ))}

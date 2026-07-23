@@ -28,7 +28,17 @@ async def register_user(data: RegisterRequest) -> dict:
 
     user_id = auth_response.user.id
 
-    # Step 2: Insert profile into public.users
+    # Step 2: Fetch official priority class from school_students
+    official_priority = "regular"
+    if data.student_id:
+        try:
+            record = admin.table("school_students").select("priority_class").eq("student_id", data.student_id).single().execute()
+            if record.data and record.data.get("priority_class"):
+                official_priority = record.data["priority_class"]
+        except Exception:
+            pass
+
+    # Step 3: Insert profile into public.users
     try:
         profile = admin.table("users").insert({
             "id": user_id,
@@ -37,7 +47,7 @@ async def register_user(data: RegisterRequest) -> dict:
             "last_name": data.last_name,
             "student_id": data.student_id,
             "course": data.course,
-            "priority_class": data.priority_class,
+            "priority_class": official_priority,
             "role": "student",
         }).execute()
     except Exception as e:
@@ -73,6 +83,15 @@ async def login_user(data: LoginRequest) -> dict:
     refresh_token = auth_response.session.refresh_token
 
     # Step 2: Fetch profile from public.users
+    try:
+        profile_response = admin.table("users").select("*").eq("id", user_id).single().execute()
+        profile = profile_response.data
+    except Exception as e:
+        raise HTTPException(status_code=404, detail="User profile not found")
+
+    from services.priority_service import sync_priority_status
+    sync_priority_status(user_id)
+
     try:
         profile_response = admin.table("users").select("*").eq("id", user_id).single().execute()
         profile = profile_response.data

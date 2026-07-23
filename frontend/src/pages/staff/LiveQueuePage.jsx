@@ -71,11 +71,11 @@ const FilterBar = ({ filters, onChange, onReset }) => {
       <div className="text-[11px] font-bold text-text-muted uppercase tracking-[0.08em] mr-2 flex items-center gap-1.5"><Cog size={14} /> Filters</div>
       
       {/* Status Dropdown */}
-      <div className="flex-1 min-w-[150px]">
+      <div className="flex-1 min-w-37.5">
         <select
           value={filters.status}
           onChange={e => onChange({ ...filters, status: e.target.value })}
-          className="w-full px-4 py-2 rounded-full border border-border bg-white text-[12.5px] text-text-main font-semibold outline-none cursor-pointer font-sans hover:border-maroon-border focus:border-maroon focus:ring-2 focus:ring-maroon/20 transition-all shadow-sm appearance-none bg-[url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2214%22%20height%3D%2214%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%2357534E%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpolyline%20points%3D%226%209%2012%2015%2018%209%22%3E%3C%2Fpolyline%3E%3C%2Fsvg%3E')] bg-no-repeat bg-[position:calc(100%-12px)_center]"
+          className="w-full px-4 py-2 rounded-full border border-border bg-white text-[12.5px] text-text-main font-semibold outline-none cursor-pointer font-sans hover:border-maroon-border focus:border-maroon focus:ring-2 focus:ring-maroon/20 transition-all shadow-sm appearance-none bg-[url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2214%22%20height%3D%2214%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%2357534E%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpolyline%20points%3D%226%209%2012%2015%2018%209%22%3E%3C%2Fpolyline%3E%3C%2Fsvg%3E')] bg-no-repeat bg-position-[calc(100%-12px)_center]"
         >
           <option value="active">Active (Serving & Waiting)</option>
           <option value="in_progress">Serving Now</option>
@@ -89,11 +89,11 @@ const FilterBar = ({ filters, onChange, onReset }) => {
       </div>
 
       {/* Priority Dropdown */}
-      <div className="flex-1 min-w-[150px]">
+      <div className="flex-1 min-w-37.5">
         <select
           value={filters.priority}
           onChange={e => onChange({ ...filters, priority: e.target.value })}
-          className="w-full px-4 py-2 rounded-full border border-border bg-white text-[12.5px] text-text-main font-semibold outline-none cursor-pointer font-sans hover:border-maroon-border focus:border-maroon focus:ring-2 focus:ring-maroon/20 transition-all shadow-sm appearance-none bg-[url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2214%22%20height%3D%2214%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%2357534E%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpolyline%20points%3D%226%209%2012%2015%2018%209%22%3E%3C%2Fpolyline%3E%3C%2Fsvg%3E')] bg-no-repeat bg-[position:calc(100%-12px)_center]"
+          className="w-full px-4 py-2 rounded-full border border-border bg-white text-[12.5px] text-text-main font-semibold outline-none cursor-pointer font-sans hover:border-maroon-border focus:border-maroon focus:ring-2 focus:ring-maroon/20 transition-all shadow-sm appearance-none bg-[url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2214%22%20height%3D%2214%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%2357534E%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpolyline%20points%3D%226%209%2012%2015%2018%209%22%3E%3C%2Fpolyline%3E%3C%2Fsvg%3E')] bg-no-repeat bg-position-[calc(100%-12px)_center]"
         >
           <option value="all">All Priorities</option>
           <option value="high">High Priority</option>
@@ -102,11 +102,11 @@ const FilterBar = ({ filters, onChange, onReset }) => {
       </div>
 
       {/* Transaction Type Dropdown */}
-      <div className="flex-1 min-w-[150px]">
+      <div className="flex-1 min-w-37.5">
         <select
           value={filters.transactionType}
           onChange={e => onChange({ ...filters, transactionType: e.target.value })}
-          className="w-full px-4 py-2 rounded-full border border-border bg-white text-[12.5px] text-text-main font-semibold outline-none cursor-pointer font-sans hover:border-maroon-border focus:border-maroon focus:ring-2 focus:ring-maroon/20 transition-all shadow-sm appearance-none bg-[url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2214%22%20height%3D%2214%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%2357534E%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpolyline%20points%3D%226%209%2012%2015%2018%209%22%3E%3C%2Fpolyline%3E%3C%2Fsvg%3E')] bg-no-repeat bg-[position:calc(100%-12px)_center]"
+          className="w-full px-4 py-2 rounded-full border border-border bg-white text-[12.5px] text-text-main font-semibold outline-none cursor-pointer font-sans hover:border-maroon-border focus:border-maroon focus:ring-2 focus:ring-maroon/20 transition-all shadow-sm appearance-none bg-[url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2214%22%20height%3D%2214%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%2357534E%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpolyline%20points%3D%226%209%2012%2015%2018%209%22%3E%3C%2Fpolyline%3E%3C%2Fsvg%3E')] bg-no-repeat bg-position-[calc(100%-12px)_center]"
         >
           <option value="all">All Transactions</option>
           <option value="TOR">Transcript of Records</option>
@@ -254,7 +254,7 @@ export default function LiveQueuePage() {
   const waiting   = queue.filter(q => q.ticket.status === 'pending' || q.ticket.status === 'waiting')
   const highPrio  = queue.filter(q => {
     const pc = q.ticket.appointments?.priority_class
-    return pc === 'graduating' || pc === 'pwd'
+    return pc === 'graduating' || pc === 'pwd' || pc === 'pregnant'
   })
 
   // Calculate Average Wait Time from completed tickets today
@@ -289,7 +289,7 @@ export default function LiveQueuePage() {
     }
 
     const prioOk = filters.priority === 'all'
-      || (filters.priority === 'high' && (ticket.appointments?.priority_class === 'graduating' || ticket.appointments?.priority_class === 'pwd'))
+      || (filters.priority === 'high' && (ticket.appointments?.priority_class === 'graduating' || ticket.appointments?.priority_class === 'pwd' || ticket.appointments?.priority_class === 'pregnant'))
       || (filters.priority === 'regular' && ticket.appointments?.priority_class === 'regular')
     const txOk = filters.transactionType === 'all'
       || (ticket.appointments?.transaction_types?.name || '').includes(filters.transactionType)
@@ -323,7 +323,7 @@ export default function LiveQueuePage() {
     const txName  = appt?.transaction_types?.name || 'Transaction'
     const pClass  = appt?.priority_class || 'regular'
     const statusCfg = STATUS_CFG[ticket.status] || STATUS_CFG.pending
-    const isHighPrio = pClass === 'graduating' || pClass === 'pwd'
+    const isHighPrio = pClass === 'graduating' || pClass === 'pwd' || pClass === 'pregnant'
     const inProgressStep = steps?.find(s => s.status === 'in_progress')
     const confirmKey = inProgressStep ? `${ticket.id}-${inProgressStep.step_number}` : null
     const isConfirming = confirming === confirmKey
@@ -338,7 +338,7 @@ export default function LiveQueuePage() {
     return (
       <div key={ticket.id} className={`grid ${showWait ? 'grid-cols-[110px_1.2fr_1.2fr_220px_70px_160px]' : 'grid-cols-[110px_1.2fr_1.2fr_220px_160px]'} gap-0 px-5 py-4 items-center transition-all duration-300
         ${idx < arrLength - 1 ? 'border-b border-border/60' : ''}
-        ${ticket.status === 'in_progress' ? 'bg-success-light/30' : 'bg-white hover:bg-off-white/80 hover:shadow-sm hover:-translate-y-[1px]'}
+        ${ticket.status === 'in_progress' ? 'bg-success-light/30' : 'bg-white hover:bg-off-white/80 hover:shadow-sm hover:-translate-y-px'}
       `}>
 
         {/* Queue No. */}
@@ -667,7 +667,7 @@ export default function LiveQueuePage() {
 
       {/* ── Toast Notification ── */}
       {toastMsg && (
-        <div className="fixed top-8 left-1/2 -translate-x-1/2 bg-success text-white px-6 py-3.5 rounded-full shadow-[0_8px_30px_rgba(34,197,94,0.4)] border border-green-500 z-[2000] animate-fade-down font-sans text-[14.5px] font-bold flex items-center gap-3 whitespace-nowrap">
+        <div className="fixed top-8 left-1/2 -translate-x-1/2 bg-success text-white px-6 py-3.5 rounded-full shadow-[0_8px_30px_rgba(34,197,94,0.4)] border border-green-500 z-2000 animate-fade-down font-sans text-[14.5px] font-bold flex items-center gap-3 whitespace-nowrap">
           <div className="bg-white text-success rounded-full p-0.5">
             <Check size={14} strokeWidth={4} />
           </div>

@@ -9,8 +9,8 @@ async def upload_excel(file: UploadFile = File(...), user=Depends(require_staff_
     return await upload_student_records(file)
 
 @router.post("/")
-async def manual_add(student_id: str = Form(...), first_name: str = Form(...), last_name: str = Form(...), course: str = Form(...), user=Depends(require_staff_or_admin)):
-    return await add_student_record(student_id, first_name, last_name, course)
+async def manual_add(student_id: str = Form(...), first_name: str = Form(...), last_name: str = Form(...), course: str = Form(...), priority_class: str = Form("regular"), user=Depends(require_staff_or_admin)):
+    return await add_student_record(student_id, first_name, last_name, course, priority_class)
 
 @router.get("/")
 async def list_records(user=Depends(require_staff_or_admin)):
@@ -21,5 +21,5 @@ async def delete_record(student_id: str, user=Depends(require_staff_or_admin)):
     return await delete_student_record(student_id)
 
 @router.patch("/{student_id}")
-async def update_record(student_id: str, first_name: str = Form(...), last_name: str = Form(...), course: str = Form(...), user=Depends(require_staff_or_admin)):
-    return await update_student_record(student_id, first_name, last_name, course)
+async def update_record(student_id: str, first_name: str = Form(...), last_name: str = Form(...), course: str = Form(...), priority_class: str = Form("regular"), user=Depends(require_staff_or_admin)):
+    return await update_student_record(student_id, first_name, last_name, course, priority_class)

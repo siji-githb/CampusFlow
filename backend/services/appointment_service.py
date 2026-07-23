@@ -58,6 +58,48 @@ def generate_time_slots(open_time: str, close_time: str, duration_minutes: int, 
 
 
 # ── UPDATED: Fetch availability dynamically using new capacity check logic ──
+def get_available_slots_for_date(appointment_date: date) -> list[str]:
+    """Helper for AI service to generically check available slots without a specific transaction type."""
+    admin = get_admin()
+    config = get_office_config()
+    
+    import json
+    date_overrides = json.loads(config.get("date_overrides", "{}"))
+    override = date_overrides.get(str(appointment_date), {})
+    if override.get("is_blocked"):
+        return []
+
+    num_windows = int(config.get("num_windows", 2))
+    lunch_start = config.get("lunch_break_start", "12:00")
+    lunch_end = config.get("lunch_break_end", "13:00")
+    open_time = config.get("office_open_time", "08:00")
+    close_time = config.get("office_close_time", "17:00")
+    duration = int(config.get("slot_duration_minutes", 30))
+
+    all_slots = generate_time_slots(open_time, close_time, duration, lunch_start, lunch_end)
+
+    try:
+        bookings_res = admin.table("appointments") \
+            .select("time_slot") \
+            .eq("appointment_date", str(appointment_date)) \
+            .neq("status", "cancelled") \
+            .execute()
+        booked_slots = [b["time_slot"] for b in bookings_res.data]
+    except Exception:
+        return []
+
+    slot_counts = {}
+    for slot in booked_slots:
+        slot_counts[slot] = slot_counts.get(slot, 0) + 1
+
+    available_slots = []
+    for slot in all_slots:
+        if slot_counts.get(slot, 0) < num_windows:
+            available_slots.append(slot)
+
+    return available_slots
+
+
 def get_available_slots(transaction_type_id: str, appointment_date: date):
     admin = get_admin()
     config = get_office_config()
