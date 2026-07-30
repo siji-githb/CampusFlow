@@ -25,7 +25,7 @@ const SideItem = ({ icon, label, active, onClick }) => (
       ${active ? 'bg-maroon-light/60 text-maroon font-bold' : 'bg-transparent text-text-sub font-medium hover:bg-surface hover:text-text-main'}`}
   >
     {active && (
-      <div className="absolute left-0 top-[15%] bottom-[15%] w-[3px] bg-maroon rounded-r-full shadow-[1px_0_6px_rgba(123,26,42,0.3)]" />
+      <div className="absolute left-0 top-[15%] bottom-[15%] w-0.75 bg-maroon rounded-r-full shadow-[1px_0_6px_rgba(123,26,42,0.3)]" />
     )}
     <span className={`flex items-center justify-center w-5 shrink-0 transition-all duration-300 ${active ? 'opacity-100 scale-110 text-maroon' : 'opacity-70'}`}>
       {icon}
@@ -234,7 +234,7 @@ const LineChart = ({ actualData, labels }) => {
       {/* HTML Tooltip */}
       {hoverIndex !== null && (
         <div 
-          className="absolute pointer-events-none bg-white rounded-lg shadow-[0_4px_16px_rgba(0,0,0,0.12)] border border-border p-3 flex flex-col gap-1.5 z-10 min-w-[100px]"
+          className="absolute pointer-events-none bg-white rounded-lg shadow-[0_4px_16px_rgba(0,0,0,0.12)] border border-border p-3 flex flex-col gap-1.5 z-10 min-w-25"
           style={{ 
             left: `${((toX(hoverIndex) / W) * 100)}%`, 
             top: `${((toY(actualData[hoverIndex]) / H) * 100)}%`,
@@ -263,7 +263,10 @@ function OverviewTab() {
   const [chartLoading, setChartLoading] = useState(true)
   const [error, setError] = useState('')
   const [isCalendarOpen, setIsCalendarOpen] = useState(false)
-  const [currentMonth, setCurrentMonth] = useState(new Date(2026, 6, 1))
+  const [currentMonth, setCurrentMonth] = useState(() => {
+    const d = new Date()
+    return new Date(d.getFullYear(), d.getMonth(), 1)
+  })
 
   useEffect(() => {
     getDashboardStats(token)
@@ -338,6 +341,22 @@ function OverviewTab() {
   }) : ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
   const actualData = filteredReport.length ? filteredReport.map(d => d.count) : [0, 0, 0, 0, 0, 0]
 
+  // Calculate actual date range from the raw backend report to sync calendar
+  const reportDates = report?.by_date?.map(d => d.date) || []
+  let rangeStart = new Date()
+  rangeStart.setHours(0, 0, 0, 0)
+  let rangeEnd = new Date()
+  rangeEnd.setHours(0, 0, 0, 0)
+  
+  if (reportDates.length > 0) {
+    const [sy, sm, sd] = reportDates[0].split('-')
+    rangeStart = new Date(+sy, +sm - 1, +sd)
+    const [ey, em, ed] = reportDates[reportDates.length - 1].split('-')
+    rangeEnd = new Date(+ey, +em - 1, +ed)
+  } else {
+    rangeStart = new Date(rangeEnd.getTime() - 6 * 24 * 60 * 60 * 1000)
+  }
+
   // Transaction distribution from report
   const txTypes = report?.by_type || []
   const txTotal = txTypes.reduce((s, t) => s + t.count, 0) || 1
@@ -358,9 +377,9 @@ function OverviewTab() {
       <div className="mb-7">
         <div className="text-[11px] font-bold text-gold uppercase tracking-[0.06em] mb-2">SYSTEM DASHBOARD</div>
         <h1 className="font-serif text-[26px] font-bold text-maroon m-0 mb-2 flex items-center gap-3">
-          <LayoutDashboard className="text-maroon" size={24} /> Overview
+          <LayoutDashboard className="text-maroon" size={24} /> Dashboard
         </h1>
-        <p className="text-[12px] text-text-sub m-0 leading-relaxed max-w-[650px]">
+        <p className="text-[12px] text-text-sub m-0 leading-relaxed max-w-162.5">
           Monitor active queues, review completion rates, and track system health.
         </p>
       </div>
@@ -368,7 +387,7 @@ function OverviewTab() {
       {/* Stat cards */}
       <div className="grid grid-cols-4 gap-4 mb-7">
         {CARDS.map((c, i) => (
-          <div key={i} className="animate-fade-up bg-white rounded-[14px] px-5 py-[18px] border border-border flex flex-col gap-3 shadow-[0_1px_4px_rgba(0,0,0,0.04)]" style={{ animationDelay: `${i * 0.1}s` }}>
+          <div key={i} className="animate-fade-up bg-white rounded-[14px] px-5 py-4.5 border border-border flex flex-col gap-3 shadow-[0_1px_4px_rgba(0,0,0,0.04)]" style={{ animationDelay: `${i * 0.1}s` }}>
             <div className="flex items-start justify-between">
               <div className="text-xs font-semibold text-text-muted uppercase tracking-[0.06em] mt-1.5">{c.label}</div>
               <div className={`w-9 h-9 rounded-[10px] flex items-center justify-center shrink-0 ${c.bgClass} ${c.colorClass}`}>
@@ -376,8 +395,8 @@ function OverviewTab() {
               </div>
             </div>
             <div>
-              <div className="font-serif text-[28px] font-extrabold leading-none m-0 min-h-[28px] text-text-main">
-                {c.value === null ? <div className="animate-pulse w-[60px] h-7 rounded-md bg-border" /> : c.value}
+              <div className="font-serif text-[28px] font-extrabold leading-none m-0 min-h-7 text-text-main">
+                {c.value === null ? <div className="animate-pulse w-15 h-7 rounded-md bg-border" /> : c.value}
               </div>
               <div className={`text-[11px] font-semibold mt-1.5 ${c.subColorClass || 'text-text-muted'}`}>{c.sub}</div>
             </div>
@@ -405,7 +424,7 @@ function OverviewTab() {
                 </div>
 
                 {isCalendarOpen && (
-                  <div className="absolute top-full right-0 mt-2 p-4 bg-white rounded-[16px] shadow-[0_10px_40px_rgba(0,0,0,0.12)] border border-border z-20 w-[300px]">
+                  <div className="absolute top-full right-0 mt-2 p-4 bg-white rounded-2xl shadow-[0_10px_40px_rgba(0,0,0,0.12)] border border-border z-20 w-75">
                     <div className="flex items-center justify-between mb-5">
                       <button onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1))} className="text-text-sub hover:text-text-main"><ChevronLeft size={16} /></button>
                       <div className="font-bold text-text-main text-[15px] tracking-wide">
@@ -430,15 +449,17 @@ function OverviewTab() {
                       {Array.from({ length: new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0).getDate() }, (_, i) => i + 1).map(d => {
                         const dateObj = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), d)
                         const isSunday = dateObj.getDay() === 0
-                        const isTargetMonth = currentMonth.getFullYear() === 2026 && currentMonth.getMonth() === 6
-                        const isFutureMonth = currentMonth.getFullYear() > 2026 || (currentMonth.getFullYear() === 2026 && currentMonth.getMonth() > 6)
-                        const isFuture = isFutureMonth || (isTargetMonth && d > 13)
-                        const isSelected = isTargetMonth && d >= 6 && d <= 13
-                        const isStart = isTargetMonth && d === 6
-                        const isEnd = isTargetMonth && d === 13
+                        const today = new Date()
+                        today.setHours(0, 0, 0, 0)
+                        
+                        const isFuture = dateObj > today
+                        const inRange = dateObj >= rangeStart && dateObj <= rangeEnd
+                        const isSelected = inRange && !isSunday
+                        const isStart = dateObj.getTime() === rangeStart.getTime()
+                        const isEnd = dateObj.getTime() === rangeEnd.getTime()
                         
                         if (isSunday || isFuture) {
-                          if (isSelected && isSunday) {
+                          if (inRange && isSunday) {
                             return <div key={d} className="text-center py-2 text-text-muted/40 cursor-not-allowed select-none bg-maroon-light">{d}</div>
                           }
                           return <div key={d} className="text-center py-2 text-text-muted/40 cursor-not-allowed select-none">{d}</div>
@@ -473,7 +494,7 @@ function OverviewTab() {
               </div>
             </div>
           </div>
-          <div className="relative h-[260px] pt-2 pb-6">
+          <div className="relative h-65 pt-2 pb-6">
             {chartLoading && (
               <div className="absolute inset-0 bg-white/70 z-10 flex items-center justify-center">
                 <div className="typing-indicator font-bold text-[24px] text-maroon">Loading</div>
@@ -496,8 +517,8 @@ function OverviewTab() {
                 <div key={i} className="flex items-center gap-3.5">
                   <div className="animate-pulse w-11 h-11 rounded-full bg-border shrink-0" />
                   <div className="flex-1">
-                    <div className="animate-pulse w-[60%] h-[14px] rounded bg-border mb-1.5" />
-                    <div className="animate-pulse w-[40%] h-[12px] rounded bg-border" />
+                    <div className="animate-pulse w-[60%] h-3.5 rounded bg-border mb-1.5" />
+                    <div className="animate-pulse w-[40%] h-3 rounded bg-border" />
                   </div>
                 </div>
               ))}
@@ -528,7 +549,7 @@ export default function AdminDashboard() {
     {
       title: 'Main Menu',
       items: [
-        { id: 'overview', icon: <LayoutDashboard size={18} />, label: 'Overview' },
+        { id: 'overview', icon: <LayoutDashboard size={18} />, label: 'Dashboard' },
         { id: 'reports', icon: <BarChart2 size={18} />, label: 'Analytics' },
         { id: 'queue', icon: <Ticket size={18} />, label: 'Live Queue' },
         { id: 'appts', icon: <Calendar size={18} />, label: 'Appointments' },
@@ -555,10 +576,10 @@ export default function AdminDashboard() {
     <div className="min-h-screen flex bg-off-white font-sans">
 
       {/* ── Left Sidebar ── */}
-      <aside className="w-[240px] shrink-0 bg-white border-r border-border flex flex-col fixed inset-y-0 left-0 z-50 p-[24px_14px]">
+      <aside className="w-60 shrink-0 bg-white border-r border-border flex flex-col fixed inset-y-0 left-0 z-50 p-[24px_14px]">
         {/* Brand */}
         <div className="flex items-center gap-2.5 px-2 mb-8">
-          <img src={campusFlowLogo} alt="CampusFlow" className="w-[38px] h-[38px] rounded-full bg-white object-contain border border-slate-200" />
+          <img src={campusFlowLogo} alt="CampusFlow" className="w-9.5 h-9.5 rounded-full bg-white object-contain border border-slate-200" />
           <div>
             <div className="font-serif text-[14px] font-bold text-maroon leading-[1.2]">CampusFlow</div>
             <div className="text-[10px] text-text-muted tracking-[0.04em]">Registrar Admin Portal</div>
@@ -586,10 +607,10 @@ export default function AdminDashboard() {
       </aside>
 
       {/* ── Right Side ── */}
-      <div className="ml-[240px] flex-1 flex flex-col min-h-screen">
+      <div className="ml-60 flex-1 flex flex-col min-h-screen">
 
         {/* Top Bar */}
-        <header className="bg-white border-b border-border px-8 h-[60px] flex items-center justify-between sticky top-0 z-40 shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
+        <header className="bg-white border-b border-border px-8 h-15 flex items-center justify-between sticky top-0 z-40 shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
           <AdminGlobalSearch setActiveNav={setActiveNav} />
 
           {/* Right controls */}
@@ -601,7 +622,7 @@ export default function AdminDashboard() {
             <div className="relative">
               {profileOpen && <div onClick={() => setProfileOpen(false)} className="fixed inset-0 z-105" />}
               <button onClick={() => setProfileOpen(!profileOpen)} className="flex items-center gap-2.5 p-1 pr-2 rounded-full border-none bg-transparent cursor-pointer outline-none hover:bg-slate-50 transition-colors">
-                <div className="w-[38px] h-[38px] rounded-full bg-maroon-mid border-[1.5px] border-maroon-border flex items-center justify-center text-[15px] font-bold text-maroon overflow-hidden">
+                <div className="w-9.5 h-9.5 rounded-full bg-maroon-mid border-[1.5px] border-maroon-border flex items-center justify-center text-[15px] font-bold text-maroon overflow-hidden">
                   {user?.profile_image ? (
                     <img src={user.profile_image} alt="Profile" className="w-full h-full object-cover" />
                   ) : (
@@ -618,9 +639,9 @@ export default function AdminDashboard() {
                 </div>
               </button>
               {profileOpen && (
-                <div className="absolute top-[52px] right-0 w-[280px] bg-white rounded-2xl shadow-[0_8px_30px_rgba(0,0,0,0.12)] p-4 z-110 border border-border">
+                <div className="absolute top-13 right-0 w-70 bg-white rounded-2xl shadow-[0_8px_30px_rgba(0,0,0,0.12)] p-4 z-110 border border-border">
                   <div className="flex gap-3 mb-4 items-start">
-                    <div className="w-[42px] h-[42px] rounded-full bg-maroon-mid border-[1.5px] border-maroon-border flex items-center justify-center text-[16px] font-bold text-maroon overflow-hidden shrink-0">
+                    <div className="w-10.5 h-10.5 rounded-full bg-maroon-mid border-[1.5px] border-maroon-border flex items-center justify-center text-[16px] font-bold text-maroon overflow-hidden shrink-0">
                       {user?.profile_image ? (
                         <img src={user.profile_image} alt="Profile" className="w-full h-full object-cover" />
                       ) : (

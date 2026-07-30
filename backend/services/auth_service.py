@@ -241,6 +241,16 @@ async def request_student_id(data) -> dict:
     
     admin = get_supabase_admin()
     try:
+        # Prevent spamming: Check if there is already a pending request for this email
+        existing = admin.table("id_requests") \
+            .select("id") \
+            .eq("email", data.email) \
+            .eq("status", "pending") \
+            .execute()
+            
+        if existing.data:
+            raise HTTPException(status_code=429, detail="You already have a pending request. Please wait for the staff to process it.")
+
         admin.table("id_requests").insert({
             "first_name": data.first_name,
             "last_name": data.last_name,
@@ -251,6 +261,8 @@ async def request_student_id(data) -> dict:
         # Notify staff about this new ID request
         student_name = f"{data.first_name} {data.last_name}"
         notify_staff_id_request(student_name)
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to submit request: {str(e)}")
         

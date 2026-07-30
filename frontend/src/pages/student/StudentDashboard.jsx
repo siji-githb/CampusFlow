@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/useAuth';
 import campusFlowLogo from '../../assets/logo.png';
@@ -113,27 +114,11 @@ export default function StudentDashboard() {
   const [loading, setLoading] = useState(true);
   const [appointments, setAppointments] = useState([]);
   const [liveTicket, setLiveTicket] = useState(null);
-  const [cancelling, setCancelling] = useState(false);
-
-  const handleCancelTicket = async () => {
-    if (!liveTicket || !liveTicket.id) return;
-    if (!window.confirm('Are you sure you want to cancel your queue ticket?')) return;
-    
-    setCancelling(true);
-    try {
-      await cancelAppointment(token, liveTicket.id);
-      setLiveTicket(null);
-      fetchDashboardData();
-    } catch (e) {
-      alert('Failed to cancel ticket: ' + e.message);
-    } finally {
-      setCancelling(false);
-    }
-  };
 
   const fetchDashboardData = async () => {
     try {
-      const today = new Date().toISOString().split('T')[0];
+      const d = new Date();
+      const today = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
       
       // 1. Fetch appointments
       const allAppts = await getMyAppointments(token);
@@ -212,16 +197,16 @@ export default function StudentDashboard() {
 
   return (
     <StudentLayout activeTab="home">
-      <div className="flex-1 w-full pb-[88px] md:pb-0 px-4 md:px-0">
+      <div className="flex-1 w-full pb-22 md:pb-0 px-4 md:px-0">
         
         {/* ── Unified Hero greeting card ── */}
         <div 
-          className="animate-fade-up bg-linear-to-br from-maroon to-maroon-dark rounded-[24px] md:rounded-3xl pt-6 px-5 pb-8 md:py-10 md:px-12 mb-8 relative overflow-hidden shadow-[0_8px_20px_rgba(123,26,42,0.15)] md:shadow-[0_20px_40px_-15px_rgba(123,26,42,0.3)]"
+          className="animate-fade-up bg-linear-to-br from-maroon to-maroon-dark rounded-3xl md:rounded-3xl pt-6 px-5 pb-8 md:py-10 md:px-12 mb-8 relative overflow-hidden shadow-[0_8px_20px_rgba(123,26,42,0.15)] md:shadow-[0_20px_40px_-15px_rgba(123,26,42,0.3)]"
           style={{ animationDelay: '0.1s' }}
         >
           {/* Blurred abstract glows */}
-          <div className="absolute right-[-10%] top-[-30%] w-[200px] h-[200px] md:w-[300px] md:h-[300px] rounded-full pointer-events-none animate-float-bubble blur-2xl md:blur-2xl" style={{ background: `radial-gradient(circle, rgba(184,144,10,0.18) 0%, transparent 70%)` }} />
-          <div className="absolute right-[15%] bottom-[-45%] w-[150px] h-[150px] md:w-[250px] md:h-[250px] rounded-full pointer-events-none animate-float-bubble-alt blur-[20px] md:blur-[30px]" style={{ background: `radial-gradient(circle, rgba(255,255,255,0.06) 0%, transparent 70%)` }} />
+          <div className="absolute right-[-10%] top-[-30%] w-50 h-50 md:w-75 md:h-75 rounded-full pointer-events-none animate-float-bubble blur-2xl md:blur-2xl" style={{ background: `radial-gradient(circle, rgba(184,144,10,0.18) 0%, transparent 70%)` }} />
+          <div className="absolute right-[15%] bottom-[-45%] w-37.5 h-37.5 md:w-62.5 md:h-62.5 rounded-full pointer-events-none animate-float-bubble-alt blur-[20px] md:blur-[30px]" style={{ background: `radial-gradient(circle, rgba(255,255,255,0.06) 0%, transparent 70%)` }} />
 
           <div className="relative z-1">
             <span className="inline-block text-[11px] font-bold text-gold uppercase tracking-[0.12em] mb-2 md:mb-3 bg-gold/15 px-2.5 py-1 rounded-[20px] border-[1.5px] border-gold/25">
@@ -231,7 +216,7 @@ export default function StudentDashboard() {
             <h1 className="font-serif text-[clamp(24px,5vw,42px)] font-bold text-white m-0 mb-2 md:mb-3 leading-[1.15]">
               <span className="hidden md:inline">{getGreeting()}, </span>{user?.first_name || 'Student'}!
             </h1>
-            <p className="text-[13px] md:text-[15px] text-white/65 m-0 max-w-[580px] leading-normal md:leading-[1.6]">
+            <p className="text-[13px] md:text-[15px] text-white/65 m-0 max-w-145 leading-normal md:leading-[1.6]">
               <span className="md:hidden">Welcome to your CRMC Student Portal. Here is your campus overview for today.</span>
               <span className="hidden md:inline">Manage your academic documents, track live queue ticket status, or chat with our virtual guide—all from your personalized dashboard.</span>
             </p>
@@ -249,19 +234,19 @@ export default function StudentDashboard() {
             {/* Book Appointment card */}
             <button
               onClick={() => navigate('/student/book')}
-              className="bg-white rounded-[20px] py-[22px] px-6 border border-border cursor-pointer text-left shadow-[0_4px_16px_rgba(0,0,0,0.02)] flex items-center gap-4 transition-all duration-200 font-sans hover:border-maroon-border hover:shadow-[0_6px_20px_rgba(123,26,42,0.08)] group"
+              className="bg-white rounded-[20px] py-5.5 px-6 border border-border cursor-pointer text-left shadow-[0_4px_16px_rgba(0,0,0,0.02)] flex items-center gap-4 transition-all duration-200 font-sans hover:border-maroon-border hover:shadow-[0_6px_20px_rgba(123,26,42,0.08)] group"
             >
               <div className="w-11 h-11 rounded-xl text-maroon bg-maroon-mid flex items-center justify-center shrink-0">
                 <Calendar size={22} />
               </div>
               <div>
                 <div className="text-[15px] font-bold text-maroon font-serif">Book Appointment</div>
-                <div className="text-[11px] md:text-xs text-text-sub mt-[3px]">Schedule an appointment with campus registrar</div>
+                <div className="text-[11px] md:text-xs text-text-sub mt-0.75">Schedule an appointment with campus registrar</div>
               </div>
             </button>
 
             {/* My Queue compact card */}
-            <div className="bg-white rounded-[20px] py-[22px] px-6 border border-border shadow-[0_4px_16px_rgba(0,0,0,0.02)] flex items-center gap-4">
+            <div className="bg-white rounded-[20px] py-5.5 px-6 border border-border shadow-[0_4px_16px_rgba(0,0,0,0.02)] flex items-center gap-4">
               <div className="w-11 h-11 rounded-xl text-gold bg-gold-mid flex items-center justify-center shrink-0">
                 <Ticket size={22} />
               </div>
@@ -270,7 +255,7 @@ export default function StudentDashboard() {
                   <span className="text-[10px] font-bold text-text-muted tracking-widest uppercase">My Queue</span>
                   {liveTicket && (
                     <span className="flex items-center gap-1 text-[10px] font-semibold text-gold bg-gold-light px-2 py-0.5 rounded-[10px] border border-gold-border">
-                      <span className="w-[7px] h-[7px] rounded-full bg-gold inline-block animate-pulse-live" /> Live
+                      <span className="w-1.75 h-1.75 rounded-full bg-gold inline-block animate-pulse-live" /> Live
                     </span>
                   )}
                 </div>
@@ -323,13 +308,13 @@ export default function StudentDashboard() {
                 {[1, 2, 3].map(i => (
                   <div key={i} className="p-4 rounded-2xl border border-border bg-white lg:bg-off-white flex justify-between items-center">
                     <div className="flex items-center gap-4">
-                      <div className="hidden lg:block animate-pulse w-[46px] h-[46px] rounded-xl bg-border" />
+                      <div className="hidden lg:block animate-pulse w-11.5 h-11.5 rounded-xl bg-border" />
                       <div>
-                        <div className="animate-pulse w-[120px] h-[14px] rounded bg-border mb-2" />
-                        <div className="animate-pulse w-[180px] h-[12px] rounded bg-border" />
+                        <div className="animate-pulse w-30 h-3.5 rounded bg-border mb-2" />
+                        <div className="animate-pulse w-45 h-3 rounded bg-border" />
                       </div>
                     </div>
-                    <div className="animate-pulse w-[60px] lg:w-[80px] h-6 rounded-full bg-border" />
+                    <div className="animate-pulse w-15 lg:w-20 h-6 rounded-full bg-border" />
                   </div>
                 ))}
               </div>
@@ -341,7 +326,7 @@ export default function StudentDashboard() {
                     className="flex justify-between items-center p-4 rounded-2xl border border-border bg-white lg:bg-off-white transition-all duration-400 ease-out hover:-translate-y-1 hover:shadow-[0_12px_30px_-4px_rgba(123,26,42,0.08),0_4px_12px_-2px_rgba(0,0,0,0.02)] hover:border-maroon-border"
                   >
                     <div className="flex items-center gap-4">
-                      <div className="hidden lg:flex w-[46px] h-[46px] rounded-xl text-maroon bg-white border-[1.5px] border-border items-center justify-center shrink-0">
+                      <div className="hidden lg:flex w-11.5 h-11.5 rounded-xl text-maroon bg-white border-[1.5px] border-border items-center justify-center shrink-0">
                         <ClipboardList size={22} />
                       </div>
                       <div>
@@ -389,8 +374,8 @@ export default function StudentDashboard() {
 
             {loading ? (
               <div className="bg-surface rounded-2xl py-6 px-5 border border-border text-center">
-                <div className="animate-pulse w-[120px] h-[14px] rounded bg-border mx-auto mb-3" />
-                <div className="animate-pulse w-[80px] h-16 rounded-lg bg-border mx-auto mb-4" />
+                <div className="animate-pulse w-30 h-3.5 rounded bg-border mx-auto mb-3" />
+                <div className="animate-pulse w-20 h-16 rounded-lg bg-border mx-auto mb-4" />
                 <div className="flex justify-center gap-4 bg-white p-3 rounded-[10px] mx-auto mb-4 w-full">
                   <div className="animate-pulse flex-1 h-8 rounded bg-border" />
                   <div className="w-px bg-border" />
@@ -415,12 +400,6 @@ export default function StudentDashboard() {
                     <strong className="text-[13px] text-text-main">{liveTicket.est_wait_mins} min</strong>
                   </div>
                 </div>
-                <button 
-                  onClick={handleCancelTicket}
-                  disabled={cancelling}
-                  className="w-full min-h-[44px] p-2.5 rounded-[10px] border border-danger-border bg-danger-light text-danger text-[13px] font-semibold cursor-pointer font-sans transition-colors hover:bg-danger/10 disabled:opacity-50">
-                  {cancelling ? 'Cancelling...' : 'Cancel Queue Ticket'}
-                </button>
               </div>
             ) : (
               <div className="text-center py-10 px-5 text-text-muted flex-1 flex flex-col justify-center items-center bg-off-white rounded-2xl border border-dashed border-border">

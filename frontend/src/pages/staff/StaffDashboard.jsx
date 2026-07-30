@@ -42,12 +42,12 @@ function CompactQueuePreview({ queue, loading }) {
           const isServing = ticket.status === 'in_progress'
           return (
             <div key={ticket.id} className={`flex items-center gap-3 px-3 py-2.5 rounded-[10px] border ${isServing ? 'border-success-border bg-success-light' : 'border-border bg-off-white'}`}>
-              <span className="font-serif text-[17px] font-extrabold text-maroon min-w-[60px]">{ticket.queue_number}</span>
+              <span className="font-serif text-[17px] font-extrabold text-maroon min-w-15">{ticket.queue_number}</span>
               <div className="flex-1 min-w-0">
                 <div className="text-[13px] font-semibold text-text-main whitespace-nowrap overflow-hidden text-ellipsis">{name}</div>
                 <div className="text-[11px] text-text-muted mt-px">{ticket.appointments?.transaction_types?.name || 'Transaction'}</div>
               </div>
-              <span className={`text-[10px] font-bold px-2 py-[3px] rounded-full whitespace-nowrap border ${isServing ? 'bg-success-light text-success border-success-border' : 'bg-gold-light text-gold border-gold-border'}`}>
+              <span className={`text-[10px] font-bold px-2 py-0.75 rounded-full whitespace-nowrap border ${isServing ? 'bg-success-light text-success border-success-border' : 'bg-gold-light text-gold border-gold-border'}`}>
                 {isServing ? '● Serving' : '◔ Waiting'}
               </span>
             </div>
@@ -68,21 +68,21 @@ const SideItem = ({ icon, label, active, onClick, badge, disabled }) => (
   <button 
     onClick={disabled ? undefined : onClick} 
     disabled={disabled}
-    className={`flex items-center gap-[11px] w-full px-3.5 py-2.5 rounded-[10px] border-none text-left text-[13.5px] font-sans relative transition-all duration-300 overflow-hidden
+    className={`flex items-center gap-2.75 w-full px-3.5 py-2.5 rounded-[10px] border-none text-left text-[13.5px] font-sans relative transition-all duration-300 overflow-hidden
       ${disabled ? 'cursor-not-allowed opacity-40' : 'cursor-pointer'}
       ${active ? 'bg-maroon-light/60 text-maroon font-bold' : 'bg-transparent text-text-sub font-medium'}
       ${!active && !disabled ? 'hover:bg-surface hover:text-text-main' : ''}
     `}
   >
     {active && (
-      <div className="absolute left-0 top-[15%] bottom-[15%] w-[3px] bg-maroon rounded-r-full shadow-[1px_0_6px_rgba(123,26,42,0.3)]" />
+      <div className="absolute left-0 top-[15%] bottom-[15%] w-0.75 bg-maroon rounded-r-full shadow-[1px_0_6px_rgba(123,26,42,0.3)]" />
     )}
     <span className={`flex items-center justify-center text-[17px] w-5 shrink-0 transition-all duration-300 ${active ? 'opacity-100 scale-110 text-maroon' : 'opacity-70'}`}>
       {icon}
     </span>
     <span className="flex-1 tracking-wide">{label}</span>
     {badge > 0 && (
-      <span className="bg-maroon text-white text-[10px] font-bold px-1.5 py-px rounded-full min-w-[18px] text-center z-10 relative shadow-sm">
+      <span className="bg-maroon text-white text-[10px] font-bold px-1.5 py-px rounded-full min-w-4.5 text-center z-10 relative shadow-sm">
         {badge}
       </span>
     )}
@@ -91,7 +91,7 @@ const SideItem = ({ icon, label, active, onClick, badge, disabled }) => (
 
 // ── Stat Card ──────────────────────────────────────────────────────────────────
 const StatCard = ({ icon, value, label, sub, subColorClass = "text-text-muted", colorClass, bgClass, loading, delay }) => (
-  <div className="animate-fade-up bg-white rounded-[14px] px-5 py-[18px] border border-border flex flex-col gap-3 shadow-[0_1px_4px_rgba(0,0,0,0.04)]" style={{ animationDelay: delay || '0s' }}>
+  <div className="animate-fade-up bg-white rounded-[14px] px-5 py-4.5 border border-border flex flex-col gap-3 shadow-[0_1px_4px_rgba(0,0,0,0.04)]" style={{ animationDelay: delay || '0s' }}>
     <div className="flex items-start justify-between">
       <div className="text-xs font-semibold text-text-muted uppercase tracking-[0.06em] mt-1.5">{label}</div>
       <div className={`w-9 h-9 rounded-[10px] flex items-center justify-center shrink-0 ${bgClass} ${colorClass}`}>
@@ -99,8 +99,8 @@ const StatCard = ({ icon, value, label, sub, subColorClass = "text-text-muted", 
       </div>
     </div>
     <div>
-      <div className="font-serif text-[28px] font-extrabold leading-none m-0 min-h-[28px] text-text-main">
-        {loading ? <div className="animate-pulse w-[60px] h-7 rounded-md bg-border" /> : value}
+      <div className="font-serif text-[28px] font-extrabold leading-none m-0 min-h-7 text-text-main">
+        {loading ? <div className="animate-pulse w-15 h-7 rounded-md bg-border" /> : value}
       </div>
       {sub && <div className={`text-[11px] font-semibold mt-1.5 ${subColorClass}`}>{sub}</div>}
     </div>
@@ -281,7 +281,7 @@ export default function StaffDashboard() {
     {
       title: 'Main Menu',
       items: [
-        { id: 'overview', icon: <LayoutDashboard size={18} />, label: 'Overview' },
+        { id: 'overview', icon: <LayoutDashboard size={18} />, label: 'Dashboard' },
         { id: 'queue', icon: <Ticket size={18} />, label: 'Live Queue' },
         { id: 'appointments', icon: <Calendar size={18} />, label: 'Appointments' },
       ]
@@ -300,10 +300,10 @@ export default function StaffDashboard() {
     <div className="min-h-screen flex bg-off-white font-sans">
 
       {/* ── Fixed Left Sidebar ── */}
-      <aside className="w-[240px] shrink-0 bg-white border-r border-border flex flex-col fixed left-0 top-0 bottom-0 z-50 px-3.5 py-5">
+      <aside className="w-60 shrink-0 bg-white border-r border-border flex flex-col fixed left-0 top-0 bottom-0 z-50 px-3.5 py-5">
         {/* Logo */}
         <div className="flex items-center gap-2.5 pl-1.5 mb-7">
-          <img src={campusFlowLogo} alt="CampusFlow" className="w-[34px] h-[34px] rounded-full bg-white object-contain border border-slate-200" />
+          <img src={campusFlowLogo} alt="CampusFlow" className="w-8.5 h-8.5 rounded-full bg-white object-contain border border-slate-200" />
           <div>
             <div className="font-serif text-[15px] font-bold text-maroon">CampusFlow</div>
             <div className="text-[10px] text-text-muted tracking-[0.04em]">Staff Portal</div>
@@ -342,10 +342,10 @@ export default function StaffDashboard() {
       </aside>
 
       {/* ── Right Content ── */}
-      <div className="ml-[240px] flex-1 flex flex-col min-h-screen">
+      <div className="ml-60 flex-1 flex flex-col min-h-screen">
 
         {/* Top Bar */}
-        <header className="bg-white border-b border-border px-7 h-[60px] flex items-center justify-between sticky top-0 z-40 shadow-[0_1px_4px_rgba(0,0,0,0.04)]">
+        <header className="bg-white border-b border-border px-7 h-15 flex items-center justify-between sticky top-0 z-40 shadow-[0_1px_4px_rgba(0,0,0,0.04)]">
           <StaffGlobalSearch setActiveNav={setActiveNav} />
 
           {/* Window Badge + Avatar */}
@@ -390,7 +390,7 @@ export default function StaffDashboard() {
             <div className="relative">
               {profileOpen && <div onClick={() => setProfileOpen(false)} className="fixed inset-0 z-105" />}
               <button onClick={() => setProfileOpen(!profileOpen)} className="flex items-center gap-2.5 p-1 pr-2 rounded-full border-none bg-transparent cursor-pointer outline-none hover:bg-slate-50 transition-colors">
-                <div className="w-[38px] h-[38px] rounded-full bg-maroon-mid border-[1.5px] border-maroon-border flex items-center justify-center text-[15px] font-bold text-maroon overflow-hidden">
+                <div className="w-9.5 h-9.5 rounded-full bg-maroon-mid border-[1.5px] border-maroon-border flex items-center justify-center text-[15px] font-bold text-maroon overflow-hidden">
                   {user?.profile_image ? (
                     <img src={user.profile_image} alt="Profile" className="w-full h-full object-cover" />
                   ) : (
@@ -407,9 +407,9 @@ export default function StaffDashboard() {
                 </div>
               </button>
               {profileOpen && (
-                <div className="absolute top-[44px] right-0 w-[280px] bg-white rounded-2xl shadow-[0_8px_30px_rgba(0,0,0,0.12)] p-4 z-110 border border-border">
+                <div className="absolute top-11 right-0 w-70 bg-white rounded-2xl shadow-[0_8px_30px_rgba(0,0,0,0.12)] p-4 z-110 border border-border">
                   <div className="flex gap-3 mb-4 items-start">
-                    <div className="w-[42px] h-[42px] rounded-full bg-maroon-mid border-[1.5px] border-maroon-border flex items-center justify-center text-[16px] font-bold text-maroon overflow-hidden shrink-0">
+                    <div className="w-10.5 h-10.5 rounded-full bg-maroon-mid border-[1.5px] border-maroon-border flex items-center justify-center text-[16px] font-bold text-maroon overflow-hidden shrink-0">
                       {user?.profile_image ? (
                         <img src={user.profile_image} alt="Profile" className="w-full h-full object-cover" />
                       ) : (
@@ -479,7 +479,7 @@ export default function StaffDashboard() {
               {isLoadingWindow ? (
                 <div className="w-12 h-12 border-4 border-maroon border-t-transparent rounded-full animate-spin"></div>
               ) : (
-                <div className="bg-white rounded-[24px] px-10 pt-10 pb-9 border-[1.5px] border-gold-border shadow-[0_8px_40px_rgba(0,0,0,0.1)] w-full max-w-[560px] text-center">
+                <div className="bg-white rounded-3xl px-10 pt-10 pb-9 border-[1.5px] border-gold-border shadow-[0_8px_40px_rgba(0,0,0,0.1)] w-full max-w-140 text-center">
                 <div className="w-16 h-16 rounded-full bg-gold-light border-2 border-gold-border flex items-center justify-center mx-auto mb-5">
                   <Monitor size={28} className="text-gold" />
                 </div>
@@ -502,7 +502,7 @@ export default function StaffDashboard() {
                         key={winNum}
                         onClick={() => !occupiedByOther && handleClaimWindow(winNum)}
                         disabled={occupiedByOther || !!claimingWindow}
-                        className={`flex flex-col items-center justify-center gap-2 w-[110px] h-[100px] rounded-2xl border-2 transition-all duration-200 font-sans group
+                        className={`flex flex-col items-center justify-center gap-2 w-27.5 h-25 rounded-2xl border-2 transition-all duration-200 font-sans group
                           ${occupiedByOther 
                             ? 'border-border bg-surface cursor-not-allowed opacity-60' 
                             : 'border-maroon-border bg-maroon-light cursor-pointer hover:bg-maroon hover:border-maroon'

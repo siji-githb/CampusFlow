@@ -25,7 +25,8 @@ export default function MyQueue() {
   const [activeTab, setActiveTab]   = useState('active')
   const [cancelConfirmId, setCancelConfirmId] = useState(null)
   const [activateConfirmId, setActivateConfirmId] = useState(null)
-  const today    = new Date().toISOString().split('T')[0]
+  const d = new Date();
+  const today = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 
   const fmt12h = (t) => {
     if (!t) return ''
@@ -212,7 +213,7 @@ export default function MyQueue() {
                   </div>
                 </div>
                 
-                <div className="relative z-10 flex justify-between items-end mt-3">
+                <div className="relative z-10 flex flex-col sm:flex-row justify-between items-start sm:items-end mt-3 gap-4 sm:gap-0">
                   <div className="flex flex-col gap-1.5">
                     <p className="text-[16px] font-medium text-white m-0 drop-shadow-sm">{ticket.appointments?.transaction_types?.name}</p>
                     <p className="text-[13px] text-white/70 m-0 font-light tracking-wide">{ticket.appointments?.appointment_date} <span className="text-white/30 mx-1.5">|</span> {fmt12h(ticket.appointments?.time_slot)}</p>
@@ -220,7 +221,7 @@ export default function MyQueue() {
                   {ticket.status !== 'completed' && (
                     <button 
                       onClick={() => setCancelConfirmId(ticket.appointment_id)} 
-                      className="bg-white/10 hover:bg-danger text-white text-[12px] font-medium py-1.5 px-4 rounded-full transition-colors border border-white/20 hover:border-danger cursor-pointer"
+                      className="bg-white/10 hover:bg-danger text-white text-[12px] font-medium py-1.5 px-4 rounded-full transition-colors border border-white/20 hover:border-danger cursor-pointer self-start sm:self-auto shrink-0"
                     >
                       Cancel Queue
                     </button>
@@ -279,9 +280,9 @@ export default function MyQueue() {
                         {/* Step content */}
                         <div className={`flex-1 ${isLast ? 'pb-0' : 'pb-4'}`}>
                           {/* Name row + status badge */}
-                          <div className="flex justify-between items-center mb-1">
-                            <span className={`text-[14px] font-semibold ${step.status === 'pending' ? 'text-text-sub' : 'text-text-main'}`}>{step.step_name}</span>
-                            <span className="text-[11px] font-semibold py-0.5 px-2 rounded-full" style={{
+                          <div className="flex justify-between items-start gap-2 mb-1">
+                            <span className={`text-[14px] font-semibold leading-tight ${step.status === 'pending' ? 'text-text-sub' : 'text-text-main'}`}>{step.step_name}</span>
+                            <span className="shrink-0 text-[11px] font-semibold py-0.5 px-2 rounded-full" style={{
                                background: STEP_STYLE[step.status]?.bg || '#F9F9F9',
                                color: STEP_STYLE[step.status]?.color || '#706B65'
                             }}>
@@ -364,24 +365,24 @@ export default function MyQueue() {
                     <div key={appt.id} className="bg-white rounded-2xl border border-border p-6 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden group">
                       <div className="absolute top-0 left-0 w-1 h-full bg-border group-hover:bg-maroon transition-colors" />
                       
-                      <div className="flex justify-between items-start mb-4">
+                      <div className="flex flex-col sm:flex-row justify-between items-start gap-3 sm:gap-0 mb-4">
                         <div>
-                          <h3 className="text-[16px] font-bold text-text-main m-0 mb-1.5">{appt.transaction_types?.name}</h3>
+                          <h3 className="text-[16px] font-bold text-text-main m-0 mb-1.5 leading-tight">{appt.transaction_types?.name}</h3>
                           <span className="inline-flex items-center gap-1.5 text-[12px] font-semibold py-1 px-3 rounded-full bg-surface text-text-muted border border-border">
                             <Calendar size={12} className="text-text-muted" /> {new Date(appt.appointment_date).toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' })} at {fmt12h(appt.time_slot)}
                           </span>
                         </div>
-                        <span className="text-[11px] font-bold py-1 px-3 rounded-full bg-success-light text-success uppercase tracking-wider">Confirmed</span>
+                        <span className="shrink-0 text-[11px] font-bold py-1 px-3 rounded-full bg-success-light text-success uppercase tracking-wider self-start">Confirmed</span>
                       </div>
                       
                       <button
                         onClick={() => setActivateConfirmId(appt.id)}
-                        disabled={activating === appt.id || !isToday || ticket}
-                        title={ticket ? "You already have an active queue ticket" : ""}
+                        disabled={activating === appt.id || !isToday || (ticket && ticket.status !== 'completed')}
+                        title={(ticket && ticket.status !== 'completed') ? "You already have an active queue ticket" : ""}
                         className={`w-full py-3.5 px-4 rounded-xl border text-[14px] font-bold font-sans transition-all flex items-center justify-center gap-2 ${
                           activating === appt.id ? 'bg-surface text-text-muted border-border cursor-wait' :
                           !isToday ? 'bg-surface text-text-sub border-border cursor-not-allowed opacity-70' :
-                          ticket ? 'bg-surface text-text-sub border-border cursor-not-allowed opacity-70' :
+                          (ticket && ticket.status !== 'completed') ? 'bg-surface text-text-sub border-border cursor-not-allowed opacity-70' :
                           'bg-gold text-white border-gold-dark cursor-pointer hover:bg-gold-light hover:text-gold hover:border-gold-light shadow-sm hover:-translate-y-0.5'
                         }`}
                       >
