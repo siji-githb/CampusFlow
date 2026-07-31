@@ -12,7 +12,7 @@ const PRIORITY_CFG = {
 }
 const getPriority = (ticket) => {
   const pc = ticket.appointments?.priority_class
-  if (pc === 'graduating' || pc === 'pwd' || pc === 'pregnant') return 'high'
+  if (pc === 'alumni' || pc === 'pwd' || pc === 'pregnant') return 'high'
   if (ticket.status === 'completed') return 'resolved'
   return 'normal'
 }

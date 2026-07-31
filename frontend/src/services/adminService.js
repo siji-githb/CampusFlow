@@ -187,6 +187,20 @@ export const deleteStudentRecord = async (token, studentId) => {
   return data
 }
 
+export const bulkDeleteStudentRecords = async (token, studentIds) => {
+  const res = await fetch(`${API_URL}/admin/student-records/bulk-delete`, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ student_ids: studentIds })
+  })
+  const data = await res.json()
+  if (!res.ok) throw new Error(data.detail || 'Failed to bulk delete student records')
+  return data
+}
+
 export const editStudentRecord = async (token, studentId, record) => {
   const formData = new URLSearchParams()
   formData.append('first_name', record.first_name)

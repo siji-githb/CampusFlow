@@ -254,7 +254,7 @@ export default function LiveQueuePage() {
   const waiting   = queue.filter(q => q.ticket.status === 'pending' || q.ticket.status === 'waiting')
   const highPrio  = queue.filter(q => {
     const pc = q.ticket.appointments?.priority_class
-    return pc === 'graduating' || pc === 'pwd' || pc === 'pregnant'
+    return pc === 'alumni' || pc === 'pwd' || pc === 'pregnant'
   })
 
   // Calculate Average Wait Time from completed tickets today
@@ -289,7 +289,7 @@ export default function LiveQueuePage() {
     }
 
     const prioOk = filters.priority === 'all'
-      || (filters.priority === 'high' && (ticket.appointments?.priority_class === 'graduating' || ticket.appointments?.priority_class === 'pwd' || ticket.appointments?.priority_class === 'pregnant'))
+      || (filters.priority === 'high' && (ticket.appointments?.priority_class === 'alumni' || ticket.appointments?.priority_class === 'pwd' || ticket.appointments?.priority_class === 'pregnant'))
       || (filters.priority === 'regular' && ticket.appointments?.priority_class === 'regular')
     const txOk = filters.transactionType === 'all'
       || (ticket.appointments?.transaction_types?.name || '').includes(filters.transactionType)
@@ -323,7 +323,7 @@ export default function LiveQueuePage() {
     const txName  = appt?.transaction_types?.name || 'Transaction'
     const pClass  = appt?.priority_class || 'regular'
     const statusCfg = STATUS_CFG[ticket.status] || STATUS_CFG.pending
-    const isHighPrio = pClass === 'graduating' || pClass === 'pwd' || pClass === 'pregnant'
+    const isHighPrio = pClass === 'alumni' || pClass === 'pwd' || pClass === 'pregnant'
     const inProgressStep = steps?.find(s => s.status === 'in_progress')
     const confirmKey = inProgressStep ? `${ticket.id}-${inProgressStep.step_number}` : null
     const isConfirming = confirming === confirmKey

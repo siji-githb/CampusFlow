@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
-import { getStudentRecords, uploadStudentRecords, addStudentRecord, deleteStudentRecord, editStudentRecord } from '../../services/adminService'
-import { FileSpreadsheet, Edit, Trash2, ClipboardList, Search } from 'lucide-react'
+import { getStudentRecords, uploadStudentRecords, addStudentRecord, deleteStudentRecord, editStudentRecord, bulkDeleteStudentRecords } from '../../services/adminService'
+import { FileSpreadsheet, Edit, Trash2, ClipboardList, Search, ChevronDown } from 'lucide-react'
 import { useAuth } from '../../context/useAuth'
 
 export default function StudentRecordsPage() {
@@ -9,11 +9,13 @@ export default function StudentRecordsPage() {
   const [records, setRecords] = useState([])
   const [loading, setLoading] = useState(true)
   const [uploading, setUploading] = useState(false)
+  const [uploadProgress, setUploadProgress] = useState(0)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
   const fileInputRef = useRef()
 
   const [form, setForm] = useState({ student_id: '', first_name: '', last_name: '', course: '', priority_class: 'regular' })
+  const [uploadPriority, setUploadPriority] = useState('regular')
 
   // Edit State
   const [editingRecord, setEditingRecord] = useState(null)
@@ -22,6 +24,9 @@ export default function StudentRecordsPage() {
   const [courseFilter, setCourseFilter] = useState('All')
   const [searchQuery, setSearchQuery] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
+  const [selectedRecords, setSelectedRecords] = useState(new Set())
+  const [isBulkDeleting, setIsBulkDeleting] = useState(false)
+  const [showBulkDeleteModal, setShowBulkDeleteModal] = useState(false)
 
   const displayedRecords = records.filter(r => {
     const matchCourse = courseFilter === 'All' || r.course === courseFilter
@@ -40,6 +45,42 @@ export default function StudentRecordsPage() {
   const startIndex = (currentPage - 1) * itemsPerPage
   const endIndex = Math.min(startIndex + itemsPerPage, displayedRecords.length)
   const currentRecords = displayedRecords.slice(startIndex, startIndex + itemsPerPage)
+
+  const allCurrentSelected = currentRecords.length > 0 && currentRecords.every(r => selectedRecords.has(r.student_id))
+
+  const toggleSelectAll = () => {
+    const newSet = new Set(selectedRecords)
+    if (allCurrentSelected) {
+      currentRecords.forEach(r => newSet.delete(r.student_id))
+    } else {
+      currentRecords.forEach(r => newSet.add(r.student_id))
+    }
+    setSelectedRecords(newSet)
+  }
+
+  const toggleSelect = (id) => {
+    const newSet = new Set(selectedRecords)
+    if (newSet.has(id)) newSet.delete(id)
+    else newSet.add(id)
+    setSelectedRecords(newSet)
+  }
+
+  const handleBulkDelete = async () => {
+    setIsBulkDeleting(true)
+    setError(''); setSuccess('')
+    try {
+      const ids = Array.from(selectedRecords)
+      await bulkDeleteStudentRecords(token, ids)
+      setSuccess(`Successfully deleted ${ids.length} records`)
+      setSelectedRecords(new Set())
+      setShowBulkDeleteModal(false)
+      fetchRecords()
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setIsBulkDeleting(false)
+    }
+  }
 
   const fetchRecords = async () => {
     setLoading(true)
@@ -60,16 +101,36 @@ export default function StudentRecordsPage() {
     if (!file) return
     setError(''); setSuccess('')
     setUploading(true)
+    setUploadProgress(0)
+
+    const progressInterval = setInterval(() => {
+      setUploadProgress(p => {
+        if (p >= 90) return 90
+        return p + 10
+      })
+    }, 200)
+
     try {
       const formData = new FormData()
       formData.append('file', file)
+      formData.append('default_priority', uploadPriority)
       const res = await uploadStudentRecords(token, formData)
-      setSuccess(res.message)
-      fetchRecords()
+      
+      clearInterval(progressInterval)
+      setUploadProgress(100)
+      
+      setTimeout(() => {
+        setSuccess(res.message)
+        fetchRecords()
+        setUploading(false)
+        setUploadProgress(0)
+      }, 500)
     } catch (err) {
+      clearInterval(progressInterval)
       setError(err.message)
-    } finally {
       setUploading(false)
+      setUploadProgress(0)
+    } finally {
       if (fileInputRef.current) fileInputRef.current.value = ''
     }
   }
@@ -149,29 +210,57 @@ export default function StudentRecordsPage() {
               </div>
               <div>
                 <label className="text-[11px] font-semibold text-text-sub mb-1 block">Course</label>
-                <select required value={editForm.course} onChange={e => setEditForm({ ...editForm, course: e.target.value })} className="px-3.5 py-2.5 rounded-lg border border-border text-[13px] outline-none bg-white text-text-main w-full transition-colors appearance-none focus:border-maroon">
-                  <option value="" disabled>Select Course...</option>
-                  <option value="Bachelor of Science in Information Technology">Bachelor of Science in Information Technology</option>
-                  <option value="Bachelor of Science in Business Administration">Bachelor of Science in Business Administration</option>
-                  <option value="Bachelor of Elementary Education">Bachelor of Elementary Education</option>
-                  <option value="Bachelor of Secondary Education">Bachelor of Secondary Education</option>
-                  <option value="Bachelor of Science in Criminology">Bachelor of Science in Criminology</option>
-                  <option value="Bachelor of Science in Hospitality Management">Bachelor of Science in Hospitality Management</option>
-                  <option value="Bachelor of Science in Tourism Management">Bachelor of Science in Tourism Management</option>
-                </select>
+                <div className="relative">
+                  <select required value={editForm.course} onChange={e => setEditForm({ ...editForm, course: e.target.value })} className="px-3.5 py-2.5 rounded-lg border border-border text-[13px] outline-none bg-white text-text-main w-full transition-colors appearance-none focus:border-maroon pr-10">
+                    <option value="" disabled>Select Course...</option>
+                    <option value="Bachelor of Science in Information Technology">Bachelor of Science in Information Technology</option>
+                    <option value="Bachelor of Science in Business Administration">Bachelor of Science in Business Administration</option>
+                    <option value="Bachelor of Elementary Education">Bachelor of Elementary Education</option>
+                    <option value="Bachelor of Secondary Education">Bachelor of Secondary Education</option>
+                    <option value="Bachelor of Science in Criminology">Bachelor of Science in Criminology</option>
+                    <option value="Bachelor of Science in Hospitality Management">Bachelor of Science in Hospitality Management</option>
+                    <option value="Bachelor of Science in Tourism Management">Bachelor of Science in Tourism Management</option>
+                    <option value="Bachelor of Science in Accountancy">Bachelor of Science in Accountancy</option>
+                  </select>
+                  <ChevronDown size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-text-sub pointer-events-none" />
+                </div>
               </div>
               <div>
                 <label className="text-[11px] font-semibold text-text-sub mb-1 block">Priority Class</label>
-                <select required value={editForm.priority_class} onChange={e => setEditForm({ ...editForm, priority_class: e.target.value })} className="px-3.5 py-2.5 rounded-lg border border-border text-[13px] outline-none bg-white text-text-main w-full transition-colors appearance-none focus:border-maroon">
-                  <option value="regular">Regular</option>
-                  <option value="graduating">Graduating</option>
-                </select>
+                <div className="relative">
+                  <select required value={editForm.priority_class} onChange={e => setEditForm({ ...editForm, priority_class: e.target.value })} className="px-3.5 py-2.5 rounded-lg border border-border text-[13px] outline-none bg-white text-text-main w-full transition-colors appearance-none focus:border-maroon pr-10">
+                    <option value="regular">Regular</option>
+                    <option value="alumni">Alumni</option>
+                  </select>
+                  <ChevronDown size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-text-sub pointer-events-none" />
+                </div>
               </div>
               <div className="flex gap-2 mt-3">
                 <button type="button" onClick={() => setEditingRecord(null)} className="flex-1 p-2.5 rounded-lg border border-border bg-off-white text-text-sub font-semibold cursor-pointer hover:bg-border transition-colors">Cancel</button>
                 <button type="submit" className="flex-1 p-2.5 rounded-lg border-none bg-maroon text-white font-semibold cursor-pointer hover:bg-maroon-dark transition-colors">Save Changes</button>
               </div>
             </form>
+          </div>
+        </div>
+      ), document.body)}
+
+      {/* Bulk Delete Modal */}
+      {showBulkDeleteModal && createPortal((
+        <div className="fixed inset-0 bg-black/20 backdrop-blur-sm z-100 flex items-center justify-center animate-fade-up">
+          <div className="bg-white p-6 rounded-2xl w-full max-w-sm shadow-[0_8px_32px_rgba(0,0,0,0.1)] animate-fade-up text-center">
+            <div className="w-12 h-12 rounded-full bg-danger-light border-2 border-danger-border flex items-center justify-center mx-auto mb-4 text-danger">
+              <Trash2 size={24} />
+            </div>
+            <h3 className="text-[18px] font-bold text-text-main m-0 mb-2 font-serif">Delete Selected Records?</h3>
+            <p className="text-[13px] text-text-sub m-0 mb-6">
+              You are about to delete {selectedRecords.size} student record(s). This action cannot be undone. Are you sure you want to proceed?
+            </p>
+            <div className="flex gap-2">
+              <button type="button" onClick={() => setShowBulkDeleteModal(false)} disabled={isBulkDeleting} className="flex-1 p-2.5 rounded-lg border border-border bg-off-white text-text-sub font-semibold cursor-pointer hover:bg-border transition-colors disabled:opacity-50">Cancel</button>
+              <button type="button" onClick={handleBulkDelete} disabled={isBulkDeleting} className="flex-1 p-2.5 rounded-lg border-none bg-danger text-white font-semibold cursor-pointer hover:bg-danger-hover transition-colors disabled:opacity-50 flex items-center justify-center">
+                {isBulkDeleting ? <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> : 'Yes, Delete'}
+              </button>
+            </div>
           </div>
         </div>
       ), document.body)}
@@ -184,12 +273,28 @@ export default function StudentRecordsPage() {
         {/* Upload Excel */}
         <div className="bg-white p-6 rounded-2xl shadow-[0_4px_12px_rgba(0,0,0,0.05)] border border-border">
           <h3 className="text-base font-semibold text-text-main m-0 mb-4 font-serif">Bulk Import via Excel</h3>
-          <p className="text-[13px] text-text-sub mb-5">Upload an `.xlsx` file containing headers: <strong>Student ID, First Name, Last Name, Course, Priority Class</strong>.</p>
+          <p className="text-[13px] text-text-sub mb-5">Supports the registrar's official per-course sheet format (one tab per course, e.g. BSIT, BSHM, BSA) or a single flat sheet with headers: <strong>Student ID, Surname/Last Name, First Name, Priority Class</strong>. Course is inferred from each sheet's tab name.</p>
 
-          <div className="border-2 border-dashed border-maroon-border bg-maroon-light p-8 rounded-xl text-center cursor-pointer transition-colors hover:bg-maroon-mid/30" onClick={() => fileInputRef.current?.click()}>
-            <input type="file" accept=".xlsx" ref={fileInputRef} onChange={handleFileUpload} className="hidden" />
+          <div className="mb-4">
+            <label className="text-[11px] font-semibold text-text-sub mb-1 block">Priority for this import</label>
+            <div className="relative">
+              <select value={uploadPriority} onChange={e => setUploadPriority(e.target.value)} className="px-3.5 py-2.5 rounded-lg border border-border text-[13px] outline-none bg-white w-full transition-colors appearance-none focus:border-maroon text-text-main pr-10">
+                <option value="regular">Regular Student</option>
+                <option value="alumni">Alumni</option>
+              </select>
+              <ChevronDown size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-text-sub pointer-events-none" />
+            </div>
+          </div>
+
+          <div className={`border-2 border-dashed ${uploading ? 'border-maroon bg-maroon/5' : 'border-maroon-border bg-maroon-light hover:bg-maroon-mid/30'} p-8 rounded-xl text-center transition-colors relative overflow-hidden`} onClick={() => !uploading && fileInputRef.current?.click()} style={{ cursor: uploading ? 'default' : 'pointer' }}>
+            <input type="file" accept=".xlsx" ref={fileInputRef} onChange={handleFileUpload} className="hidden" disabled={uploading} />
             <div className="mb-2 flex justify-center"><FileSpreadsheet size={24} className="text-maroon" /></div>
-            <div className="text-sm font-semibold text-maroon">{uploading ? 'Uploading...' : 'Click to select Excel file'}</div>
+            <div className="text-sm font-semibold text-maroon mb-1">{uploading ? `Uploading... ${uploadProgress}%` : 'Click to select Excel file'}</div>
+            {uploading && (
+              <div className="w-full max-w-50 h-1.5 bg-maroon/20 rounded-full mx-auto mt-3 overflow-hidden">
+                <div className="h-full bg-maroon transition-all duration-200 ease-out rounded-full" style={{ width: `${uploadProgress}%` }} />
+              </div>
+            )}
           </div>
         </div>
 
@@ -206,8 +311,8 @@ export default function StudentRecordsPage() {
             <div>
               <input type="text" placeholder="Last Name" required value={form.last_name} onChange={e => setForm({ ...form, last_name: e.target.value })} className="px-3.5 py-2.5 rounded-lg border border-border text-[13px] outline-none bg-white text-text-main w-full transition-colors focus:border-maroon" />
             </div>
-            <div className="col-span-2">
-              <select required value={form.course} onChange={e => setForm({ ...form, course: e.target.value })} className={`px-3.5 py-2.5 rounded-lg border border-border text-[13px] outline-none bg-white w-full transition-colors appearance-none focus:border-maroon ${form.course ? 'text-text-main' : 'text-text-muted'}`}>
+            <div className="col-span-2 relative">
+              <select required value={form.course} onChange={e => setForm({ ...form, course: e.target.value })} className={`px-3.5 py-2.5 rounded-lg border border-border text-[13px] outline-none bg-white w-full transition-colors appearance-none focus:border-maroon pr-10 ${form.course ? 'text-text-main' : 'text-text-muted'}`}>
                 <option value="" disabled>Select Course...</option>
                 <option value="Bachelor of Science in Information Technology">Bachelor of Science in Information Technology</option>
                 <option value="Bachelor of Science in Business Administration">Bachelor of Science in Business Administration</option>
@@ -216,13 +321,16 @@ export default function StudentRecordsPage() {
                 <option value="Bachelor of Science in Criminology">Bachelor of Science in Criminology</option>
                 <option value="Bachelor of Science in Hospitality Management">Bachelor of Science in Hospitality Management</option>
                 <option value="Bachelor of Science in Tourism Management">Bachelor of Science in Tourism Management</option>
+                <option value="Bachelor of Science in Accountancy">Bachelor of Science in Accountancy</option>
               </select>
+              <ChevronDown size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-text-sub pointer-events-none" />
             </div>
-            <div className="col-span-2">
-              <select required value={form.priority_class} onChange={e => setForm({ ...form, priority_class: e.target.value })} className="px-3.5 py-2.5 rounded-lg border border-border text-[13px] outline-none bg-white w-full transition-colors appearance-none focus:border-maroon text-text-main">
+            <div className="col-span-2 relative">
+              <select required value={form.priority_class} onChange={e => setForm({ ...form, priority_class: e.target.value })} className="px-3.5 py-2.5 rounded-lg border border-border text-[13px] outline-none bg-white w-full transition-colors appearance-none focus:border-maroon text-text-main pr-10">
                 <option value="regular">Regular Student</option>
-                <option value="graduating">Graduating Student</option>
+                <option value="alumni">Alumni</option>
               </select>
+              <ChevronDown size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-text-sub pointer-events-none" />
             </div>
             <div className="col-span-2 mt-2">
               <button type="submit" className="w-full bg-gold text-white border-none p-3 rounded-lg font-semibold cursor-pointer font-sans transition-transform active:scale-95 hover:opacity-90">
@@ -238,6 +346,11 @@ export default function StudentRecordsPage() {
         <div className="px-6 py-5 border-b border-border flex justify-between items-center flex-wrap gap-4">
           <h3 className="text-base font-semibold text-text-main m-0 font-serif">School Directory</h3>
           <div className="flex items-center gap-3">
+            {selectedRecords.size > 0 && (
+              <button onClick={() => setShowBulkDeleteModal(true)} className="px-3 py-1.5 rounded-lg border border-danger bg-danger-light text-danger text-[12px] font-bold cursor-pointer hover:bg-danger hover:text-white transition-colors flex items-center gap-1.5">
+                <Trash2 size={14} /> Delete Selected ({selectedRecords.size})
+              </button>
+            )}
             <div className="relative">
               <input
                 type="text"
@@ -261,6 +374,7 @@ export default function StudentRecordsPage() {
               <option value="Bachelor of Science in Criminology">BS Criminology</option>
               <option value="Bachelor of Science in Hospitality Management">BS Hospitality Management</option>
               <option value="Bachelor of Science in Tourism Management">BS Tourism Management</option>
+              <option value="Bachelor of Science in Accountancy">BS Accountancy</option>
             </select>
             <span className="text-xs text-text-sub bg-off-white px-2.5 py-1 rounded-full font-semibold">
               {displayedRecords.length} Records
@@ -272,6 +386,9 @@ export default function StudentRecordsPage() {
           <table className="w-full border-collapse text-[13px] text-left">
             <thead>
               <tr className="bg-off-white text-text-sub font-semibold border-b border-border">
+                <th className="px-4 py-3 w-10 text-center">
+                  <input type="checkbox" className="cursor-pointer rounded border-border w-3.5 h-3.5 text-maroon focus:ring-maroon accent-maroon" checked={allCurrentSelected} onChange={toggleSelectAll} disabled={currentRecords.length === 0} />
+                </th>
                 <th className="px-6 py-3">Student ID</th>
                 <th className="px-6 py-3">Name</th>
                 <th className="px-6 py-3">Course</th>
@@ -284,7 +401,7 @@ export default function StudentRecordsPage() {
               {loading ? (
                 Array.from({ length: 4 }).map((_, i) => (
                   <tr key={i} className="border-b border-border">
-                    <td colSpan={5} className="px-6 py-4">
+                    <td colSpan={7} className="px-6 py-4">
                       <div className="flex gap-5 items-center">
                         <div className="animate-pulse h-5 w-[20%] rounded bg-border" />
                         <div className="animate-pulse h-5 w-[30%] rounded bg-border" />
@@ -297,16 +414,19 @@ export default function StudentRecordsPage() {
                   </tr>
                 ))
               ) : currentRecords.length === 0 ? (
-                <tr><td colSpan={5} className="p-6 text-center text-text-muted">No matching student records found.</td></tr>
+                <tr><td colSpan={7} className="p-6 text-center text-text-muted">No matching student records found.</td></tr>
               ) : (
                 currentRecords.map((record, index) => (
-                  <tr key={record.student_id} className="group border-b border-border transition-colors hover:bg-maroon-light/50 animate-fade-up" style={{ animationDelay: `${index * 0.05}s`, opacity: 0, animationFillMode: 'forwards' }}>
+                  <tr key={record.student_id} className={`group border-b border-border transition-colors hover:bg-maroon-light/50 animate-fade-up ${selectedRecords.has(record.student_id) ? 'bg-maroon-light/30' : ''}`} style={{ animationDelay: `${index * 0.05}s`, opacity: 0, animationFillMode: 'forwards' }}>
+                    <td className="px-4 py-3 text-center" onClick={(e) => e.stopPropagation()}>
+                      <input type="checkbox" className="cursor-pointer rounded border-border w-3.5 h-3.5 text-maroon focus:ring-maroon accent-maroon" checked={selectedRecords.has(record.student_id)} onChange={() => toggleSelect(record.student_id)} />
+                    </td>
                     <td className="px-6 py-3 font-medium text-maroon">{record.student_id}</td>
                     <td className="px-6 py-3 text-text-main">{record.first_name} {record.last_name}</td>
                     <td className="px-6 py-3 text-text-sub">{record.course}</td>
                     <td className="px-6 py-3">
-                      {record.priority_class === 'graduating' ? (
-                        <span className="bg-maroon-light text-maroon font-bold px-2 py-1 rounded text-[11px] uppercase tracking-wide">Graduating</span>
+                      {record.priority_class === 'alumni' ? (
+                        <span className="bg-maroon-light text-maroon font-bold px-2 py-1 rounded text-[11px] uppercase tracking-wide">Alumni</span>
                       ) : record.priority_class === 'pwd' ? (
                         <span className="bg-[#fffbeb] text-gold font-bold px-2 py-1 rounded text-[11px] uppercase tracking-wide">PWD</span>
                       ) : record.priority_class === 'pregnant' ? (

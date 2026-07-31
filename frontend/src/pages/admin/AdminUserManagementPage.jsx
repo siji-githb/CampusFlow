@@ -15,8 +15,7 @@ const getPriorityClass = (user) => {
   const pc = user.priority_class || user.profile?.priority_class
   if (!pc) return user.role === 'student' ? 'Regular' : 'N/A'
   const MAP = {
-    graduating: 'Graduating', pwd: 'PWD', regular: 'Regular',
-    irregular: 'Irregular', transferee: 'Transferee', pregnant: 'Pregnant',
+    alumni: 'Alumni', pwd: 'PWD', regular: 'Regular', pregnant: 'Pregnant',
   }
   return MAP[pc.toLowerCase()] || pc
 }
@@ -50,7 +49,7 @@ const RoleBadge = ({ role }) => {
 // ── Priority Badge ─────────────────────────────────────────────────────────────
 const PriorityBadge = ({ label }) => {
   if (!label || label === 'N/A') return <span className="text-[12px] text-text-muted">N/A</span>
-  const colorMap = { Graduating: 'text-maroon', PWD: 'text-gold', Regular: 'text-text-sub', Irregular: 'text-info', Transferee: 'text-success', Pregnant: 'text-pink-600' }
+  const colorMap = { Alumni: 'text-maroon', PWD: 'text-gold', Regular: 'text-text-sub', Pregnant: 'text-pink-600' }
   const color = colorMap[label] || 'text-text-sub'
   return <span className={`text-[12px] font-semibold ${color}`}>{label}</span>
 }

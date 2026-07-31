@@ -149,7 +149,7 @@ export default function AdminRegistrarRecordsPage() {
           <h1 className="font-serif text-[26px] font-bold text-maroon m-0 mb-2 flex items-center gap-3">
             <FolderOpen className="text-maroon" size={24} /> Registrar Records
           </h1>
-          <p className="text-[12px] text-text-sub m-0 leading-relaxed max-w-[650px]">
+          <p className="text-[12px] text-text-sub m-0 leading-relaxed max-w-162.5">
             Review document issuance history, track statuses, and export records.
           </p>
         </div>
@@ -160,7 +160,7 @@ export default function AdminRegistrarRecordsPage() {
               <select
                 value={months}
                 onChange={e => setMonths(Number(e.target.value))}
-                className="py-[9px] pr-9 pl-4 rounded-xl border border-border bg-white text-[13px] text-text-main outline-none cursor-pointer font-sans appearance-none font-bold shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:border-text-muted/30 transition-all">
+                className="py-2.25 pr-9 pl-4 rounded-xl border border-border bg-white text-[13px] text-text-main outline-none cursor-pointer font-sans appearance-none font-bold shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:border-text-muted/30 transition-all">
                 <option value={1}>1 Month</option>
                 <option value={3}>3 Months</option>
                 <option value={6}>6 Months</option>
@@ -170,7 +170,7 @@ export default function AdminRegistrarRecordsPage() {
             </div>
           </div>
           <button onClick={() => exportCSV(csvRows, 'registrar_records.csv')}
-            className="py-[9px] px-5 rounded-xl border border-border bg-white text-text-main text-[13px] font-bold cursor-pointer font-sans flex items-center gap-2 shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:bg-off-white hover:border-text-muted/30 hover:-translate-y-0.5 transition-all">
+            className="py-2.25 px-5 rounded-xl border border-border bg-white text-text-main text-[13px] font-bold cursor-pointer font-sans flex items-center gap-2 shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:bg-off-white hover:border-text-muted/30 hover:-translate-y-0.5 transition-all">
             <FileDown size={16} strokeWidth={2.5} /> Export Records
           </button>
         </div>
@@ -195,8 +195,8 @@ export default function AdminRegistrarRecordsPage() {
                 {c.icon}
               </div>
             </div>
-            <div className="font-sans text-[36px] font-extrabold leading-none m-0 min-h-[36px] text-text-main">
-              {loading ? <div className="animate-pulse w-[60px] h-[36px] bg-border rounded-lg" /> : c.value}
+            <div className="font-sans text-[36px] font-extrabold leading-none m-0 min-h-9 text-text-main">
+              {loading ? <div className="animate-pulse w-15 h-9 bg-border rounded-lg" /> : c.value}
             </div>
             <div className="text-[11px] font-medium text-text-muted mt-1.5">{c.sub}</div>
           </div>
@@ -224,7 +224,7 @@ export default function AdminRegistrarRecordsPage() {
             </div>
 
             {/* Type Dropdown */}
-            <div className="relative shrink-0 w-full sm:w-[220px]">
+            <div className="relative shrink-0 w-full sm:w-55">
               <select
                 value={activeType}
                 onChange={e => { setActiveType(e.target.value); setPage(1) }}
@@ -249,12 +249,12 @@ export default function AdminRegistrarRecordsPage() {
             {loading ? (
               [1, 2, 3, 4, 5].map((n, idx) => (
                 <div key={n} className={`grid grid-cols-[110px_1fr_1.7fr_140px_110px_110px_40px] p-[16px_24px] items-center ${idx === 4 ? 'border-none' : 'border-b border-border/60'} bg-white`}>
-                  <div className="animate-pulse h-4 w-[60px] rounded bg-border" />
+                  <div className="animate-pulse h-4 w-15 rounded bg-border" />
                   <div className="animate-pulse h-6 w-[70%] rounded bg-border" />
                   <div className="animate-pulse h-4 w-[80%] rounded bg-border" />
-                  <div className="animate-pulse h-4 w-[60px] rounded bg-border" />
-                  <div className="animate-pulse h-4 w-[60px] rounded bg-border" />
-                  <div className="animate-pulse h-6 w-[70px] rounded-full bg-border" />
+                  <div className="animate-pulse h-4 w-15 rounded bg-border" />
+                  <div className="animate-pulse h-4 w-15 rounded bg-border" />
+                  <div className="animate-pulse h-6 w-17.5 rounded-full bg-border" />
                   <div />
                 </div>
               ))
@@ -262,7 +262,7 @@ export default function AdminRegistrarRecordsPage() {
               <div className="p-[60px_24px] text-center">
                 <div className="flex justify-center mb-4 text-text-muted/50"><FolderOpen size={52} strokeWidth={1.5} /></div>
                 <p className="font-serif text-[18px] font-bold text-text-main m-0 mb-1">No records found</p>
-                <p className="text-[13px] text-text-muted m-0 max-w-[250px] mx-auto">Try adjusting your search query or filters to find what you are looking for.</p>
+                <p className="text-[13px] text-text-muted m-0 max-w-62.5 mx-auto">Try adjusting your search query or filters to find what you are looking for.</p>
               </div>
             ) : (
               paginated.map((rec, idx) => {
@@ -314,20 +314,20 @@ export default function AdminRegistrarRecordsPage() {
                           ))}
                         </div>
                         <div className="flex gap-2 mt-3.5 pt-3.5 border-t border-maroon-border">
-                          <button onClick={() => setViewingRecord(rec)} className="py-[7px] px-4 rounded-lg border-none bg-maroon text-white text-[12px] font-bold cursor-pointer font-sans hover:bg-maroon-dark transition-colors">
+                          <button onClick={() => setViewingRecord(rec)} className="py-1.75 px-4 rounded-lg border-none bg-maroon text-white text-[12px] font-bold cursor-pointer font-sans hover:bg-maroon-dark transition-colors">
                             View Full Record
                           </button>
                           {(rec.status === 'completed' || rec.status === 'released') && (
-                            <button className="py-[7px] px-4 rounded-lg border border-maroon-border bg-transparent text-maroon text-[12px] font-semibold cursor-pointer font-sans flex items-center gap-1.5 hover:bg-maroon/5 transition-colors">
+                            <button className="py-1.75 px-4 rounded-lg border border-maroon-border bg-transparent text-maroon text-[12px] font-semibold cursor-pointer font-sans flex items-center gap-1.5 hover:bg-maroon/5 transition-colors">
                               <Printer size={14} /> Print Record
                             </button>
                           )}
                           {(rec.status === 'pending' || rec.status === 'processing') && (
-                            <button className="py-[7px] px-4 rounded-lg border border-success-border bg-success-light text-success text-[12px] font-semibold cursor-pointer font-sans flex items-center gap-1.5 hover:bg-success/10 transition-colors">
+                            <button className="py-1.75 px-4 rounded-lg border border-success-border bg-success-light text-success text-[12px] font-semibold cursor-pointer font-sans flex items-center gap-1.5 hover:bg-success/10 transition-colors">
                               <Check size={14} /> Mark as Released
                             </button>
                           )}
-                          <button className="py-[7px] px-4 rounded-lg border border-maroon-border bg-transparent text-maroon text-[12px] font-semibold cursor-pointer font-sans flex items-center gap-1.5 hover:bg-maroon/5 transition-colors">
+                          <button className="py-1.75 px-4 rounded-lg border border-maroon-border bg-transparent text-maroon text-[12px] font-semibold cursor-pointer font-sans flex items-center gap-1.5 hover:bg-maroon/5 transition-colors">
                             <Clipboard size={14} /> Add Note
                           </button>
                         </div>
@@ -346,7 +346,7 @@ export default function AdminRegistrarRecordsPage() {
                 </span>
                 <div className="flex gap-1">
                   <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}
-                    className={`py-1 px-[11px] rounded-md border border-border bg-white text-[12px] font-semibold font-sans ${page === 1 ? 'cursor-not-allowed text-text-muted' : 'cursor-pointer text-text-main hover:bg-off-white'}`}>
+                    className={`py-1 px-2.75 rounded-md border border-border bg-white text-[12px] font-semibold font-sans ${page === 1 ? 'cursor-not-allowed text-text-muted' : 'cursor-pointer text-text-main hover:bg-off-white'}`}>
                     Prev
                   </button>
                   {Array.from({ length: Math.min(totalPages, 7) }, (_, i) => {
@@ -355,13 +355,13 @@ export default function AdminRegistrarRecordsPage() {
                         : page >= totalPages - 3 ? totalPages - 6 + i
                           : page - 3 + i
                     return (
-                      <button key={p} onClick={() => setPage(p)} className={`w-[30px] h-[30px] rounded-md text-[12px] font-semibold cursor-pointer font-sans border ${page === p ? 'border-maroon bg-maroon text-white' : 'border-border bg-white text-text-main hover:bg-off-white'}`}>
+                      <button key={p} onClick={() => setPage(p)} className={`w-7.5 h-7.5 rounded-md text-[12px] font-semibold cursor-pointer font-sans border ${page === p ? 'border-maroon bg-maroon text-white' : 'border-border bg-white text-text-main hover:bg-off-white'}`}>
                         {p}
                       </button>
                     )
                   })}
                   <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages}
-                    className={`py-1 px-[11px] rounded-md border border-border bg-white text-[12px] font-semibold font-sans ${page === totalPages ? 'cursor-not-allowed text-text-muted' : 'cursor-pointer text-text-main hover:bg-off-white'}`}>
+                    className={`py-1 px-2.75 rounded-md border border-border bg-white text-[12px] font-semibold font-sans ${page === totalPages ? 'cursor-not-allowed text-text-muted' : 'cursor-pointer text-text-main hover:bg-off-white'}`}>
                     Next
                   </button>
                 </div>
@@ -380,7 +380,7 @@ export default function AdminRegistrarRecordsPage() {
               <select
                 value={statusFilter}
                 onChange={e => { setStatusFilter(e.target.value); setPage(1) }}
-                className="w-full py-[9px] pr-8 pl-3.5 rounded-[9px] border border-border bg-surface text-[13px] text-text-main outline-none cursor-pointer font-sans appearance-none font-semibold focus:border-maroon transition-colors">
+                className="w-full py-2.25 pr-8 pl-3.5 rounded-[9px] border border-border bg-surface text-[13px] text-text-main outline-none cursor-pointer font-sans appearance-none font-semibold focus:border-maroon transition-colors">
                 {['all', 'completed', 'released', 'processing', 'pending', 'archived'].map(s => {
                   const count = s === 'all' ? records.length : records.filter(r => r.status === s).length
                   const label = s === 'all' ? 'All Statuses' : (STATUS_CFG[s]?.label || s)
@@ -426,7 +426,7 @@ export default function AdminRegistrarRecordsPage() {
       {/* ── View Record Modal ── */}
       {viewingRecord && (
         <div className="fixed inset-0 z-9999 flex items-center justify-center bg-black/40 backdrop-blur-sm">
-          <div className="bg-white rounded-3xl w-full max-w-[600px] shadow-[0_20px_40px_rgba(0,0,0,0.1)] overflow-hidden">
+          <div className="bg-white rounded-3xl w-full max-w-150 shadow-[0_20px_40px_rgba(0,0,0,0.1)] overflow-hidden">
              {/* Header */}
              <div className="p-[24px_32px] bg-maroon-light border-b border-border flex justify-between items-center">
                <div>
@@ -463,7 +463,7 @@ export default function AdminRegistrarRecordsPage() {
                    <h3 className="text-[11px] font-bold text-text-muted uppercase tracking-[0.06em] m-0 mb-4">Processing Timeline</h3>
                    <div className="flex flex-col gap-5 relative">
                      {/* Connecting Line */}
-                     <div className="absolute left-[7px] top-[10px] bottom-[10px] w-0.5 bg-border" />
+                     <div className="absolute left-1.75 top-2.5 bottom-2.5 w-0.5 bg-border" />
                      
                      <div className="flex gap-4 relative">
                        <div className="w-4 h-4 rounded-full bg-white border-[3px] border-maroon z-10 mt-0.5" />
