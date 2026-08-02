@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { createPortal } from 'react-dom'
 import { useAuth } from '../../context/useAuth'
-import { getAllAppointments, getAppointmentStats, rescheduleAppointment } from '../../services/appointmentService'
+import { getAllAppointments, getAppointmentStats, rescheduleAppointment, getBookingConfig } from '../../services/appointmentService'
 import { Calendar, RefreshCw, BarChart2, Circle, User, Tag, X, FileText, Activity } from 'lucide-react'
 
 export default function AppointmentsPage() {
@@ -45,8 +45,13 @@ export default function AppointmentsPage() {
     }
   }, [token])
 
+  const [dateOverrides, setDateOverrides] = useState({})
+
   useEffect(() => {
     loadStats()
+    getBookingConfig().then(cfg => {
+      if (cfg.date_overrides) setDateOverrides(cfg.date_overrides)
+    }).catch(console.error)
   }, [loadStats])
 
   const stats = [
@@ -145,7 +150,7 @@ export default function AppointmentsPage() {
       {/* ── Stats Row ── */}
       <div className="grid grid-cols-3 gap-5 mb-8">
         {stats.map((s, i) => (
-          <div key={i} className="animate-fade-up bg-white rounded-[14px] px-5 py-[18px] border border-border shadow-[0_1px_4px_rgba(0,0,0,0.04)] flex flex-col gap-3 flex-1" style={{ animationDelay: s.delay }}>
+          <div key={i} className="animate-fade-up bg-white rounded-[14px] px-5 py-4.5 border border-border shadow-[0_1px_4px_rgba(0,0,0,0.04)] flex flex-col gap-3 flex-1" style={{ animationDelay: s.delay }}>
             <div className="flex items-start justify-between">
               <div className="text-xs font-semibold text-text-muted uppercase tracking-[0.06em] mt-1.5">{s.label}</div>
               <div className={`w-9 h-9 rounded-[10px] flex items-center justify-center shrink-0 ${s.bgClass} ${s.colorClass}`}>
@@ -153,8 +158,8 @@ export default function AppointmentsPage() {
               </div>
             </div>
             <div>
-              <div className="font-serif text-[28px] font-extrabold text-text-main leading-none m-0 min-h-[28px]">
-                {!statsData ? <div className="animate-pulse w-[60px] h-7 rounded-md bg-border" /> : s.value}
+              <div className="font-serif text-[28px] font-extrabold text-text-main leading-none m-0 min-h-7">
+                {!statsData ? <div className="animate-pulse w-15 h-7 rounded-md bg-border" /> : s.value}
               </div>
               {s.sub && <div className="text-[11px] font-semibold text-text-muted mt-1.5">{s.sub}</div>}
             </div>
@@ -186,15 +191,25 @@ export default function AppointmentsPage() {
                 if (!d) return <span key={`empty-${i}`} />
                 const isSelected = selectedDate.getFullYear() === d.getFullYear() && selectedDate.getMonth() === d.getMonth() && selectedDate.getDate() === d.getDate()
                 const isToday = new Date().setHours(0,0,0,0) === d.getTime()
+                
+                // Format YYYY-MM-DD for override lookup
+                const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`
+                const override = dateOverrides[dateStr]
+
                 return (
                   <span 
                     key={i} 
                     onClick={() => setSelectedDate(d)}
-                    className={`cursor-pointer w-6 h-6 flex items-center justify-center mx-auto transition-colors duration-200 
-                      ${isSelected ? 'bg-maroon text-white rounded-full font-bold' : isToday ? 'text-gold font-bold rounded' : 'text-text-main font-medium rounded hover:bg-surface'}
+                    className={`cursor-pointer w-7 h-7 flex flex-col items-center justify-center mx-auto transition-colors duration-200 gap-0.5
+                      ${isSelected ? 'bg-maroon text-white rounded-full font-bold' : isToday ? 'text-gold font-bold rounded hover:bg-surface' : 'text-text-main font-medium rounded hover:bg-surface'}
                     `}
                   >
-                    {d.getDate()}
+                    <span className="leading-none">{d.getDate()}</span>
+                    <div className="flex justify-center w-full h-1 -mt-0.5">
+                      {override && (
+                        <div className={`w-1 h-1 rounded-full ${override.is_blocked ? (isSelected ? 'bg-white' : 'bg-danger') : (isSelected ? 'bg-white' : 'bg-info')}`} />
+                      )}
+                    </div>
                   </span>
                 )
               })}
@@ -242,11 +257,11 @@ export default function AppointmentsPage() {
                   <div key={i} className={`grid grid-cols-[100px_1fr_220px_120px_180px] gap-4 px-6 py-4 items-center ${i < 3 ? 'border-b border-border' : ''}`}>
                     <div className="animate-pulse w-16 h-4 rounded bg-border" />
                     <div>
-                      <div className="animate-pulse w-[140px] h-4 rounded bg-border mb-2" />
+                      <div className="animate-pulse w-35 h-4 rounded bg-border mb-2" />
                       <div className="animate-pulse w-20 h-3 rounded bg-border" />
                     </div>
                     <div>
-                      <div className="animate-pulse w-[160px] h-4 rounded bg-border mb-2" />
+                      <div className="animate-pulse w-40 h-4 rounded bg-border mb-2" />
                       <div className="animate-pulse w-16 h-3 rounded bg-border" />
                     </div>
                     <div className="animate-pulse w-20 h-6 rounded-full bg-border" />
@@ -363,7 +378,7 @@ export default function AppointmentsPage() {
         return (
           <div className="fixed inset-0 z-1000 flex items-center justify-center">
             <div className="absolute inset-0 bg-black/20 backdrop-blur-sm" onClick={() => setViewDetailsModal(null)} />
-            <div className="animate-fade-up relative bg-white rounded-[24px] w-[480px] max-w-[90%] max-h-[90vh] overflow-y-auto shadow-[0_20px_40px_rgba(0,0,0,0.2)]">
+            <div className="animate-fade-up relative bg-white rounded-3xl w-120 max-w-[90%] max-h-[90vh] overflow-y-auto shadow-[0_20px_40px_rgba(0,0,0,0.2)]">
               
               {/* Header */}
               <div className="px-8 py-6 border-b border-border flex justify-between items-start">
@@ -475,7 +490,7 @@ export default function AppointmentsPage() {
 
       {rescheduleModal && createPortal((
         <div className="fixed inset-0 bg-black/20 backdrop-blur-sm flex items-center justify-center z-1000">
-          <div className="bg-white p-8 rounded-2xl w-[400px] max-w-[90%] font-sans shadow-xl animate-fade-up">
+          <div className="bg-white p-8 rounded-2xl w-100 max-w-[90%] font-sans shadow-xl animate-fade-up">
             <h2 className="m-0 mb-4 text-maroon font-serif text-[22px] font-bold">Reschedule Appointment</h2>
             <div className="mb-4">
               <label className="block text-xs font-semibold text-text-sub mb-1.5">New Date</label>

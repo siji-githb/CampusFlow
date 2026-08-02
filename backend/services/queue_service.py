@@ -384,7 +384,21 @@ def confirm_step(queue_ticket_id: str, step_number: int, staff_id: str):
         next_step_name = next_step_data.get("step_name", f"Step {next_step}")
 
         if next_requires_presence:
-            message = f"Step {step_number} confirmed. Please proceed to: {next_step_name}."
+            if "Release" in next_step_name or "Issuance" in next_step_name:
+                from services.admin_service import get_window_assignments
+                assignments = get_window_assignments()
+                window_num = assignments.get("assignments", {}).get(staff_id)
+                window_label = f"Window {window_num}" if window_num else "Counter"
+                
+                try:
+                    appt_res = admin.table("appointments").select("transaction_types(name)").eq("id", ticket["appointment_id"]).single().execute()
+                    tx_name = appt_res.data.get("transaction_types", {}).get("name") if appt_res.data else "document"
+                except Exception:
+                    tx_name = "document"
+                
+                message = f"Your {tx_name} for ticket {ticket['queue_number']} is ready for release. Please proceed to {window_label} to claim your document."
+            else:
+                message = f"Step {step_number} confirmed. Please proceed to: {next_step_name}."
         else:
             message = f"Step {step_number} confirmed. Your request is now being processed — no need to wait in line, we'll notify you when it's ready."
 

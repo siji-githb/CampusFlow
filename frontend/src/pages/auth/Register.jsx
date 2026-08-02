@@ -10,7 +10,7 @@ export default function Register() {
   
   const [form, setForm] = useState({
     first_name: '', last_name: '', email: '',
-    password: '', confirm_password: '', student_id: '', course: '',
+    password: '', confirm_password: '', student_id: '', course: '', priority_class: '',
   })
   
   const [error, setError] = useState('')
@@ -31,7 +31,8 @@ export default function Register() {
         ...prev,
         first_name: studentData.first_name,
         last_name: studentData.last_name,
-        course: studentData.course
+        course: studentData.course,
+        priority_class: studentData.priority_class || 'regular'
       }))
       setStep(2)
     } catch (err) { setError(err.message) }
@@ -171,9 +172,9 @@ export default function Register() {
                     value={form.student_id} 
                     onChange={handleChange} 
                     required 
-                    placeholder="202400001" 
-                    pattern="^\d{9,13}$" 
-                    title="Format: 9 to 13 numbers" 
+                    placeholder="2024-00001 or 202400001" 
+                    pattern="^[0-9-]{8,15}$" 
+                    title="Format: 8 to 15 numbers or hyphens" 
                     className={inpClass} 
                   />
                   <p className="text-[12px] text-slate-500 mt-3">We need to verify your ID against the school records before creating an account.</p>
@@ -242,7 +243,7 @@ export default function Register() {
                     <button type="button" onClick={() => setStep(1)} className="bg-transparent border-none text-maroon text-[12px] cursor-pointer font-bold hover:text-maroon-dark transition-colors">Change ID</button>
                   </div>
                   <div className="text-[14.5px] font-bold text-slate-800 mb-0.5">{form.first_name} {form.last_name}</div>
-                  <div className="text-[13px] font-medium text-slate-600">{form.student_id} • {form.course}</div>
+                  <div className="text-[13px] font-medium text-slate-600">{form.student_id} • {form.priority_class ? form.priority_class.charAt(0).toUpperCase() + form.priority_class.slice(1) : 'Regular'} • {form.course}</div>
                 </div>
 
                 <div className="mb-4">

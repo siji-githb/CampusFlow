@@ -13,6 +13,21 @@ settings = get_settings()
 async def register_user(data: RegisterRequest) -> dict:
     supabase = get_supabase_anon()
     admin = get_supabase_admin()
+    
+    # Explicitly check for duplicate email to return a clear error
+    try:
+        existing_email = admin.table("users").select("id").eq("email", data.email).execute()
+        if existing_email.data:
+            raise HTTPException(status_code=400, detail="This email address is already registered.")
+            
+        if data.student_id:
+            existing_id = admin.table("users").select("id").eq("student_id", data.student_id).execute()
+            if existing_id.data:
+                raise HTTPException(status_code=400, detail="An account with this Student ID already exists.")
+    except HTTPException:
+        raise
+    except Exception:
+        pass
 
     # Step 1: Create auth user in Supabase Auth
     try:

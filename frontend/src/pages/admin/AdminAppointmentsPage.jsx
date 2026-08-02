@@ -18,7 +18,7 @@ const STATUS_CFG = {
 const DAYS = ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su']
 const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December']
 
-function MiniCalendar({ selectedDate, onSelect }) {
+function MiniCalendar({ selectedDate, onSelect, dateOverrides = {} }) {
   const [view, setView] = useState(() => {
     const d = selectedDate ? new Date(selectedDate) : new Date()
     return { year: d.getFullYear(), month: d.getMonth() }
@@ -74,8 +74,9 @@ function MiniCalendar({ selectedDate, onSelect }) {
           const isToday = dateStr === todayStr
           const isSel   = dateStr === selStr
           const isSun   = (i % 7 === 6)
+          const override = dateOverrides[dateStr]
           
-          let btnClass = "w-full aspect-square rounded-lg border-none text-[12px] cursor-pointer transition-colors "
+          let btnClass = "w-full aspect-square rounded-lg border-none text-[12px] cursor-pointer transition-colors relative flex flex-col items-center justify-center gap-0.5 "
           
           if (isSel) {
             btnClass += "bg-maroon text-white font-bold"
@@ -87,7 +88,12 @@ function MiniCalendar({ selectedDate, onSelect }) {
 
           return (
             <button key={i} onClick={() => onSelect(dateStr)} className={btnClass}>
-              {day}
+              <span>{day}</span>
+              <div className="flex justify-center w-full h-1">
+                {override && (
+                  <div className={`w-1 h-1 rounded-full ${override.is_blocked ? (isSel ? 'bg-white' : 'bg-danger') : (isSel ? 'bg-white' : 'bg-info')}`} />
+                )}
+              </div>
             </button>
           )
         })}
@@ -489,7 +495,7 @@ export default function AdminAppointmentsPage() {
 
         {/* Left: Calendar + Quick Actions */}
         <div className="animate-fade-up flex flex-col gap-4" style={{ animationDelay: '0.5s' }}>
-          <MiniCalendar selectedDate={selectedDate} onSelect={setSelectedDate} />
+          <MiniCalendar selectedDate={selectedDate} onSelect={setSelectedDate} dateOverrides={dateOverrides} />
 
           {/* Quick Actions */}
           <div className="bg-white rounded-2xl border border-border p-5 shadow-[0_2px_8px_rgba(0,0,0,0.04)]">

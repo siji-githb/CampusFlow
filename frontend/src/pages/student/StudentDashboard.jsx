@@ -228,48 +228,54 @@ export default function StudentDashboard() {
 
           {/* Compact action + queue row */}
           <div
-            className="animate-fade-up grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-5"
+            className="animate-fade-up grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6"
             style={{ animationDelay: '0.2s' }}
           >
             {/* Book Appointment card */}
             <button
               onClick={() => navigate('/student/book')}
-              className="bg-white rounded-[20px] py-5.5 px-6 border border-border cursor-pointer text-left shadow-[0_4px_16px_rgba(0,0,0,0.02)] flex items-center gap-4 transition-all duration-200 font-sans hover:border-maroon-border hover:shadow-[0_6px_20px_rgba(123,26,42,0.08)] group"
+              className="bg-white rounded-2xl p-5 md:p-6 border border-border cursor-pointer text-left shadow-[0_2px_8px_rgba(0,0,0,0.02)] flex items-center gap-4 transition-all duration-300 font-sans hover:border-maroon/30 hover:shadow-[0_8px_24px_rgba(123,26,42,0.08)] hover:-translate-y-0.5 group"
             >
-              <div className="w-11 h-11 rounded-xl text-maroon bg-maroon-mid flex items-center justify-center shrink-0">
-                <Calendar size={22} />
+              <div className="w-12 h-12 rounded-[14px] text-maroon bg-linear-to-br from-maroon/10 to-maroon/5 border border-maroon/10 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform duration-300">
+                <Calendar size={22} className="text-maroon/90" />
               </div>
-              <div>
-                <div className="text-[15px] font-bold text-maroon font-serif">Book Appointment</div>
-                <div className="text-[11px] md:text-xs text-text-sub mt-0.75">Schedule an appointment with campus registrar</div>
+              <div className="flex-1">
+                <div className="text-[15px] font-bold text-text-main font-serif group-hover:text-maroon transition-colors duration-200">Book Appointment</div>
+                <div className="text-[12px] text-text-sub mt-1 leading-snug pr-4">Schedule a new appointment with the campus registrar</div>
+              </div>
+              <div className="w-8 h-8 rounded-full bg-off-white flex items-center justify-center text-text-muted group-hover:bg-maroon-light group-hover:text-maroon transition-colors duration-300 shrink-0">
+                <ChevronRight size={18} className="transition-transform duration-300 group-hover:translate-x-0.5" />
               </div>
             </button>
 
             {/* My Queue compact card */}
-            <div className="bg-white rounded-[20px] py-5.5 px-6 border border-border shadow-[0_4px_16px_rgba(0,0,0,0.02)] flex items-center gap-4">
-              <div className="w-11 h-11 rounded-xl text-gold bg-gold-mid flex items-center justify-center shrink-0">
-                <Ticket size={22} />
+            <div className={`bg-white rounded-2xl p-5 md:p-6 border ${liveTicket ? 'border-gold/30 shadow-[0_4px_16px_rgba(184,144,10,0.06)]' : 'border-border shadow-[0_2px_8px_rgba(0,0,0,0.02)]'} flex items-center gap-4 transition-all duration-300`}>
+              <div className={`w-12 h-12 rounded-[14px] flex items-center justify-center shrink-0 ${liveTicket ? 'text-gold bg-linear-to-br from-gold/10 to-gold/5 border border-gold/20' : 'text-text-muted bg-off-white border border-border'}`}>
+                <Ticket size={22} className={liveTicket ? 'text-gold' : 'opacity-70'} />
               </div>
               <div className="flex-1 min-w-0">
-                <div className="flex items-center justify-between mb-1">
-                  <span className="text-[10px] font-bold text-text-muted tracking-widest uppercase">My Queue</span>
+                <div className="flex items-center justify-between mb-1.5">
+                  <span className="text-[10px] font-bold text-text-muted tracking-widest uppercase">My Queue Status</span>
                   {liveTicket && (
-                    <span className="flex items-center gap-1 text-[10px] font-semibold text-gold bg-gold-light px-2 py-0.5 rounded-[10px] border border-gold-border">
-                      <span className="w-1.75 h-1.75 rounded-full bg-gold inline-block animate-pulse-live" /> Live
+                    <span className="flex items-center gap-1.5 text-[10px] font-bold text-gold bg-gold/10 px-2.5 py-0.5 rounded-full border border-gold/20">
+                      <span className="w-1.5 h-1.5 rounded-full bg-gold inline-block animate-pulse-live" /> LIVE
                     </span>
                   )}
                 </div>
                 {loading ? (
-                  <div className="animate-pulse h-5 rounded-md w-[60%] bg-border" />
+                  <div className="animate-pulse h-5 rounded w-[60%] bg-border" />
                 ) : liveTicket ? (
                   <div>
-                    <div className="text-[15px] font-bold text-maroon font-serif">{liveTicket.queue_number}</div>
-                    <div className="text-[11px] md:text-xs text-text-sub mt-0.5 whitespace-nowrap overflow-hidden text-ellipsis">
-                      {liveTicket.transaction_type || 'Registrar'} · Est. {liveTicket.est_wait_mins} min wait
+                    <div className="text-[16px] font-bold text-maroon font-serif leading-tight">{liveTicket.queue_number}</div>
+                    <div className="text-[12px] text-text-sub mt-0.5 whitespace-nowrap overflow-hidden text-ellipsis">
+                      <span className="font-medium text-text-main">{liveTicket.transaction_type || 'Registrar'}</span> • Wait: {liveTicket.est_wait_mins} min
                     </div>
                   </div>
                 ) : (
-                  <div className="text-[13px] text-text-muted">No active queue ticket</div>
+                  <div>
+                    <div className="text-[14px] font-semibold text-text-main">No active ticket</div>
+                    <div className="text-[12px] text-text-sub mt-0.5">You are not currently in line</div>
+                  </div>
                 )}
               </div>
             </div>
@@ -402,10 +408,19 @@ export default function StudentDashboard() {
                 </div>
               </div>
             ) : (
-              <div className="text-center py-10 px-5 text-text-muted flex-1 flex flex-col justify-center items-center bg-off-white rounded-2xl border border-dashed border-border">
-                <div className="text-text-muted mb-3.5"><Ticket size={42} /></div>
-                <p className="text-sm lg:text-[15px] m-0 font-bold lg:font-medium text-text-main lg:text-text-muted">No Active Queue Ticket</p>
-                <p className="text-xs lg:text-[13px] mt-1 lg:mt-1.5 mb-0 text-text-muted">Get a ticket to start your transaction</p>
+              <div className="relative text-center p-8 lg:p-10 flex-1 flex flex-col justify-center items-center bg-white rounded-[20px] border border-border shadow-[0_2px_8px_rgba(0,0,0,0.02)] overflow-hidden transition-all duration-300 hover:shadow-[0_8px_24px_rgba(123,26,42,0.06)] hover:border-maroon/20">
+                {/* Decorative background blobs */}
+                <div className="absolute top-0 right-0 w-32 h-32 bg-maroon-light rounded-full blur-3xl opacity-60 -translate-y-1/2 translate-x-1/2 pointer-events-none" />
+                <div className="absolute bottom-0 left-0 w-24 h-24 bg-gold-light rounded-full blur-2xl opacity-60 translate-y-1/2 -translate-x-1/2 pointer-events-none" />
+                
+                {/* Icon wrapper */}
+                <div className="relative z-10 w-16 h-16 bg-linear-to-br from-white to-off-white rounded-2xl shadow-[inset_0_1px_1px_rgba(255,255,255,1),0_2px_4px_rgba(0,0,0,0.04)] border border-border flex items-center justify-center mb-5 group-hover:scale-105 transition-transform duration-300">
+                  <Ticket size={28} className="text-maroon/70" />
+                </div>
+                
+                {/* Typography */}
+                <h3 className="relative z-10 font-serif text-[18px] lg:text-[20px] font-bold text-text-main m-0 mb-1.5 tracking-tight">No Active Queue Ticket</h3>
+                <p className="relative z-10 text-[13px] lg:text-[14px] m-0 text-text-sub max-w-65 leading-relaxed">There's no active queue ticket at the moment. Active tickets will appear here once someone's in line.</p>
               </div>
             )}
           </div>

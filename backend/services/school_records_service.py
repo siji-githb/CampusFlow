@@ -194,8 +194,14 @@ async def upload_student_records(file: UploadFile, default_priority: str = "regu
 
 async def add_student_record(student_id: str, first_name: str, last_name: str, course: str, priority_class: str) -> dict:
     admin = get_supabase_admin()
+    
+    # Check if student ID already exists
+    existing = admin.table("school_students").select("student_id").eq("student_id", student_id).execute()
+    if existing.data:
+        raise HTTPException(status_code=400, detail="A student record with this ID already exists.")
+        
     try:
-        admin.table("school_students").upsert({
+        admin.table("school_students").insert({
             "student_id": student_id,
             "first_name": first_name,
             "last_name": last_name,

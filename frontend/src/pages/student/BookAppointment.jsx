@@ -16,7 +16,7 @@ const STATUS_STYLES = {
 }
 
 // ── Calendar Widget ──
-function CalendarWidget({ selectedDate, onDateSelect, minDateStr, maxDateStr }) {
+function CalendarWidget({ selectedDate, onDateSelect, minDateStr, maxDateStr, dateOverrides = {} }) {
   const [currentMonth, setCurrentMonth] = useState(() => {
     if (selectedDate) return new Date(selectedDate + 'T00:00:00')
     const d = new Date(); d.setDate(d.getDate() + 1); return d
@@ -66,18 +66,26 @@ function CalendarWidget({ selectedDate, onDateSelect, minDateStr, maxDateStr }) 
           const dateStr    = `${year}-${String(month + 1).padStart(2,'0')}-${String(d).padStart(2,'0')}`
           const t          = new Date(dateStr + 'T00:00:00').getTime()
           const dow        = new Date(dateStr + 'T00:00:00').getDay()
-          const isDisabled = dow === 0 || dow === 6 || t < minD || t > maxD
+          const isDisabled = dow === 0 || t < minD || t > maxD
           const isSelected = selectedDate === dateStr
+          const override = dateOverrides[dateStr]
           return (
             <button key={i} type="button" disabled={isDisabled}
               title={isDisabled ? "Outside booking window or unavailable" : ""}
               onClick={() => !isDisabled && onDateSelect(dateStr)}
-              className={`aspect-square rounded-full border-none text-[13px] font-sans flex items-center justify-center transition-all duration-150 ${
+              className={`aspect-square rounded-full border-none text-[13px] font-sans flex flex-col items-center justify-center gap-0.5 transition-all duration-150 ${
                 isSelected ? 'bg-maroon text-white font-bold' : 
                 isDisabled ? 'bg-[#F5F5F5] text-text-sub font-normal opacity-50 cursor-not-allowed' : 
                 'bg-transparent text-text-main font-normal cursor-pointer hover:bg-maroon-light hover:text-maroon'
               }`}
-            >{d}</button>
+            >
+              <span>{d}</span>
+              <div className="flex justify-center w-full h-1">
+                {override && (
+                  <div className={`w-1 h-1 rounded-full ${override.is_blocked ? (isSelected ? 'bg-white' : 'bg-danger') : (isSelected ? 'bg-white' : 'bg-info')}`} />
+                )}
+              </div>
+            </button>
           )
         })}
       </div>
@@ -147,8 +155,10 @@ function Stepper({ step }) {
 
 // ── UPDATED: slot visual states ──
 const isSlotPast = (slotTime, selectedDate) => {
-  const today = new Date().toISOString().split('T')[0]
-  if (selectedDate !== today) return false
+  const d = new Date()
+  const today = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+  if (selectedDate < today) return true
+  if (selectedDate > today) return false
 
   const [slotHour, slotMin] = slotTime.split(':').map(Number)
   const now = new Date()
@@ -232,15 +242,18 @@ export default function BookAppointment() {
   const [bookingConfig, setBookingConfig] = useState(null)
 
   const todayDate  = new Date()
+  
+  const fmtLocal = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+
   const cutoffDays = bookingConfig?.booking_cutoff_days ?? 1
   const minDateObj = new Date(todayDate)
   minDateObj.setDate(minDateObj.getDate() + cutoffDays)
-  const minDate    = minDateObj.toISOString().split('T')[0]
+  const minDate    = fmtLocal(minDateObj)
   
   const windowDays = bookingConfig?.booking_window_days ?? 30
   const maxDateObj = new Date(todayDate)
   maxDateObj.setDate(maxDateObj.getDate() + windowDays)
-  const maxDate    = maxDateObj.toISOString().split('T')[0]
+  const maxDate    = fmtLocal(maxDateObj)
 
   // ── GWA is booking metadata, not a document — check by name ──
   const isGWA = selectedType?.name?.toLowerCase().includes('gwa')
@@ -465,7 +478,7 @@ export default function BookAppointment() {
                   <div className="w-full">
                     <div className="flex justify-between items-start w-full mb-1.5">
                       <h3 className="font-serif text-[16px] font-bold text-maroon m-0 pr-2">{t.name}</h3>
-                      <span className="text-border-strong text-[18px] leading-none shrink-0 md:hidden">›</span>
+                      <span className="text-text-muted text-[18px] leading-none shrink-0 md:hidden">›</span>
                     </div>
                     <p className="text-[13px] text-text-sub m-0 mb-3.5 leading-normal">{t.description}</p>
                     <div className="flex flex-wrap gap-1.5">
@@ -542,7 +555,7 @@ export default function BookAppointment() {
 
             {/* Calendar card */}
             <div className="bg-white rounded-[14px] border-[1.5px] border-border p-6 mb-5 shadow-[0_1px_4px_rgba(0,0,0,0.03)]">
-              <CalendarWidget selectedDate={selectedDate} onDateSelect={handleDateSelect} minDateStr={minDate} maxDateStr={maxDate} />
+              <CalendarWidget selectedDate={selectedDate} onDateSelect={handleDateSelect} minDateStr={minDate} maxDateStr={maxDate} dateOverrides={bookingConfig?.date_overrides || {}} />
             </div>
 
             {/* Slots skeleton */}
@@ -665,7 +678,7 @@ export default function BookAppointment() {
                 onClick={() => setStep(3)}
                 disabled={!selectedSlot || (isGWA && (!gwaSemester || !gwaYearLevel || !gwaSchoolYear))}
                 className={`py-3 px-4 md:px-7 rounded-[10px] border-none text-[14px] font-bold font-sans transition-all duration-200 ${
-                  (selectedSlot && !(isGWA && (!gwaSemester || !gwaYearLevel || !gwaSchoolYear))) ? 'bg-maroon text-white cursor-pointer hover:opacity-90' : 'bg-border-strong text-white cursor-not-allowed'
+                  (selectedSlot && !(isGWA && (!gwaSemester || !gwaYearLevel || !gwaSchoolYear))) ? 'bg-maroon text-white cursor-pointer hover:opacity-90' : 'bg-border text-text-muted cursor-not-allowed'
                 }`}>
                 Next: Confirm →
               </button>

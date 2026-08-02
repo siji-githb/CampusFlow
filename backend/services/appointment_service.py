@@ -34,10 +34,19 @@ def get_office_config():
 
 def get_booking_config():
     """Public subset of office config needed by students before booking."""
+    import json
     config = get_office_config()
+    overrides = {}
+    if "date_overrides" in config:
+        try:
+            overrides = json.loads(config["date_overrides"])
+        except:
+            pass
+            
     return {
         "booking_cutoff_days": int(config.get("booking_cutoff_days", 1)),
         "booking_window_days": int(config.get("booking_window_days", 30)),
+        "date_overrides": overrides
     }
 
 

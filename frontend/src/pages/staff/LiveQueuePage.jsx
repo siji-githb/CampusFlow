@@ -423,19 +423,7 @@ export default function LiveQueuePage() {
                 </>
               ) : (
                 <>
-                  {!getRequiresPresence(steps) && (
-                    <button
-                      onClick={() => handleRemind(ticket.id)}
-                      disabled={reminding === ticket.id}
-                      className={`px-4 py-2 rounded-full border text-[12px] font-bold cursor-pointer font-sans whitespace-nowrap transition-all shadow-sm hover:-translate-y-0.5 mr-1.5
-                        ${reminding === ticket.id
-                          ? 'border-border bg-off-white text-text-muted cursor-not-allowed'
-                          : 'border-gold-border bg-gold-light text-gold hover:bg-gold hover:text-white'}
-                      `}
-                    >
-                      {reminding === ticket.id ? '...' : 'Remind Student'}
-                    </button>
-                  )}
+
                   <button
                     onClick={() => setViewingTicketId(ticket.id)}
                     className="px-4 py-2 rounded-full border border-maroon-border bg-maroon-light text-maroon text-[12px] font-bold cursor-pointer font-sans whitespace-nowrap hover:bg-maroon hover:text-white transition-all shadow-sm hover:-translate-y-0.5"

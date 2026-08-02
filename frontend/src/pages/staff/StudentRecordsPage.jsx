@@ -303,7 +303,7 @@ export default function StudentRecordsPage() {
           <h3 className="text-base font-semibold text-text-main m-0 mb-4 font-serif">Manually Add Student</h3>
           <form onSubmit={handleManualAdd} className="grid grid-cols-2 gap-3">
             <div className="col-span-2">
-              <input type="text" placeholder="Student ID (9 to 13 digits)" pattern="^\d{9,13}$" title="Format: 9 to 13 numbers" required value={form.student_id} onChange={e => setForm({ ...form, student_id: e.target.value })} className="px-3.5 py-2.5 rounded-lg border border-border text-[13px] outline-none bg-white text-text-main w-full transition-colors focus:border-maroon" />
+              <input type="text" placeholder="Student ID (e.g. 2020-20049)" pattern="^[0-9-]{8,15}$" title="Format: 8 to 15 numbers or hyphens" required value={form.student_id} onChange={e => setForm({ ...form, student_id: e.target.value })} className="px-3.5 py-2.5 rounded-lg border border-border text-[13px] outline-none bg-white text-text-main w-full transition-colors focus:border-maroon" />
             </div>
             <div>
               <input type="text" placeholder="First Name" required value={form.first_name} onChange={e => setForm({ ...form, first_name: e.target.value })} className="px-3.5 py-2.5 rounded-lg border border-border text-[13px] outline-none bg-white text-text-main w-full transition-colors focus:border-maroon" />
