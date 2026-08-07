@@ -84,6 +84,8 @@ export default function MyQueue() {
     try { 
       await activateQueue(token, activateConfirmId) 
       await Promise.all([fetchQueue(), fetchAppts()]) 
+      setActiveTab('active')
+      window.scrollTo({ top: 0, behavior: 'smooth' })
     }
     catch (e) { setError(e.message) }
     finally { 

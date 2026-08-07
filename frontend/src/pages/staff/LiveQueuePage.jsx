@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { createPortal } from 'react-dom'
 import { useAuth } from '../../context/useAuth'
-import { getTodaysQueue, confirmStep, callTicket, sendToProcessing, remindStudent } from '../../services/queueService'
+import { getTodaysQueue, confirmStep, callTicket, sendToProcessing, remindStudent, getUncollectedDocuments } from '../../services/queueService'
 import { updateReleaseDate } from '../../services/adminService'
 import { Check, Circle, Clock, X, Users, CheckSquare, AlertTriangle, Download, Inbox, Play, Ticket, DoorOpen, Cog } from 'lucide-react'
 import QueueDetailsModal from '../../components/QueueDetailsModal'
@@ -139,6 +139,7 @@ export default function LiveQueuePage() {
   const [viewingTicketId, setViewingTicketId] = useState(null)
   const [completedPage, setCompletedPage] = useState(1)
   const [toastMsg, setToastMsg] = useState(null)
+  const [uncollected, setUncollected] = useState([])
 
   const showToast = (msg) => {
     setToastMsg(msg)
@@ -162,7 +163,12 @@ export default function LiveQueuePage() {
 
   const fetchQueue = useCallback(async () => {
     try {
-      setQueue(await getTodaysQueue(token))
+      const [queueData, uncollectedData] = await Promise.all([
+        getTodaysQueue(token),
+        getUncollectedDocuments(token)
+      ])
+      setQueue(queueData)
+      setUncollected(uncollectedData)
       setLastUpdated(new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }))
     } catch (e) { setError(e.message) }
     finally { setLoading(false) }
@@ -174,11 +180,11 @@ export default function LiveQueuePage() {
     return () => clearInterval(t)
   }, [fetchQueue])
 
-  const handleConfirm = async (ticketId, stepNum, txName, studentName, confirmLabel, releaseDateToSet) => {
+  const handleConfirm = async (ticketId, stepNum, txName, studentName, confirmLabel, releaseDateToSet, releasedTo, documentVerified) => {
     const key = `${ticketId}-${stepNum}`
     setConfirming(key); setError('')
-    try { 
-      await confirmStep(token, ticketId, stepNum)
+    try {
+      await confirmStep(token, ticketId, stepNum, releasedTo, documentVerified)
       
       if (releaseDateToSet) {
         const ticketItem = queue.find(q => q.ticket.id === ticketId)
@@ -354,6 +360,15 @@ export default function LiveQueuePage() {
               {inProgressStep.location} serving
             </div>
           )}
+          {ticket.status === 'in_progress' && inProgressStep?.step_name?.includes('Release') && inProgressStep.activated_at && (
+            <div className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full mt-1.5 inline-block border ${
+              Math.floor((now.getTime() - new Date(inProgressStep.activated_at).getTime()) / (1000 * 3600 * 24)) >= 3
+                ? 'bg-danger-light text-danger border-danger-border'
+                : 'bg-surface text-text-muted border-border'
+            }`}>
+              Waiting {Math.floor((now.getTime() - new Date(inProgressStep.activated_at).getTime()) / (1000 * 3600 * 24))} days
+            </div>
+          )}
         </div>
 
         {/* Student Details */}
@@ -514,13 +529,15 @@ export default function LiveQueuePage() {
             </div>
           </div>
 
-          <div className="grid grid-cols-[110px_1.2fr_1.2fr_220px_70px_160px] gap-0 px-5 py-3 rounded-t-2xl bg-surface/50 backdrop-blur-sm border border-b-0 border-border">
-            {columnHeaders.map(col => (
-              <div key={col} className="text-[10px] font-bold text-text-muted tracking-[0.06em] uppercase">{col}</div>
-            ))}
-          </div>
+          <div className="overflow-x-auto rounded-2xl border border-border shadow-[0_4px_16px_rgba(0,0,0,0.02)]">
+            <div className="min-w-237.5">
+              <div className="grid grid-cols-[110px_1.2fr_1.2fr_220px_70px_160px] gap-0 px-5 py-3 bg-surface/50 backdrop-blur-sm border-b border-border">
+                {columnHeaders.map(col => (
+                  <div key={col} className="text-[10px] font-bold text-text-muted tracking-[0.06em] uppercase">{col}</div>
+                ))}
+              </div>
 
-          <div className="border border-border rounded-b-2xl overflow-hidden bg-white shadow-[0_4px_16px_rgba(0,0,0,0.02)]">
+              <div className="bg-white">
             {loading ? (
               <div className="flex flex-col">
                 {[1, 2, 3].map(i => (
@@ -549,7 +566,9 @@ export default function LiveQueuePage() {
             ) : (
               atCounter.map((item, idx) => renderQueueRow(item, idx, atCounter.length, 'Call Next'))
             )}
+            </div>
           </div>
+        </div>
 
           {!loading && atCounter.length > 0 && (
             <div className="mt-4 text-right px-2">
@@ -572,15 +591,17 @@ export default function LiveQueuePage() {
               </div>
             </div>
 
-            {!loading && processingQueue.length > 0 && (
-              <div className="grid grid-cols-[110px_1.2fr_1.2fr_220px_160px] gap-0 px-5 py-3 rounded-t-2xl bg-surface/50 backdrop-blur-sm border border-b-0 border-border opacity-80">
-                {['QUEUE NO.', 'STUDENT DETAILS', 'TRANSACTION', 'STATUS / PROGRESS', 'ACTION'].map(col => (
-                  <div key={col} className="text-[10px] font-bold text-text-muted tracking-[0.06em] uppercase">{col}</div>
-                ))}
-              </div>
-            )}
+            <div className="overflow-x-auto rounded-2xl border border-border shadow-[0_4px_16px_rgba(0,0,0,0.02)] opacity-95">
+              <div className="min-w-212.5">
+                {!loading && processingQueue.length > 0 && (
+                  <div className="grid grid-cols-[110px_1.2fr_1.2fr_220px_160px] gap-0 px-5 py-3 bg-surface/50 backdrop-blur-sm border-b border-border">
+                    {['QUEUE NO.', 'STUDENT DETAILS', 'TRANSACTION', 'STATUS / PROGRESS', 'ACTION'].map(col => (
+                      <div key={col} className="text-[10px] font-bold text-text-muted tracking-[0.06em] uppercase">{col}</div>
+                    ))}
+                  </div>
+                )}
 
-            <div className="border border-border rounded-b-2xl overflow-hidden bg-white opacity-90 shadow-[0_4px_16px_rgba(0,0,0,0.02)]">
+                <div className="bg-white">
               {loading ? (
                 <div className="p-6 text-center text-xs text-text-muted">Loading…</div>
               ) : processingQueue.length === 0 ? (
@@ -592,7 +613,9 @@ export default function LiveQueuePage() {
               ) : (
                 processingQueue.map((item, idx) => renderQueueRow(item, idx, processingQueue.length, 'Mark Complete', false))
               )}
+              </div>
             </div>
+          </div>
           </div>
 
           {/* Completed section */}
@@ -638,6 +661,52 @@ export default function LiveQueuePage() {
               </div>
             </div>
           )}
+
+          {/* Uncollected Documents section */}
+          {!loading && (
+            <div className="mt-8">
+              <div className="flex items-center justify-between mb-2.5">
+                <p className="text-[11px] font-bold text-text-muted uppercase tracking-[0.06em] m-0">Uncollected Documents — {uncollected.length} waiting</p>
+              </div>
+              <div className="overflow-x-auto rounded-2xl border border-border shadow-[0_4px_16px_rgba(0,0,0,0.02)] opacity-95">
+                <div className="min-w-212.5">
+                  <div className="grid grid-cols-[110px_1.5fr_1.2fr_100px] gap-0 px-5 py-3 bg-surface/50 backdrop-blur-sm border-b border-border">
+                    {['QUEUE NO.', 'STUDENT DETAILS', 'TRANSACTION', 'WAITING'].map(col => (
+                      <div key={col} className="text-[10px] font-bold text-text-muted tracking-[0.06em] uppercase">{col}</div>
+                    ))}
+                  </div>
+                  <div className="bg-white">
+                    {uncollected.length === 0 ? (
+                      <div className="p-8 text-center text-sm font-semibold text-text-muted">
+                        No uncollected documents
+                      </div>
+                    ) : (
+                      uncollected.map((doc, idx) => (
+                        <div key={doc.queue_ticket_id} className={`grid grid-cols-[110px_1.5fr_1.2fr_100px] gap-0 px-5 py-4 items-center transition-all ${idx < uncollected.length - 1 ? 'border-b border-border/60' : ''}`}>
+                          <div className="font-serif text-[20px] font-extrabold text-maroon leading-none">{doc.queue_number}</div>
+                          <div>
+                            <div className="text-[13px] font-semibold text-text-main mb-0.5">{doc.student_name}</div>
+                            <div className="text-[11px] text-text-muted font-mono">{doc.student_id}</div>
+                          </div>
+                          <div className="text-xs font-semibold text-text-main leading-snug">{doc.transaction_type}</div>
+                          <div>
+                            <div className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full inline-block border ${
+                              doc.days_waiting >= 3
+                                ? 'bg-danger-light text-danger border-danger-border'
+                                : 'bg-surface text-text-muted border-border'
+                            }`}>
+                              {doc.days_waiting} days
+                            </div>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
         </div>
       </div>
 

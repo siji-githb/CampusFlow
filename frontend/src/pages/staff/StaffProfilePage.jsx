@@ -190,7 +190,7 @@ export default function StaffProfilePage({ setActiveNav }) {
 
   return (
     <>
-      <div className="w-full max-w-[1050px] mx-auto px-4 py-6 md:px-0 md:py-0 pb-24 md:pb-0">
+      <div className="w-full max-w-262.5 mx-auto px-4 py-6 md:px-0 md:py-0 pb-24 md:pb-0">
         
         {/* Header */}
         <div className="hidden md:flex justify-between items-center mb-8">
@@ -203,7 +203,7 @@ export default function StaffProfilePage({ setActiveNav }) {
         </div>
 
         {/* Profile Card */}
-        <div className="bg-white rounded-[24px] border border-border p-8 shadow-sm animate-fade-up">
+        <div className="bg-white rounded-3xl border border-border p-8 shadow-sm animate-fade-up">
           
           <div className="flex flex-col md:flex-row items-center md:items-start justify-between pb-6 md:pb-8 mb-6 md:mb-8 border-b border-border gap-5 md:gap-0 w-full">
             <div className="flex flex-col md:flex-row items-center gap-4 md:gap-6 text-center md:text-left w-full md:w-auto">
@@ -261,7 +261,7 @@ export default function StaffProfilePage({ setActiveNav }) {
         <div className="flex flex-col gap-6">
           
           {/* Security Card */}
-          <div className="bg-white rounded-[24px] border border-border p-8 shadow-sm animate-fade-up" style={{ animationDelay: '0.1s' }}>
+          <div className="bg-white rounded-3xl border border-border p-8 shadow-sm animate-fade-up" style={{ animationDelay: '0.1s' }}>
             <h3 className="font-serif text-[18px] md:text-[20px] font-bold text-text-main m-0 mb-5 md:mb-6">Security</h3>
             
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 md:gap-0">
@@ -277,7 +277,7 @@ export default function StaffProfilePage({ setActiveNav }) {
               </button>
             </div>
 
-            <div className={`overflow-hidden transition-all duration-300 ease-in-out ${isChangingPassword ? 'max-h-[500px] opacity-100 mt-6' : 'max-h-0 opacity-0 mt-0'}`}>
+            <div className={`overflow-hidden transition-all duration-300 ease-in-out ${isChangingPassword ? 'max-h-125 opacity-100 mt-6' : 'max-h-0 opacity-0 mt-0'}`}>
               <div className="pt-6 border-t border-border flex flex-col gap-4">
                 
                 {passwordMsg.text && (
@@ -331,7 +331,7 @@ export default function StaffProfilePage({ setActiveNav }) {
           </div>
 
           {/* Danger Zone Card */}
-          <div className="bg-white rounded-[24px] border border-border p-8 shadow-sm animate-fade-up" style={{ animationDelay: '0.2s' }}>
+          <div className="bg-white rounded-3xl border border-border p-8 shadow-sm animate-fade-up" style={{ animationDelay: '0.2s' }}>
             <h3 className="font-serif text-[18px] md:text-[20px] font-bold text-text-main m-0 mb-5 md:mb-6">Danger Zone</h3>
             
             <div className="flex flex-col md:flex-row md:items-center justify-between pb-6 mb-6 border-b border-border gap-4 md:gap-0">
@@ -361,7 +361,7 @@ export default function StaffProfilePage({ setActiveNav }) {
 
       </div>
 
-      {/* Edit Profile Modal */}
+      {/* Manage Profile Modal */}
       {isEditModalOpen && (
         <div className="fixed inset-0 z-1000 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm" style={{ animation: 'fadeIn 0.2s ease-out' }}>
           <style>{`
@@ -370,9 +370,9 @@ export default function StaffProfilePage({ setActiveNav }) {
               to { opacity: 1; }
             }
           `}</style>
-          <div className="bg-white rounded-[24px] w-full max-w-[500px] shadow-2xl overflow-hidden animate-fade-up">
+          <div className="bg-white rounded-3xl w-full max-w-125 shadow-2xl overflow-hidden animate-fade-up">
             <div className="flex items-center justify-between p-6 border-b border-border bg-off-white">
-              <h2 className="font-serif text-[22px] font-bold text-maroon m-0">Edit Profile</h2>
+              <h2 className="font-serif text-[22px] font-bold text-maroon m-0">Manage Profile</h2>
               <button 
                 onClick={handleCloseEditModal}
                 className="p-2 rounded-full hover:bg-border transition-colors text-text-sub hover:text-text-main cursor-pointer"

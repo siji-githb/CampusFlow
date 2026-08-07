@@ -41,7 +41,7 @@ export default function Login() {
     <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4 md:p-8 font-sans">
       
       {/* ── Main Elevated Card ── */}
-      <div className="w-full max-w-[1040px] bg-white rounded-3xl shadow-[0_20px_40px_-15px_rgba(0,0,0,0.05)] border border-slate-100 flex flex-col md:flex-row overflow-hidden relative">
+      <div className="w-full max-w-260 bg-white rounded-3xl shadow-[0_20px_40px_-15px_rgba(0,0,0,0.05)] border border-slate-100 flex flex-col md:flex-row overflow-hidden relative">
         
         {/* ── Branding Panel (Left side on desktop, Top on mobile) ── */}
         <div className="w-full md:w-[45%] bg-slate-50/50 pt-14 pb-10 px-6 md:p-12 flex flex-col items-center justify-center md:justify-center relative border-b md:border-b-0 md:border-r border-slate-100 z-10 shrink-0">
@@ -77,7 +77,7 @@ export default function Login() {
             <img 
               src={loginImage} 
               alt="CampusFlow Illustration" 
-              className="w-full max-w-[240px] md:max-w-[280px] h-auto mb-8 object-contain drop-shadow-xl hover:scale-[1.02] transition-transform duration-500" 
+              className="w-full max-w-60 md:max-w-70 h-auto mb-8 object-contain drop-shadow-xl hover:scale-[1.02] transition-transform duration-500" 
             />
 
             <h1 className="font-serif text-[clamp(26px,7vw,32px)] font-bold text-slate-800 m-0 mb-2 leading-[1.1] md:hidden tracking-tight">
@@ -90,7 +90,7 @@ export default function Login() {
             <div className="hidden md:block w-full border-t border-slate-200 pt-6 mt-4">
               {['Book appointments online', 'Real-time queue tracking', 'AI-guided step-by-step'].map((item, i) => (
                 <div key={i} className="flex items-center gap-3 py-2.5">
-                  <div className="w-[20px] h-[20px] rounded-full bg-emerald-50 border border-emerald-100 flex items-center justify-center shrink-0 shadow-sm">
+                  <div className="w-5 h-5 rounded-full bg-emerald-50 border border-emerald-100 flex items-center justify-center shrink-0 shadow-sm">
                     <span className="text-emerald-500 text-[10px] font-bold">✓</span>
                   </div>
                   <span className="text-[12.5px] font-medium text-slate-600">{item}</span>
@@ -102,7 +102,7 @@ export default function Login() {
 
         {/* ── Form Panel (Right side) ── */}
         <div className="flex-1 p-8 md:p-12 lg:p-16 flex flex-col justify-center relative bg-white z-20">
-          <div className="w-full max-w-[380px] mx-auto">
+          <div className="w-full max-w-95 mx-auto">
             
             <Link to="/" className="hidden md:inline-flex items-center gap-1.5 text-[12px] font-medium text-slate-500 hover:text-slate-800 transition-colors mb-10">
               <ChevronLeft size={14} /> Back to home
@@ -139,13 +139,13 @@ export default function Login() {
                   value={form.email} 
                   onChange={handleChange} 
                   required 
-                  placeholder="example@gmail.com" 
-                  className="w-full rounded-xl border border-slate-200 bg-slate-50/50 text-slate-800 outline-none box-border font-sans transition-all duration-200 focus:bg-white focus:border-maroon focus:ring-[3px] focus:ring-maroon/10 py-[12px] px-[16px] text-[14.5px] shadow-sm placeholder:text-slate-400 font-medium" 
+                  placeholder="your@gmail.com" 
+                  className="w-full rounded-xl border border-slate-200 bg-slate-50/50 text-slate-800 outline-none box-border font-sans transition-all duration-200 focus:bg-white focus:border-maroon focus:ring-[3px] focus:ring-maroon/10 py-3 px-4 text-sm shadow-sm placeholder:text-slate-400 font-medium" 
                 />
               </div>
               
               <div className="mb-8">
-                <label className="block text-[12.5px] font-bold text-slate-700 mb-2">Password</label>
+                <label className="block text-xs font-bold text-slate-700 mb-2">Password</label>
                 <div className="relative">
                   <input 
                     type={showPassword ? "text" : "password"} 
@@ -154,7 +154,7 @@ export default function Login() {
                     onChange={handleChange} 
                     required 
                     placeholder="Enter your password" 
-                    className="w-full rounded-xl border border-slate-200 bg-slate-50/50 text-slate-800 outline-none box-border font-sans transition-all duration-200 focus:bg-white focus:border-maroon focus:ring-[3px] focus:ring-maroon/10 py-[12px] px-[16px] text-[14.5px] shadow-sm placeholder:text-slate-400 pr-12 font-medium" 
+                    className="w-full rounded-xl border border-slate-200 bg-slate-50/50 text-slate-800 outline-none box-border font-sans transition-all duration-200 focus:bg-white focus:border-maroon focus:ring-[3px] focus:ring-maroon/10 py-3 px-4 text-[14.5px] shadow-sm placeholder:text-slate-400 pr-12 font-medium" 
                   />
                   <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-4 top-1/2 -translate-y-1/2 bg-transparent border-none p-0 text-slate-400 hover:text-slate-600 cursor-pointer flex transition-colors">
                     {showPassword ? <Eye size={18} /> : <EyeOff size={18} />}
@@ -188,7 +188,7 @@ export default function Login() {
             <div className="mt-8 bg-slate-50 rounded-2xl shadow-sm border border-slate-100 overflow-hidden md:hidden">
               {['Book appointments online', 'Real-time queue tracking', 'AI-guided step-by-step'].map((perk, i, arr) => (
                 <div key={i} className={`flex items-center gap-3 py-3.5 px-4 ${i < arr.length - 1 ? 'border-b border-slate-100' : 'border-none'}`}>
-                  <div className="w-[20px] h-[20px] rounded-full shrink-0 bg-emerald-50 border border-emerald-100 flex items-center justify-center">
+                  <div className="w-5 h-5 rounded-full shrink-0 bg-emerald-50 border border-emerald-100 flex items-center justify-center">
                     <span className="text-emerald-500 text-[10px] font-bold">✓</span>
                   </div>
                   <span className="text-[13px] font-medium text-slate-600">{perk}</span>

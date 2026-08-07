@@ -29,6 +29,8 @@ class StepResponse(BaseModel):
 class ConfirmStepRequest(BaseModel):
     queue_ticket_id: str
     step_number: int
+    released_to: Optional[str] = None
+    document_verified: Optional[bool] = False
 
 
 class CallTicketRequest(BaseModel):

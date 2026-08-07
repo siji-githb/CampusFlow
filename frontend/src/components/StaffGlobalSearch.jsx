@@ -5,7 +5,7 @@ const SEARCH_ITEMS = [
   { id: 'overview', label: 'Dashboard Overview', icon: BarChart2, desc: 'View summary and statistics' },
   { id: 'queue', label: 'Live Queue Management', icon: Ticket, desc: 'Manage the current active queue' },
   { id: 'appointments', label: 'Appointments', icon: Calendar, desc: 'View and manage student appointments' },
-  { id: 'records', label: 'Student Records', icon: ClipboardList, desc: 'Manage student data and documents' },
+  { id: 'records', label: 'Master List', icon: ClipboardList, desc: 'Manage student data and documents' },
   { id: 'messages', label: 'Messages & Escalations', icon: MessageSquare, desc: 'View AI escalations and messages' },
   { id: 'id-requests', label: 'ID Requests', icon: HelpCircle, desc: 'Process student ID replacements' },
   { id: 'profile', label: 'My Profile', icon: User, desc: 'View your profile information' },
@@ -62,7 +62,7 @@ export default function StaffGlobalSearch({ setActiveNav }) {
   };
 
   return (
-    <div ref={containerRef} className="relative w-full max-w-[300px] hidden md:block">
+    <div ref={containerRef} className="relative w-full max-w-75 hidden md:block">
       <Search 
         size={16} 
         className="absolute top-1/2 -translate-y-1/2 pointer-events-none left-4 text-text-muted" 
@@ -83,7 +83,7 @@ export default function StaffGlobalSearch({ setActiveNav }) {
       />
 
       {isOpen && displayItems.length > 0 && (
-        <div className="absolute left-0 top-full mt-2 w-full bg-white rounded-[16px] shadow-[0_12px_40px_rgba(0,0,0,0.12),0_0_0_1px_rgba(0,0,0,0.04)] overflow-hidden z-50 flex flex-col py-2 transition-all origin-top">
+        <div className="absolute left-0 top-full mt-2 w-full bg-white rounded-2xl shadow-[0_12px_40px_rgba(0,0,0,0.12),0_0_0_1px_rgba(0,0,0,0.04)] overflow-hidden z-50 flex flex-col py-2 transition-all origin-top">
           {displayItems.map((item, index) => {
             const Icon = item.icon;
             const isActive = index === activeIndex;

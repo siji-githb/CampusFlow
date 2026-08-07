@@ -148,7 +148,7 @@ export default function AppointmentsPage() {
       </div>
 
       {/* ── Stats Row ── */}
-      <div className="grid grid-cols-3 gap-5 mb-8">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-5 mb-8">
         {stats.map((s, i) => (
           <div key={i} className="animate-fade-up bg-white rounded-[14px] px-5 py-4.5 border border-border shadow-[0_1px_4px_rgba(0,0,0,0.04)] flex flex-col gap-3 flex-1" style={{ animationDelay: s.delay }}>
             <div className="flex items-start justify-between">
@@ -168,12 +168,12 @@ export default function AppointmentsPage() {
       </div>
 
       {/* ── Main Layout ── */}
-      <div className="grid grid-cols-[280px_1fr] gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-6 lg:gap-8">
         
         {/* Left Col: Calendar & Filters */}
         <div className="animate-fade-up flex flex-col gap-5" style={{ animationDelay: '0.4s' }}>
           
-          <div className="bg-white rounded-2xl p-6 border border-border shadow-[0_4px_12px_rgba(0,0,0,0.02)]">
+          <div className="bg-white rounded-2xl p-4 sm:p-6 border border-border shadow-[0_4px_12px_rgba(0,0,0,0.02)]">
             <div className="flex justify-between items-center mb-4">
               <span className="text-[15px] font-bold font-serif text-text-main">
                 {currentMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
@@ -216,7 +216,7 @@ export default function AppointmentsPage() {
             </div>
           </div>
 
-          <div className="bg-white rounded-2xl p-6 border border-border shadow-[0_4px_12px_rgba(0,0,0,0.02)]">
+          <div className="bg-white rounded-2xl p-4 sm:p-6 border border-border shadow-[0_4px_12px_rgba(0,0,0,0.02)]">
             <div className="text-[10px] font-bold text-text-muted tracking-widest uppercase mb-4">
               Daily Filter
             </div>
@@ -234,96 +234,101 @@ export default function AppointmentsPage() {
         </div>
 
         {/* Right Col: Appointment List */}
-        <div className="animate-fade-up" style={{ animationDelay: '0.5s' }}>
-          <div className="flex justify-between items-center mb-5">
+        <div className="animate-fade-up min-w-0" style={{ animationDelay: '0.5s' }}>
+          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 mb-5">
             <h2 className="font-serif text-[18px] font-bold text-text-main m-0">
               Schedule for {selectedDate.toLocaleDateString('en-US', { month: 'long', day: '2-digit', year: 'numeric' })}
             </h2>
             <span className="text-xs text-text-muted">Showing {appointments.length} appointment{appointments.length !== 1 ? 's' : ''}</span>
           </div>
 
-          <div className="flex flex-col gap-0 shadow-[0_4px_16px_rgba(0,0,0,0.02)] rounded-[14px]">
-            {/* Column headers */}
-            <div className="grid grid-cols-[100px_1fr_220px_120px_180px] gap-4 px-6 py-3.5 rounded-t-[14px] bg-surface border border-b-0 border-border">
-              {['TIME', 'STUDENT DETAILS', 'TRANSACTION', 'STATUS', 'ACTION'].map(col => (
-                <div key={col} className="text-[10px] font-bold text-text-muted tracking-[0.06em] uppercase">{col}</div>
-              ))}
+          <div className="flex flex-col gap-0 shadow-[0_4px_16px_rgba(0,0,0,0.02)] rounded-[14px] overflow-hidden border border-border">
+            <div className="overflow-x-auto scrollbar-thin">
+              <div className="min-w-160">
+                {/* Column headers */}
+                <div className="grid grid-cols-[100px_1fr_220px_120px_140px] gap-4 px-6 py-3.5 bg-surface border-b border-border">
+                  {['TIME', 'STUDENT DETAILS', 'TRANSACTION', 'STATUS', 'ACTION'].map(col => (
+                    <div key={col} className="text-[10px] font-bold text-text-muted tracking-[0.06em] uppercase">{col}</div>
+                  ))}
+                </div>
+
+                {/* Rows */}
+                <div className="bg-white flex flex-col">
+                  {loading ? (
+                    [1, 2, 3].map(i => (
+                      <div key={i} className={`grid grid-cols-[100px_1fr_220px_120px_140px] gap-4 px-6 py-4 items-center ${i < 3 ? 'border-b border-border' : ''}`}>
+                        <div className="animate-pulse w-16 h-4 rounded bg-border" />
+                        <div>
+                          <div className="animate-pulse w-35 h-4 rounded bg-border mb-2" />
+                          <div className="animate-pulse w-20 h-3 rounded bg-border" />
+                        </div>
+                        <div>
+                          <div className="animate-pulse w-40 h-4 rounded bg-border mb-2" />
+                          <div className="animate-pulse w-16 h-3 rounded bg-border" />
+                        </div>
+                        <div className="animate-pulse w-20 h-6 rounded-full bg-border" />
+                        <div className="flex gap-2">
+                          <div className="animate-pulse w-16 h-8 rounded-lg bg-border" />
+                          <div className="animate-pulse w-16 h-8 rounded-lg bg-border" />
+                        </div>
+                      </div>
+                    ))
+                  ) : error ? (
+                    <div className="p-8 text-danger bg-danger-light/20 text-[13px] font-medium">{error}</div>
+                  ) : appointments.length === 0 ? (
+                    <div className="p-12 text-center text-text-muted text-[14px] font-medium">No appointments for this date.</div>
+                  ) : (
+                    currentAppointments.map((apt, idx) => {
+                      const typeName = apt.transaction_types?.name || 'Unknown Transaction'
+                      const studentName = apt.users ? `${apt.users.first_name} ${apt.users.last_name}` : 'Unknown Student'
+                      const studentId = apt.users?.student_id || 'N/A'
+                      const sColor = apt.status === 'completed' ? 'text-success bg-success-light border-success-border' : apt.status === 'cancelled' ? 'text-danger bg-danger-light border-danger-border' : apt.status === 'pending' ? 'text-gold bg-gold-light border-gold-border' : 'text-blue bg-blue-light border-blue-border'
+
+                      return (
+                        <div key={apt.id} className={`grid grid-cols-[100px_1fr_220px_120px_140px] gap-4 px-6 py-4 items-center transition-colors hover:bg-slate-50 ${idx < currentAppointments.length - 1 ? 'border-b border-border' : ''}`}>
+                          <div className="text-[13px] font-bold text-text-main font-serif">
+                            {fmt12h(apt.time_slot)}
+                          </div>
+                          <div>
+                            <div className="text-[13px] font-semibold text-text-main mb-1 truncate">{studentName}</div>
+                            <div className="text-[11px] text-text-muted font-mono">{studentId}</div>
+                          </div>
+                          <div className="pr-4">
+                            <div className="text-[13px] font-semibold text-maroon mb-1.5 leading-snug truncate">{typeName}</div>
+                            <span className="text-[9px] font-bold px-1.5 py-0.5 rounded capitalize bg-surface border border-border text-text-sub">
+                              {apt.priority_class}
+                            </span>
+                          </div>
+                          <div>
+                            <span className={`text-[10px] font-bold px-2.5 py-1 rounded-full capitalize border tracking-wide inline-block ${sColor}`}>
+                              {apt.status}
+                            </span>
+                          </div>
+                          <div className="flex gap-3 items-center">
+                            <button 
+                              onClick={() => setViewDetailsModal(apt)}
+                              className="bg-white border border-border rounded-lg px-3.5 py-1.5 text-[12px] font-bold cursor-pointer font-sans text-text-main hover:border-maroon-border transition-colors shadow-sm">
+                              View
+                            </button>
+                            {!['completed', 'cancelled'].includes(apt.status) && (
+                              <button 
+                                onClick={() => {
+                                  setRescheduleModal(apt)
+                                  setNewDate(apt.appointment_date || '')
+                                  setNewTime(apt.time_slot || '')
+                                }}
+                                className="bg-transparent border-none text-maroon text-[12px] font-bold cursor-pointer hover:underline transition-colors p-0">
+                                Reschedule
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      )
+                    })
+                  )}
+                </div>
+              </div>
             </div>
-
-            {/* Rows */}
-            <div className="border border-border rounded-b-[14px] overflow-hidden bg-white flex flex-col">
-              {loading ? (
-                [1, 2, 3].map(i => (
-                  <div key={i} className={`grid grid-cols-[100px_1fr_220px_120px_180px] gap-4 px-6 py-4 items-center ${i < 3 ? 'border-b border-border' : ''}`}>
-                    <div className="animate-pulse w-16 h-4 rounded bg-border" />
-                    <div>
-                      <div className="animate-pulse w-35 h-4 rounded bg-border mb-2" />
-                      <div className="animate-pulse w-20 h-3 rounded bg-border" />
-                    </div>
-                    <div>
-                      <div className="animate-pulse w-40 h-4 rounded bg-border mb-2" />
-                      <div className="animate-pulse w-16 h-3 rounded bg-border" />
-                    </div>
-                    <div className="animate-pulse w-20 h-6 rounded-full bg-border" />
-                    <div className="flex gap-2">
-                      <div className="animate-pulse w-16 h-8 rounded-lg bg-border" />
-                      <div className="animate-pulse w-16 h-8 rounded-lg bg-border" />
-                    </div>
-                  </div>
-                ))
-              ) : error ? (
-                <div className="p-8 text-danger bg-danger-light/20 text-[13px] font-medium">{error}</div>
-              ) : appointments.length === 0 ? (
-                <div className="p-12 text-center text-text-muted text-[14px] font-medium">No appointments for this date.</div>
-              ) : (
-                currentAppointments.map((apt, idx) => {
-                  const typeName = apt.transaction_types?.name || 'Unknown Transaction'
-                  const studentName = apt.users ? `${apt.users.first_name} ${apt.users.last_name}` : 'Unknown Student'
-                  const studentId = apt.users?.student_id || 'N/A'
-                  const sColor = apt.status === 'completed' ? 'text-success bg-success-light border-success-border' : apt.status === 'cancelled' ? 'text-danger bg-danger-light border-danger-border' : apt.status === 'pending' ? 'text-gold bg-gold-light border-gold-border' : 'text-blue bg-blue-light border-blue-border'
-
-                  return (
-                    <div key={apt.id} className={`grid grid-cols-[100px_1fr_220px_120px_180px] gap-4 px-6 py-4 items-center transition-colors hover:bg-slate-50 ${idx < currentAppointments.length - 1 ? 'border-b border-border' : ''}`}>
-                      <div className="text-[13px] font-bold text-text-main font-serif">
-                        {fmt12h(apt.time_slot)}
-                      </div>
-                      <div>
-                        <div className="text-[13px] font-semibold text-text-main mb-1 truncate">{studentName}</div>
-                        <div className="text-[11px] text-text-muted font-mono">{studentId}</div>
-                      </div>
-                      <div className="pr-4">
-                        <div className="text-[13px] font-semibold text-maroon mb-1.5 leading-snug truncate">{typeName}</div>
-                        <span className="text-[9px] font-bold px-1.5 py-0.5 rounded capitalize bg-surface border border-border text-text-sub">
-                          {apt.priority_class}
-                        </span>
-                      </div>
-                      <div>
-                        <span className={`text-[10px] font-bold px-2.5 py-1 rounded-full capitalize border tracking-wide inline-block ${sColor}`}>
-                          {apt.status}
-                        </span>
-                      </div>
-                      <div className="flex gap-3 items-center">
-                        <button 
-                          onClick={() => setViewDetailsModal(apt)}
-                          className="bg-white border border-border rounded-lg px-3.5 py-1.5 text-[12px] font-bold cursor-pointer font-sans text-text-main hover:border-maroon-border transition-colors shadow-sm">
-                          View
-                        </button>
-                        {!['completed', 'cancelled'].includes(apt.status) && (
-                          <button 
-                            onClick={() => {
-                              setRescheduleModal(apt)
-                              setNewDate(apt.appointment_date || '')
-                              setNewTime(apt.time_slot || '')
-                            }}
-                            className="bg-transparent border-none text-maroon text-[12px] font-bold cursor-pointer hover:underline transition-colors p-0">
-                            Reschedule
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                  )
-                })
-              )}
               
               {/* Pagination Controls */}
               {appointments.length > 0 && (
@@ -352,8 +357,6 @@ export default function AppointmentsPage() {
             </div>
           </div>
         </div>
-
-      </div>
 
       {/* Modals */}
       {viewDetailsModal && createPortal((() => {
@@ -488,7 +491,7 @@ export default function AppointmentsPage() {
         )
       })(), document.body)}
 
-      {rescheduleModal && createPortal((
+      {rescheduleModal && createPortal(
         <div className="fixed inset-0 bg-black/20 backdrop-blur-sm flex items-center justify-center z-1000">
           <div className="bg-white p-8 rounded-2xl w-100 max-w-[90%] font-sans shadow-xl animate-fade-up">
             <h2 className="m-0 mb-4 text-maroon font-serif text-[22px] font-bold">Reschedule Appointment</h2>
@@ -508,7 +511,7 @@ export default function AppointmentsPage() {
             </div>
           </div>
         </div>
-      ), document.body)}
+      , document.body)}
 
     </div>
   )

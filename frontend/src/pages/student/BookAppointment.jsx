@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '../../context/useAuth'
 import StudentLayout from '../../components/layout/StudentLayout'
-import { getTransactionTypes, getAvailableSlots, bookAppointment, uploadMedia, getBookingConfig } from '../../services/appointmentService'
+import { getTransactionTypes, getAvailableSlots, bookAppointment, getBookingConfig } from '../../services/appointmentService'
 import { CheckCircle, Calendar, Users, CloudSun, Sun, Image as ImageIcon, FileText, Clock, MapPin, Mail, HelpCircle, ChevronLeft, Info, AlertTriangle } from 'lucide-react'
 
 // ── Status Styles ──
@@ -230,9 +230,8 @@ export default function BookAppointment() {
   const [success, setSuccess]           = useState(false)
   const [confirmingBook, setConfirmingBook] = useState(false)
   
-  const [notes, setNotes]               = useState('')
-  const [selectedFile, setSelectedFile] = useState(null)
-  const [isUploading, setIsUploading]   = useState(false)
+  const [purpose, setPurpose]           = useState('')
+  const [purposeOther, setPurposeOther] = useState('')
 
   // ── GWA-specific booking info (semester/year, not a document) ──
   const [gwaSemester, setGwaSemester]     = useState('')
@@ -258,6 +257,11 @@ export default function BookAppointment() {
   // ── GWA is booking metadata, not a document — check by name ──
   const isGWA = selectedType?.name?.toLowerCase().includes('gwa')
     || selectedType?.name?.toLowerCase().includes('general weighted average')
+
+  const isTorOrCoe = selectedType?.name?.toLowerCase().includes('tor')
+    || selectedType?.name?.toLowerCase().includes('transcript')
+    || selectedType?.name?.toLowerCase().includes('coe')
+    || selectedType?.name?.toLowerCase().includes('certificate of enrollment')
 
   // Recent school years (GWA is always for an already-completed semester)
   const currentCalYear = todayDate.getFullYear()
@@ -285,16 +289,16 @@ export default function BookAppointment() {
   }
 
   const handleBook = async () => {
-    setLoading(true); setError(''); setIsUploading(true);
+    setLoading(true); setError('');
     try {
-      let finalNotes = notes
+      let finalNotes = ''
       if (isGWA && gwaSemester && gwaYearLevel && gwaSchoolYear) {
-        const gwaLine = `GWA_REQUEST: ${gwaSemester} | ${gwaYearLevel} | S.Y. ${gwaSchoolYear}`
-        finalNotes = finalNotes ? `${gwaLine}\n\n${finalNotes}` : gwaLine
+        finalNotes = `GWA_REQUEST: ${gwaSemester} | ${gwaYearLevel} | S.Y. ${gwaSchoolYear}`
       }
-      if (selectedFile) {
-        const uploadRes = await uploadMedia(token, selectedFile)
-        finalNotes = finalNotes ? `${finalNotes}\n\nMEDIA_URL: ${uploadRes.url}` : `MEDIA_URL: ${uploadRes.url}`
+      if (isTorOrCoe && purpose) {
+        const purposeText = purpose === 'Other' ? purposeOther : purpose
+        const purposeLine = `PURPOSE: ${purposeText}`
+        finalNotes = finalNotes ? `${finalNotes}\n\n${purposeLine}` : purposeLine
       }
       
       await bookAppointment(token, {
@@ -308,7 +312,6 @@ export default function BookAppointment() {
       setError(e.message); 
     } finally {
       setLoading(false); 
-      setIsUploading(false);
       setConfirmingBook(false);
     }
   }
@@ -638,32 +641,36 @@ export default function BookAppointment() {
                   </div>
                 )}
 
-                {/* Notes & Media Upload */}
-                <div className="border-t border-border pt-5 mt-2.5">
-                  <p className="text-[12px] font-bold text-text-main m-0 mb-3">Additional Notes & Media (Optional)</p>
-                  <div className="grid grid-cols-1 md:grid-cols-[1.5fr_1fr] gap-4">
-                    <textarea 
-                      placeholder="Add any urgent requests here or upload... "
-                      value={notes}
-                      onChange={e => setNotes(e.target.value)}
-                      className="w-full min-h-20 p-3 rounded-[10px] border-[1.5px] border-border bg-off-white text-[13px] text-text-main font-sans resize-y focus:outline-none focus:border-maroon-border"
-                    />
-                    <div className="border-[1.5px] border-dashed border-border-strong rounded-[10px] flex flex-col items-center justify-center p-4 text-center bg-white cursor-pointer relative hover:bg-off-white transition-colors">
-                      <span className="text-text-muted mb-1"><ImageIcon size={24} /></span>
-                      <span className="text-[11px] text-text-sub font-medium">
-                        {selectedFile ? selectedFile.name : 'Upload PNG or JPG'}
-                      </span>
-                      <input 
-                        type="file" 
-                        accept=".png, .jpg, .jpeg"
-                        onChange={e => {
-                          if(e.target.files && e.target.files[0]) setSelectedFile(e.target.files[0])
-                        }}
-                        className="absolute inset-0 opacity-0 cursor-pointer"
+                {/* Purpose of Request — TOR and COE only */}
+                {isTorOrCoe && (
+                  <div className="border-t border-border pt-5 mt-2.5">
+                    <p className="text-[12px] font-bold text-text-main m-0 mb-1">Purpose of Request</p>
+                    <p className="text-[11px] text-text-sub m-0 mb-3">
+                      Let us know what this document will be used for.
+                    </p>
+                    <select
+                      value={purpose}
+                      onChange={e => setPurpose(e.target.value)}
+                      className="w-full p-2.5 rounded-lg border-[1.5px] border-border bg-off-white text-[13px] text-text-main font-sans focus:outline-none focus:border-maroon-border mb-3"
+                    >
+                      <option value="">Select purpose…</option>
+                      <option value="Employment">Employment</option>
+                      <option value="Further Studies / Scholarship">Further Studies / Scholarship</option>
+                      <option value="Board Exam Application">Board Exam Application</option>
+                      <option value="Visa / Travel Requirement">Visa / Travel Requirement</option>
+                      <option value="Other">Other</option>
+                    </select>
+                    {purpose === 'Other' && (
+                      <input
+                        type="text"
+                        value={purposeOther}
+                        onChange={e => setPurposeOther(e.target.value)}
+                        placeholder="Please specify"
+                        className="w-full p-2.5 rounded-lg border-[1.5px] border-border bg-off-white text-[13px] text-text-main font-sans focus:outline-none focus:border-maroon-border"
                       />
-                    </div>
+                    )}
                   </div>
-                </div>
+                )}
               </div>
             )}
 
@@ -755,16 +762,13 @@ export default function BookAppointment() {
                   </div>
                 )}
 
-                {/* Notes & Media */}
-                {(notes || selectedFile) && (
+                {/* Purpose of Request */}
+                {isTorOrCoe && purpose && (
                   <div className="mb-6 pb-5 border-b border-border">
-                    <p className="text-[10px] font-bold text-text-muted tracking-widest uppercase m-0 mb-2.5">NOTES & MEDIA</p>
-                    {notes && <div className={`text-[14px] text-text-main whitespace-pre-wrap ${selectedFile ? 'mb-2' : 'mb-0'}`}>{notes}</div>}
-                    {selectedFile && (
-                      <div className="flex items-center gap-2 text-[13px] text-text-sub bg-off-white py-2 px-3 rounded-lg border border-border w-fit">
-                        <ImageIcon size={14} /> {selectedFile.name}
-                      </div>
-                    )}
+                    <p className="text-[10px] font-bold text-text-muted tracking-widest uppercase m-0 mb-2.5">PURPOSE OF REQUEST</p>
+                    <span className="text-[13px] font-semibold text-maroon bg-maroon-light py-1 px-2.5 rounded-full border border-maroon-border inline-block">
+                      {purpose === 'Other' ? purposeOther : purpose}
+                    </span>
                   </div>
                 )}
 
@@ -798,11 +802,11 @@ export default function BookAppointment() {
               </button>
               <button type="button"
                 onClick={handleConfirmClick}
-                disabled={loading || isUploading}
+                disabled={loading}
                 className={`py-3 px-4 md:px-7 rounded-[10px] border-none text-[14px] font-bold font-sans flex items-center gap-2 min-w-0 md:min-w-35 justify-center transition-all duration-200 shadow-[0_4px_12px_rgba(123,26,42,0.15)] ${
-                  (loading || isUploading) ? 'bg-[#B8667A] text-white cursor-not-allowed' : 'bg-maroon text-white cursor-pointer hover:opacity-90'
+                  loading ? 'bg-[#B8667A] text-white cursor-not-allowed' : 'bg-maroon text-white cursor-pointer hover:opacity-90'
                 }`}>
-                {isUploading ? 'Uploading Media...' : loading ? 'Appointing...' : 'Confirm & Appoint'}
+                {loading ? 'Appointing...' : 'Confirm & Appoint'}
               </button>
             </div>
           </div>

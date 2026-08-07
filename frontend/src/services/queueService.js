@@ -33,6 +33,15 @@ export const getTodaysQueue = async (token) => {
   return data
 }
 
+export const getUncollectedDocuments = async (token) => {
+  const res = await fetch(`${API_URL}/queue/uncollected`, {
+    headers: authHeader(token)
+  })
+  const data = await res.json()
+  if (!res.ok) throw new Error(data.detail || 'Failed to fetch uncollected documents')
+  return data
+}
+
 export const getLiveQueueStats = async (token) => {
   const res = await fetch(`${API_URL}/queue/live-stats`, {
     headers: authHeader(token)
@@ -42,13 +51,15 @@ export const getLiveQueueStats = async (token) => {
   return data
 }
 
-export const confirmStep = async (token, queueTicketId, stepNumber) => {
+export const confirmStep = async (token, queueTicketId, stepNumber, releasedTo = null, documentVerified = false) => {
   const res = await fetch(`${API_URL}/queue/confirm-step`, {
     method: 'POST',
     headers: authHeader(token),
     body: JSON.stringify({
       queue_ticket_id: queueTicketId,
-      step_number: stepNumber
+      step_number: stepNumber,
+      released_to: releasedTo,
+      document_verified: documentVerified
     })
   })
   const data = await res.json()

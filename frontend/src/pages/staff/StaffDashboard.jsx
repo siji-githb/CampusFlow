@@ -9,11 +9,13 @@ import StudentRecordsPage from './StudentRecordsPage'
 import IdRequestsPage from './IdRequestsPage'
 import StaffGlobalSearch from '../../components/StaffGlobalSearch'
 import StaffProfilePage from './StaffProfilePage'
+import PriorityRequestsPage from './PriorityRequestsPage'
 import { getTodaysQueue } from '../../services/queueService'
 import NotificationDropdown from '../../components/NotificationDropdown'
 import { getMessages, markMessageRead } from '../../services/messagesService'
 import { getAppointmentStats } from '../../services/appointmentService'
-import { Inbox, MessageSquare, BarChart2, Ticket, Calendar, ClipboardList, LogOut, Users, User, Settings, CheckSquare, Clock, CalendarClock, Monitor, MonitorX, HelpCircle, LayoutDashboard } from 'lucide-react'
+import { getPendingPriorityRequests } from '../../services/priorityService'
+import { Inbox, MessageSquare, BarChart2, Ticket, Calendar, ClipboardList, LogOut, Users, User, Settings, CheckSquare, Clock, CalendarClock, Monitor, MonitorX, HelpCircle, LayoutDashboard, ShieldCheck, Loader2, Menu, X, PanelLeftClose } from 'lucide-react'
 import { getWindowAssignments, claimWindow, releaseWindow, getIdRequests } from '../../services/adminService'
 
 // ── Compact Queue Preview (Overview panel) ─────────────────────────────────────
@@ -160,6 +162,7 @@ export default function StaffDashboard() {
   const navigate = useNavigate()
   const [activeNav, setActiveNav] = useState('overview')
   const [profileOpen, setProfileOpen] = useState(false)
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
 
 
@@ -220,17 +223,19 @@ export default function StaffDashboard() {
   const loadData = useCallback(async () => {
     if (!token) return
     try {
-      const [qData, aStats, msgs, reqs] = await Promise.all([
+      const [qData, aStats, msgs, reqs, priorityReqs] = await Promise.all([
         getTodaysQueue(token),
         getAppointmentStats(token).catch(() => ({ today_appointments: 0, completed_today: 0, total_monthly: 0 })),
         getMessages(token).catch(() => []),
-        getIdRequests(token).catch(() => [])
+        getIdRequests(token).catch(() => []),
+        getPendingPriorityRequests(token).catch(() => [])
       ])
       setQueue(qData)
       setApptStats(aStats)
       setBadgeStats({
         messages: msgs.filter(m => !m.is_read).length,
-        idRequests: reqs.filter(r => r.status === 'pending').length
+        idRequests: reqs.filter(r => r.status === 'pending').length,
+        priorityRequests: priorityReqs.length
       })
     } catch (e) { console.error("Error loading dashboard stats", e) }
     finally { setLoadingQueue(false) }
@@ -289,9 +294,10 @@ export default function StaffDashboard() {
     {
       title: 'Records & Actions',
       items: [
+        { id: 'priority-requests', icon: <ShieldCheck size={18} />, label: 'Priority Requests', badge: badgeStats.priorityRequests },
+        { id: 'id-requests', icon: <HelpCircle size={18} />, label: 'Id Requests', badge: badgeStats.idRequests },
         { id: 'records', icon: <ClipboardList size={18} />, label: 'Student Records' },
         { id: 'messages', icon: <MessageSquare size={18} />, label: 'Messages', badge: badgeStats.messages },
-        { id: 'id-requests', icon: <HelpCircle size={18} />, label: 'Id Requests', badge: badgeStats.idRequests },
       ]
     }
   ]
@@ -299,15 +305,25 @@ export default function StaffDashboard() {
   return (
     <div className="min-h-screen flex bg-off-white font-sans">
 
+      {/* Mobile Backdrop */}
+      {mobileMenuOpen && (
+        <div onClick={() => setMobileMenuOpen(false)} className="fixed inset-0 bg-black/40 backdrop-blur-sm z-45 md:hidden" />
+      )}
+
       {/* ── Fixed Left Sidebar ── */}
-      <aside className="w-60 shrink-0 bg-white border-r border-border flex flex-col fixed left-0 top-0 bottom-0 z-50 px-3.5 py-5">
+      <aside className={`w-60 shrink-0 bg-white border-r border-border flex flex-col fixed left-0 top-0 bottom-0 z-50 px-3.5 py-5 transition-transform duration-300 ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}`}>
         {/* Logo */}
-        <div className="flex items-center gap-2.5 pl-1.5 mb-7">
-          <img src={campusFlowLogo} alt="CampusFlow" className="w-8.5 h-8.5 rounded-full bg-white object-contain border border-slate-200" />
-          <div>
-            <div className="font-serif text-[15px] font-bold text-maroon">CampusFlow</div>
-            <div className="text-[10px] text-text-muted tracking-[0.04em]">Staff Portal</div>
+        <div className="flex items-center justify-between pl-1.5 mb-7">
+          <div className="flex items-center gap-2.5">
+            <img src={campusFlowLogo} alt="CampusFlow" className="w-8.5 h-8.5 rounded-full bg-white object-contain border border-slate-200" />
+            <div>
+              <div className="font-serif text-[15px] font-bold text-maroon">CampusFlow</div>
+              <div className="text-[10px] text-text-muted tracking-[0.04em]"><strong>Staff Portal</strong></div>
+            </div>
           </div>
+          <button onClick={() => setMobileMenuOpen(false)} className="md:hidden p-1 text-text-muted hover:text-text-main border-none bg-transparent cursor-pointer">
+            <PanelLeftClose size={18} />
+          </button>
         </div>
 
         {/* Nav */}
@@ -324,7 +340,12 @@ export default function StaffDashboard() {
                     icon={item.icon}
                     label={item.label}
                     active={activeNav === item.id}
-                    onClick={() => myWindow ? setActiveNav(item.id) : null}
+                    onClick={() => {
+                      if (myWindow) {
+                        setActiveNav(item.id)
+                        setMobileMenuOpen(false)
+                      }
+                    }}
                     badge={item.badge}
                     disabled={!myWindow}
                   />
@@ -342,11 +363,20 @@ export default function StaffDashboard() {
       </aside>
 
       {/* ── Right Content ── */}
-      <div className="ml-60 flex-1 flex flex-col min-h-screen">
+      <div className="ml-0 md:ml-60 flex-1 flex flex-col min-h-screen min-w-0">
 
         {/* Top Bar */}
-        <header className="bg-white border-b border-border px-7 h-15 flex items-center justify-between sticky top-0 z-40 shadow-[0_1px_4px_rgba(0,0,0,0.04)]">
-          <StaffGlobalSearch setActiveNav={setActiveNav} />
+        <header className="bg-white border-b border-border px-4 sm:px-7 h-15 flex items-center justify-between sticky top-0 z-40 shadow-[0_1px_4px_rgba(0,0,0,0.04)] gap-2">
+          <div className="flex items-center gap-2 flex-1 min-w-0">
+            <button
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className="md:hidden flex items-center justify-center p-2 text-text-main hover:bg-slate-100 rounded-lg border-none bg-transparent cursor-pointer shrink-0"
+              title="Toggle Menu"
+            >
+              <Menu size={20} />
+            </button>
+            <StaffGlobalSearch setActiveNav={setActiveNav} />
+          </div>
 
           {/* Window Badge + Avatar */}
           <div className="flex items-center gap-3">
@@ -439,7 +469,7 @@ export default function StaffDashboard() {
                   <div className="flex flex-col gap-1 py-2">
                     <button onClick={() => { setProfileOpen(false); setActiveNav('profile'); }} className="flex items-center gap-3 w-full px-3 py-2.5 rounded-lg border-none bg-transparent hover:bg-slate-50 cursor-pointer text-left transition-colors">
                       <User size={16} className="text-text-main" />
-                      <span className="text-[13px] font-semibold text-text-main">Edit Profile</span>
+                      <span className="text-[13px] font-semibold text-text-main">Manage Profile</span>
                     </button>
                     <button onClick={() => { setProfileOpen(false); setActiveNav('settings'); }} className="flex items-center gap-3 w-full px-3 py-2.5 rounded-lg border-none bg-transparent hover:bg-slate-50 cursor-pointer text-left transition-colors">
                       <Settings size={16} className="text-text-main" />
@@ -471,21 +501,21 @@ export default function StaffDashboard() {
         </header>
 
         {/* ── Page Content ── */}
-        <main className="p-7 flex-1 relative">
+        <main className="p-4 sm:p-7 flex-1 relative">
 
           {/* ──── WINDOW GATE OVERLAY ──── */}
           {!myWindow && (
-            <div className="absolute inset-0 z-30 bg-surface/85 backdrop-blur-md flex items-center justify-center p-7">
+            <div className="absolute inset-0 z-30 bg-surface/85 backdrop-blur-md flex items-start justify-center pt-10 md:pt-16 p-4 sm:p-7 overflow-y-auto">
               {isLoadingWindow ? (
-                <div className="w-12 h-12 border-4 border-maroon border-t-transparent rounded-full animate-spin"></div>
+                <div className="w-12 h-12 border-4 border-maroon border-t-transparent rounded-full animate-spin my-auto"></div>
               ) : (
-                <div className="bg-white rounded-3xl px-10 pt-10 pb-9 border-[1.5px] border-gold-border shadow-[0_8px_40px_rgba(0,0,0,0.1)] w-full max-w-140 text-center">
+                <div className="bg-white rounded-3xl px-6 sm:px-10 pt-8 sm:pt-10 pb-8 sm:pb-9 border-[1.5px] border-gold-border shadow-[0_8px_40px_rgba(0,0,0,0.1)] w-full max-w-140 text-center animate-fade-up">
                 <div className="w-16 h-16 rounded-full bg-gold-light border-2 border-gold-border flex items-center justify-center mx-auto mb-5">
                   <Monitor size={28} className="text-gold" />
                 </div>
                 <p className="text-[11px] font-bold text-gold tracking-[0.12em] uppercase m-0 mb-2">Action Required</p>
-                <h2 className="font-serif text-[26px] font-extrabold text-text-main m-0 mb-2.5">Claim Your Service Window</h2>
-                <p className="text-[14px] text-text-sub m-0 mb-7 leading-relaxed">
+                <h2 className="font-serif text-[22px] sm:text-[26px] font-extrabold text-text-main m-0 mb-2.5">Claim Your Service Window</h2>
+                <p className="text-[13px] sm:text-[14px] text-text-sub m-0 mb-7 leading-relaxed">
                   You must be assigned to a window before you can access the queue, appointments, or any other features.
                 </p>
                 {windowError && (
@@ -505,15 +535,17 @@ export default function StaffDashboard() {
                         className={`flex flex-col items-center justify-center gap-2 w-27.5 h-25 rounded-2xl border-2 transition-all duration-200 font-sans group
                           ${occupiedByOther 
                             ? 'border-border bg-surface cursor-not-allowed opacity-60' 
+                            : isClaiming
+                            ? 'border-maroon bg-maroon-light cursor-wait'
                             : 'border-maroon-border bg-maroon-light cursor-pointer hover:bg-maroon hover:border-maroon'
                           }
                         `}
                       >
                         <span className={`flex transition-colors duration-200 ${occupiedByOther ? 'text-text-muted' : 'text-maroon group-hover:text-white'}`}>
-                          {occupiedByOther ? <MonitorX size={24} /> : <Monitor size={24} />}
+                          {isClaiming ? <Loader2 size={24} className="animate-spin text-maroon" /> : occupiedByOther ? <MonitorX size={24} /> : <Monitor size={24} />}
                         </span>
-                        <span className={`text-[13px] font-bold transition-colors duration-200 ${occupiedByOther ? 'text-text-muted' : 'text-maroon group-hover:text-white'}`}>
-                          {isClaiming ? 'Claiming…' : occupiedByOther ? 'Occupied' : `Window ${winNum}`}
+                        <span className={`text-[13px] font-bold transition-colors duration-200 flex items-center gap-1 ${occupiedByOther ? 'text-text-muted' : 'text-maroon group-hover:text-white'}`}>
+                          {isClaiming ? 'Claiming...' : occupiedByOther ? 'Occupied' : `Window ${winNum}`}
                         </span>
                       </button>
                     )
@@ -529,8 +561,8 @@ export default function StaffDashboard() {
             <>
               <div className="mb-6">
                 <p className="text-[11px] font-bold text-gold tracking-widest uppercase m-0 mb-1.5">Today's Summary</p>
-                <h1 className="font-serif text-[26px] font-bold text-text-main m-0 flex items-center gap-2">
-                  <BarChart2 size={24} className="text-maroon" /> Daily Overview
+                <h1 className="font-serif text-[22px] sm:text-[26px] font-bold text-text-main m-0 flex items-center gap-2">
+                  <BarChart2 size={24} className="text-maroon shrink-0" /> Daily Overview
                 </h1>
                 <p className="text-[12px] text-text-sub mt-2 mb-0">
                   A high-level view of today's queue, active operations, and urgent escalations.
@@ -538,12 +570,12 @@ export default function StaffDashboard() {
               </div>
 
               {/* Stats Grid */}
-              <div className="grid grid-cols-4 gap-4 mb-7">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-7">
                 {stats.map((s, i) => <StatCard key={i} {...s} />)}
               </div>
 
               {/* Two-column: Queue preview + AI Escalations */}
-              <div className="grid grid-cols-[1fr_340px] gap-5">
+              <div className="grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-5">
 
                 {/* Live Queue Preview */}
                 <div className="animate-fade-up bg-white rounded-2xl p-6 border border-border shadow-[0_1px_4px_rgba(0,0,0,0.04)]" style={{ animationDelay: '0.5s' }}>
@@ -599,6 +631,11 @@ export default function StaffDashboard() {
           {/* ──── STUDENT RECORDS VIEW ──── */}
           {activeNav === 'records' && (
             <StudentRecordsPage />
+          )}
+
+          {/* ──── PRIORITY REQUESTS VIEW ──── */}
+          {activeNav === 'priority-requests' && (
+            <PriorityRequestsPage />
           )}
 
           {/* ──── ID REQUESTS VIEW ──── */}

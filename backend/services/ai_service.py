@@ -57,13 +57,17 @@ IMPORTANT RULES:
 - You can only book appointments on weekdays (Monday to Friday)
 - Students must bring ALL required documents on their appointment date
 - Appointments can be cancelled before the cutoff period
+- If a student mentions "GWA", they are referring to "General Weighted Average (GWA)"
 - If a student asks something outside your knowledge, tell them you will escalate to a staff member
 
 When a student wants to book an appointment:
-1. You MUST explicitly list out the exact transaction type names from the AVAILABLE TRANSACTION TYPES above and ask them to choose one exactly as written.
-2. Ask for their preferred date (must be a weekday, at least 1 day in advance).
-3. Call the check_availability tool to see open slots for that date, then present them to the user.
-4. Once they choose an exact transaction name, date, and time slot, call the book_appointment tool.
+1. Do NOT force the user to type exactly the transaction name. Intelligently map abbreviations (e.g., GWA, TOR, COE) to the full transaction names from the AVAILABLE TRANSACTION TYPES.
+2. IMPORTANT: If the transaction is 'GWA' or 'General Weighted Average', you MUST ask the student for their GWA Request Details (Semester, Year Level, and School Year) before booking. Format this as 'GWA_REQUEST: [Semester] | [Year Level] | S.Y. [School Year]' and pass it to the book_appointment tool's 'notes' parameter.
+3. IMPORTANT: If the transaction is 'COE', 'Certificate of Enrollment', 'TOR', 'Transcript of Records', or 'Diploma', you MUST ask the student for the 'Purpose of Request' before booking. Format this as 'PURPOSE: [User Purpose]' and pass it to the book_appointment tool's 'notes' parameter.
+4. Ask for their preferred date (must be a weekday, at least 1 day in advance).
+5. Call the check_availability tool to see open slots for that date. The slots will be returned in 12-hour AM/PM format (e.g. 01:00 PM). Present them clearly to the user.
+6. Once they choose a date and time slot, call the book_appointment tool (pass the time slot as HH:MM in 24-hour format or whatever the user selected).
+7. CRITICAL: NEVER tell the user an appointment is booked UNLESS you have successfully called the book_appointment tool and it returned a success message.
 
 When a student wants to check their upcoming appointments:
 1. Call the get_upcoming_appointments tool.
@@ -221,6 +225,10 @@ AI_TOOLS = [
                     "time_slot": {
                         "type": "string",
                         "description": "The time slot in HH:MM format (e.g. '09:00')."
+                    },
+                    "notes": {
+                        "type": "string",
+                        "description": "Optional notes for the appointment. MUST be used for GWA requests (e.g. 'GWA_REQUEST: 2nd Semester | 3rd Year | S.Y. 2024-2025') or COE/TOR/Diploma requests (e.g. 'PURPOSE: Scholarship Requirement')."
                     }
                 },
                 "required": ["transaction_name", "date", "time_slot"]
@@ -231,16 +239,20 @@ AI_TOOLS = [
         "type": "function",
         "function": {
             "name": "cancel_appointment",
-            "description": "Cancel an upcoming appointment. Provide the appointment date to verify if it can be cancelled.",
+            "description": "Cancel an upcoming appointment. Provide the appointment date and transaction name.",
             "parameters": {
                 "type": "object",
                 "properties": {
+                    "transaction_name": {
+                        "type": "string",
+                        "description": "The name of the transaction type to cancel."
+                    },
                     "date": {
                         "type": "string",
                         "description": "The date of the appointment in YYYY-MM-DD format."
                     }
                 },
-                "required": ["date"]
+                "required": ["transaction_name", "date"]
             }
         }
     },
@@ -264,6 +276,10 @@ AI_TOOLS = [
             "parameters": {
                 "type": "object",
                 "properties": {
+                    "transaction_name": {
+                        "type": "string",
+                        "description": "The name of the transaction type being modified."
+                    },
                     "old_date": {
                         "type": "string",
                         "description": "The current date of the appointment in YYYY-MM-DD format."
@@ -277,7 +293,7 @@ AI_TOOLS = [
                         "description": "The new time slot in HH:MM format."
                     }
                 },
-                "required": ["old_date", "new_date", "new_time_slot"]
+                "required": ["transaction_name", "old_date", "new_date", "new_time_slot"]
             }
         }
     }
@@ -287,7 +303,7 @@ def execute_tool_call(tool_call, student_id: str):
     import json
     from datetime import date, datetime, timedelta
     from models.appointment_models import AppointmentCreate
-    from services.appointment_service import get_available_slots_for_date, create_appointment, get_office_config
+    from services.appointment_service import get_available_slots_for_date, create_appointment, get_office_config, cancel_appointment as svc_cancel, reschedule_appointment as svc_reschedule
     
     admin = get_admin()
     name = tool_call.function.name
@@ -314,7 +330,17 @@ def execute_tool_call(tool_call, student_id: str):
             slots = get_available_slots_for_date(d)
             if not slots:
                 return f"No slots available for {date_str}."
-            return f"Available slots for {date_str}: " + ", ".join(slots)
+            
+            # Convert to 12-hour AM/PM format for the AI to present
+            formatted_slots = []
+            for s in slots:
+                try:
+                    t_obj = datetime.strptime(s, "%H:%M")
+                    formatted_slots.append(t_obj.strftime("%I:%M %p").lstrip("0"))
+                except Exception:
+                    formatted_slots.append(s)
+                    
+            return f"Available slots for {date_str}: " + ", ".join(formatted_slots)
         except Exception as e:
             return f"Error checking availability: {str(e)}"
             
@@ -322,13 +348,23 @@ def execute_tool_call(tool_call, student_id: str):
         try:
             txn_name = args.get("transaction_name", "")
             date_str = args.get("date", "")
-            time_slot = args.get("time_slot", "")
+            
+            # convert time_slot back to 24h if AI passed 12h
+            time_slot_raw = args.get("time_slot", "").strip()
+            try:
+                if "AM" in time_slot_raw.upper() or "PM" in time_slot_raw.upper():
+                    time_slot = datetime.strptime(time_slot_raw.upper(), "%I:%M %p").strftime("%H:%M")
+                else:
+                    time_slot = datetime.strptime(time_slot_raw, "%H:%M").strftime("%H:%M")
+            except Exception:
+                time_slot = time_slot_raw
+                
             if not txn_name or not date_str or not time_slot:
                 return "Missing required parameters (transaction_name, date, time_slot)."
             
-            tt_res = admin.table("transaction_types").select("id").eq("name", txn_name).execute()
+            tt_res = admin.table("transaction_types").select("id").ilike("name", f"%{txn_name}%").execute()
             if not tt_res.data:
-                return f"Transaction type '{txn_name}' not found. Please choose exactly from the list."
+                return f"Transaction type '{txn_name}' not found. Please match an available transaction type."
             
             # Fetch priority class for user
             u_res = admin.table("school_students").select("priority_class").eq("student_id", student_id).execute()
@@ -339,11 +375,14 @@ def execute_tool_call(tool_call, student_id: str):
             except Exception:
                 return f"Invalid date format: {date_str}. Use YYYY-MM-DD."
                 
+            notes_arg = args.get("notes", "")
+            notes = notes_arg if notes_arg else "Booked via AI Assistant"
+                
             appt_data = AppointmentCreate(
                 transaction_type_id=tt_res.data[0]["id"],
                 appointment_date=appt_date,
                 time_slot=time_slot,
-                notes="Booked via AI Assistant"
+                notes=notes
             )
             res = create_appointment(student_id, p_class, appt_data)
             return f"Successfully booked appointment for {txn_name} on {date_str} at {time_slot}."
@@ -352,9 +391,10 @@ def execute_tool_call(tool_call, student_id: str):
             
     elif name == "cancel_appointment":
         try:
+            txn_name = args.get("transaction_name", "")
             date_str = args.get("date", "")
-            if not date_str:
-                return "Missing 'date' parameter."
+            if not txn_name or not date_str:
+                return "Missing 'transaction_name' or 'date' parameters."
             try:
                 appt_date = date.fromisoformat(date_str)
             except Exception:
@@ -364,19 +404,26 @@ def execute_tool_call(tool_call, student_id: str):
             if appt_date <= tomorrow:
                 return "You cannot cancel an appointment if it is scheduled for today or tomorrow."
             
+            tt_res = admin.table("transaction_types").select("id").ilike("name", f"%{txn_name}%").execute()
+            if not tt_res.data:
+                return f"Transaction type '{txn_name}' not found."
+            tt_id = tt_res.data[0]["id"]
+
             # Find the appointment
-            appt_res = admin.table("appointments").select("id").eq("student_id", student_id).eq("appointment_date", str(appt_date)).eq("status", "confirmed").execute()
+            appt_res = admin.table("appointments").select("id").eq("student_id", student_id).eq("transaction_type_id", tt_id).eq("appointment_date", str(appt_date)).eq("status", "confirmed").execute()
             if not appt_res.data:
-                return f"No confirmed appointment found on {date_str}."
+                return f"No confirmed appointment found for {txn_name} on {date_str}."
                 
-            admin.table("appointments").update({"status": "cancelled"}).eq("id", appt_res.data[0]["id"]).execute()
+            appt_id = appt_res.data[0]["id"]
+            svc_cancel(appointment_id=appt_id, student_id=student_id)
             
             # Update slots cache via config bump
             admin.table("office_config").update({"value": str(datetime.now().timestamp())}).eq("key", "last_slot_update").execute()
             
             return f"Successfully cancelled the appointment on {date_str}."
         except Exception as e:
-            return f"Failed to cancel appointment: {str(e)}"
+            msg = getattr(e, "detail", str(e))
+            return f"Failed to cancel appointment: {msg}"
             
     elif name == "get_upcoming_appointments":
         try:
@@ -394,11 +441,21 @@ def execute_tool_call(tool_call, student_id: str):
             
     elif name == "modify_appointment":
         try:
+            txn_name = args.get("transaction_name", "")
             old_date_str = args.get("old_date", "")
             new_date_str = args.get("new_date", "")
-            new_time = args.get("new_time_slot", "")
-            if not old_date_str or not new_date_str or not new_time:
-                return "Missing parameters (old_date, new_date, new_time_slot)."
+            new_time_raw = args.get("new_time_slot", "").strip()
+            
+            if not txn_name or not old_date_str or not new_date_str or not new_time_raw:
+                return "Missing parameters (transaction_name, old_date, new_date, new_time_slot)."
+                
+            try:
+                if "AM" in new_time_raw.upper() or "PM" in new_time_raw.upper():
+                    new_time = datetime.strptime(new_time_raw.upper(), "%I:%M %p").strftime("%H:%M")
+                else:
+                    new_time = datetime.strptime(new_time_raw, "%H:%M").strftime("%H:%M")
+            except Exception:
+                new_time = new_time_raw
 
             try:
                 old_d = date.fromisoformat(old_date_str)
@@ -406,39 +463,34 @@ def execute_tool_call(tool_call, student_id: str):
             except Exception:
                 return f"Invalid date format provided."
                 
-            tomorrow = date.today() + timedelta(days=1)
-            
+            tt_res = admin.table("transaction_types").select("id").ilike("name", f"%{txn_name}%").execute()
+            if not tt_res.data:
+                return f"Transaction type '{txn_name}' not found."
+            tt_id = tt_res.data[0]["id"]
+                
             # Find the appointment
-            appt_res = admin.table("appointments").select("id, transaction_type_id").eq("student_id", student_id).eq("appointment_date", str(old_d)).eq("status", "confirmed").execute()
+            appt_res = admin.table("appointments").select("id, transaction_type_id").eq("student_id", student_id).eq("transaction_type_id", tt_id).eq("appointment_date", str(old_d)).eq("status", "confirmed").execute()
             if not appt_res.data:
-                return f"No confirmed appointment found on {old_date_str}."
+                return f"No confirmed appointment found for {txn_name} on {old_date_str}."
                 
             appt_id = appt_res.data[0]["id"]
-            tt_id = appt_res.data[0]["transaction_type_id"]
             
-            # Delete old (or we can just update, but let's check capacity)
-            # Check slot capacity across ALL transaction types at that exact time
-            num_windows = int(get_office_config().get("num_windows", 2))
-            count_res = admin.table("appointments").select("id").eq("appointment_date", str(new_d)).eq("time_slot", new_time).neq("status", "cancelled").execute()
-            if len(count_res.data) >= num_windows:
-                return f"The time slot {new_time} on {new_date_str} is full."
-                
-            # Check student doesn't already have appointment same day same type (excluding this one)
-            existing = admin.table("appointments").select("id").eq("student_id", student_id).eq("transaction_type_id", tt_id).eq("appointment_date", str(new_d)).neq("status", "cancelled").neq("id", appt_id).execute()
-            if existing.data:
-                return f"You already have an appointment for this transaction on {new_date_str}."
-                
-            admin.table("appointments").update({
-                "appointment_date": str(new_d),
-                "time_slot": new_time
-            }).eq("id", appt_id).execute()
+            svc_reschedule(
+                appointment_id=appt_id,
+                new_date=str(new_d),
+                new_time=new_time,
+                actor_id=student_id,
+                role="student",
+                notes="Rescheduled via AI Assistant"
+            )
             
             # Update slots cache via config bump
             admin.table("office_config").update({"value": str(datetime.now().timestamp())}).eq("key", "last_slot_update").execute()
             
             return f"Successfully modified the appointment to {new_date_str} at {new_time}."
         except Exception as e:
-            return f"Failed to modify appointment: {str(e)}"
+            msg = getattr(e, "detail", str(e))
+            return f"Failed to modify appointment: {msg}"
 
     return "Unknown function."
 
@@ -472,18 +524,25 @@ def chat(student_id: str, user_message: str):
             tool_choice="auto"
         )
         
+        if getattr(response, "choices", None) is None:
+            err_msg = getattr(response, "error", "Unknown API error")
+            raise HTTPException(status_code=503, detail=f"AI service temporarily unavailable: {err_msg}")
+            
         response_message = response.choices[0].message
         
         if response_message.tool_calls:
             messages.append(response_message)
+            history.append(response_message.model_dump())
             for tool_call in response_message.tool_calls:
                 function_response = execute_tool_call(tool_call, student_id)
-                messages.append({
+                tool_msg = {
                     "tool_call_id": tool_call.id,
                     "role": "tool",
                     "name": tool_call.function.name,
                     "content": function_response,
-                })
+                }
+                messages.append(tool_msg)
+                history.append(tool_msg)
             # Second call to let the AI formulate a response based on the tool result
             second_response = client.chat.completions.create(
                 model=settings.openai_model,
@@ -493,6 +552,11 @@ def chat(student_id: str, user_message: str):
                 tools=AI_TOOLS,
                 tool_choice="auto"
             )
+            
+            if getattr(second_response, "choices", None) is None:
+                err_msg = getattr(second_response, "error", "Unknown API error")
+                raise HTTPException(status_code=503, detail=f"AI service temporarily unavailable: {err_msg}")
+                
             assistant_message = second_response.choices[0].message.content
         else:
             assistant_message = response_message.content
@@ -521,6 +585,8 @@ def chat(student_id: str, user_message: str):
             "escalated":  should_escalate
         }
 
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"AI error: {str(e)}")
 

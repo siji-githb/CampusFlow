@@ -66,7 +66,7 @@ function EmailModal({ req, token, onClose, onSentAndResolve }) {
 
   return (
     <div className="fixed inset-0 z-200 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-      <div className="bg-white rounded-2xl shadow-[0_24px_64px_rgba(0,0,0,0.18)] w-full max-w-[850px] overflow-hidden animate-fade-up">
+      <div className="bg-white rounded-2xl shadow-[0_24px_64px_rgba(0,0,0,0.18)] w-full max-w-212.5 overflow-hidden animate-fade-up">
         
         {/* Header */}
         <div className="bg-maroon px-6 py-5 flex items-start justify-between gap-4">
@@ -79,12 +79,12 @@ function EmailModal({ req, token, onClose, onSentAndResolve }) {
           </button>
         </div>
 
-        <div className="px-6 py-6 grid grid-cols-1 md:grid-cols-2 gap-8">
+        <div className="px-4 sm:px-6 py-6 grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8 max-h-[85vh] overflow-y-auto">
           
           {/* Left Column: Student Info & Search */}
           <div className="flex flex-col">
             {/* Student Info */}
-            <div className="bg-off-white border border-border rounded-xl p-4 mb-6 grid grid-cols-2 gap-3">
+            <div className="bg-off-white border border-border rounded-xl p-4 mb-6 grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="flex items-center gap-2 text-[13px] text-text-sub">
                 <User size={14} className="text-maroon shrink-0" />
                 <span><span className="font-semibold text-text-main">{req.first_name} {req.last_name}</span></span>
@@ -93,11 +93,11 @@ function EmailModal({ req, token, onClose, onSentAndResolve }) {
                 <BookOpen size={14} className="text-maroon shrink-0" />
                 <span>{req.course}</span>
               </div>
-              <div className="flex items-center gap-2 text-[13px] text-text-sub col-span-2">
+              <div className="flex items-center gap-2 text-[13px] text-text-sub sm:col-span-2">
                 <AtSign size={14} className="text-maroon shrink-0" />
-                <span>{req.email}</span>
+                <span className="truncate">{req.email}</span>
               </div>
-              <div className="flex items-center gap-2 text-[13px] text-text-sub col-span-2">
+              <div className="flex items-center gap-2 text-[13px] text-text-sub sm:col-span-2">
                 <Calendar size={14} className="text-maroon shrink-0" />
                 <span>Requested {new Date(req.created_at).toLocaleString()}</span>
               </div>
@@ -130,7 +130,7 @@ function EmailModal({ req, token, onClose, onSentAndResolve }) {
 
               {/* Live results dropdown */}
               {filtered.length > 0 && (
-                <div className="mt-1.5 rounded-xl border border-border shadow-[0_4px_16px_rgba(0,0,0,0.08)] bg-white overflow-hidden max-h-[160px] overflow-y-auto">
+                <div className="mt-1.5 rounded-xl border border-border shadow-[0_4px_16px_rgba(0,0,0,0.08)] bg-white overflow-hidden max-h-40 overflow-y-auto">
                   {filtered.map((r, i) => (
                     <button
                       key={r.student_id}
@@ -170,13 +170,13 @@ function EmailModal({ req, token, onClose, onSentAndResolve }) {
           </div>
 
           {/* Right Column: Email body & Actions */}
-          <div className="flex flex-col h-full">
+          <div className="flex flex-col h-full min-h-65">
             <div className="mb-4 flex-1 flex flex-col">
               <label className="block text-[11px] font-bold text-text-sub tracking-wider uppercase mb-1.5">Email Message</label>
               <textarea
                 value={message}
                 onChange={e => setMessage(e.target.value)}
-                className="w-full h-full min-h-[220px] px-3.5 py-3 rounded-lg border-[1.5px] border-border text-[13px] text-text-main outline-none focus:border-maroon transition-colors resize-none font-[inherit] leading-relaxed"
+                className="w-full flex-1 min-h-45 px-3.5 py-3 rounded-lg border-[1.5px] border-border text-[13px] text-text-main outline-none focus:border-maroon transition-colors resize-none font-[inherit] leading-relaxed"
               />
             </div>
 
@@ -352,23 +352,23 @@ export default function IdRequestsPage() {
         <div className="mb-10">
           <div className="grid gap-4">
             {currentPending.map(req => (
-              <div key={req.id} className="bg-white rounded-2xl border-[1.5px] border-maroon-border p-5 shadow-sm flex items-start justify-between gap-5 transition-shadow hover:shadow-md">
+              <div key={req.id} className="bg-white rounded-2xl border-[1.5px] border-maroon-border p-5 shadow-sm flex flex-col sm:flex-row sm:items-start justify-between gap-4 transition-shadow hover:shadow-md">
                 <div>
                   <h3 className="text-[16px] font-bold text-text-main m-0 mb-1">
                     {req.last_name}, {req.first_name}
                   </h3>
-                  <div className="flex flex-wrap items-center gap-4 text-[13px] text-text-sub mt-2">
-                    <span className="flex items-center gap-1.5"><Mail size={15} /> {req.email}</span>
-                    <span className="flex items-center gap-1.5"><BookOpen size={15} /> {req.course}</span>
+                  <div className="flex flex-wrap items-center gap-3 sm:gap-4 text-[13px] text-text-sub mt-2">
+                    <span className="flex items-center gap-1.5 break-all"><Mail size={15} className="shrink-0" /> {req.email}</span>
+                    <span className="flex items-center gap-1.5"><BookOpen size={15} className="shrink-0" /> {req.course}</span>
                   </div>
                   <div className="text-[11px] text-text-muted mt-3">
                     Requested on {new Date(req.created_at).toLocaleString()}
                   </div>
                 </div>
-                <div className="flex flex-col gap-2 shrink-0">
+                <div className="flex flex-col gap-2 shrink-0 w-full sm:w-auto">
                   <button
                     onClick={() => setEmailTarget(req)}
-                    className="w-full flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-maroon text-white font-bold text-[13px] border-none cursor-pointer hover:bg-maroon-dark transition-colors"
+                    className="w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-maroon text-white font-bold text-[13px] border-none cursor-pointer hover:bg-maroon-dark transition-colors"
                   >
                     <Send size={14} /> Send Email
                   </button>
@@ -456,23 +456,23 @@ export default function IdRequestsPage() {
                     else newSelected.add(req.id)
                     setSelectedIds(newSelected)
                   }}
-                  className={`bg-white rounded-xl border px-5 py-3.5 flex items-center gap-4 transition-colors ${
+                  className={`bg-white rounded-xl border px-4 sm:px-5 py-3.5 flex items-start sm:items-center gap-3 sm:gap-4 transition-colors ${
                     isSelectMode ? 'cursor-pointer hover:bg-off-white' : ''
                   } ${isSelected ? 'border-danger bg-danger-light/20' : 'border-border'}`}
                 >
                   {isSelectMode && (
-                    <div className={`shrink-0 w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors ${
+                    <div className={`shrink-0 w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors mt-0.5 sm:mt-0 ${
                       isSelected ? 'border-danger bg-danger' : 'border-text-muted bg-transparent'
                     }`}>
                       {isSelected && <Check size={12} className="text-white" />}
                     </div>
                   )}
-                  <div className="flex-1 flex items-center justify-between">
+                  <div className="flex-1 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                     <div>
                       <div className="text-[14px] font-semibold text-text-main">{req.last_name}, {req.first_name}</div>
-                      <div className="text-[12px] text-text-sub mt-0.5">{req.email} • {req.course}</div>
+                      <div className="text-[12px] text-text-sub mt-0.5 break-all">{req.email} • {req.course}</div>
                     </div>
-                    <div className="text-right">
+                    <div className="text-left sm:text-right shrink-0">
                       <span className={`inline-block px-2 py-1 rounded-md text-[10px] font-bold mb-1 ${req.status === 'resolved' ? 'bg-success-light text-success' : 'bg-surface text-text-muted'}`}>
                         {req.status.toUpperCase()}
                       </span>

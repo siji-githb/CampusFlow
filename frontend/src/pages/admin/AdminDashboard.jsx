@@ -559,7 +559,7 @@ export default function AdminDashboard() {
       title: 'Management',
       items: [
         { id: 'records', icon: <FolderOpen size={18} />, label: 'Registrar Records' },
-        { id: 'student_records', icon: <ClipboardList size={18} />, label: 'Student Records' },
+        { id: 'student_records', icon: <ClipboardList size={18} />, label: 'Master List' },
         { id: 'users', icon: <Users size={18} />, label: 'User Management' },
       ]
     },
@@ -582,7 +582,7 @@ export default function AdminDashboard() {
           <img src={campusFlowLogo} alt="CampusFlow" className="w-9.5 h-9.5 rounded-full bg-white object-contain border border-slate-200" />
           <div>
             <div className="font-serif text-[14px] font-bold text-maroon leading-[1.2]">CampusFlow</div>
-            <div className="text-[10px] text-text-muted tracking-[0.04em]">Registrar Admin Portal</div>
+            <div className="text-[10px] text-text-muted tracking-[0.04em]"><strong>Admin Portal</strong></div>
           </div>
         </div>
 

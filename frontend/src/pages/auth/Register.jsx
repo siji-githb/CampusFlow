@@ -1,9 +1,10 @@
 import { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { registerUser, verifyStudent, requestStudentId } from '../../services/authService'
-import { Eye, EyeOff, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Eye, EyeOff, ChevronLeft, ChevronRight, AlertTriangle } from 'lucide-react'
 import campusFlowLogo from '../../assets/logo.png'
 import loginImage from '../../assets/login.png'
+import TermsModal from '../../components/TermsModal'
 
 export default function Register() {
   const navigate = useNavigate()
@@ -19,6 +20,8 @@ export default function Register() {
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirm, setShowConfirm] = useState(false)
   const [reqSuccess, setReqSuccess] = useState(false)
+  const [termsAccepted, setTermsAccepted] = useState(false)
+  const [showTerms, setShowTerms] = useState(false)
 
   const handleChange = (e) => { setForm({ ...form, [e.target.name]: e.target.value }); setError('') }
 
@@ -70,12 +73,12 @@ export default function Register() {
 
   const inpClass = "w-full rounded-xl border border-slate-200 bg-slate-50/50 text-slate-800 outline-none box-border font-sans transition-all duration-200 focus:bg-white focus:border-maroon focus:ring-[3px] focus:ring-maroon/10 py-[12px] px-[16px] text-[14.5px] shadow-sm placeholder:text-slate-400 font-medium"
   const lblClass = "block text-[12.5px] font-bold text-slate-700 mb-2"
-  const btnClass = `w-full py-3.5 px-6 rounded-xl border-none text-[14.5px] font-bold font-sans shadow-[0_4px_12px_rgba(123,26,42,0.15)] transition-all duration-200 flex items-center justify-center gap-2 ${loading ? 'bg-maroon/70 text-white cursor-not-allowed' : 'bg-maroon text-white cursor-pointer hover:bg-maroon-dark hover:shadow-[0_6px_16px_rgba(123,26,42,0.25)] hover:-translate-y-[1px]'}`
+  const btnClass = "w-full py-3.5 px-6 rounded-xl border-none text-[14.5px] font-bold font-sans shadow-[0_4px_12px_rgba(123,26,42,0.15)] transition-all duration-200 flex items-center justify-center gap-2 bg-maroon text-white cursor-pointer hover:bg-maroon-dark hover:shadow-[0_6px_16px_rgba(123,26,42,0.25)] hover:-translate-y-[1px] disabled:bg-slate-200 disabled:text-slate-400 disabled:cursor-not-allowed disabled:shadow-none disabled:hover:bg-slate-200 disabled:hover:translate-y-0"
 
   const errorBanner = error && (
     <div className="py-3 px-4 rounded-xl bg-red-50 border border-red-100 text-red-600 text-[13px] font-medium mb-6 flex gap-2.5 items-center shadow-sm">
-      <span className="bg-red-100 text-red-500 rounded-full w-5 h-5 flex items-center justify-center text-[10px] font-bold shrink-0">!</span> 
-      {error}
+      <AlertTriangle size={18} className="text-red-500 shrink-0" /> 
+      <span>{error.replace(/^(Auth error|Error):\s*/i, '')}</span>
     </div>
   )
 
@@ -185,8 +188,9 @@ export default function Register() {
                 </button>
                 
                 <div className="mt-5 text-center">
-                  <button type="button" onClick={() => {setStep('request'); setError(''); setReqSuccess(false);}} className="bg-transparent border-none text-maroon text-[13px] cursor-pointer font-bold hover:text-maroon-dark transition-colors">
-                    Forgot your Student ID? Request it here
+                  <button type="button" onClick={() => {setStep('request'); setError(''); setReqSuccess(false);}} className="bg-transparent border-none text-[13px] cursor-pointer transition-colors p-0">
+                    <span className="text-slate-500 font-medium">Forgot your Student ID? </span>
+                    <span className="text-maroon font-bold hover:text-maroon-dark">Request it here</span>
                   </button>
                 </div>
               </form>
@@ -221,7 +225,7 @@ export default function Register() {
                 </div>
                 <div className="mb-8">
                   <label className={lblClass}>Email Address</label>
-                  <input type="email" name="email" value={form.email} onChange={handleChange} required placeholder="example@gmail.com" className={inpClass} />
+                  <input type="email" name="email" value={form.email} onChange={handleChange} required placeholder="your@gmail.com" className={inpClass} />
                 </div>
                 <button type="submit" disabled={loading} className={btnClass}>
                   {loading ? <span className="spinner" /> : <>Submit Request <ChevronRight size={16} strokeWidth={2.5} /></>}
@@ -240,7 +244,7 @@ export default function Register() {
                 <div className="mb-6 p-4 bg-amber-50 rounded-xl border border-amber-200">
                   <div className="flex justify-between items-center mb-2">
                     <span className="text-[11px] font-bold text-amber-700 uppercase tracking-widest">Verified Student</span>
-                    <button type="button" onClick={() => setStep(1)} className="bg-transparent border-none text-maroon text-[12px] cursor-pointer font-bold hover:text-maroon-dark transition-colors">Change ID</button>
+                    <button type="button" onClick={() => { setStep(1); setError(''); }} className="bg-transparent border-none text-maroon text-[12px] cursor-pointer font-bold hover:text-maroon-dark transition-colors">Change ID</button>
                   </div>
                   <div className="text-[14.5px] font-bold text-slate-800 mb-0.5">{form.first_name} {form.last_name}</div>
                   <div className="text-[13px] font-medium text-slate-600">{form.student_id} • {form.priority_class ? form.priority_class.charAt(0).toUpperCase() + form.priority_class.slice(1) : 'Regular'} • {form.course}</div>
@@ -248,7 +252,7 @@ export default function Register() {
 
                 <div className="mb-4">
                   <label className={lblClass}>Email Address</label>
-                  <input type="email" name="email" value={form.email} onChange={handleChange} required placeholder="example@gmail.com" className={inpClass} />
+                  <input type="email" name="email" value={form.email} onChange={handleChange} required placeholder="your@gmail.com" className={inpClass} />
                 </div>
 
                 <div className="mb-4">
@@ -271,9 +275,20 @@ export default function Register() {
                   </div>
                 </div>
 
+                <div className="mb-6 flex items-start gap-3">
+                  <input 
+                    type="checkbox" 
+                    id="terms" 
+                    checked={termsAccepted} 
+                    onChange={(e) => setTermsAccepted(e.target.checked)} 
+                    className="mt-0.5 w-4 h-4 cursor-pointer accent-maroon"
+                  />
+                  <label htmlFor="terms" className="text-[13px] text-slate-600 leading-snug cursor-pointer select-none">
+                    I agree to the <button type="button" onClick={() => setShowTerms(true)} className="bg-transparent border-none text-maroon font-bold cursor-pointer hover:underline p-0 inline">Terms and Conditions</button> and Data Privacy Agreement.
+                  </label>
+                </div>
 
-
-                <button type="submit" disabled={loading} className={btnClass}>
+                <button type="submit" disabled={loading || !termsAccepted} className={btnClass}>
                   {loading ? <span className="spinner" /> : <>Complete Registration <ChevronRight size={16} strokeWidth={2.5} /></>}
                 </button>
               </form>
@@ -301,6 +316,7 @@ export default function Register() {
           </div>
         </div>
       </div>
+      <TermsModal isOpen={showTerms} onClose={() => setShowTerms(false)} />
     </div>
   )
 }

@@ -353,22 +353,6 @@ def cancel_appointment(appointment_id: str, student_id: str):
             
         # Automatically mark the confirmation notification as read
         try:
-            total_seconds = 0
-            valid_steps = 0
-            for row in (recent_steps.data or []):
-                try:
-                    start = datetime.fromisoformat(row["created_at"].replace("Z", "+00:00"))
-                    end = datetime.fromisoformat(row["confirmed_at"].replace("Z", "+00:00"))
-                    secs = (end - start).total_seconds()
-                    if 0 < secs < 7200:  # ignore outliers over 2 hours
-                        total_seconds += secs
-                        valid_steps += 1
-                except Exception:
-                    pass
-
-            avg_total_secs = round(total_seconds / valid_steps) if valid_steps > 0 else 480
-            avg_mins = avg_total_secs // 60
-            avg_secs = avg_total_secs % 60
             admin.table("notifications") \
                 .update({"is_read": True}) \
                 .eq("user_id", student_id) \
@@ -387,6 +371,13 @@ def cancel_appointment(appointment_id: str, student_id: str):
             status="Success",
             changes="Status: confirmed ➔ cancelled",
             severity="Warning"
+        )
+        
+        create_system_notification(
+            user_id=student_id,
+            title="Appointment Cancelled",
+            message=f"Your appointment on {appt['appointment_date']} was cancelled.",
+            type="warning"
         )
         return {"message": "Appointment cancelled successfully"}
     except Exception as e:
@@ -522,7 +513,7 @@ def reschedule_appointment(appointment_id: str, new_date: str, new_time: str, ac
     admin = get_admin()
     config = get_office_config()
     try:
-        res = admin.table("appointments").select("id, appointment_date, time_slot, status, student_id").eq("id", appointment_id).execute()
+        res = admin.table("appointments").select("id, appointment_date, time_slot, status, student_id, transaction_type_id").eq("id", appointment_id).execute()
         if not res.data:
             raise HTTPException(status_code=404, detail="Appointment not found")
             
@@ -534,6 +525,13 @@ def reschedule_appointment(appointment_id: str, new_date: str, new_time: str, ac
         old_date = appt["appointment_date"]
         old_time = appt["time_slot"]
         current_status = appt["status"]
+        tt_id = appt["transaction_type_id"]
+        student_id = appt["student_id"]
+        
+        # Check student doesn't already have appointment same day same type (excluding this one)
+        existing = admin.table("appointments").select("id").eq("student_id", student_id).eq("transaction_type_id", tt_id).eq("appointment_date", new_date).neq("status", "cancelled").neq("id", appointment_id).execute()
+        if existing.data:
+            raise HTTPException(status_code=400, detail="You already have an appointment for this transaction on this date")
         
         staff_count = int(config.get("staff_count", 2))
         count_res = admin.table("appointments") \
@@ -541,6 +539,7 @@ def reschedule_appointment(appointment_id: str, new_date: str, new_time: str, ac
             .eq("appointment_date", new_date) \
             .eq("time_slot", new_time) \
             .neq("status", "cancelled") \
+            .neq("id", appointment_id) \
             .execute()
             
         if len(count_res.data) >= staff_count:
@@ -565,6 +564,25 @@ def reschedule_appointment(appointment_id: str, new_date: str, new_time: str, ac
                 status="Success",
                 changes=f"From: {old_date} {old_time} ➔ To: {new_date} {new_time}",
                 severity="Warning"
+            )
+            
+            # Formatting new time for the notification
+            try:
+                if len(new_time) > 5:
+                    nt_formatted = new_time
+                else:
+                    h, m = int(new_time.split(":")[0]), int(new_time.split(":")[1])
+                    nt_formatted = f"{h % 12 or 12}:{str(m).zfill(2)} {'AM' if h < 12 else 'PM'}"
+            except Exception:
+                nt_formatted = new_time
+
+            # Only notify the student if they are not the actor, OR if they are the actor (e.g. AI modified it for them)
+            # Just send a notification regardless so they have a record
+            create_system_notification(
+                user_id=student_id,
+                title="Appointment Rescheduled",
+                message=f"Your appointment was rescheduled to {new_date} at {nt_formatted}.",
+                type="info"
             )
         
         return {"success": True}

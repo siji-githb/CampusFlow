@@ -58,7 +58,7 @@ const MessageItem = ({ msg, selected, onClick }) => {
         <div className="flex-1 min-w-0">
           <div className="flex justify-between items-start mb-1.5">
             <div className="flex items-center gap-2 min-w-0">
-              <span className={`text-[13px] whitespace-nowrap overflow-hidden text-ellipsis max-w-[130px] ${unread ? 'text-text-main font-bold' : 'text-text-main font-semibold'}`}>
+              <span className={`text-[13px] whitespace-nowrap overflow-hidden text-ellipsis max-w-32.5 ${unread ? 'text-text-main font-bold' : 'text-text-main font-semibold'}`}>
                 {name}
               </span>
               {unread && !selected && <span className="w-2 h-2 rounded-full bg-maroon shrink-0" />}
@@ -191,10 +191,10 @@ export default function MessagesPage() {
       </div>
 
       {/* ── Inbox Split View ── */}
-      <div className="animate-fade-up flex bg-white overflow-hidden rounded-[20px] border border-border shadow-[0_4px_24px_rgba(0,0,0,0.02)] h-[calc(100vh-210px)] min-h-[500px]" style={{ animationDelay: '0.1s' }}>
+      <div className="animate-fade-up flex bg-white overflow-hidden rounded-[20px] border border-border shadow-[0_4px_24px_rgba(0,0,0,0.02)] h-[calc(100vh-210px)] min-h-125" style={{ animationDelay: '0.1s' }}>
 
       {/* ════ LEFT PANEL — message list ════ */}
-      <div className="w-[340px] shrink-0 bg-off-white border-r border-border flex flex-col overflow-hidden">
+      <div className="w-85 shrink-0 bg-off-white border-r border-border flex flex-col overflow-hidden">
 
         {/* Header */}
         <div className="px-5 pt-6 pb-4 border-b border-border bg-off-white">
@@ -207,12 +207,12 @@ export default function MessagesPage() {
             )}
           </div>
           {/* Filter tabs */}
-          <div className="flex bg-border/40 p-1 rounded-[12px]">
+          <div className="flex bg-border/40 p-1 rounded-xl">
             {[['all', 'All'], ['unread', 'Action'], ['urgent', 'Urgent'], ['resolved', 'Resolved']].map(([val, lbl]) => (
               <button
                 key={val}
                 onClick={() => setFilter(val)}
-                className={`flex-1 py-1.5 px-1 border-none text-[11px] font-bold font-sans cursor-pointer whitespace-nowrap transition-all rounded-[8px]
+                className={`flex-1 py-1.5 px-1 border-none text-[11px] font-bold font-sans cursor-pointer whitespace-nowrap transition-all rounded-lg
                   ${filter === val ? 'bg-white text-maroon shadow-sm' : 'bg-transparent text-text-muted hover:text-text-main'}
                 `}
               >{lbl}</button>
@@ -226,13 +226,13 @@ export default function MessagesPage() {
             <div className="flex flex-col">
               {[1, 2, 3, 4, 5].map(i => (
                 <div key={i} className="mx-3 my-2 px-4 py-3.5 rounded-2xl bg-white border border-border/60 shadow-sm flex gap-3">
-                  <div className="animate-pulse w-[38px] h-[38px] rounded-full bg-border shrink-0" />
+                  <div className="animate-pulse w-9.5 h-9.5 rounded-full bg-border shrink-0" />
                   <div className="flex-1">
                     <div className="flex justify-between mb-2.5">
-                      <div className="animate-pulse w-[100px] h-3.5 rounded bg-border" />
+                      <div className="animate-pulse w-25 h-3.5 rounded bg-border" />
                       <div className="animate-pulse w-10 h-3 rounded bg-border" />
                     </div>
-                    <div className="animate-pulse w-[70px] h-3.5 rounded-full bg-border mb-2.5" />
+                    <div className="animate-pulse w-17.5 h-3.5 rounded-full bg-border mb-2.5" />
                     <div className="animate-pulse w-full h-3 rounded bg-border mb-1.5" />
                     <div className="animate-pulse w-3/4 h-3 rounded bg-border" />
                   </div>
@@ -374,7 +374,7 @@ export default function MessagesPage() {
               />
               <button
                 disabled={!replyText.trim() || sendingReply}
-                className={`w-[46px] h-[46px] rounded-xl border-none text-[20px] flex items-center justify-center shrink-0 transition-all duration-150 shadow-sm
+                className={`w-11.5 h-11.5 rounded-xl border-none text-[20px] flex items-center justify-center shrink-0 transition-all duration-150 shadow-sm
                   ${replyText.trim() ? 'bg-maroon text-white cursor-pointer hover:bg-maroon-dark hover:-translate-y-px' : 'bg-border text-white cursor-default'}
                   ${sendingReply ? 'opacity-60' : 'opacity-100'}
                 `}
@@ -391,7 +391,7 @@ export default function MessagesPage() {
           </div>
           <div className="text-center">
             <p className="text-[20px] font-bold text-text-main m-0 mb-2 font-serif tracking-tight">Select a conversation</p>
-            <p className="text-[14px] text-text-sub m-0 max-w-[260px] mx-auto leading-relaxed">Choose a message from your inbox on the left to view the details and reply.</p>
+            <p className="text-[14px] text-text-sub m-0 max-w-65 mx-auto leading-relaxed">Choose a message from your inbox on the left to view the details and reply.</p>
           </div>
         </div>
       )}

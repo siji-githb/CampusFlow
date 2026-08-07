@@ -238,7 +238,7 @@ export function ProfileDropdown() {
                     onMouseEnter={e => e.currentTarget.style.background = M.offWhite}
                     onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
                   >
-                    <User size={16} /> Edit Profile
+                    <User size={16} /> Manage Profile
                   </button>
                   <button 
                     onClick={() => { setProfileOpen(false); navigate('/student/settings'); }}
@@ -360,7 +360,7 @@ export function ProfileDropdown() {
                       background: M.offWhite, cursor: 'pointer', textAlign: 'left', fontFamily: "'Poppins', sans-serif", fontSize: '14px', fontWeight: 600, color: M.text
                     }}
                   >
-                    <User size={16} /> Edit Profile
+                    <User size={16} /> Manage Profile
                   </button>
                   <button 
                     onClick={() => { setProfileOpen(false); navigate('/student/settings'); }}

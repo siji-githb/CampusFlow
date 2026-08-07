@@ -128,6 +128,9 @@ def activate_queue(appointment_id: str, student_id: str):
 
     steps_to_insert = []
     step_names_only = []
+    from datetime import datetime, timezone
+    now_iso = datetime.now(timezone.utc).isoformat()
+    
     for i, raw_step in enumerate(processing_steps):
         step_name, requires_presence = _normalize_step(raw_step)
         step_names_only.append(step_name)
@@ -136,7 +139,8 @@ def activate_queue(appointment_id: str, student_id: str):
             "step_number": i + 1,
             "step_name": step_name,
             "location": step_name.split(" - ")[0] if " - " in step_name else step_name,
-            "status": "in_progress" if i == 0 else "pending"
+            "status": "in_progress" if i == 0 else "pending",
+            "activated_at": now_iso if i == 0 else None,
         })
 
     steps_res = admin.table("transaction_steps").insert(steps_to_insert).execute()
@@ -292,7 +296,8 @@ def remind_student(queue_ticket_id: str, staff_id: str):
     return {"message": "Reminder sent successfully"}
 
 
-def confirm_step(queue_ticket_id: str, step_number: int, staff_id: str):
+def confirm_step(queue_ticket_id: str, step_number: int, staff_id: str,
+                 released_to: str = None, document_verified: bool = False):
     """Staff confirms a student's step is complete."""
     admin = get_admin()
     from datetime import datetime, timezone
@@ -323,6 +328,11 @@ def confirm_step(queue_ticket_id: str, step_number: int, staff_id: str):
     if step["status"] == "completed":
         raise HTTPException(status_code=400, detail="Step already completed")
 
+    # Release-specific gate
+    is_release_step = "Release" in step["step_name"]
+    if is_release_step and not document_verified:
+        raise HTTPException(status_code=400, detail="You must confirm the document is correct before releasing it.")
+
     now = datetime.now(timezone.utc).isoformat()
 
     # Mark current step as completed
@@ -335,13 +345,18 @@ def confirm_step(queue_ticket_id: str, step_number: int, staff_id: str):
         .eq("id", step["id"]) \
         .execute()
         
+    audit_changes = "Step marked completed"
+    if is_release_step:
+        recipient_note = released_to.strip() if released_to and released_to.strip() else "student (self)"
+        audit_changes = f"Document released to: {recipient_note}. Document verified correct: Yes."
+
     log_audit_action(
         user_id=staff_id,
         action=f"Confirmed Queue Step {step_number}",
         table_name="transaction_steps",
         record_id=step["id"],
         status="Success",
-        changes=f"Step marked completed",
+        changes=audit_changes,
         severity="Info"
     )
 
@@ -374,7 +389,7 @@ def confirm_step(queue_ticket_id: str, step_number: int, staff_id: str):
             .execute()
 
         next_step_res = admin.table("transaction_steps") \
-            .update({"status": "in_progress"}) \
+            .update({"status": "in_progress", "activated_at": datetime.now(timezone.utc).isoformat()}) \
             .eq("queue_ticket_id", queue_ticket_id) \
             .eq("step_number", next_step) \
             .execute()
@@ -577,3 +592,53 @@ def get_live_queue_stats():
         import traceback
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
+
+
+def get_uncollected_documents(threshold_days: int = 3):
+    """
+    Returns tickets currently sitting at a Release step (ready for
+    pickup) that have been waiting longer than threshold_days,
+    sorted longest-waiting first.
+    """
+    from datetime import datetime, timezone, timedelta
+    admin = get_admin()
+
+    threshold_date = (datetime.now(timezone.utc) - timedelta(days=threshold_days)).isoformat()
+
+    try:
+        res = admin.table("transaction_steps") \
+            .select("*, queue_tickets(id, queue_number, student_id, "
+                    "users(first_name, last_name, student_id), "
+                    "appointments(transaction_types(name)))") \
+            .ilike("step_name", "%Release%") \
+            .eq("status", "in_progress") \
+            .lt("activated_at", threshold_date) \
+            .execute()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+    results = []
+    now = datetime.now(timezone.utc)
+    for row in (res.data or []):
+        try:
+            activated = datetime.fromisoformat(row["activated_at"].replace("Z", "+00:00"))
+            days_waiting = (now - activated).days
+        except Exception:
+            days_waiting = None
+
+        ticket = row.get("queue_tickets") or {}
+        student = ticket.get("users") or {}
+        tx_name = ((ticket.get("appointments") or {}).get("transaction_types") or {}).get("name", "Unknown")
+
+        results.append({
+            "queue_ticket_id": ticket.get("id"),
+            "queue_number": ticket.get("queue_number"),
+            "student_name": f"{student.get('first_name', '')} {student.get('last_name', '')}".strip(),
+            "student_id": student.get("student_id"),
+            "transaction_type": tx_name,
+            "days_waiting": days_waiting,
+            "activated_at": row.get("activated_at"),
+        })
+
+    results.sort(key=lambda r: r["days_waiting"] or 0, reverse=True)
+    return results

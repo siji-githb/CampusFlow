@@ -12,7 +12,7 @@ from rate_limit import limiter
 
 router = APIRouter(prefix="/priority", tags=["priority"])
 
-require_staff_or_admin = require_roles(["staff", "admin"])
+require_staff_or_admin = require_roles("staff", "admin")
 
 
 @router.post("/submit")

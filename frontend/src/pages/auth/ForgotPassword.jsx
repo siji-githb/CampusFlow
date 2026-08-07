@@ -44,7 +44,7 @@ export default function ForgotPassword() {
         <CheckCircle size={28} className="text-success" />
       </div>
       <h2 className="font-serif text-xl font-bold text-text-main m-0 mb-2">Check your email</h2>
-      <p className="text-[13px] text-text-sub m-0 mb-6 leading-relaxed max-w-[280px] mx-auto">
+      <p className="text-[13px] text-text-sub m-0 mb-6 leading-relaxed max-w-70 mx-auto">
         We've sent a password reset link to <strong className="text-text-main">{email}</strong>. Click the link in the email to set a new password.
       </p>
       <div className="bg-off-white rounded-lg py-3 px-4 text-[12px] text-text-muted mb-6">
@@ -81,7 +81,7 @@ export default function ForgotPassword() {
             value={email}
             onChange={e => { setEmail(e.target.value); setError('') }}
             required
-            placeholder="example@gmail.com"
+            placeholder="your@gmail.com"
             className={inpClass}
             autoFocus
           />
@@ -89,7 +89,7 @@ export default function ForgotPassword() {
         <button
           type="submit"
           disabled={loading}
-          className={`w-full py-3 rounded-lg border-none text-[14px] font-bold font-sans shadow-[0_3px_14px_rgba(123,26,42,0.25)] transition-colors duration-150 ${isMobile ? 'min-h-[52px] py-3.5 text-[15px]' : ''} ${loading ? 'bg-[#B8667A] text-white cursor-not-allowed' : 'bg-maroon text-white cursor-pointer hover:bg-maroon-dark'}`}
+          className={`w-full py-3 rounded-lg border-none text-[14px] font-bold font-sans shadow-[0_3px_14px_rgba(123,26,42,0.25)] transition-colors duration-150 ${isMobile ? 'min-h-13 py-3.5 text-[15px]' : ''} ${loading ? 'bg-[#B8667A] text-white cursor-not-allowed' : 'bg-maroon text-white cursor-pointer hover:bg-maroon-dark'}`}
         >
           {loading ? <span className="spinner" /> : 'Send Reset Link'}
         </button>
@@ -104,11 +104,11 @@ export default function ForgotPassword() {
 
   if (isMobile) {
     return (
-      <div className="min-h-screen bg-off-white font-sans max-w-[480px] mx-auto pb-24">
+      <div className="min-h-screen bg-off-white font-sans max-w-120 mx-auto pb-24">
         <div className="bg-linear-to-br from-maroon to-maroon-dark pt-9 px-5 pb-14 relative overflow-hidden text-center">
           <div className="absolute inset-0 pointer-events-none opacity-5 bg-[radial-gradient(circle,#F0C040_1px,transparent_1px)] bg-size-[24px_24px]" />
           <div className="absolute -top-10 -right-10 w-40 h-40 rounded-full bg-[radial-gradient(circle,rgba(184,144,10,0.18)_0%,transparent_70%)] pointer-events-none" />
-          <div className="absolute -bottom-12 left-1/2 -translate-x-1/2 w-[600px] h-24 rounded-full bg-off-white pointer-events-none" />
+          <div className="absolute -bottom-12 left-1/2 -translate-x-1/2 w-150 h-24 rounded-full bg-off-white pointer-events-none" />
 
           <div className="relative">
             <div className="text-left mb-4">
@@ -124,7 +124,7 @@ export default function ForgotPassword() {
           </div>
         </div>
 
-        <main className="px-4 max-w-[480px] mx-auto">
+        <main className="px-4 max-w-120 mx-auto">
           <div className="bg-white rounded-[20px] shadow-[0_8px_24px_rgba(0,0,0,0.10),0_0_0_1px_rgba(0,0,0,0.04)] py-6 px-5 -mt-5 relative">
             {content}
           </div>
@@ -135,7 +135,7 @@ export default function ForgotPassword() {
 
   return (
     <div className="min-h-screen bg-off-white flex items-center justify-center font-sans p-8">
-      <div className="w-full max-w-[420px]">
+      <div className="w-full max-w-105">
         <Link to="/login" className="inline-flex items-center gap-1.5 text-[12px] text-text-muted no-underline mb-8">
           <ArrowLeft size={14} /> Back to sign in
         </Link>

@@ -1,9 +1,11 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import StudentLayout from '../../components/layout/StudentLayout'
 import { useAuth } from '../../context/useAuth'
-import { Edit2, IdCard, Tag, LogOut, Trash2, X, Camera, Loader2, Eye, EyeOff } from 'lucide-react'
+import { Edit2, IdCard, Tag, LogOut, Trash2, X, Camera, Loader2, Eye, EyeOff, ShieldAlert, ShieldCheck, Clock, FileText, CheckCircle, Upload } from 'lucide-react'
 import { updateProfile, changePassword, logoutAllDevices, deleteAccount, updateProfilePicture, removeProfilePicture } from '../../services/authService'
+import { getMyPriorityStatus, submitPriorityRequest } from '../../services/priorityService'
+import { uploadMedia } from '../../services/appointmentService'
 
 export default function StudentProfile() {
   const { user, token, updateUser, logout } = useAuth()
@@ -38,6 +40,45 @@ export default function StudentProfile() {
   const [pendingProfilePicture, setPendingProfilePicture] = useState(null)
   const [pendingRemovePicture, setPendingRemovePicture] = useState(false)
   const [previewImage, setPreviewImage] = useState(user?.profile_image || null)
+
+  // Priority Status State
+  const [priorityStatus, setPriorityStatus] = useState(null)
+  const [loadingPriority, setLoadingPriority] = useState(true)
+  const [priorityForm, setPriorityForm] = useState({ type: 'pwd', file: null })
+  const [isSubmittingPriority, setIsSubmittingPriority] = useState(false)
+  const [priorityMsg, setPriorityMsg] = useState({ type: '', text: '' })
+  useEffect(() => {
+    if (token) {
+      getMyPriorityStatus(token)
+        .then(setPriorityStatus)
+        .catch(console.error)
+        .finally(() => setLoadingPriority(false))
+    }
+  }, [token])
+
+  const handlePrioritySubmit = async (e) => {
+    e.preventDefault()
+    if (!priorityForm.file) {
+      setPriorityMsg({ type: 'error', text: 'Please upload a supporting document.' })
+      return
+    }
+    
+    setIsSubmittingPriority(true)
+    setPriorityMsg({ type: '', text: '' })
+    try {
+      const uploadRes = await uploadMedia(token, priorityForm.file)
+      await submitPriorityRequest(token, priorityForm.type, uploadRes.url)
+      
+      const newStatus = await getMyPriorityStatus(token)
+      setPriorityStatus(newStatus)
+      setPriorityMsg({ type: 'success', text: 'Priority request submitted successfully!' })
+      setPriorityForm({ type: 'pwd', file: null })
+    } catch (err) {
+      setPriorityMsg({ type: 'error', text: err.message || 'Failed to submit request.' })
+    } finally {
+      setIsSubmittingPriority(false)
+    }
+  }
 
   const handleOpenEditModal = () => {
     setEditData({
@@ -261,6 +302,124 @@ export default function StudentProfile() {
 
         {/* Settings Sections */}
         <div className="flex flex-col gap-6">
+
+          {/* Priority Status Card */}
+          <div className="bg-white rounded-3xl border border-border p-8 shadow-sm animate-fade-up">
+            <h3 className="font-serif text-[18px] md:text-[20px] font-bold text-text-main m-0 mb-5 md:mb-6">Priority Status</h3>
+            
+            {loadingPriority ? (
+              <div className="flex justify-center py-6">
+                <Loader2 size={24} className="animate-spin text-maroon" />
+              </div>
+            ) : (
+              <div className="flex flex-col gap-4">
+                {priorityMsg.text && (
+                  <div className={`p-3 rounded-lg text-[13px] font-medium ${priorityMsg.type === 'error' ? 'bg-red-50 text-red-600' : 'bg-green-50 text-green-600'}`}>
+                    {priorityMsg.text}
+                  </div>
+                )}
+                
+                {/* STATE 1: PENDING */}
+                {priorityStatus?.latest_request?.status === 'pending' && (
+                  <div className="bg-gold-light/30 border border-gold-border rounded-xl p-5 flex items-start gap-4">
+                    <Clock size={24} className="text-gold shrink-0 mt-0.5" />
+                    <div>
+                      <h4 className="text-[15px] font-bold text-text-main m-0 mb-1">Under Review</h4>
+                      <p className="text-[13px] text-text-sub m-0 leading-relaxed">
+                        Your {priorityStatus.latest_request.priority_type === 'pwd' ? 'PWD' : 'Pregnancy'} priority request is currently being reviewed by staff. You will be notified once it is approved.
+                        <br />
+                        <span className="text-[12px] font-medium text-text-muted mt-2 block">Submitted on {new Date(priorityStatus.latest_request.created_at).toLocaleDateString()}</span>
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {/* STATE 2: APPROVED */}
+                {priorityStatus?.latest_request?.status === 'approved' && (
+                  <div className="bg-success-light border border-success-border rounded-xl p-5 flex items-start gap-4">
+                    <CheckCircle size={24} className="text-success shrink-0 mt-0.5" />
+                    <div>
+                      <h4 className="text-[15px] font-bold text-text-main m-0 mb-1">
+                        {priorityStatus.latest_request.priority_type === 'pwd' ? 'PWD' : 'Pregnancy'} Priority Active
+                      </h4>
+                      <p className="text-[13px] text-text-sub m-0 leading-relaxed">
+                        You currently have priority status when booking appointments and joining queues.
+                        {priorityStatus.latest_request.priority_type === 'pregnant' && priorityStatus.latest_request.expires_at && (
+                          <span className="block mt-2 font-semibold text-text-main">
+                            Active until {new Date(priorityStatus.latest_request.expires_at).toLocaleDateString()}
+                          </span>
+                        )}
+                        {priorityStatus.latest_request.priority_type === 'pwd' && (
+                          <span className="block mt-2 font-semibold text-text-main">
+                            This status does not expire.
+                          </span>
+                        )}
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {/* STATE 3: NO REQUEST or REJECTED */}
+                {(!priorityStatus?.latest_request || priorityStatus?.latest_request?.status === 'rejected') && (
+                  <>
+                    {priorityStatus?.latest_request?.status === 'rejected' && (
+                      <div className="bg-red-50 border border-red-200 rounded-xl p-4 mb-4">
+                        <h4 className="text-[14px] font-bold text-red-700 m-0 mb-1 flex items-center gap-2"><X size={16} /> Request Rejected</h4>
+                        <p className="text-[13px] text-red-600 m-0">Reason: {priorityStatus.latest_request.rejection_reason}</p>
+                      </div>
+                    )}
+                    
+                    <div className="text-[14px] text-text-sub mb-4">
+                      Are you a PWD or currently pregnant? Submit a document to get priority queuing for your appointments. Our staff will review your submission.
+                    </div>
+                    
+                    <form onSubmit={handlePrioritySubmit} className="flex flex-col gap-5">
+                      <div className="flex gap-4">
+                        <label className={`flex-1 flex items-center gap-3 p-4 rounded-xl border-2 cursor-pointer transition-all ${priorityForm.type === 'pwd' ? 'border-maroon bg-maroon-light/20' : 'border-border bg-white hover:bg-off-white'}`}>
+                          <input type="radio" name="priority_type" value="pwd" checked={priorityForm.type === 'pwd'} onChange={() => setPriorityForm({ ...priorityForm, type: 'pwd' })} className="accent-maroon w-4 h-4 cursor-pointer" />
+                          <span className="text-[14px] font-bold text-text-main">PWD</span>
+                        </label>
+                        <label className={`flex-1 flex items-center gap-3 p-4 rounded-xl border-2 cursor-pointer transition-all ${priorityForm.type === 'pregnant' ? 'border-maroon bg-maroon-light/20' : 'border-border bg-white hover:bg-off-white'}`}>
+                          <input type="radio" name="priority_type" value="pregnant" checked={priorityForm.type === 'pregnant'} onChange={() => setPriorityForm({ ...priorityForm, type: 'pregnant' })} className="accent-maroon w-4 h-4 cursor-pointer" />
+                          <span className="text-[14px] font-bold text-text-main">Pregnant</span>
+                        </label>
+                      </div>
+                      
+                      <div>
+                        <label className="block text-[13px] font-semibold text-text-main mb-2">Supporting Document (ID or Medical Certificate)</label>
+                        <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-border rounded-xl bg-off-white hover:bg-gray-50 transition-colors cursor-pointer relative overflow-hidden group">
+                          {priorityForm.file ? (
+                            <div className="flex flex-col items-center gap-2">
+                              <CheckCircle size={24} className="text-success" />
+                              <span className="text-[13px] font-semibold text-text-main">{priorityForm.file.name}</span>
+                              <span className="text-[11px] text-text-muted">Click to change</span>
+                            </div>
+                          ) : (
+                            <div className="flex flex-col items-center gap-2">
+                              <Upload size={24} className="text-text-muted group-hover:text-maroon transition-colors" />
+                              <span className="text-[13px] font-semibold text-text-sub">Click to upload document</span>
+                              <span className="text-[11px] text-text-muted">JPEG or PNG, max 5MB</span>
+                            </div>
+                          )}
+                          <input type="file" accept=".png, .jpg, .jpeg" className="hidden" onChange={(e) => {
+                            if (e.target.files && e.target.files[0]) {
+                              setPriorityForm({ ...priorityForm, file: e.target.files[0] })
+                            }
+                          }} />
+                        </label>
+                      </div>
+                      
+                      <div className="flex justify-end">
+                        <button type="submit" disabled={isSubmittingPriority || !priorityForm.file} className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-maroon text-white text-[14px] font-semibold hover:bg-maroon-dark transition-colors shadow-sm cursor-pointer disabled:opacity-70 disabled:cursor-not-allowed">
+                          {isSubmittingPriority ? <><Loader2 size={16} className="animate-spin" /> Submitting...</> : 'Submit Request'}
+                        </button>
+                      </div>
+                    </form>
+                  </>
+                )}
+              </div>
+            )}
+          </div>
           
           {/* Security Card */}
           <div className="bg-white rounded-3xl border border-border p-8 shadow-sm animate-fade-up" style={{ animationDelay: '0.1s' }}>
@@ -363,7 +522,7 @@ export default function StudentProfile() {
 
       </div>
 
-      {/* Edit Profile Modal */}
+      {/* Manage Profile Modal */}
       {isEditModalOpen && (
         <div className="fixed inset-0 z-1000 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm" style={{ animation: 'fadeIn 0.2s ease-out' }}>
           <style>{`
@@ -374,7 +533,7 @@ export default function StudentProfile() {
           `}</style>
           <div className="bg-white rounded-3xl w-full max-w-125 shadow-2xl overflow-hidden animate-fade-up">
             <div className="flex items-center justify-between p-6 border-b border-border bg-off-white">
-              <h2 className="font-serif text-[22px] font-bold text-maroon m-0">Edit Profile</h2>
+              <h2 className="font-serif text-[22px] font-bold text-maroon m-0">Manage Profile</h2>
               <button 
                 onClick={handleCloseEditModal}
                 className="p-2 rounded-full hover:bg-border transition-colors text-text-sub hover:text-text-main cursor-pointer"

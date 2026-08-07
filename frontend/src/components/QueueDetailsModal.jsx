@@ -13,6 +13,9 @@ export default function QueueDetailsModal({ ticketData, onClose, onConfirm, onSe
   const getTodayStr = () => new Date().toISOString().split('T')[0]
   const [releaseDate, setReleaseDate] = useState(appt?.release_date || getTodayStr())
   const [savingDate, setSavingDate] = useState(false)
+  
+  const [releasedTo, setReleasedTo] = useState('')
+  const [documentVerified, setDocumentVerified] = useState(false)
 
   return createPortal((
     <div className="fixed inset-0 z-1000 flex items-center justify-center">
@@ -115,7 +118,7 @@ export default function QueueDetailsModal({ ticketData, onClose, onConfirm, onSe
                     >
                       {step.status === 'completed' ? <Check size={16} /> : step.step_number}
                     </div>
-                    {!isLast && <div className={`w-[2px] flex-1 min-h-10 my-1.5 transition-colors duration-500 ${step.status === 'completed' ? 'bg-success/50' : 'bg-border/60'}`} />}
+                    {!isLast && <div className={`w-0.5 flex-1 min-h-10 my-1.5 transition-colors duration-500 ${step.status === 'completed' ? 'bg-success/50' : 'bg-border/60'}`} />}
                   </div>
                   <div className={`flex-1 ${isLast ? 'pb-0' : 'pb-5'}`}>
                     <div className={`flex justify-between items-center rounded-2xl transition-all duration-300 ${isCurrent ? 'bg-white p-4 border border-maroon-border shadow-md -mt-2' : 'bg-transparent py-2 border-none mt-0 opacity-70 hover:opacity-100'}`}>
@@ -132,6 +135,31 @@ export default function QueueDetailsModal({ ticketData, onClose, onConfirm, onSe
                           </div>
                         )}
                       </div>
+                      
+                      {isCurrent && isRelease && (
+                        <div className="mt-4 p-4 bg-surface/50 rounded-xl border border-border">
+                          <label className="flex items-center gap-2 mb-3 cursor-pointer">
+                            <input 
+                              type="checkbox" 
+                              checked={documentVerified}
+                              onChange={e => setDocumentVerified(e.target.checked)}
+                              className="w-4 h-4 text-maroon rounded border-gray-300 focus:ring-maroon"
+                            />
+                            <span className="text-[13px] font-semibold text-text-main">Document Verified</span>
+                          </label>
+                          <div>
+                            <label className="block text-[11px] font-bold text-text-muted uppercase tracking-[0.04em] mb-1.5">Released To</label>
+                            <input
+                              type="text"
+                              value={releasedTo}
+                              onChange={e => setReleasedTo(e.target.value)}
+                              placeholder="e.g. Self, Authorized Representative"
+                              className="w-full px-3 py-2 rounded-lg border border-border bg-white text-[13px] font-medium outline-none text-text-main focus:border-maroon focus:ring-1 focus:ring-maroon transition-all"
+                            />
+                          </div>
+                        </div>
+                      )}
+
                       {isCurrent && (
                         <div className="flex items-center gap-2.5">
                           {step.location !== 'Back Office' && !hideSendToProcessing && (
@@ -142,7 +170,7 @@ export default function QueueDetailsModal({ ticketData, onClose, onConfirm, onSe
                                 onClose()
                               }}
                               disabled={isConfirming}
-                              className={`px-4 py-2.5 rounded-full border border-border text-[12.5px] font-bold font-sans transition-all shadow-sm hover:-translate-y-[1px]
+                              className={`px-4 py-2.5 rounded-full border border-border text-[12.5px] font-bold font-sans transition-all shadow-sm hover:-translate-y-px
                                 ${isConfirming ? 'bg-gray-100 text-text-muted cursor-not-allowed' : 'bg-white text-text-main cursor-pointer hover:bg-off-white'}
                               `}
                             >
@@ -153,11 +181,11 @@ export default function QueueDetailsModal({ ticketData, onClose, onConfirm, onSe
                             <button
                               onClick={() => {
                                 const finalDate = releaseDate || new Date().toISOString().split('T')[0]
-                                onConfirm(ticket.id, step.step_number, appt?.transaction_types?.name, name, confirmLabel, finalDate)
+                                onConfirm(ticket.id, step.step_number, appt?.transaction_types?.name, name, confirmLabel, finalDate, releasedTo, documentVerified)
                                 if (isLast || confirmLabel === 'Mark as Done') onClose()
                               }}
                               disabled={isConfirming}
-                              className={`px-5 py-2.5 rounded-full border-none text-[12.5px] font-bold font-sans transition-all shadow-sm hover:-translate-y-[1px]
+                              className={`px-5 py-2.5 rounded-full border-none text-[12.5px] font-bold font-sans transition-all shadow-sm hover:-translate-y-px
                                 ${isConfirming ? 'bg-maroon/50 text-white cursor-not-allowed' : 'bg-maroon text-white cursor-pointer hover:bg-maroon-dark hover:shadow-md'}
                               `}
                             >

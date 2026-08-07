@@ -40,7 +40,7 @@ def scan_document_legitimacy(document_url: str, priority_type: str) -> dict:
         )
 
         resp = client.chat.completions.create(
-            model=settings.openai_model,
+            model=settings.openai_vision_model,
             max_tokens=350,
             temperature=0,
             messages=[{
@@ -91,7 +91,7 @@ def scan_document_legitimacy(document_url: str, priority_type: str) -> dict:
         # Never block submission on AI failure — just flag for full manual review
         return {
             "extracted_text": "",
-            "confidence_score": 0,
+            "confidence_score": 40,
             "reasoning": f"Automatic scan unavailable ({str(e)[:100]}) — please review manually.",
         }
 
@@ -132,7 +132,7 @@ def get_pending_requests() -> list:
     admin = get_admin()
     try:
         res = admin.table("priority_requests") \
-            .select("*, users(first_name, last_name, student_id)") \
+            .select("*, users!priority_requests_student_id_fkey(first_name, last_name, student_id)") \
             .eq("status", "pending") \
             .order("created_at") \
             .execute()
