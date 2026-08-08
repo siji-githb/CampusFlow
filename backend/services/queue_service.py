@@ -433,7 +433,7 @@ def get_todays_queue(date_filter: str = None):
     try:
         # Use an inner join to filter by today's appointment date and fetch steps all at once
         tickets_res = admin.table("queue_tickets") \
-            .select("*, appointments!inner(appointment_date, time_slot, transaction_types(name)), users(first_name, last_name, student_id), transaction_steps(*)") \
+            .select("*, appointments!inner(appointment_date, time_slot, priority_class, transaction_types(name)), users(first_name, last_name, student_id), transaction_steps(*)") \
             .in_("status", ["waiting", "in_progress", "completed"]) \
             .or_(f"created_at.gte.{today},status.eq.in_progress") \
             .order("created_at") \
@@ -445,6 +445,19 @@ def get_todays_queue(date_filter: str = None):
             # Sort steps locally by step_number
             steps = sorted(steps, key=lambda x: x.get("step_number", 0))
             result.append({"ticket": ticket, "steps": steps})
+
+        def get_priority_weight(ticket_item):
+            status = ticket_item.get("status")
+            if status == "in_progress":
+                return -2  # In-progress tickets stay at the top
+            
+            priority = ticket_item.get("appointments", {}).get("priority_class", "regular")
+            if priority in ["pwd", "pregnant", "alumni"]:
+                return -1 # Priority tickets come next
+            return 0 # Regular tickets
+
+        # Python's sort is stable, so chronological order from DB is preserved within same priority
+        result.sort(key=lambda x: get_priority_weight(x["ticket"]))
 
         return result
     except Exception as e:

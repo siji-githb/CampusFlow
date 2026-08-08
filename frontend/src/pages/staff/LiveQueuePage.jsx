@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { createPortal } from 'react-dom'
 import { useAuth } from '../../context/useAuth'
-import { getTodaysQueue, confirmStep, callTicket, sendToProcessing, remindStudent, getUncollectedDocuments } from '../../services/queueService'
+import { getTodaysQueue, confirmStep, callTicket, sendToProcessing, remindStudent, getUncollectedDocuments, getLiveQueueStats } from '../../services/queueService'
 import { updateReleaseDate } from '../../services/adminService'
 import { Check, Circle, Clock, X, Users, CheckSquare, AlertTriangle, Download, Inbox, Play, Ticket, DoorOpen, Cog } from 'lucide-react'
 import QueueDetailsModal from '../../components/QueueDetailsModal'
@@ -140,6 +140,7 @@ export default function LiveQueuePage() {
   const [completedPage, setCompletedPage] = useState(1)
   const [toastMsg, setToastMsg] = useState(null)
   const [uncollected, setUncollected] = useState([])
+  const [queueStats, setQueueStats] = useState({ avg_wait_minutes: 0, peak_forecast: 'No Data' })
 
   const showToast = (msg) => {
     setToastMsg(msg)
@@ -163,12 +164,14 @@ export default function LiveQueuePage() {
 
   const fetchQueue = useCallback(async () => {
     try {
-      const [queueData, uncollectedData] = await Promise.all([
+      const [queueData, uncollectedData, statsData] = await Promise.all([
         getTodaysQueue(token),
-        getUncollectedDocuments(token)
+        getUncollectedDocuments(token),
+        getLiveQueueStats(token)
       ])
       setQueue(queueData)
       setUncollected(uncollectedData)
+      setQueueStats(statsData)
       setLastUpdated(new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }))
     } catch (e) { setError(e.message) }
     finally { setLoading(false) }
@@ -176,7 +179,7 @@ export default function LiveQueuePage() {
 
   useEffect(() => {
     fetchQueue()
-    const t = setInterval(fetchQueue, 5000)
+    const t = setInterval(fetchQueue, 15000)
     return () => clearInterval(t)
   }, [fetchQueue])
 
@@ -254,69 +257,55 @@ export default function LiveQueuePage() {
   }
 
   // ── Derived stats ──
-  const active    = queue.filter(q => q.ticket.status !== 'completed')
-  const done      = queue.filter(q => q.ticket.status === 'completed')
-  const serving   = queue.filter(q => q.ticket.status === 'in_progress')
-  const waiting   = queue.filter(q => q.ticket.status === 'pending' || q.ticket.status === 'waiting')
-  const highPrio  = queue.filter(q => {
-    const pc = q.ticket.appointments?.priority_class
-    return pc === 'alumni' || pc === 'pwd' || pc === 'pregnant'
-  })
-
-  // Calculate Average Wait Time from completed tickets today
-  let avgWait = 0
-  if (done.length > 0) {
-    let totalMinutes = 0
-    let validCount = 0
-    done.forEach(({ ticket, steps }) => {
-      if (!ticket.created_at) return
-      const created = new Date(ticket.created_at)
-      const lastStep = steps.slice().reverse().find(s => s.status === 'completed' && s.confirmed_at)
-      if (lastStep) {
-        const completed = new Date(lastStep.confirmed_at)
-        totalMinutes += Math.max(0, (completed - created) / 60000)
-        validCount++
-      }
+  const { active, done, serving, waiting, highPrio } = useMemo(() => {
+    const active = queue.filter(q => q.ticket.status !== 'completed')
+    const done = queue.filter(q => q.ticket.status === 'completed')
+    const serving = queue.filter(q => q.ticket.status === 'in_progress')
+    const waiting = queue.filter(q => q.ticket.status === 'pending' || q.ticket.status === 'waiting')
+    const highPrio = queue.filter(q => {
+      const pc = q.ticket.appointments?.priority_class
+      return pc === 'alumni' || pc === 'pwd' || pc === 'pregnant'
     })
-    avgWait = validCount > 0 ? Math.round(totalMinutes / validCount) : 12 // fallback 12m if no valid steps
-  } else {
-    avgWait = 12 // Fallback historical average if none done today
-  }
+    return { active, done, serving, waiting, highPrio }
+  }, [queue])
+
+  const avgWait = queueStats.avg_wait_minutes || 0
 
   // ── Filtered & searched queue ──
-  const displayed = queue.filter(({ ticket, steps }) => {
-    let statusOk = false
-    if (filters.status === 'active') {
-      statusOk = ['in_progress', 'pending', 'waiting'].includes(ticket.status)
-    } else if (filters.status === 'all') {
-      statusOk = true
-    } else {
-      statusOk = ticket.status === filters.status
-    }
+  const displayed = useMemo(() => {
+    return queue.filter(({ ticket, steps }) => {
+      let statusOk = false
+      if (filters.status === 'active') {
+        statusOk = ['in_progress', 'pending', 'waiting'].includes(ticket.status)
+      } else if (filters.status === 'all') {
+        statusOk = true
+      } else {
+        statusOk = ticket.status === filters.status
+      }
 
-    const prioOk = filters.priority === 'all'
-      || (filters.priority === 'high' && (ticket.appointments?.priority_class === 'alumni' || ticket.appointments?.priority_class === 'pwd' || ticket.appointments?.priority_class === 'pregnant'))
-      || (filters.priority === 'regular' && ticket.appointments?.priority_class === 'regular')
-    const txOk = filters.transactionType === 'all'
-      || (ticket.appointments?.transaction_types?.name || '').includes(filters.transactionType)
-    const name = `${ticket.users?.first_name} ${ticket.users?.last_name}`.toLowerCase()
-    const srchOk = !search || name.includes(search.toLowerCase()) || ticket.queue_number.toLowerCase().includes(search.toLowerCase())
-    return statusOk && prioOk && txOk && srchOk
-  })
+      const prioOk = filters.priority === 'all'
+        || (filters.priority === 'high' && (ticket.appointments?.priority_class === 'alumni' || ticket.appointments?.priority_class === 'pwd' || ticket.appointments?.priority_class === 'pregnant'))
+        || (filters.priority === 'regular' && ticket.appointments?.priority_class === 'regular')
+      const txOk = filters.transactionType === 'all'
+        || (ticket.appointments?.transaction_types?.name || '').includes(filters.transactionType)
+      const name = `${ticket.users?.first_name} ${ticket.users?.last_name}`.toLowerCase()
+      const srchOk = !search || name.includes(search.toLowerCase()) || ticket.queue_number.toLowerCase().includes(search.toLowerCase())
+      return statusOk && prioOk && txOk && srchOk
+    })
+  }, [queue, filters, search])
 
   // ── Split into "At the Counter" (physical line) vs "Processing" (back office) ──
-  // A ticket belongs in "At the Counter" if its CURRENT active step requires
-  // the student to be physically present. Otherwise it's sitting quietly in
-  // back-office processing — no one is standing in line for it.
-  // Completed tickets are excluded here since they already have their own section.
-  const getRequiresPresence = (steps) => {
-    const current = steps?.find(s => s.status === 'in_progress')
-    if (current?.location === 'Back Office') return false
-    return current?.requires_presence !== false // default true if missing/undefined
-  }
-  const nonCompleted    = displayed.filter(({ ticket }) => ticket.status !== 'completed')
-  const atCounter       = nonCompleted.filter(({ steps }) => getRequiresPresence(steps))
-  const processingQueue = nonCompleted.filter(({ steps }) => !getRequiresPresence(steps))
+  const { atCounter, processingQueue } = useMemo(() => {
+    const getRequiresPresence = (steps) => {
+      const current = steps?.find(s => s.status === 'in_progress')
+      if (current?.location === 'Back Office') return false
+      return current?.requires_presence !== false // default true if missing/undefined
+    }
+    const nonCompleted = displayed.filter(({ ticket }) => ticket.status !== 'completed')
+    const atCounter = nonCompleted.filter(({ steps }) => getRequiresPresence(steps))
+    const processingQueue = nonCompleted.filter(({ steps }) => !getRequiresPresence(steps))
+    return { atCounter, processingQueue }
+  }, [displayed])
 
   const currentTime = now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
 
@@ -336,7 +325,7 @@ export default function LiveQueuePage() {
     
     let waitMins = 0
     if (ticket.created_at) {
-      waitMins = Math.max(0, Math.floor((now.getTime() - new Date(ticket.created_at).getTime()) / 60000))
+      waitMins = Math.max(0, Math.floor((now.getTime() - Date.parse(ticket.created_at)) / 60000))
     } else {
       waitMins = Math.max(3, (idx + 1) * 5)
     }
@@ -362,11 +351,11 @@ export default function LiveQueuePage() {
           )}
           {ticket.status === 'in_progress' && inProgressStep?.step_name?.includes('Release') && inProgressStep.activated_at && (
             <div className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full mt-1.5 inline-block border ${
-              Math.floor((now.getTime() - new Date(inProgressStep.activated_at).getTime()) / (1000 * 3600 * 24)) >= 3
+              Math.floor((now.getTime() - Date.parse(inProgressStep.activated_at)) / (1000 * 3600 * 24)) >= 3
                 ? 'bg-danger-light text-danger border-danger-border'
                 : 'bg-surface text-text-muted border-border'
             }`}>
-              Waiting {Math.floor((now.getTime() - new Date(inProgressStep.activated_at).getTime()) / (1000 * 3600 * 24))} days
+              Waiting {Math.floor((now.getTime() - Date.parse(inProgressStep.activated_at)) / (1000 * 3600 * 24))} days
             </div>
           )}
         </div>
