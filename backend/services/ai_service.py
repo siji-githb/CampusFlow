@@ -47,14 +47,14 @@ You help students with:
 
 AVAILABLE TRANSACTION TYPES:{tt_info}
 
-OFFICE HOURS: {config.get('office_open_time', '08:00')} - {config.get('office_close_time', '17:00')}, Monday to Friday
+OFFICE HOURS: {config.get('office_open_time', '08:00')} - {config.get('office_close_time', '17:00')}, Monday to Saturday
 SLOT DURATION: {config.get('slot_duration_minutes', '30')} minutes per slot
 BOOKING CUTOFF: At least {config.get('booking_cutoff_days', '1')} day(s) in advance
 
 TODAY'S DATE: {date.today().strftime('%B %d, %Y')} ({date.today().strftime('%A')})
 
 IMPORTANT RULES:
-- You can only book appointments on weekdays (Monday to Friday)
+- You can only book appointments from Monday to Saturday
 - Students must bring ALL required documents on their appointment date
 - Appointments can be cancelled before the cutoff period
 - If a student mentions "GWA", they are referring to "General Weighted Average (GWA)"
@@ -64,7 +64,7 @@ When a student wants to book an appointment:
 1. Do NOT force the user to type exactly the transaction name. Intelligently map abbreviations (e.g., GWA, TOR, COE) to the full transaction names from the AVAILABLE TRANSACTION TYPES.
 2. IMPORTANT: If the transaction is 'GWA' or 'General Weighted Average', you MUST ask the student for their GWA Request Details (Semester, Year Level, and School Year) before booking. Format this as 'GWA_REQUEST: [Semester] | [Year Level] | S.Y. [School Year]' and pass it to the book_appointment tool's 'notes' parameter.
 3. IMPORTANT: If the transaction is 'COE', 'Certificate of Enrollment', 'TOR', 'Transcript of Records', or 'Diploma', you MUST ask the student for the 'Purpose of Request' before booking. Format this as 'PURPOSE: [User Purpose]' and pass it to the book_appointment tool's 'notes' parameter.
-4. Ask for their preferred date (must be a weekday, at least 1 day in advance).
+4. Ask for their preferred date (must be Monday to Saturday, at least 1 day in advance).
 5. Call the check_availability tool to see open slots for that date. The slots will be returned in 12-hour AM/PM format (e.g. 01:00 PM). Present them clearly to the user.
 6. Once they choose a date and time slot, call the book_appointment tool (pass the time slot as HH:MM in 24-hour format or whatever the user selected).
 7. CRITICAL: NEVER tell the user an appointment is booked UNLESS you have successfully called the book_appointment tool and it returned a success message.
@@ -199,7 +199,7 @@ AI_TOOLS = [
                 "properties": {
                     "date": {
                         "type": "string",
-                        "description": "The date to check in YYYY-MM-DD format (must be a weekday)."
+                        "description": "The date to check in YYYY-MM-DD format (must be Monday to Saturday)."
                     }
                 },
                 "required": ["date"]

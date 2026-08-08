@@ -296,7 +296,7 @@ export default function StaffDashboard() {
       items: [
         { id: 'priority-requests', icon: <ShieldCheck size={18} />, label: 'Priority Requests', badge: badgeStats.priorityRequests },
         { id: 'id-requests', icon: <HelpCircle size={18} />, label: 'Id Requests', badge: badgeStats.idRequests },
-        { id: 'records', icon: <ClipboardList size={18} />, label: 'Student Records' },
+        { id: 'records', icon: <ClipboardList size={18} />, label: 'Master List' },
         { id: 'messages', icon: <MessageSquare size={18} />, label: 'Messages', badge: badgeStats.messages },
       ]
     }
@@ -628,7 +628,7 @@ export default function StaffDashboard() {
             <AppointmentsPage />
           )}
 
-          {/* ──── STUDENT RECORDS VIEW ──── */}
+          {/* ──── MASTER LIST VIEW ──── */}
           {activeNav === 'records' && (
             <StudentRecordsPage />
           )}

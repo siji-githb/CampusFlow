@@ -199,9 +199,9 @@ def create_appointment(student_id: str, priority_class: str, data: AppointmentCr
             detail=f"Appointments must be booked at least {cutoff_days} day(s) in advance"
         )
 
-    # Check if date is a weekend
-    if data.appointment_date.weekday() >= 5:
-        raise HTTPException(status_code=400, detail="Appointments cannot be booked on weekends")
+    # Check if date is a weekend (Sunday only)
+    if data.appointment_date.weekday() == 6:
+        raise HTTPException(status_code=400, detail="Appointments cannot be booked on Sundays")
 
     import json
     date_overrides = json.loads(config.get("date_overrides", "{}"))
