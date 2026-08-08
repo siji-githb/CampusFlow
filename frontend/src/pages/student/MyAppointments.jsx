@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo, useCallback } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '../../context/useAuth'
 import StudentLayout from '../../components/layout/StudentLayout'
@@ -18,7 +18,11 @@ export default function MyAppointments() {
   const { token } = useAuth()
   const navigate = useNavigate()
   const [appointments, setAppointments] = useState([])
-  const [selectedAppt, setSelectedAppt] = useState(null)
+  const [selectedApptId, setSelectedApptId] = useState(null)
+  
+  const selectedAppt = useMemo(() => {
+    return appointments.find(a => a.id === selectedApptId) || null
+  }, [appointments, selectedApptId])
 
   const fmt12h = (t) => {
     if (!t) return ''
@@ -40,30 +44,22 @@ export default function MyAppointments() {
   const [visibleCount, setVisibleCount] = useState(4)
 
   const canReschedule = (apptDateStr, apptTimeStr) => {
-    const apptDate = new Date(`${apptDateStr}T${apptTimeStr}:00`)
-    const now = new Date()
-    const diffHours = (apptDate - now) / (1000 * 60 * 60)
-    return diffHours >= 24
+    if (!apptDateStr || !apptTimeStr) return false;
+    const [year, month, day] = apptDateStr.split('-').map(Number);
+    const [hour, min] = apptTimeStr.split(':').map(Number);
+    const apptDate = new Date(year, month - 1, day, hour, min);
+    const now = new Date();
+    const diffHours = (apptDate - now) / (1000 * 60 * 60);
+    return diffHours >= 24;
   }
 
-  const fetch = async () => {
+  const fetch = useCallback(async () => {
     try { setAppointments(await getMyAppointments(token)) }
     catch (e) { setError(e.message) }
     finally { setLoading(false) }
-  }
-  useEffect(() => { fetch() }, [token])
-
-  // Sync selectedAppt when appointments data changes (e.g. after cancellation)
-  useEffect(() => {
-    if (selectedAppt) {
-      const fresh = appointments.find(a => a.id === selectedAppt.id)
-      if (fresh && fresh.status !== selectedAppt.status) {
-        setSelectedAppt(fresh)
-      } else if (!fresh) {
-        setSelectedAppt(null)
-      }
-    }
-  }, [appointments])
+  }, [token])
+  
+  useEffect(() => { fetch() }, [fetch])
 
   const handleCancelConfirm = async () => {
     if (!confirmCancelId) return
@@ -87,29 +83,31 @@ export default function MyAppointments() {
     finally { setClearingAll(false); setTimeout(() => setSuccessMsg(''), 4000) }
   }
 
-  const filteredAppointments = appointments.filter(appt => {
-    if (filter === 'all') return true;
-    return appt.status === filter;
-  }).sort((a, b) => {
-    const aEnd = a.status === 'completed' || a.status === 'cancelled';
-    const bEnd = b.status === 'completed' || b.status === 'cancelled';
-    
-    // Separate active from ended appointments
-    if (aEnd && !bEnd) return 1;
-    if (!aEnd && bEnd) return -1;
-    
-    // If both are ended, sort descending (newest first)
-    if (aEnd && bEnd) {
-      const dateCmp = (b.appointment_date || '').localeCompare(a.appointment_date || '');
+  const filteredAppointments = useMemo(() => {
+    return appointments.filter(appt => {
+      if (filter === 'all') return true;
+      return appt.status === filter;
+    }).sort((a, b) => {
+      const aEnd = a.status === 'completed' || a.status === 'cancelled';
+      const bEnd = b.status === 'completed' || b.status === 'cancelled';
+      
+      // Separate active from ended appointments
+      if (aEnd && !bEnd) return 1;
+      if (!aEnd && bEnd) return -1;
+      
+      // If both are ended, sort descending (newest first)
+      if (aEnd && bEnd) {
+        const dateCmp = (b.appointment_date || '').localeCompare(a.appointment_date || '');
+        if (dateCmp !== 0) return dateCmp;
+        return (b.time_slot || '').localeCompare(a.time_slot || '');
+      }
+      
+      // If both are active, sort ascending (oldest/soonest first)
+      const dateCmp = (a.appointment_date || '').localeCompare(b.appointment_date || '');
       if (dateCmp !== 0) return dateCmp;
-      return (b.time_slot || '').localeCompare(a.time_slot || '');
-    }
-    
-    // If both are active, sort ascending (oldest/soonest first)
-    const dateCmp = (a.appointment_date || '').localeCompare(b.appointment_date || '');
-    if (dateCmp !== 0) return dateCmp;
-    return (a.time_slot || '').localeCompare(b.time_slot || '');
-  });
+      return (a.time_slot || '').localeCompare(b.time_slot || '');
+    });
+  }, [appointments, filter]);
 
   return (
     <StudentLayout activeTab="appointments" mobileTitle="My Appointments" backTo="/student/dashboard">
@@ -176,7 +174,7 @@ export default function MyAppointments() {
                 <div className="relative inline-block w-full sm:max-w-55">
                   <select 
                     value={filter}
-                    onChange={(e) => { setFilter(e.target.value); setSelectedAppt(null); }}
+                    onChange={(e) => { setFilter(e.target.value); setSelectedApptId(null); }}
                     className="appearance-none w-full bg-white border-[1.5px] border-border text-text-main text-[13.5px] font-bold py-2.5 pl-10 pr-8 rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.04)] outline-none focus:border-maroon focus:ring-4 focus:ring-maroon/10 cursor-pointer hover:border-text-sub transition-all font-sans"
                   >
                     <option value="all">All Appointments</option>
@@ -240,7 +238,7 @@ export default function MyAppointments() {
                   return (
                     <div 
                       key={appt.id} 
-                      onClick={() => setSelectedAppt(appt)}
+                      onClick={() => setSelectedApptId(appt.id)}
                       className={`group bg-white rounded-2xl p-4 shadow-[0_2px_8px_rgba(0,0,0,0.06),0_0_0_1px_rgba(0,0,0,0.04)] transition-all cursor-pointer hover:shadow-[0_4px_12px_rgba(0,0,0,0.08)] ${isSelected ? 'md:ring-2 md:ring-maroon md:shadow-[0_4px_12px_rgba(123,26,42,0.15)]' : ''}`}
                     >
                       <div className="flex justify-between items-start mb-2.5">

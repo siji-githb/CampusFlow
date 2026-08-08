@@ -126,6 +126,9 @@ export default function StudentProfile() {
 
     setPendingProfilePicture(file)
     setPendingRemovePicture(false)
+    if (previewImage && previewImage.startsWith('blob:')) {
+      URL.revokeObjectURL(previewImage)
+    }
     setPreviewImage(URL.createObjectURL(file))
     setProfileMsg({ type: '', text: '' })
     
@@ -403,7 +406,18 @@ export default function StudentProfile() {
                           )}
                           <input type="file" accept=".png, .jpg, .jpeg" className="hidden" onChange={(e) => {
                             if (e.target.files && e.target.files[0]) {
-                              setPriorityForm({ ...priorityForm, file: e.target.files[0] })
+                              const file = e.target.files[0];
+                              const allowedTypes = ['image/jpeg', 'image/png'];
+                              if (!allowedTypes.includes(file.type)) {
+                                setPriorityMsg({ type: 'error', text: 'Only PNG and JPEG images are allowed.' });
+                                return;
+                              }
+                              if (file.size > 5 * 1024 * 1024) {
+                                setPriorityMsg({ type: 'error', text: 'Image size exceeds 5MB limit.' });
+                                return;
+                              }
+                              setPriorityMsg({ type: '', text: '' });
+                              setPriorityForm({ ...priorityForm, file: file });
                             }
                           }} />
                         </label>

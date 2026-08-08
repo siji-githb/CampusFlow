@@ -7,6 +7,7 @@ from services.queue_service import (
     get_time_estimate,
     get_live_queue_stats,
     get_uncollected_documents,
+    get_public_live_queue,
 )
 from models.queue_models import ConfirmStepRequest, CallTicketRequest, SendToProcessingRequest, RemindStudentRequest
 from deps import get_current_user, require_staff_or_admin
@@ -30,6 +31,14 @@ def my_queue(user=Depends(get_current_user)):
     if not result:
         return {"ticket": None, "steps": []}
     return result
+
+
+@router.get("/public-live")
+def public_live_queue(user=Depends(get_current_user)):
+    """
+    Publicly visible live queue status, returning non-PII currently serving tickets.
+    """
+    return get_public_live_queue()
 
 
 @router.post("/confirm-step")

@@ -655,3 +655,41 @@ def get_uncollected_documents(threshold_days: int = 3):
 
     results.sort(key=lambda r: r["days_waiting"] or 0, reverse=True)
     return results
+
+
+def get_public_live_queue():
+    """
+    Get all active queue tickets currently being served.
+    Returns only non-PII data (queue number, location, type).
+    For the student dashboard 'Now Serving' view.
+    """
+    admin = get_admin()
+    today = str(date.today())
+    try:
+        # Fetch tickets currently in progress for today
+        tickets_res = admin.table("queue_tickets") \
+            .select("id, queue_number, appointments!inner(transaction_types(name)), transaction_steps(status, location)") \
+            .eq("status", "in_progress") \
+            .gte("created_at", today) \
+            .execute()
+            
+        results = []
+        for ticket in tickets_res.data:
+            # Find the active step to get the counter/location
+            steps = ticket.get("transaction_steps", [])
+            active_step = next((s for s in steps if s.get("status") == "in_progress"), None)
+            
+            location = active_step.get("location") if active_step else "Processing"
+            tx_name = ((ticket.get("appointments") or {}).get("transaction_types") or {}).get("name", "Transaction")
+            
+            results.append({
+                "queue_ticket_id": ticket.get("id"),
+                "queue_number": ticket.get("queue_number"),
+                "transaction_type": tx_name,
+                "location": location
+            })
+            
+        results.sort(key=lambda x: x["queue_number"])
+        return results
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))

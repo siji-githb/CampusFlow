@@ -1,11 +1,11 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/useAuth';
 import campusFlowLogo from '../../assets/logo.png';
 import StudentLayout, { useWindowWidth, ProfileDropdown } from '../../components/layout/StudentLayout';
 import { getMyAppointments, cancelAppointment } from '../../services/appointmentService';
-import { getMyQueue, getTimeEstimate } from '../../services/queueService';
+import { getMyQueue, getTimeEstimate, getPublicLiveQueue } from '../../services/queueService';
 import { LogOut, ClipboardList, Ticket, Home, Calendar, Bot, Clock, Search, ChevronRight } from 'lucide-react';
 import NotificationDropdown from '../../components/NotificationDropdown';
 import GlobalSearch from '../../components/GlobalSearch';
@@ -114,8 +114,9 @@ export default function StudentDashboard() {
   const [loading, setLoading] = useState(true);
   const [appointments, setAppointments] = useState([]);
   const [liveTicket, setLiveTicket] = useState(null);
+  const [activeCounterTickets, setActiveCounterTickets] = useState([]);
 
-  const fetchDashboardData = async () => {
+  const fetchDashboardData = useCallback(async () => {
     try {
       const d = new Date();
       const today = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
@@ -173,12 +174,20 @@ export default function StudentDashboard() {
       } else {
         setLiveTicket(null);
       }
+      
+      // 3. Fetch public live queue (now serving)
+      try {
+        const publicData = await getPublicLiveQueue(token);
+        setActiveCounterTickets(publicData || []);
+      } catch (err) {
+        // silent fail
+      }
     } catch (e) {
       console.error('Failed to load dashboard data:', e);
     } finally {
       setLoading(false);
     }
-  };
+  }, [token]);
 
   useEffect(() => {
     if (token) {
@@ -186,7 +195,7 @@ export default function StudentDashboard() {
       const interval = setInterval(fetchDashboardData, 20000); // refresh every 20s
       return () => clearInterval(interval);
     }
-  }, [token]);
+  }, [token, fetchDashboardData]);
 
   const getGreeting = () => {
     const hour = new Date().getHours();
@@ -407,6 +416,24 @@ export default function StudentDashboard() {
                   </div>
                 </div>
               </div>
+            ) : activeCounterTickets.length > 0 ? (
+              <div className="bg-white rounded-2xl p-5 shadow-[0_2px_8px_rgba(0,0,0,0.02),0_0_0_1px_rgba(123,26,42,0.04)]">
+                <p className="text-[11px] font-semibold text-text-sub tracking-[0.12em] uppercase m-0 mb-3 text-center">Now Serving</p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {activeCounterTickets.map((t) => (
+                    <div key={t.queue_ticket_id} className="flex items-center gap-3 p-3 rounded-xl border border-border bg-off-white">
+                      <div className="font-serif text-[24px] font-bold text-maroon leading-none tracking-[-0.02em] min-w-17.5 text-center">
+                        {t.queue_number}
+                      </div>
+                      <div className="w-px h-8 bg-border" />
+                      <div className="flex-1 overflow-hidden">
+                        <div className="text-[10px] text-text-muted uppercase tracking-wider block mb-0.5">{t.location}</div>
+                        <div className="text-[13px] text-text-main font-medium whitespace-nowrap overflow-hidden text-ellipsis">{t.transaction_type}</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
             ) : (
               <div className="relative text-center p-8 lg:p-10 flex-1 flex flex-col justify-center items-center bg-white rounded-[20px] border border-border shadow-[0_2px_8px_rgba(0,0,0,0.02)] overflow-hidden transition-all duration-300 hover:shadow-[0_8px_24px_rgba(123,26,42,0.06)] hover:border-maroon/20">
                 {/* Decorative background blobs */}
@@ -420,13 +447,14 @@ export default function StudentDashboard() {
                 
                 {/* Typography */}
                 <h3 className="relative z-10 font-serif text-[18px] lg:text-[20px] font-bold text-text-main m-0 mb-1.5 tracking-tight">No Active Queue Ticket</h3>
-                <p className="relative z-10 text-[13px] lg:text-[14px] m-0 text-text-sub max-w-65 leading-relaxed">There's no active queue ticket at the moment. Active tickets will appear here once someone's in line.</p>
+                <p className="relative z-10 text-[13px] lg:text-[14px] m-0 text-text-sub max-w-65 leading-relaxed">There's no active queue ticket at the moment. Activate your ticket to join the queue.</p>
               </div>
             )}
           </div>
         </div>
 
       </div>
+      <DraggableBot navigate={navigate} />
     </StudentLayout>
   );
 }

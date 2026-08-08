@@ -60,6 +60,21 @@ export default function AiChat({ asWidget, headless, onClose, initialQuery }) {
   const [loading, setLoading] = useState(false)
   const [error,   setError]   = useState('')
   const [showConfirm, setShowConfirm] = useState(false)
+  const confirmPopupRef = useRef(null)
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (confirmPopupRef.current && !confirmPopupRef.current.contains(event.target)) {
+        setShowConfirm(false);
+      }
+    };
+    if (showConfirm) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showConfirm]);
 
   const [isListening, setIsListening] = useState(false)
   const [isSpeaking,  setIsSpeaking]  = useState(false)
@@ -68,6 +83,14 @@ export default function AiChat({ asWidget, headless, onClose, initialQuery }) {
     ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window)
 
   const bottomRef = useRef(null)
+  const textareaRef = useRef(null)
+
+  useEffect(() => {
+    if (textareaRef.current) {
+      textareaRef.current.style.height = 'auto';
+      textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 120)}px`;
+    }
+  }, [input]);
 
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [messages])
 
@@ -111,7 +134,10 @@ export default function AiChat({ asWidget, headless, onClose, initialQuery }) {
     recognition.onerror  = () => setIsListening(false)
     recognition.onresult = (e) => {
       const transcript = e.results[0][0].transcript
-      setInput(transcript)
+      setInput(prev => {
+        const spacer = prev.length > 0 && !prev.endsWith(' ') ? ' ' : '';
+        return prev + spacer + transcript;
+      })
     }
 
     recognitionRef.current = recognition
@@ -126,6 +152,13 @@ export default function AiChat({ asWidget, headless, onClose, initialQuery }) {
   const handleSend = async (text = null) => {
     const msg = text || input.trim()
     if (!msg || loading) return
+    
+    if (msg.length > 1000) {
+      setError("Your message is too long — please keep it under 1000 characters.");
+      setMessages(prev => [...prev, { role: 'assistant', content: "Message was too long to send.", isError: true }]);
+      return;
+    }
+
     setInput(''); setError('')
     recognitionRef.current?.stop()
     window.speechSynthesis?.cancel()
@@ -220,12 +253,14 @@ export default function AiChat({ asWidget, headless, onClose, initialQuery }) {
             isListening ? 'border-maroon/40 shadow-[0_0_0_3px_rgba(123,26,42,0.1)]' : 'border-transparent focus-within:border-maroon/30 focus-within:bg-white focus-within:shadow-[0_4px_16px_rgba(0,0,0,0.04)]'
           }`}>
             <textarea
+              ref={textareaRef}
               value={input}
               onChange={e => setInput(e.target.value)}
               onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend() } }}
               placeholder={isListening ? 'Listening...' : 'Ask Aether anything...'}
               rows={1}
-              className="flex-1 bg-transparent border-none outline-none resize-none px-3 py-2 text-[14px] text-text-main placeholder-text-muted min-h-11 max-h-30 box-border leading-relaxed"
+              style={{ height: 'auto' }}
+              className="flex-1 bg-transparent border-none outline-none resize-none px-3 py-2 text-[14px] text-text-main placeholder-text-muted min-h-11 max-h-30 box-border leading-relaxed overflow-y-auto"
             />
 
             {/* Mic button */}
@@ -299,7 +334,7 @@ export default function AiChat({ asWidget, headless, onClose, initialQuery }) {
             </div>
             <span className="font-bold text-[14px]">Aether</span>
           </div>
-          <div className="flex items-center gap-3 relative">
+          <div className="flex items-center gap-3 relative" ref={confirmPopupRef}>
             <button onClick={() => setShowConfirm(!showConfirm)} title="Clear Chat" className="text-white/70 hover:text-white bg-transparent border-none cursor-pointer flex items-center justify-center">
               <Eraser size={16} />
             </button>

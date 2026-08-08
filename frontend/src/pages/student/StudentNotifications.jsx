@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../../context/useAuth';
 import StudentLayout from '../../components/layout/StudentLayout';
 import { Bell, CheckCircle, Info, AlertTriangle, Check } from 'lucide-react';
@@ -19,7 +19,7 @@ export default function StudentNotifications() {
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  const fetchNotifs = async () => {
+  const fetchNotifs = useCallback(async () => {
     try {
       const data = await getNotifications(token);
       setNotifications(data || []);
@@ -28,13 +28,13 @@ export default function StudentNotifications() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [token]);
 
   useEffect(() => {
     fetchNotifs();
     const interval = setInterval(fetchNotifs, 10000);
     return () => clearInterval(interval);
-  }, [token]);
+  }, [fetchNotifs]);
 
   const handleMarkRead = async (id, e) => {
     if (e) e.stopPropagation();
@@ -61,6 +61,17 @@ export default function StudentNotifications() {
       case 'warning': return <AlertTriangle size={20} color={M.danger} />;
       default: return <Info size={20} color={M.textSub} />;
     }
+  };
+
+  const formatDateTime = (dateStr) => {
+    const d = new Date(dateStr);
+    const today = new Date();
+    const isToday = d.getDate() === today.getDate() && d.getMonth() === today.getMonth() && d.getFullYear() === today.getFullYear();
+    const timeStr = d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+    
+    if (isToday) return timeStr;
+    const datePart = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    return `${datePart} at ${timeStr}`;
   };
 
   const unreadCount = notifications.filter(n => !n.is_read).length;
@@ -101,7 +112,7 @@ export default function StudentNotifications() {
                         {n.title}
                       </p>
                       <span className="shrink-0 text-[11px] text-text-muted pt-0.5">
-                        {new Date(n.created_at).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
+                        {formatDateTime(n.created_at)}
                       </span>
                     </div>
                     <p className="m-0 text-[13px] text-text-sub leading-relaxed">

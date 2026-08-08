@@ -108,3 +108,12 @@ export const remindStudent = async (token, queueTicketId) => {
   if (!res.ok) throw new Error(data.detail || 'Failed to send reminder')
   return data
 }
+
+export const getPublicLiveQueue = async (token) => {
+  const res = await fetch(`${API_URL}/queue/public-live`, {
+    headers: authHeader(token)
+  })
+  const data = await res.json()
+  if (!res.ok) throw new Error(data.detail || 'Failed to fetch public live queue')
+  return data
+}

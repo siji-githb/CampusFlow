@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { createPortal } from 'react-dom'
 import { useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '../../context/useAuth'
@@ -25,8 +25,12 @@ export default function MyQueue() {
   const [activeTab, setActiveTab]   = useState('active')
   const [cancelConfirmId, setCancelConfirmId] = useState(null)
   const [activateConfirmId, setActivateConfirmId] = useState(null)
-  const d = new Date();
-  const today = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+
+  const getTodayStr = () => {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  };
+  const today = getTodayStr(); // evaluated per-render for local UI checks
 
   const fmt12h = (t) => {
     if (!t) return ''
@@ -40,43 +44,44 @@ export default function MyQueue() {
   }
   const pollRef  = useRef(null)
 
-  const fetchQueue = async () => {
+  const fetchQueue = useCallback(async () => {
     try {
       const data = await getMyQueue(token)
       setQueueData(data.ticket ? data : null)
     } catch (e) { setError(e.message) }
-  }
+  }, [token])
 
-  const fetchAppts = async () => {
+  const fetchAppts = useCallback(async () => {
     try {
       const all = await getMyAppointments(token)
+      const currentToday = getTodayStr();
       setUpcomingAppts(all.filter(a => {
         const hasActiveTicket = Array.isArray(a.queue_tickets) && a.queue_tickets.some(qt => qt.status !== 'cancelled');
-        return a.appointment_date >= today && a.status === 'confirmed' && !hasActiveTicket;
+        return a.appointment_date >= currentToday && a.status === 'confirmed' && !hasActiveTicket;
       }))
     } catch (e) { setError(e.message) }
-  }
+  }, [token])
 
-  const fetchEstimates = async (appointmentId) => {
+  const fetchEstimates = useCallback(async (appointmentId) => {
     try {
       const data = await getTimeEstimate(token, appointmentId)
       setEstimates(data.estimates || [])
     } catch {
       setEstimates([])
     }
-  }
+  }, [token])
 
   useEffect(() => {
     Promise.all([fetchQueue(), fetchAppts()]).finally(() => setLoading(false))
     pollRef.current = setInterval(fetchQueue, 15000)
     return () => clearInterval(pollRef.current)
-  }, [])
+  }, [fetchQueue, fetchAppts])
 
   useEffect(() => {
     if (queueData?.ticket?.appointment_id) {
       fetchEstimates(queueData.ticket.appointment_id)
     }
-  }, [queueData?.ticket?.appointment_id])
+  }, [queueData?.ticket?.appointment_id, fetchEstimates])
 
   const handleActivate = async () => {
     if (!activateConfirmId) return

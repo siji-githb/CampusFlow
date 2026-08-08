@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '../../context/useAuth'
 import StudentLayout from '../../components/layout/StudentLayout'
@@ -18,7 +18,10 @@ const STATUS_STYLES = {
 // ── Calendar Widget ──
 function CalendarWidget({ selectedDate, onDateSelect, minDateStr, maxDateStr, dateOverrides = {} }) {
   const [currentMonth, setCurrentMonth] = useState(() => {
-    if (selectedDate) return new Date(selectedDate + 'T00:00:00')
+    if (selectedDate) {
+      const [y, m, d] = selectedDate.split('-').map(Number)
+      return new Date(y, m - 1, d)
+    }
     const d = new Date(); d.setDate(d.getDate() + 1); return d
   })
 
@@ -32,8 +35,15 @@ function CalendarWidget({ selectedDate, onDateSelect, minDateStr, maxDateStr, da
 
   const MONTHS   = ['January','February','March','April','May','June','July','August','September','October','November','December']
   const DAY_NAMES = ['Su','Mo','Tu','We','Th','Fr','Sa']
-  const minD = new Date(minDateStr + 'T00:00:00').getTime()
-  const maxD = new Date(maxDateStr + 'T00:00:00').getTime()
+  
+  const parseDateLocal = (dateStr) => {
+    if (!dateStr) return 0;
+    const [y, m, d] = dateStr.split('-').map(Number);
+    return new Date(y, m - 1, d).getTime();
+  }
+  
+  const minD = parseDateLocal(minDateStr)
+  const maxD = parseDateLocal(maxDateStr)
 
   return (
     <div className="max-w-90 mx-auto">
@@ -64,8 +74,9 @@ function CalendarWidget({ selectedDate, onDateSelect, minDateStr, maxDateStr, da
         {days.map((d, i) => {
           if (!d) return <div key={i} />
           const dateStr    = `${year}-${String(month + 1).padStart(2,'0')}-${String(d).padStart(2,'0')}`
-          const t          = new Date(dateStr + 'T00:00:00').getTime()
-          const dow        = new Date(dateStr + 'T00:00:00').getDay()
+          const dateObj    = new Date(year, month, d)
+          const t          = dateObj.getTime()
+          const dow        = dateObj.getDay()
           const isDisabled = dow === 0 || t < minD || t > maxD
           const isSelected = selectedDate === dateStr
           const override = dateOverrides[dateStr]
@@ -317,14 +328,19 @@ export default function BookAppointment() {
   }
 
   // 24h format from backend e.g. '08:00', '13:30'
-  const morningSlots   = slotsData?.slots.filter(s => {
-    const h = parseInt(s.time_slot.split(':')[0], 10)
-    return h < 12
-  }) || []
-  const afternoonSlots = slotsData?.slots.filter(s => {
-    const h = parseInt(s.time_slot.split(':')[0], 10)
-    return h >= 12
-  }) || []
+  const morningSlots = useMemo(() => {
+    return slotsData?.slots.filter(s => {
+      const h = parseInt(s.time_slot.split(':')[0], 10)
+      return h < 12
+    }) || []
+  }, [slotsData])
+
+  const afternoonSlots = useMemo(() => {
+    return slotsData?.slots.filter(s => {
+      const h = parseInt(s.time_slot.split(':')[0], 10)
+      return h >= 12
+    }) || []
+  }, [slotsData])
 
   // Format '08:00' → '8:00 AM', '13:00' → '1:00 PM'
   const fmt12h = (t) => {
@@ -335,7 +351,11 @@ export default function BookAppointment() {
     return `${h12}:${mStr} ${suffix}`
   }
 
-  const fmtDate = (d) => new Date(d + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })
+  const fmtDate = (dateStr) => {
+    if (!dateStr) return '';
+    const [y, m, d] = dateStr.split('-').map(Number);
+    return new Date(y, m - 1, d).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
+  }
 
   // ── Success Screen ──
   if (success) return (
@@ -683,9 +703,9 @@ export default function BookAppointment() {
               </button>
               <button type="button"
                 onClick={() => setStep(3)}
-                disabled={!selectedSlot || (isGWA && (!gwaSemester || !gwaYearLevel || !gwaSchoolYear))}
+                disabled={!selectedSlot || (isGWA && (!gwaSemester || !gwaYearLevel || !gwaSchoolYear)) || (isTorOrCoe && (!purpose || (purpose === 'Other' && !purposeOther.trim())))}
                 className={`py-3 px-4 md:px-7 rounded-[10px] border-none text-[14px] font-bold font-sans transition-all duration-200 ${
-                  (selectedSlot && !(isGWA && (!gwaSemester || !gwaYearLevel || !gwaSchoolYear))) ? 'bg-maroon text-white cursor-pointer hover:opacity-90' : 'bg-border text-text-muted cursor-not-allowed'
+                  (selectedSlot && !(isGWA && (!gwaSemester || !gwaYearLevel || !gwaSchoolYear)) && !(isTorOrCoe && (!purpose || (purpose === 'Other' && !purposeOther.trim())))) ? 'bg-maroon text-white cursor-pointer hover:opacity-90' : 'bg-border text-text-muted cursor-not-allowed'
                 }`}>
                 Next: Confirm →
               </button>
