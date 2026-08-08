@@ -20,91 +20,7 @@ const STATUS_STYLES = {
   no_show:     { bg: '#F9F9F9', color: '#A8A29E', border: '#EAE7E2' },
 };
 
-// ── Draggable AI Bot ──
-const DraggableBot = ({ navigate }) => {
-  const [isDragging, setIsDragging] = useState(false);
-  const [position, setPosition] = useState({ 
-    x: window.innerWidth - 20 - 56, 
-    y: window.innerHeight - 84 - 56 
-  });
-  const buttonRef = useRef(null);
-  const hasDragged = useRef(false);
-  const startPos = useRef({ x: 0, y: 0, btnX: 0, btnY: 0 });
 
-  useEffect(() => {
-    const handleResize = () => {
-      setPosition(prev => {
-        const x = Math.min(prev.x, window.innerWidth - 56);
-        const y = Math.min(prev.y, window.innerHeight - 56);
-        return { x: Math.max(0, x), y: Math.max(0, y) };
-      });
-    };
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
-
-  const onPointerDown = (e) => {
-    setIsDragging(true);
-    hasDragged.current = false;
-    startPos.current = {
-      x: e.clientX,
-      y: e.clientY,
-      btnX: position.x,
-      btnY: position.y
-    };
-    e.target.setPointerCapture(e.pointerId);
-  };
-
-  const onPointerMove = (e) => {
-    if (!isDragging) return;
-    
-    const dx = e.clientX - startPos.current.x;
-    const dy = e.clientY - startPos.current.y;
-    
-    if (!hasDragged.current && Math.sqrt(dx*dx + dy*dy) > 5) {
-      hasDragged.current = true;
-    }
-
-    if (hasDragged.current) {
-      let newX = startPos.current.btnX + dx;
-      let newY = startPos.current.btnY + dy;
-      
-      newX = Math.max(0, Math.min(newX, window.innerWidth - 56));
-      newY = Math.max(0, Math.min(newY, window.innerHeight - 56));
-
-      setPosition({ x: newX, y: newY });
-    }
-  };
-
-  const onPointerUp = (e) => {
-    setIsDragging(false);
-    e.target.releasePointerCapture(e.pointerId);
-  };
-
-  const onClick = (e) => {
-    if (hasDragged.current) {
-      e.preventDefault();
-      e.stopPropagation();
-      return;
-    }
-    navigate('/student/ai-chat');
-  };
-
-  return (
-    <button
-      ref={buttonRef}
-      onPointerDown={onPointerDown}
-      onPointerMove={onPointerMove}
-      onPointerUp={onPointerUp}
-      onPointerCancel={onPointerUp}
-      onClick={onClick}
-      className={`fixed w-14 h-14 rounded-full bg-maroon text-white border-none shadow-[0_4px_16px_rgba(123,26,42,0.3)] flex items-center justify-center cursor-pointer z-90 touch-none hover:scale-110 hover:-translate-y-0.5 hover:shadow-[0_8px_24px_rgba(123,26,42,0.45)] ${isDragging ? 'transition-none' : 'transition-all duration-300 ease-out-back'}`}
-      style={{ left: position.x + 'px', top: position.y + 'px' }}
-    >
-      <Bot size={26} className="pointer-events-none" />
-    </button>
-  );
-};
 
 // ── Main Page Component ──
 export default function StudentDashboard() {
@@ -454,7 +370,6 @@ export default function StudentDashboard() {
         </div>
 
       </div>
-      <DraggableBot navigate={navigate} />
     </StudentLayout>
   );
 }

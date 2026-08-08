@@ -429,23 +429,24 @@ export default function StudentLayout({ children, activeTab, mobileTitle, backTo
   const hasDragged = useRef(false);
   const startPos = useRef({ x: 0, y: 0, btnX: 0, btnY: 0 });
 
-  // Update bounds on resize
+  // Update bounds on resize or chat toggle
   useEffect(() => {
-    if (position) {
-      const handleResize = () => {
-        setPosition(prev => {
-          if (!prev) return prev;
-          const w = isChatOpen ? 380 : 60;
-          const h = isChatOpen ? 600 : 60;
-          const x = Math.min(prev.x, window.innerWidth - w);
-          const y = Math.min(prev.y, window.innerHeight - h);
-          return { x: Math.max(0, x), y: Math.max(0, y) };
-        });
-      };
-      window.addEventListener('resize', handleResize);
-      return () => window.removeEventListener('resize', handleResize);
-    }
-  }, [position, isChatOpen]);
+    const enforceBounds = () => {
+      setPosition(prev => {
+        if (!prev) return prev;
+        const w = isChatOpen ? (isDesktop ? 380 : window.innerWidth - 64) : 60;
+        const h = isChatOpen ? 600 : 60;
+        const x = Math.max(0, Math.min(prev.x, window.innerWidth - w));
+        const y = Math.max(0, Math.min(prev.y, window.innerHeight - h));
+        if (x === prev.x && y === prev.y) return prev;
+        return { x, y };
+      });
+    };
+
+    enforceBounds();
+    window.addEventListener('resize', enforceBounds);
+    return () => window.removeEventListener('resize', enforceBounds);
+  }, [isChatOpen, isDesktop]);
 
   const onPointerDown = (e) => {
     if (e.target.closest('button')) return;
