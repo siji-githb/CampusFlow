@@ -294,13 +294,14 @@ export default function LiveQueuePage() {
     })
   }, [queue, filters, search])
 
+  const getRequiresPresence = (steps) => {
+    const current = steps?.find(s => s.status === 'in_progress')
+    if (current?.location === 'Back Office') return false
+    return current?.requires_presence !== false // default true if missing/undefined
+  }
+
   // ── Split into "At the Counter" (physical line) vs "Processing" (back office) ──
   const { atCounter, processingQueue } = useMemo(() => {
-    const getRequiresPresence = (steps) => {
-      const current = steps?.find(s => s.status === 'in_progress')
-      if (current?.location === 'Back Office') return false
-      return current?.requires_presence !== false // default true if missing/undefined
-    }
     const nonCompleted = displayed.filter(({ ticket }) => ticket.status !== 'completed')
     const atCounter = nonCompleted.filter(({ steps }) => getRequiresPresence(steps))
     const processingQueue = nonCompleted.filter(({ steps }) => !getRequiresPresence(steps))
