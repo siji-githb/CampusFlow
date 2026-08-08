@@ -48,13 +48,25 @@ export default function StudentProfile() {
   const [isSubmittingPriority, setIsSubmittingPriority] = useState(false)
   const [priorityMsg, setPriorityMsg] = useState({ type: '', text: '' })
   useEffect(() => {
+    let interval;
     if (token) {
-      getMyPriorityStatus(token)
-        .then(setPriorityStatus)
-        .catch(console.error)
-        .finally(() => setLoadingPriority(false))
+      const fetchStatus = () => {
+        getMyPriorityStatus(token)
+          .then(status => {
+            setPriorityStatus(status)
+            // Automatically update the user tag in context if staff approved it
+            if (status?.latest_request?.status === 'approved' && user?.priority_class !== status.latest_request.priority_type) {
+              updateUser({ ...user, priority_class: status.latest_request.priority_type })
+            }
+          })
+          .catch(console.error)
+          .finally(() => setLoadingPriority(false))
+      }
+      fetchStatus()
+      interval = setInterval(fetchStatus, 15000)
     }
-  }, [token])
+    return () => clearInterval(interval)
+  }, [token, user, updateUser])
 
   const handlePrioritySubmit = async (e) => {
     e.preventDefault()
@@ -267,7 +279,7 @@ export default function StudentProfile() {
                 <div className="flex flex-wrap justify-center md:justify-start items-center gap-2 md:gap-4 text-[13px] md:text-[14px] text-text-sub font-medium">
                   <span className="flex items-center gap-1.5"><IdCard size={16} className="text-gold" /> ID: {user?.student_id || 'Not set'}</span>
                   <span className="hidden md:inline-block w-1 h-1 rounded-full bg-border-strong" />
-                  <span className="flex items-center gap-1.5"><Tag size={16} className="text-gold" /> {user?.priority_class ? `${user.priority_class.charAt(0).toUpperCase() + user.priority_class.slice(1)} Student` : 'Student'}</span>
+                  <span className="flex items-center gap-1.5"><Tag size={16} className="text-gold" /> {user?.priority_class ? `${user.priority_class === 'pwd' ? 'PWD' : user.priority_class.charAt(0).toUpperCase() + user.priority_class.slice(1)} Student` : 'Student'}</span>
                 </div>
               </div>
             </div>
@@ -389,7 +401,9 @@ export default function StudentProfile() {
                       </div>
                       
                       <div>
-                        <label className="block text-[13px] font-semibold text-text-main mb-2">Supporting Document (ID or Medical Certificate)</label>
+                        <label className="block text-[13px] font-semibold text-text-main mb-2">
+                          Supporting Document ({priorityForm.type === 'pwd' ? 'PWD ID or Barangay Certificate' : 'Pre-Natal Certificate'})
+                        </label>
                         <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-border rounded-xl bg-off-white hover:bg-gray-50 transition-colors cursor-pointer relative overflow-hidden group">
                           {priorityForm.file ? (
                             <div className="flex flex-col items-center gap-2">

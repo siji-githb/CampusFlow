@@ -5,8 +5,8 @@ import { useAuth } from '../../context/useAuth';
 import campusFlowLogo from '../../assets/logo.png';
 import StudentLayout, { useWindowWidth, ProfileDropdown } from '../../components/layout/StudentLayout';
 import { getMyAppointments, cancelAppointment } from '../../services/appointmentService';
-import { getMyQueue, getTimeEstimate, getPublicLiveQueue } from '../../services/queueService';
-import { LogOut, ClipboardList, Ticket, Home, Calendar, Bot, Clock, Search, ChevronRight } from 'lucide-react';
+import { getMyQueue, getTimeEstimate, getPublicLiveQueue, getMyDocumentsToClaim } from '../../services/queueService';
+import { LogOut, ClipboardList, Ticket, Home, Calendar, Bot, Clock, Search, ChevronRight, Bell } from 'lucide-react';
 import NotificationDropdown from '../../components/NotificationDropdown';
 import GlobalSearch from '../../components/GlobalSearch';
 
@@ -31,6 +31,7 @@ export default function StudentDashboard() {
   const [appointments, setAppointments] = useState([]);
   const [liveTicket, setLiveTicket] = useState(null);
   const [activeCounterTickets, setActiveCounterTickets] = useState([]);
+  const [documentsToClaim, setDocumentsToClaim] = useState([]);
 
   const fetchDashboardData = useCallback(async () => {
     try {
@@ -98,6 +99,14 @@ export default function StudentDashboard() {
       } catch (err) {
         // silent fail
       }
+
+      // 4. Fetch documents to claim
+      try {
+        const claimData = await getMyDocumentsToClaim(token);
+        setDocumentsToClaim(claimData || []);
+      } catch (err) {
+        // silent fail
+      }
     } catch (e) {
       console.error('Failed to load dashboard data:', e);
     } finally {
@@ -124,6 +133,25 @@ export default function StudentDashboard() {
     <StudentLayout activeTab="home">
       <div className="flex-1 w-full pb-22 md:pb-0 px-4 md:px-0">
         
+        {/* ── Documents to Claim Alert ── */}
+        {documentsToClaim.length > 0 && (
+          <div 
+            onClick={() => navigate('/student/queue?tab=claim')}
+            className="animate-fade-up bg-green-50 hover:bg-green-100 border border-green-200 rounded-2xl p-4 mb-6 cursor-pointer transition-all flex items-center justify-between shadow-sm"
+          >
+            <div className="flex items-center gap-4">
+              <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center text-green-600 shrink-0">
+                <Bell size={20} className="animate-pulse" />
+              </div>
+              <div>
+                <h4 className="text-[15px] font-bold text-green-800 m-0">Ready for Pickup!</h4>
+                <p className="text-[13px] text-green-700 m-0">You have {documentsToClaim.length} document{documentsToClaim.length > 1 ? 's' : ''} ready to be claimed at the Registrar's Office.</p>
+              </div>
+            </div>
+            <ChevronRight size={20} className="text-green-600 shrink-0" />
+          </div>
+        )}
+
         {/* ── Unified Hero greeting card ── */}
         <div 
           className="animate-fade-up bg-linear-to-br from-maroon to-maroon-dark rounded-3xl md:rounded-3xl pt-6 px-5 pb-8 md:py-10 md:px-12 mb-8 relative overflow-hidden shadow-[0_8px_20px_rgba(123,26,42,0.15)] md:shadow-[0_20px_40px_-15px_rgba(123,26,42,0.3)]"

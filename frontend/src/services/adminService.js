@@ -12,6 +12,47 @@ export const getDashboardStats = async (token) => {
   return data
 }
 
+// ── Transaction Types ─────────────────────────────────────────────────────────
+
+export const getTransactionTypes = async (token) => {
+  const res = await fetch(`${API_URL}/admin/transaction-types`, { headers: authHeader(token) })
+  const data = await res.json()
+  if (!res.ok) throw new Error(data.detail || 'Failed to fetch transaction types')
+  return data
+}
+
+export const createTransactionType = async (token, payload) => {
+  const res = await fetch(`${API_URL}/admin/transaction-types`, {
+    method: 'POST',
+    headers: authHeader(token),
+    body: JSON.stringify(payload)
+  })
+  const data = await res.json()
+  if (!res.ok) throw new Error(data.detail || 'Failed to create transaction type')
+  return data
+}
+
+export const updateTransactionType = async (token, ttId, payload) => {
+  const res = await fetch(`${API_URL}/admin/transaction-types/${ttId}`, {
+    method: 'PUT',
+    headers: authHeader(token),
+    body: JSON.stringify(payload)
+  })
+  const data = await res.json()
+  if (!res.ok) throw new Error(data.detail || 'Failed to update transaction type')
+  return data
+}
+
+export const deleteTransactionType = async (token, ttId) => {
+  const res = await fetch(`${API_URL}/admin/transaction-types/${ttId}`, {
+    method: 'DELETE',
+    headers: authHeader(token)
+  })
+  const data = await res.json()
+  if (!res.ok) throw new Error(data.detail || 'Failed to delete transaction type')
+  return data
+}
+
 export const getReports = async (token, days = 7, docType = 'all') => {
   const url = docType && docType !== 'all'
     ? `${API_URL}/admin/reports?days=${days}&doc_type=${encodeURIComponent(docType)}`

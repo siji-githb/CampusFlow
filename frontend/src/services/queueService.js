@@ -42,6 +42,15 @@ export const getUncollectedDocuments = async (token) => {
   return data
 }
 
+export const getCollectedDocuments = async (token) => {
+  const res = await fetch(`${API_URL}/queue/collected`, {
+    headers: authHeader(token)
+  })
+  const data = await res.json()
+  if (!res.ok) throw new Error(data.detail || 'Failed to fetch collected documents')
+  return data
+}
+
 export const getLiveQueueStats = async (token) => {
   const res = await fetch(`${API_URL}/queue/live-stats`, {
     headers: authHeader(token)
@@ -116,4 +125,13 @@ export const getPublicLiveQueue = async (token) => {
   const data = await res.json()
   if (!res.ok) throw new Error(data.detail || 'Failed to fetch public live queue')
   return data
-}
+}
+
+export const getMyDocumentsToClaim = async (token) => {
+  const res = await fetch(`${API_URL}/queue/my-documents-to-claim`, {
+    headers: authHeader(token)
+  })
+  const data = await res.json()
+  if (!res.ok) throw new Error(data.detail || 'Failed to fetch documents to claim')
+  return data
+}

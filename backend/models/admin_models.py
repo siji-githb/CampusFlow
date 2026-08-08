@@ -12,6 +12,10 @@ class TransactionTypeCreate(BaseModel):
     description: Optional[str] = None
     required_documents: Optional[list] = None
     processing_steps: Optional[list] = None
+    requires_semester: Optional[bool] = False
+    requires_year_level: Optional[bool] = False
+    requires_school_year: Optional[bool] = False
+    requires_purpose: Optional[bool] = False
 
 
 class TransactionTypeUpdate(BaseModel):
@@ -20,6 +24,10 @@ class TransactionTypeUpdate(BaseModel):
     required_documents: Optional[list] = None
     processing_steps: Optional[list] = None
     is_active: Optional[bool] = None
+    requires_semester: Optional[bool] = None
+    requires_year_level: Optional[bool] = None
+    requires_school_year: Optional[bool] = None
+    requires_purpose: Optional[bool] = None
 
 class PriorityRequestSubmit(BaseModel):
     priority_type: str   # 'pwd' or 'pregnant'

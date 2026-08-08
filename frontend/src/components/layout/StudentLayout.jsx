@@ -222,7 +222,7 @@ export function ProfileDropdown() {
                         fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em',
                         color: M.gold, background: M.goldLight, border: `1px solid ${M.goldBorder}`,
                         borderRadius: '6px', padding: '4px 8px',
-                      }}>{user?.priority_class || 'Standard'} Class</div>
+                      }}>{user?.priority_class ? user.priority_class.toUpperCase() : 'REGULAR'}</div>
                     </div>
                   </div>
                 </div>
@@ -347,7 +347,7 @@ export function ProfileDropdown() {
                         fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em',
                         color: M.gold, background: M.goldLight, border: `1px solid ${M.goldBorder}`,
                         borderRadius: '6px', padding: '4px 8px',
-                      }}>{user?.priority_class || 'Standard'} Class</div>
+                      }}>{user?.priority_class ? user.priority_class.toUpperCase() : 'REGULAR'}</div>
                     </div>
                   </div>
                 </div>

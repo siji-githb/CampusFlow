@@ -9,8 +9,9 @@ import AdminRegistrarRecordsPage from './AdminRegistrarRecordsPage'
 import AdminUserManagementPage from './AdminUserManagementPage'
 import AdminOfficeConfigPage from './AdminOfficeConfigPage'
 import AdminAuditLogPage from './AdminAuditLogPage'
+import AdminDocumentsPage from './AdminDocumentsPage'
 import StudentRecordsPage from '../staff/StudentRecordsPage'
-import { Calendar, Ticket, Clock, Bot, Search, Shield, BarChart2, LineChart as LineChartIcon, FolderOpen, Users, Settings, MessageSquare, Bell, LogOut, LayoutDashboard, CheckSquare, ChevronLeft, ChevronRight, ClipboardList } from 'lucide-react'
+import { Calendar, Ticket, Clock, Bot, Search, Shield, BarChart2, LineChart as LineChartIcon, FolderOpen, Users, Settings, MessageSquare, Bell, LogOut, LayoutDashboard, CheckSquare, ChevronLeft, ChevronRight, ClipboardList, FileText } from 'lucide-react'
 import {
   getDashboardStats, getReports
 } from '../../services/adminService'
@@ -566,6 +567,7 @@ export default function AdminDashboard() {
     {
       title: 'System',
       items: [
+        { id: 'documents', icon: <FileText size={18} />, label: 'Documents' },
         { id: 'config', icon: <Settings size={18} />, label: 'Office Config' },
         { id: 'audit', icon: <Shield size={18} />, label: 'Audit Log' },
       ]
@@ -676,9 +678,10 @@ export default function AdminDashboard() {
         </header>
 
         {/* Main content */}
-        <main className="p-7 flex-1">
+        <main className="p-7 flex-1 h-full overflow-hidden">
           {activeNav === 'overview' && <OverviewTab />}
           {activeNav === 'reports' && <AdminAnalyticsPage />}
+          {activeNav === 'documents' && <AdminDocumentsPage />}
           {activeNav === 'config' && <AdminOfficeConfigPage />}
           {activeNav === 'users' && <AdminUserManagementPage />}
           {activeNav === 'audit' && <AdminAuditLogPage />}

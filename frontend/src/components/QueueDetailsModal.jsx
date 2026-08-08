@@ -49,8 +49,8 @@ export default function QueueDetailsModal({ ticketData, onClose, onConfirm, onSe
           const currentActiveStep = steps.find(s => s.status === 'in_progress')
           const isCurrentlyInProcessing = currentActiveStep && (currentActiveStep.location === 'Back Office' || currentActiveStep.requires_presence === false)
 
-          // If the date is already set, or we are in the processing table, display as text only
-          if (appt?.release_date || isCurrentlyInProcessing) {
+          // Only show release date info if it's in the processing queue
+          if (isCurrentlyInProcessing) {
             return (
               <div className="mb-8 bg-off-white/80 backdrop-blur-sm p-5 rounded-2xl border border-border flex flex-col gap-1 shadow-[0_2px_8px_rgba(0,0,0,0.02)]">
                 <label className="block text-[11px] font-bold text-text-muted uppercase tracking-[0.04em]">Document Release Date</label>
@@ -63,20 +63,7 @@ export default function QueueDetailsModal({ ticketData, onClose, onConfirm, onSe
             )
           }
           
-          // Otherwise (student at counter, date not set), show the date picker so they can set it
-          return (
-            <div className="mb-8 bg-off-white/80 backdrop-blur-sm p-5 rounded-2xl border border-border flex items-end gap-4 flex-wrap shadow-[0_2px_8px_rgba(0,0,0,0.02)]">
-              <div className="flex-1 min-w-50">
-                <label className="block text-[11px] font-bold text-text-muted uppercase tracking-[0.04em] mb-2">Document Release Date</label>
-                <input 
-                  type="date" 
-                  value={releaseDate} 
-                  onChange={e => setReleaseDate(e.target.value)}
-                  className="w-full px-4 py-2.5 rounded-xl border border-border bg-white text-[13px] font-medium outline-none text-text-main font-sans focus:border-maroon focus:ring-2 focus:ring-maroon/20 transition-all shadow-sm"
-                />
-              </div>
-            </div>
-          )
+          return null
         })()}
 
         {/* Steps */}
@@ -105,7 +92,7 @@ export default function QueueDetailsModal({ ticketData, onClose, onConfirm, onSe
               const isFormIssuance = step.step_name.includes('Form Issuance')
               
               const hideSendToProcessing = isReceiptSub || isFormSub || isFilingVerif || isRelease || isFormIssuance
-              const hideConfirmStep = isVerifPrep && step.location !== 'Back Office'
+              const hideConfirmStep = (isVerifPrep && step.location !== 'Back Office') || isRelease
               const confirmLabel = (isFilingVerif || isRelease || isFormIssuance) ? 'Mark as Done' : 'Confirm Step'
               
               return (
@@ -138,15 +125,46 @@ export default function QueueDetailsModal({ ticketData, onClose, onConfirm, onSe
                       
                       {isCurrent && isRelease && (
                         <div className="mt-4 p-4 bg-surface/50 rounded-xl border border-border">
-                          <label className="flex items-center gap-2 mb-3 cursor-pointer">
-                            <input 
-                              type="checkbox" 
-                              checked={documentVerified}
-                              onChange={e => setDocumentVerified(e.target.checked)}
-                              className="w-4 h-4 text-maroon rounded border-gray-300 focus:ring-maroon"
-                            />
-                            <span className="text-[13px] font-semibold text-text-main">Document Verified</span>
-                          </label>
+                          <div className="mb-4">
+                            <label className="block text-[11px] font-bold text-text-muted uppercase tracking-[0.04em] mb-1.5 justify-between">
+                              Release Date
+                            </label>
+                            <div className="flex gap-2">
+                              <input 
+                                type="date" 
+                                value={releaseDate} 
+                                onChange={e => setReleaseDate(e.target.value)}
+                                className="flex-1 px-3 py-2 rounded-lg border border-border bg-white text-[13px] font-medium outline-none text-text-main focus:border-maroon focus:ring-1 focus:ring-maroon transition-all"
+                              />
+                              <button 
+                                type="button" 
+                                onClick={async () => {
+                                  setSavingDate(true);
+                                  await onSetReleaseDate(ticket.appointments.id, releaseDate);
+                                  setSavingDate(false);
+                                }}
+                                disabled={savingDate}
+                                className="px-3 py-2 bg-maroon/10 text-maroon font-bold text-[12px] rounded-lg border-none cursor-pointer hover:bg-maroon hover:text-white transition-colors"
+                              >
+                                {savingDate ? 'Saving...' : 'Set & Notify'}
+                              </button>
+                              <button 
+                                type="button" 
+                                onClick={async () => {
+                                  setSavingDate(true);
+                                  const today = getTodayStr();
+                                  setReleaseDate(today);
+                                  await onSetReleaseDate(ticket.appointments.id, today);
+                                  setSavingDate(false);
+                                }}
+                                disabled={savingDate}
+                                className="px-3 py-2 bg-success text-white font-bold text-[12px] rounded-lg border-none cursor-pointer hover:bg-green-600 transition-colors whitespace-nowrap"
+                              >
+                                {savingDate ? '...' : 'Ready Now'}
+                              </button>
+                            </div>
+                          </div>
+
                           <div>
                             <label className="block text-[11px] font-bold text-text-muted uppercase tracking-[0.04em] mb-1.5">Released To</label>
                             <input
@@ -181,7 +199,7 @@ export default function QueueDetailsModal({ ticketData, onClose, onConfirm, onSe
                             <button
                               onClick={() => {
                                 const finalDate = releaseDate || new Date().toISOString().split('T')[0]
-                                onConfirm(ticket.id, step.step_number, appt?.transaction_types?.name, name, confirmLabel, finalDate, releasedTo, documentVerified)
+                                onConfirm(ticket.id, step.step_number, appt?.transaction_types?.name, name, confirmLabel, finalDate, releasedTo, true)
                                 if (isLast || confirmLabel === 'Mark as Done') onClose()
                               }}
                               disabled={isConfirming}

@@ -15,214 +15,7 @@ const STATUS_STYLES = {
   no_show:     { bg: '#F9F9F9', color: '#A8A29E', border: '#EAE7E2' },
 }
 
-// ── Calendar Widget ──
-function CalendarWidget({ selectedDate, onDateSelect, minDateStr, maxDateStr, dateOverrides = {} }) {
-  const [currentMonth, setCurrentMonth] = useState(() => {
-    if (selectedDate) {
-      const [y, m, d] = selectedDate.split('-').map(Number)
-      return new Date(y, m - 1, d)
-    }
-    const d = new Date(); d.setDate(d.getDate() + 1); return d
-  })
-
-  const year  = currentMonth.getFullYear()
-  const month = currentMonth.getMonth()
-  const daysInMonth = new Date(year, month + 1, 0).getDate()
-  const firstDay    = new Date(year, month, 1).getDay()
-  const days = []
-  for (let i = 0; i < firstDay; i++) days.push(null)
-  for (let i = 1; i <= daysInMonth; i++) days.push(i)
-
-  const MONTHS   = ['January','February','March','April','May','June','July','August','September','October','November','December']
-  const DAY_NAMES = ['Su','Mo','Tu','We','Th','Fr','Sa']
-  
-  const parseDateLocal = (dateStr) => {
-    if (!dateStr) return 0;
-    const [y, m, d] = dateStr.split('-').map(Number);
-    return new Date(y, m - 1, d).getTime();
-  }
-  
-  const minD = parseDateLocal(minDateStr)
-  const maxD = parseDateLocal(maxDateStr)
-
-  return (
-    <div className="max-w-90 mx-auto">
-      {/* Month header */}
-      <div className="flex justify-between items-center mb-4">
-        <h3 className="font-serif text-[20px] font-bold text-text-main m-0">
-          {MONTHS[month]} {year}
-        </h3>
-        <div className="flex gap-1">
-          {[['‹', -1], ['›', 1]].map(([label, dir]) => (
-            <button key={dir} type="button"
-              onClick={() => setCurrentMonth(new Date(year, month + dir, 1))}
-              className="w-8 h-8 rounded-lg border border-border bg-white cursor-pointer text-[18px] leading-none text-text-sub flex items-center justify-center font-serif transition-colors hover:bg-off-white"
-            >{label}</button>
-          ))}
-        </div>
-      </div>
-
-      {/* Day headers */}
-      <div className="grid grid-cols-7 gap-1 mb-2 text-center">
-        {DAY_NAMES.map(d => (
-          <div key={d} className="text-[12px] font-semibold text-text-muted py-1">{d}</div>
-        ))}
-      </div>
-
-      {/* Days grid */}
-      <div className="grid grid-cols-7 gap-1 text-center">
-        {days.map((d, i) => {
-          if (!d) return <div key={i} />
-          const dateStr    = `${year}-${String(month + 1).padStart(2,'0')}-${String(d).padStart(2,'0')}`
-          const dateObj    = new Date(year, month, d)
-          const t          = dateObj.getTime()
-          const dow        = dateObj.getDay()
-          const isDisabled = dow === 0 || t < minD || t > maxD
-          const isSelected = selectedDate === dateStr
-          const override = dateOverrides[dateStr]
-          return (
-            <button key={i} type="button" disabled={isDisabled}
-              title={isDisabled ? "Outside booking window or unavailable" : ""}
-              onClick={() => !isDisabled && onDateSelect(dateStr)}
-              className={`aspect-square rounded-full border-none text-[13px] font-sans flex flex-col items-center justify-center gap-0.5 transition-all duration-150 ${
-                isSelected ? 'bg-maroon text-white font-bold' : 
-                isDisabled ? 'bg-[#F5F5F5] text-text-sub font-normal opacity-50 cursor-not-allowed' : 
-                'bg-transparent text-text-main font-normal cursor-pointer hover:bg-maroon-light hover:text-maroon'
-              }`}
-            >
-              <span>{d}</span>
-              <div className="flex justify-center w-full h-1">
-                {override && (
-                  <div className={`w-1 h-1 rounded-full ${override.is_blocked ? (isSelected ? 'bg-white' : 'bg-danger') : (isSelected ? 'bg-white' : 'bg-info')}`} />
-                )}
-              </div>
-            </button>
-          )
-        })}
-      </div>
-    </div>
-  )
-}
-
-// ── Stepper ──
-function Stepper({ step }) {
-  const STEPS = ['Transaction', 'Date & Time', 'Confirm']
-  return (
-    <>
-      {/* Mobile Horizontal Stepper */}
-      <div className="flex items-center gap-0 mb-10 md:hidden">
-        {STEPS.map((label, i) => {
-          const num    = i + 1
-          const active = step === num
-          const done   = step > num
-          return (
-            <div key={i} className={`flex items-center ${i < 2 ? 'flex-1' : 'flex-none'}`}>
-              <div className="flex flex-col items-center gap-1.5 relative">
-                <div className={`w-7 h-7 rounded-full flex items-center justify-center text-[12px] font-bold z-10 transition-all duration-300 ${
-                  done || active ? 'bg-maroon text-white shadow-[0_2px_8px_rgba(123,26,42,0.25)]' : 'bg-off-white border-[1.5px] border-border-strong text-text-muted'
-                }`}>
-                  {done ? '✓' : num}
-                </div>
-                <span className={`text-[11px] whitespace-nowrap transition-colors duration-300 ${
-                  active ? 'font-bold text-maroon' : done ? 'font-medium text-text-main' : 'font-medium text-text-muted'
-                }`}>{label}</span>
-              </div>
-              {i < 2 && (
-                <div className={`flex-1 h-0.5 mx-2 self-start mt-3.25 transition-colors duration-300 ${done ? 'bg-maroon' : 'bg-border'}`} />
-              )}
-            </div>
-          )
-        })}
-      </div>
-
-      {/* Desktop Vertical Stepper */}
-      <div className="hidden md:block bg-white rounded-2xl border border-border p-6 shadow-sm">
-        <h3 className="text-[12px] font-bold text-text-main m-0 mb-6 uppercase tracking-wider">Booking Progress</h3>
-        <div className="flex flex-col gap-6 relative">
-          <div className="absolute left-3.25 top-3.5 bottom-3.5 w-0.5 bg-border z-0" />
-          
-          {STEPS.map((label, i) => {
-            const num    = i + 1
-            const active = step === num
-            const done   = step > num
-            return (
-              <div key={i} className="flex items-center gap-4 relative z-10">
-                <div className={`w-7 h-7 rounded-full flex items-center justify-center text-[12px] font-bold transition-all duration-300 ${
-                  active ? 'bg-maroon text-white shadow-[0_0_0_4px_rgba(123,26,42,0.1)]' : done ? 'bg-maroon text-white' : 'bg-white border-2 border-border text-text-muted'
-                }`}>
-                  {done ? '✓' : num}
-                </div>
-                <span className={`text-[14px] transition-colors duration-300 ${
-                  active ? 'font-bold text-maroon' : done ? 'font-semibold text-text-main' : 'font-medium text-text-muted'
-                }`}>{label}</span>
-              </div>
-            )
-          })}
-        </div>
-      </div>
-    </>
-  )
-}
-
-// ── UPDATED: slot visual states ──
-const isSlotPast = (slotTime, selectedDate) => {
-  const d = new Date()
-  const today = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
-  if (selectedDate < today) return true
-  if (selectedDate > today) return false
-
-  const [slotHour, slotMin] = slotTime.split(':').map(Number)
-  const now = new Date()
-  const bufferMinutes = 0
-
-  const slotDate = new Date()
-  slotDate.setHours(slotHour, slotMin, 0, 0)
-
-  const cutoff = new Date(now.getTime() + bufferMinutes * 60000)
-  return slotDate <= cutoff
-}
-
-function SlotBtn({ slot, selected, onSelect, selectedDate }) {
-  const isPast = isSlotPast(slot.time_slot, selectedDate);
-  const isFull = !slot.available;
-  const isAvailable = !isPast && !isFull;
-
-  let bgClass = 'bg-white';
-  let textClass = 'text-text-main';
-  let borderClass = 'border-border';
-  let cursorClass = 'cursor-pointer';
-  let opacityClass = 'opacity-100';
-  let text = slot.display || slot.time_slot;
-
-  if (selected) {
-    bgClass = 'bg-maroon';
-    textClass = 'text-white';
-    borderClass = 'border-maroon';
-  } else if (isPast) {
-    bgClass = 'bg-off-white';
-    textClass = 'text-text-muted';
-    borderClass = 'border-border';
-    opacityClass = 'opacity-40';
-    cursorClass = 'cursor-not-allowed';
-  } else if (isFull) {
-    bgClass = 'bg-maroon-light';
-    textClass = 'text-maroon';
-    borderClass = 'border-maroon-light';
-    opacityClass = 'opacity-100';
-    cursorClass = 'cursor-not-allowed';
-    text = 'Full';
-  }
-
-  return (
-    <button
-      type="button"
-      onClick={() => isAvailable && onSelect(slot.time_slot)}
-      className={`py-2.5 px-1.5 rounded-lg text-[12px] font-semibold font-sans border-[1.5px] border-solid transition-all duration-150 text-center ${bgClass} ${textClass} ${borderClass} ${cursorClass} ${opacityClass}`}
-    >
-      {text}
-    </button>
-  )
-}
+import { CalendarWidget, SlotBtn } from '../../components/CalendarWidget'
 
 // ── Main Component ──
 export default function BookAppointment() {
@@ -265,14 +58,13 @@ export default function BookAppointment() {
   maxDateObj.setDate(maxDateObj.getDate() + windowDays)
   const maxDate    = fmtLocal(maxDateObj)
 
-  // ── GWA is booking metadata, not a document — check by name ──
-  const isGWA = selectedType?.name?.toLowerCase().includes('gwa')
-    || selectedType?.name?.toLowerCase().includes('general weighted average')
-
-  const isTorOrCoe = selectedType?.name?.toLowerCase().includes('tor')
-    || selectedType?.name?.toLowerCase().includes('transcript')
-    || selectedType?.name?.toLowerCase().includes('coe')
-    || selectedType?.name?.toLowerCase().includes('certificate of enrollment')
+  // ── Dynamic Configuration Checks ──
+  const needsSemester = selectedType?.config?.requires_semester;
+  const needsYearLevel = selectedType?.config?.requires_year_level;
+  const needsSchoolYear = selectedType?.config?.requires_school_year;
+  const needsAcademicInfo = needsSemester || needsYearLevel || needsSchoolYear;
+  
+  const needsPurpose = selectedType?.config?.requires_purpose;
 
   // Recent school years (GWA is always for an already-completed semester)
   const currentCalYear = todayDate.getFullYear()
@@ -283,7 +75,21 @@ export default function BookAppointment() {
   })
 
   useEffect(() => {
-    getTransactionTypes().then(setTypes).catch(e => setError(e.message))
+    getTransactionTypes().then(data => {
+      const parsedTypes = data.map(t => {
+        const parts = (t.description || '').split('|||');
+        let config = {};
+        if (parts.length > 1) {
+          try { config = JSON.parse(parts[1]); } catch (e) {}
+        }
+        return {
+          ...t,
+          clean_description: parts[0],
+          config
+        };
+      });
+      setTypes(parsedTypes);
+    }).catch(e => setError(e.message))
     getBookingConfig().then(setBookingConfig).catch(e => setError(e.message))
   }, [])
 
@@ -303,10 +109,17 @@ export default function BookAppointment() {
     setLoading(true); setError('');
     try {
       let finalNotes = ''
-      if (isGWA && gwaSemester && gwaYearLevel && gwaSchoolYear) {
-        finalNotes = `GWA_REQUEST: ${gwaSemester} | ${gwaYearLevel} | S.Y. ${gwaSchoolYear}`
+      const parts = []
+      
+      if (needsSemester && gwaSemester) parts.push(`Sem: ${gwaSemester}`)
+      if (needsYearLevel && gwaYearLevel) parts.push(`Yr: ${gwaYearLevel}`)
+      if (needsSchoolYear && gwaSchoolYear) parts.push(`S.Y.: ${gwaSchoolYear}`)
+      
+      if (parts.length > 0) {
+        finalNotes = `ACADEMIC INFO: ${parts.join(' | ')}`
       }
-      if (isTorOrCoe && purpose) {
+      
+      if (needsPurpose && purpose) {
         const purposeText = purpose === 'Other' ? purposeOther : purpose
         const purposeLine = `PURPOSE: ${purposeText}`
         finalNotes = finalNotes ? `${finalNotes}\n\n${purposeLine}` : purposeLine
@@ -503,9 +316,9 @@ export default function BookAppointment() {
                       <h3 className="font-serif text-[16px] font-bold text-maroon m-0 pr-2">{t.name}</h3>
                       <span className="text-text-muted text-[18px] leading-none shrink-0 md:hidden">›</span>
                     </div>
-                    <p className="text-[13px] text-text-sub m-0 mb-3.5 leading-normal">{t.description}</p>
+                    <p className="text-[13px] text-text-sub m-0 mb-3.5 leading-normal">{t.clean_description}</p>
                     <div className="flex flex-wrap gap-1.5">
-                      {t.required_documents?.map((doc, j) => (
+                      {(t.config?.required_documents || t.required_documents || []).map((doc, j) => (
                         <span key={j} className="text-[11px] text-text-sub bg-off-white py-0.75 px-2.5 rounded-full border border-border font-medium">{doc}</span>
                       ))}
                     </div>
@@ -526,52 +339,58 @@ export default function BookAppointment() {
               Choose an available slot for your visit to the Registrar's Office.
             </p>
 
-            {/* GWA-specific: semester/year selection — booking info, not a document */}
-            {isGWA && (
+            {/* Dynamic Academic Info selection */}
+            {needsAcademicInfo && (
               <div className="bg-white rounded-[14px] border-[1.5px] border-border p-6 mb-5 shadow-[0_1px_4px_rgba(0,0,0,0.03)]">
-                <p className="text-[12px] font-bold text-text-main m-0 mb-1 uppercase tracking-wider">Which grades do you need averaged?</p>
-                <p className="text-[12px] text-text-sub m-0 mb-4">Select the semester, year level, and school year for this GWA request.</p>
+                <p className="text-[12px] font-bold text-text-main m-0 mb-1 uppercase tracking-wider">Required Information</p>
+                <p className="text-[12px] text-text-sub m-0 mb-4">Please provide the following academic details for your request.</p>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                  <div>
-                    <label className="block text-[11px] font-semibold text-text-sub mb-1.5">Semester</label>
-                    <select
-                      value={gwaSemester}
-                      onChange={e => setGwaSemester(e.target.value)}
-                      className="w-full p-2.5 rounded-lg border-[1.5px] border-border bg-off-white text-[13px] text-text-main font-sans focus:outline-none focus:border-maroon-border"
-                    >
-                      <option value="">Select…</option>
-                      <option value="1st Semester">1st Semester</option>
-                      <option value="2nd Semester">2nd Semester</option>
-                      <option value="Summer">Summer</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-[11px] font-semibold text-text-sub mb-1.5">Year Level</label>
-                    <select
-                      value={gwaYearLevel}
-                      onChange={e => setGwaYearLevel(e.target.value)}
-                      className="w-full p-2.5 rounded-lg border-[1.5px] border-border bg-off-white text-[13px] text-text-main font-sans focus:outline-none focus:border-maroon-border"
-                    >
-                      <option value="">Select…</option>
-                      <option value="1st Year">1st Year</option>
-                      <option value="2nd Year">2nd Year</option>
-                      <option value="3rd Year">3rd Year</option>
-                      <option value="4th Year">4th Year</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-[11px] font-semibold text-text-sub mb-1.5">School Year</label>
-                    <select
-                      value={gwaSchoolYear}
-                      onChange={e => setGwaSchoolYear(e.target.value)}
-                      className="w-full p-2.5 rounded-lg border-[1.5px] border-border bg-off-white text-[13px] text-text-main font-sans focus:outline-none focus:border-maroon-border"
-                    >
-                      <option value="">Select…</option>
-                      {schoolYearOptions.map(sy => (
-                        <option key={sy} value={sy}>{sy}</option>
-                      ))}
-                    </select>
-                  </div>
+                  {needsSemester && (
+                    <div>
+                      <label className="block text-[11px] font-semibold text-text-sub mb-1.5">Semester</label>
+                      <select
+                        value={gwaSemester}
+                        onChange={e => setGwaSemester(e.target.value)}
+                        className="w-full p-2.5 rounded-lg border-[1.5px] border-border bg-off-white text-[13px] text-text-main font-sans focus:outline-none focus:border-maroon-border"
+                      >
+                        <option value="">Select…</option>
+                        <option value="1st Semester">1st Semester</option>
+                        <option value="2nd Semester">2nd Semester</option>
+                        <option value="Summer">Summer</option>
+                      </select>
+                    </div>
+                  )}
+                  {needsYearLevel && (
+                    <div>
+                      <label className="block text-[11px] font-semibold text-text-sub mb-1.5">Year Level</label>
+                      <select
+                        value={gwaYearLevel}
+                        onChange={e => setGwaYearLevel(e.target.value)}
+                        className="w-full p-2.5 rounded-lg border-[1.5px] border-border bg-off-white text-[13px] text-text-main font-sans focus:outline-none focus:border-maroon-border"
+                      >
+                        <option value="">Select…</option>
+                        <option value="1st Year">1st Year</option>
+                        <option value="2nd Year">2nd Year</option>
+                        <option value="3rd Year">3rd Year</option>
+                        <option value="4th Year">4th Year</option>
+                      </select>
+                    </div>
+                  )}
+                  {needsSchoolYear && (
+                    <div>
+                      <label className="block text-[11px] font-semibold text-text-sub mb-1.5">School Year</label>
+                      <select
+                        value={gwaSchoolYear}
+                        onChange={e => setGwaSchoolYear(e.target.value)}
+                        className="w-full p-2.5 rounded-lg border-[1.5px] border-border bg-off-white text-[13px] text-text-main font-sans focus:outline-none focus:border-maroon-border"
+                      >
+                        <option value="">Select…</option>
+                        {schoolYearOptions.map(sy => (
+                          <option key={sy} value={sy}>{sy}</option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
                 </div>
               </div>
             )}
@@ -661,8 +480,8 @@ export default function BookAppointment() {
                   </div>
                 )}
 
-                {/* Purpose of Request — TOR and COE only */}
-                {isTorOrCoe && (
+                {/* Purpose of Request */}
+                {needsPurpose && (
                   <div className="border-t border-border pt-5 mt-2.5">
                     <p className="text-[12px] font-bold text-text-main m-0 mb-1">Purpose of Request</p>
                     <p className="text-[11px] text-text-sub m-0 mb-3">
@@ -703,9 +522,9 @@ export default function BookAppointment() {
               </button>
               <button type="button"
                 onClick={() => setStep(3)}
-                disabled={!selectedSlot || (isGWA && (!gwaSemester || !gwaYearLevel || !gwaSchoolYear)) || (isTorOrCoe && (!purpose || (purpose === 'Other' && !purposeOther.trim())))}
+                disabled={!selectedSlot || (needsSemester && !gwaSemester) || (needsYearLevel && !gwaYearLevel) || (needsSchoolYear && !gwaSchoolYear) || (needsPurpose && (!purpose || (purpose === 'Other' && !purposeOther.trim())))}
                 className={`py-3 px-4 md:px-7 rounded-[10px] border-none text-[14px] font-bold font-sans transition-all duration-200 ${
-                  (selectedSlot && !(isGWA && (!gwaSemester || !gwaYearLevel || !gwaSchoolYear)) && !(isTorOrCoe && (!purpose || (purpose === 'Other' && !purposeOther.trim())))) ? 'bg-maroon text-white cursor-pointer hover:opacity-90' : 'bg-border text-text-muted cursor-not-allowed'
+                  (selectedSlot && !(needsSemester && !gwaSemester) && !(needsYearLevel && !gwaYearLevel) && !(needsSchoolYear && !gwaSchoolYear) && !(needsPurpose && (!purpose || (purpose === 'Other' && !purposeOther.trim())))) ? 'bg-maroon text-white cursor-pointer hover:opacity-90' : 'bg-border text-text-muted cursor-not-allowed'
                 }`}>
                 Next: Confirm →
               </button>
@@ -770,20 +589,20 @@ export default function BookAppointment() {
                   </div>
                 </div>
 
-                {/* GWA request details */}
-                {isGWA && gwaSemester && gwaYearLevel && gwaSchoolYear && (
+                {/* Academic request details */}
+                {needsAcademicInfo && (
                   <div className="mb-6 pb-5 border-b border-border">
-                    <p className="text-[10px] font-bold text-text-muted tracking-widest uppercase m-0 mb-2.5">GWA REQUEST FOR</p>
+                    <p className="text-[10px] font-bold text-text-muted tracking-widest uppercase m-0 mb-2.5">ACADEMIC DETAILS</p>
                     <div className="flex flex-wrap gap-1.5">
-                      <span className="text-[12px] font-semibold text-maroon bg-maroon-light py-1 px-2.5 rounded-full border border-maroon-border">{gwaSemester}</span>
-                      <span className="text-[12px] font-semibold text-maroon bg-maroon-light py-1 px-2.5 rounded-full border border-maroon-border">{gwaYearLevel}</span>
-                      <span className="text-[12px] font-semibold text-maroon bg-maroon-light py-1 px-2.5 rounded-full border border-maroon-border">S.Y. {gwaSchoolYear}</span>
+                      {needsSemester && gwaSemester && <span className="text-[12px] font-semibold text-maroon bg-maroon-light py-1 px-2.5 rounded-full border border-maroon-border">{gwaSemester}</span>}
+                      {needsYearLevel && gwaYearLevel && <span className="text-[12px] font-semibold text-maroon bg-maroon-light py-1 px-2.5 rounded-full border border-maroon-border">{gwaYearLevel}</span>}
+                      {needsSchoolYear && gwaSchoolYear && <span className="text-[12px] font-semibold text-maroon bg-maroon-light py-1 px-2.5 rounded-full border border-maroon-border">S.Y. {gwaSchoolYear}</span>}
                     </div>
                   </div>
                 )}
 
                 {/* Purpose of Request */}
-                {isTorOrCoe && purpose && (
+                {needsPurpose && purpose && (
                   <div className="mb-6 pb-5 border-b border-border">
                     <p className="text-[10px] font-bold text-text-muted tracking-widest uppercase m-0 mb-2.5">PURPOSE OF REQUEST</p>
                     <span className="text-[13px] font-semibold text-maroon bg-maroon-light py-1 px-2.5 rounded-full border border-maroon-border inline-block">
@@ -796,7 +615,7 @@ export default function BookAppointment() {
                 <div>
                   <p className="text-[10px] font-bold text-text-muted tracking-widest uppercase m-0 mb-3">REQUIREMENTS TO BRING</p>
                   <div className="flex flex-col gap-2">
-                    {selectedType.required_documents?.map((doc, i) => (
+                    {(selectedType.config?.required_documents || selectedType.required_documents || []).map((doc, i) => (
                       <div key={i} className="flex items-center gap-2.5 text-[14px] text-text-main">
                         <div className="w-4.5 h-4.5 rounded-full bg-success-light border border-success-border text-success flex items-center justify-center text-[10px] font-bold shrink-0">✓</div>
                         {doc}

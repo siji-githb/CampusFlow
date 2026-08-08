@@ -7,7 +7,9 @@ from services.queue_service import (
     get_time_estimate,
     get_live_queue_stats,
     get_uncollected_documents,
+    get_collected_documents,
     get_public_live_queue,
+    get_my_documents_to_claim,
 )
 from models.queue_models import ConfirmStepRequest, CallTicketRequest, SendToProcessingRequest, RemindStudentRequest
 from deps import get_current_user, require_staff_or_admin
@@ -17,7 +19,12 @@ router = APIRouter(prefix="/queue", tags=["Queue Management"])
 
 @router.get("/uncollected")
 def uncollected_documents(user=Depends(require_staff_or_admin)):
-    return get_uncollected_documents(threshold_days=3)
+    return get_uncollected_documents(threshold_days=0)
+
+
+@router.get("/collected")
+def collected_documents(user=Depends(require_staff_or_admin)):
+    return get_collected_documents(limit=50)
 
 
 @router.post("/activate/{appointment_id}")
@@ -31,6 +38,11 @@ def my_queue(user=Depends(get_current_user)):
     if not result:
         return {"ticket": None, "steps": []}
     return result
+
+
+@router.get("/my-documents-to-claim")
+def my_documents_to_claim(user=Depends(get_current_user)):
+    return get_my_documents_to_claim(user.id)
 
 
 @router.get("/public-live")

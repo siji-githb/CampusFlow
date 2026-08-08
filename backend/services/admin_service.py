@@ -544,3 +544,129 @@ def release_window(user_id: str):
         return {"message": "Window released."}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+import json
+
+def create_transaction_type(data, actor_id: str):
+    admin = get_admin()
+    config = {
+        "requires_semester": data.requires_semester or False,
+        "requires_year_level": data.requires_year_level or False,
+        "requires_school_year": data.requires_school_year or False,
+        "requires_purpose": data.requires_purpose or False,
+        "required_documents": data.required_documents or [],
+        "processing_steps": data.processing_steps or []
+    }
+    
+    desc = data.description or ""
+    desc_str = f"{desc}|||{json.dumps(config)}"
+    
+    payload = {
+        "name": data.name,
+        "description": desc_str,
+        "is_active": True
+    }
+    
+    try:
+        res = admin.table("transaction_types").insert(payload).execute()
+        
+        log_audit_action(
+            user_id=actor_id,
+            action="Created transaction type",
+            table_name="transaction_types",
+            record_id=res.data[0]["id"] if res.data else None,
+            status="Success",
+            changes=f"Name: {data.name}"
+        )
+        
+        return res.data[0] if res.data else None
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+def update_transaction_type(tt_id: str, data, actor_id: str):
+    admin = get_admin()
+    
+    payload = {}
+    if data.name is not None:
+        payload["name"] = data.name
+    if data.is_active is not None:
+        payload["is_active"] = data.is_active
+        
+    if data.description is not None or any(x is not None for x in [data.requires_semester, data.requires_year_level, data.requires_school_year, data.requires_purpose]):
+        try:
+            existing = admin.table("transaction_types").select("description").eq("id", tt_id).single().execute()
+            if not existing.data:
+                raise HTTPException(status_code=404, detail="Transaction type not found")
+                
+            old_desc = existing.data.get("description", "") or ""
+            parts = old_desc.split("|||")
+            base_desc = parts[0]
+            config = {}
+            if len(parts) > 1:
+                try:
+                    config = json.loads(parts[1])
+                except:
+                    pass
+                    
+            if data.description is not None:
+                base_desc = data.description
+            if data.requires_semester is not None:
+                config["requires_semester"] = data.requires_semester
+            if data.requires_year_level is not None:
+                config["requires_year_level"] = data.requires_year_level
+            if data.requires_school_year is not None:
+                config["requires_school_year"] = data.requires_school_year
+            if data.requires_purpose is not None:
+                config["requires_purpose"] = data.requires_purpose
+            if data.required_documents is not None:
+                config["required_documents"] = data.required_documents
+            if data.processing_steps is not None:
+                config["processing_steps"] = data.processing_steps
+                
+            payload["description"] = f"{base_desc}|||{json.dumps(config)}"
+        except HTTPException:
+            raise
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=str(e))
+        
+    try:
+        res = admin.table("transaction_types").update(payload).eq("id", tt_id).execute()
+        
+        log_audit_action(
+            user_id=actor_id,
+            action="Updated transaction type",
+            table_name="transaction_types",
+            record_id=tt_id,
+            status="Success"
+        )
+        
+        return res.data[0] if res.data else None
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+def delete_transaction_type(tt_id: str, actor_id: str):
+    import time
+    admin = get_admin()
+    try:
+        # Fetch the existing name so we can append a deleted timestamp, freeing up the original name
+        existing = admin.table("transaction_types").select("name").eq("id", tt_id).single().execute()
+        if not existing.data:
+            raise HTTPException(status_code=404, detail="Transaction type not found")
+            
+        old_name = existing.data["name"]
+        new_name = f"{old_name} (deleted {int(time.time())})"
+        
+        admin.table("transaction_types").update({"is_active": False, "name": new_name}).eq("id", tt_id).execute()
+        
+        log_audit_action(
+            user_id=actor_id,
+            action="Disabled transaction type",
+            table_name="transaction_types",
+            record_id=tt_id,
+            status="Success",
+            severity="Warning"
+        )
+        
+        return {"message": "Transaction type disabled successfully"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))

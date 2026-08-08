@@ -178,7 +178,6 @@ export default function MyAppointments() {
                     className="appearance-none w-full bg-white border-[1.5px] border-border text-text-main text-[13.5px] font-bold py-2.5 pl-10 pr-8 rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.04)] outline-none focus:border-maroon focus:ring-4 focus:ring-maroon/10 cursor-pointer hover:border-text-sub transition-all font-sans"
                   >
                     <option value="all">All Appointments</option>
-                    <option value="pending">Pending</option>
                     <option value="confirmed">Confirmed</option>
                     <option value="completed">Completed</option>
                     <option value="cancelled">Cancelled</option>

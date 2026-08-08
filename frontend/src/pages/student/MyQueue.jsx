@@ -1,11 +1,11 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { createPortal } from 'react-dom'
-import { useNavigate, Link } from 'react-router-dom'
+import { useNavigate, Link, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../../context/useAuth'
 import StudentLayout from '../../components/layout/StudentLayout'
-import { getMyQueue, activateQueue, getTimeEstimate } from '../../services/queueService'
+import { getMyQueue, activateQueue, getTimeEstimate, getMyDocumentsToClaim } from '../../services/queueService'
 import { getMyAppointments, cancelAppointment } from '../../services/appointmentService'
-import { Clock, Hourglass, PartyPopper, Ticket, Calendar, Inbox, Cog } from 'lucide-react'
+import { Clock, Hourglass, PartyPopper, Ticket, Calendar, Inbox, Cog, FileCheck } from 'lucide-react'
 
 const STEP_STYLE = {
   pending:     { bg: '#F9F9F9', color: '#706B65' }, // text-text-sub
@@ -22,7 +22,9 @@ export default function MyQueue() {
   const [activating, setActivating] = useState(null)
   const [error, setError]           = useState('')
   const [estimates, setEstimates]   = useState([])
-  const [activeTab, setActiveTab]   = useState('active')
+  const [searchParams] = useSearchParams()
+  const [activeTab, setActiveTab]   = useState(searchParams.get('tab') || 'active')
+  const [documentsToClaim, setDocumentsToClaim] = useState([])
   const [cancelConfirmId, setCancelConfirmId] = useState(null)
   const [activateConfirmId, setActivateConfirmId] = useState(null)
 
@@ -48,6 +50,9 @@ export default function MyQueue() {
     try {
       const data = await getMyQueue(token)
       setQueueData(data.ticket ? data : null)
+      
+      const claims = await getMyDocumentsToClaim(token)
+      setDocumentsToClaim(claims || [])
     } catch (e) { setError(e.message) }
   }, [token])
 
@@ -159,6 +164,15 @@ export default function MyQueue() {
             className={`flex-1 py-2.5 px-4 rounded-lg border-none text-[14px] font-semibold cursor-pointer transition-all duration-200 font-sans ${activeTab === 'upcoming' ? 'bg-maroon-light text-maroon' : 'bg-transparent text-text-sub hover:bg-off-white'}`}
           >
             Upcoming
+          </button>
+          <button 
+            onClick={() => setActiveTab('claim')}
+            className={`flex-1 py-2.5 px-4 rounded-lg border-none text-[14px] font-semibold cursor-pointer transition-all duration-200 font-sans relative ${activeTab === 'claim' ? 'bg-maroon-light text-maroon' : 'bg-transparent text-text-sub hover:bg-off-white'}`}
+          >
+            To Claim
+            {documentsToClaim.length > 0 && (
+              <span className="absolute top-2.5 right-4 w-2 h-2 rounded-full bg-danger animate-pulse"></span>
+            )}
           </button>
         </div>
 
@@ -408,6 +422,37 @@ export default function MyQueue() {
               <button onClick={() => navigate('/student/book')} className="py-2.5 px-6 rounded-lg border-none bg-maroon text-white text-[14px] font-semibold cursor-pointer hover:bg-maroon-dark transition-colors">
                 Book an Appointment
               </button>
+            </div>
+          )}
+        </div>
+
+        <div className={`${activeTab === 'claim' ? 'block' : 'hidden'}`}>
+          {documentsToClaim.length > 0 ? (
+            <div className="flex flex-col gap-4 animate-fade-up">
+              {documentsToClaim.map(doc => (
+                <div key={doc.queue_ticket_id} className="bg-green-50 border border-green-200 rounded-2xl p-6 shadow-sm">
+                  <div className="flex items-center gap-4 mb-4">
+                    <div className="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center text-green-600 shrink-0">
+                      <FileCheck size={24} />
+                    </div>
+                    <div>
+                      <p className="text-[12px] font-bold text-green-800 uppercase tracking-widest mb-1">Queue {doc.queue_number}</p>
+                      <h3 className="text-[18px] font-bold text-green-900 m-0 leading-tight">{doc.transaction_type}</h3>
+                    </div>
+                  </div>
+                  
+                  <div className="bg-white rounded-xl border border-green-100 p-4">
+                    <p className="text-[14px] text-text-sub m-0 mb-1 font-semibold">Status: Ready for Pickup</p>
+                    <p className="text-[13px] text-text-sub m-0">Your document is now ready to be claimed at {doc.location || "the Registrar's Office"}. Please proceed to the counter and present your student ID.</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="animate-fade-up text-center py-16 px-8 bg-white rounded-2xl border border-border shadow-sm">
+              <div className="text-border-strong mb-4 flex justify-center"><Inbox size={48} /></div>
+              <p className="text-[15px] font-semibold text-text-main m-0 mb-1.5">No Documents to Claim</p>
+              <p className="text-[13px] text-text-sub m-0 mb-6">You don't have any documents waiting for pickup right now.</p>
             </div>
           )}
         </div>

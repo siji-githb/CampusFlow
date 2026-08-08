@@ -607,7 +607,7 @@ def get_live_queue_stats():
         raise HTTPException(status_code=500, detail=str(e))
 
 
-def get_uncollected_documents(threshold_days: int = 3):
+def get_uncollected_documents(threshold_days: int = 0):
     """
     Returns tickets currently sitting at a Release step (ready for
     pickup) that have been waiting longer than threshold_days,
@@ -651,9 +651,83 @@ def get_uncollected_documents(threshold_days: int = 3):
             "transaction_type": tx_name,
             "days_waiting": days_waiting,
             "activated_at": row.get("activated_at"),
+            "step_number": row.get("step_number"),
         })
 
     results.sort(key=lambda r: r["days_waiting"] or 0, reverse=True)
+    return results
+
+
+def get_collected_documents(limit: int = 50):
+    """
+    Returns tickets that have been successfully released (completed Release step).
+    """
+    admin = get_admin()
+    try:
+        res = admin.table("transaction_steps") \
+            .select("*, queue_tickets(id, queue_number, student_id, "
+                    "users(first_name, last_name, student_id), "
+                    "appointments(transaction_types(name)))") \
+            .ilike("step_name", "%Release%") \
+            .eq("status", "completed") \
+            .order("confirmed_at", desc=True) \
+            .limit(limit) \
+            .execute()
+    except Exception as e:
+        from fastapi import HTTPException
+        raise HTTPException(status_code=500, detail=str(e))
+
+    results = []
+    for row in (res.data or []):
+        ticket = row.get("queue_tickets") or {}
+        student = ticket.get("users") or {}
+        tx_name = ((ticket.get("appointments") or {}).get("transaction_types") or {}).get("name", "Unknown")
+
+        results.append({
+            "queue_ticket_id": ticket.get("id"),
+            "queue_number": ticket.get("queue_number"),
+            "student_name": f"{student.get('first_name', '')} {student.get('last_name', '')}".strip(),
+            "student_id": student.get("student_id"),
+            "transaction_type": tx_name,
+            "confirmed_at": row.get("confirmed_at"),
+            "released_to": row.get("released_to")
+        })
+
+    return results
+
+
+def get_my_documents_to_claim(student_id: str):
+    """
+    Returns tickets for a specific student that are currently sitting at a Release step (ready for pickup).
+    """
+    admin = get_admin()
+    try:
+        res = admin.table("transaction_steps") \
+            .select("*, queue_tickets!inner(id, queue_number, student_id, status, appointments(transaction_types(name), release_date))") \
+            .eq("queue_tickets.student_id", student_id) \
+            .eq("queue_tickets.status", "in_progress") \
+            .ilike("step_name", "%Release%") \
+            .eq("status", "in_progress") \
+            .execute()
+    except Exception as e:
+        from fastapi import HTTPException
+        raise HTTPException(status_code=500, detail=str(e))
+
+    results = []
+    for row in (res.data or []):
+        ticket = row.get("queue_tickets") or {}
+        tx_name = ((ticket.get("appointments") or {}).get("transaction_types") or {}).get("name", "Unknown")
+        release_date = (ticket.get("appointments") or {}).get("release_date")
+
+        results.append({
+            "queue_ticket_id": ticket.get("id"),
+            "queue_number": ticket.get("queue_number"),
+            "transaction_type": tx_name,
+            "release_date": release_date,
+            "step_name": row.get("step_name"),
+            "location": row.get("location"),
+        })
+
     return results
 
 

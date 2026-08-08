@@ -139,6 +139,23 @@ export default function NotificationDropdown({ isMobile = false, mobileRoute }) 
     }
   };
 
+  const formatNotificationTime = (dateStr) => {
+    const d = new Date(dateStr);
+    const today = new Date();
+    const isToday = d.getDate() === today.getDate() && 
+                    d.getMonth() === today.getMonth() && 
+                    d.getFullYear() === today.getFullYear();
+    
+    const timeStr = d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', hour12: true });
+    
+    if (isToday) {
+      return `Today ${timeStr}`;
+    } else {
+      const dateStr = d.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+      return `${dateStr} ${timeStr}`;
+    }
+  };
+
   return (
     <div ref={triggerRef} className="relative">
       <button
@@ -194,12 +211,12 @@ export default function NotificationDropdown({ isMobile = false, mobileRoute }) 
                       {getIcon(n.type)}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <div className="flex justify-between items-start mb-1 gap-2">
-                        <p className={`m-0 text-[13px] font-semibold truncate ${!n.is_read ? 'text-text-main' : 'text-text-sub'}`}>
+                      <div className="flex flex-col mb-1.5">
+                        <p className={`m-0 text-[13px] font-semibold ${!n.is_read ? 'text-text-main' : 'text-text-sub'}`}>
                           {n.title}
                         </p>
-                        <span className="shrink-0 text-[10px] text-text-muted">
-                          {new Date(n.created_at).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', hour12: true })}
+                        <span className="text-[10px] text-text-muted mt-0.5">
+                          {formatNotificationTime(n.created_at)}
                         </span>
                       </div>
                       <p className="m-0 text-[12px] text-text-sub leading-tight">

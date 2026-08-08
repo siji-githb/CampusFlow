@@ -10,12 +10,13 @@ import IdRequestsPage from './IdRequestsPage'
 import StaffGlobalSearch from '../../components/StaffGlobalSearch'
 import StaffProfilePage from './StaffProfilePage'
 import PriorityRequestsPage from './PriorityRequestsPage'
+import DocumentReleasesPage from './DocumentReleasesPage'
 import { getTodaysQueue } from '../../services/queueService'
 import NotificationDropdown from '../../components/NotificationDropdown'
 import { getMessages, markMessageRead } from '../../services/messagesService'
 import { getAppointmentStats } from '../../services/appointmentService'
 import { getPendingPriorityRequests } from '../../services/priorityService'
-import { Inbox, MessageSquare, BarChart2, Ticket, Calendar, ClipboardList, LogOut, Users, User, Settings, CheckSquare, Clock, CalendarClock, Monitor, MonitorX, HelpCircle, LayoutDashboard, ShieldCheck, Loader2, Menu, X, PanelLeftClose } from 'lucide-react'
+import { Inbox, MessageSquare, BarChart2, Ticket, Calendar, ClipboardList, LogOut, Users, User, Settings, CheckSquare, Clock, CalendarClock, Monitor, MonitorX, HelpCircle, LayoutDashboard, ShieldCheck, Loader2, Menu, X, PanelLeftClose, FolderOpen } from 'lucide-react'
 import { getWindowAssignments, claimWindow, releaseWindow, getIdRequests } from '../../services/adminService'
 
 // ── Compact Queue Preview (Overview panel) ─────────────────────────────────────
@@ -288,6 +289,7 @@ export default function StaffDashboard() {
       items: [
         { id: 'overview', icon: <LayoutDashboard size={18} />, label: 'Dashboard' },
         { id: 'queue', icon: <Ticket size={18} />, label: 'Live Queue' },
+        { id: 'document-releases', icon: <FolderOpen size={18} />, label: 'Document Releases' },
         { id: 'appointments', icon: <Calendar size={18} />, label: 'Appointments' },
       ]
     },
@@ -626,6 +628,11 @@ export default function StaffDashboard() {
           {/* ──── APPOINTMENTS VIEW ──── */}
           {activeNav === 'appointments' && (
             <AppointmentsPage />
+          )}
+
+          {/* ──── DOCUMENT RELEASES VIEW ──── */}
+          {activeNav === 'document-releases' && (
+            <DocumentReleasesPage />
           )}
 
           {/* ──── MASTER LIST VIEW ──── */}

@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { createPortal } from 'react-dom'
 import { useAuth } from '../../context/useAuth'
-import { getTodaysQueue, confirmStep, callTicket, sendToProcessing, remindStudent, getUncollectedDocuments, getLiveQueueStats } from '../../services/queueService'
+import { getTodaysQueue, confirmStep, callTicket, sendToProcessing, remindStudent, getLiveQueueStats } from '../../services/queueService'
 import { updateReleaseDate } from '../../services/adminService'
 import { Check, Circle, Clock, X, Users, CheckSquare, AlertTriangle, Download, Inbox, Play, Ticket, DoorOpen, Cog } from 'lucide-react'
 import QueueDetailsModal from '../../components/QueueDetailsModal'
@@ -139,7 +139,7 @@ export default function LiveQueuePage() {
   const [viewingTicketId, setViewingTicketId] = useState(null)
   const [completedPage, setCompletedPage] = useState(1)
   const [toastMsg, setToastMsg] = useState(null)
-  const [uncollected, setUncollected] = useState([])
+
   const [queueStats, setQueueStats] = useState({ avg_wait_minutes: 0, peak_forecast: 'No Data' })
 
   const showToast = (msg) => {
@@ -164,13 +164,11 @@ export default function LiveQueuePage() {
 
   const fetchQueue = useCallback(async () => {
     try {
-      const [queueData, uncollectedData, statsData] = await Promise.all([
+      const [queueData, statsData] = await Promise.all([
         getTodaysQueue(token),
-        getUncollectedDocuments(token),
         getLiveQueueStats(token)
       ])
       setQueue(queueData)
-      setUncollected(uncollectedData)
       setQueueStats(statsData)
       setLastUpdated(new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }))
     } catch (e) { setError(e.message) }
@@ -513,9 +511,6 @@ export default function LiveQueuePage() {
               <span className="text-[16px] font-serif font-bold text-text-main flex items-center gap-2">
                 <DoorOpen size={17} className="text-maroon" /> At the Counter
               </span>
-              <span className="text-xs text-text-muted ml-6.25 block mt-0.5">
-                Students physically waiting — call these in order
-              </span>
             </div>
           </div>
 
@@ -551,7 +546,6 @@ export default function LiveQueuePage() {
               <div className="p-10 text-center">
                 <div className="flex justify-center text-text-muted mb-2.5"><DoorOpen size={32} /></div>
                 <p className="text-sm font-semibold text-text-main m-0 mb-1">No one at the counter right now</p>
-                <p className="text-[13px] text-text-muted m-0">Students will appear here when they need to be physically served.</p>
               </div>
             ) : (
               atCounter.map((item, idx) => renderQueueRow(item, idx, atCounter.length, 'Call Next'))
@@ -575,9 +569,6 @@ export default function LiveQueuePage() {
                 <span className="text-base font-serif font-bold text-text-main flex items-center gap-2">
                   <Cog size={17} className="text-text-muted" /> Processing
                 </span>
-                <span className="text-xs text-text-muted ml-6 block mt-0.5">
-                  This is where the processing is done — work through them before the release date
-                </span>
               </div>
             </div>
 
@@ -598,7 +589,6 @@ export default function LiveQueuePage() {
                 <div className="p-8 text-center border border-border rounded-[14px]">
                   <div className="flex justify-center text-text-muted mb-2"><Cog size={28} /></div>
                   <p className="text-sm font-semibold text-text-main m-0 mb-1">Nothing in back-office processing</p>
-                  <p className="text-[13px] text-text-muted m-0">Tickets land here after being submitted, before release.</p>
                 </div>
               ) : (
                 processingQueue.map((item, idx) => renderQueueRow(item, idx, processingQueue.length, 'Mark Complete', false))
@@ -652,50 +642,7 @@ export default function LiveQueuePage() {
             </div>
           )}
 
-          {/* Uncollected Documents section */}
-          {!loading && (
-            <div className="mt-8">
-              <div className="flex items-center justify-between mb-2.5">
-                <p className="text-[11px] font-bold text-text-muted uppercase tracking-[0.06em] m-0">Uncollected Documents — {uncollected.length} waiting</p>
-              </div>
-              <div className="overflow-x-auto rounded-2xl border border-border shadow-[0_4px_16px_rgba(0,0,0,0.02)] opacity-95">
-                <div className="min-w-212.5">
-                  <div className="grid grid-cols-[110px_1.5fr_1.2fr_100px] gap-0 px-5 py-3 bg-surface/50 backdrop-blur-sm border-b border-border">
-                    {['QUEUE NO.', 'STUDENT DETAILS', 'TRANSACTION', 'WAITING'].map(col => (
-                      <div key={col} className="text-[10px] font-bold text-text-muted tracking-[0.06em] uppercase">{col}</div>
-                    ))}
-                  </div>
-                  <div className="bg-white">
-                    {uncollected.length === 0 ? (
-                      <div className="p-8 text-center text-sm font-semibold text-text-muted">
-                        No uncollected documents
-                      </div>
-                    ) : (
-                      uncollected.map((doc, idx) => (
-                        <div key={doc.queue_ticket_id} className={`grid grid-cols-[110px_1.5fr_1.2fr_100px] gap-0 px-5 py-4 items-center transition-all ${idx < uncollected.length - 1 ? 'border-b border-border/60' : ''}`}>
-                          <div className="font-serif text-[20px] font-extrabold text-maroon leading-none">{doc.queue_number}</div>
-                          <div>
-                            <div className="text-[13px] font-semibold text-text-main mb-0.5">{doc.student_name}</div>
-                            <div className="text-[11px] text-text-muted font-mono">{doc.student_id}</div>
-                          </div>
-                          <div className="text-xs font-semibold text-text-main leading-snug">{doc.transaction_type}</div>
-                          <div>
-                            <div className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full inline-block border ${
-                              doc.days_waiting >= 3
-                                ? 'bg-danger-light text-danger border-danger-border'
-                                : 'bg-surface text-text-muted border-border'
-                            }`}>
-                              {doc.days_waiting} days
-                            </div>
-                          </div>
-                        </div>
-                      ))
-                    )}
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
+
 
         </div>
       </div>

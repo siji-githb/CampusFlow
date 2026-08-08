@@ -15,8 +15,11 @@ from services.admin_service import (
     get_window_assignments,   # ← Window Assignment
     claim_window,
     release_window,
+    create_transaction_type,
+    update_transaction_type,
+    delete_transaction_type,
 )
-from models.admin_models import OfficeConfigUpdate
+from models.admin_models import OfficeConfigUpdate, TransactionTypeCreate, TransactionTypeUpdate
 from models.appointment_models import ReleaseDateUpdate
 from pydantic import BaseModel
 from services.appointment_service import get_all_appointments, update_appointment_status, set_release_date
@@ -77,6 +80,22 @@ def change_status(user_id: str, is_active: bool, user=Depends(require_admin)):
 @router.get("/transaction-types")
 def transaction_types(user=Depends(require_admin)):
     return get_transaction_types()
+
+
+@router.post("/transaction-types")
+def add_transaction_type(data: TransactionTypeCreate, user=Depends(require_admin)):
+    return create_transaction_type(data, user.id)
+
+
+@router.put("/transaction-types/{tt_id}")
+def edit_transaction_type(tt_id: str, data: TransactionTypeUpdate, user=Depends(require_admin)):
+    return update_transaction_type(tt_id, data, user.id)
+
+
+@router.delete("/transaction-types/{tt_id}")
+def remove_transaction_type(tt_id: str, user=Depends(require_admin)):
+    return delete_transaction_type(tt_id, user.id)
+
 
 
 @router.get("/appointments")
