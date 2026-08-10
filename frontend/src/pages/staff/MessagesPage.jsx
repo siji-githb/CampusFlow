@@ -128,10 +128,7 @@ export default function MessagesPage() {
 
   useEffect(() => { load() }, [load])
 
-  // Auto-select first message
-  useEffect(() => {
-    if (!selected && messages.length > 0) setSelected(messages[0])
-  }, [messages, selected])
+
 
   const handleMarkRead = async (id) => {
     setMarking(id)
@@ -165,6 +162,13 @@ export default function MessagesPage() {
     if (filter === 'resolved') return m.is_read
     return true
   })
+
+  // Auto-select first message from the CURRENTLY FILTERED view,
+  // not the full unfiltered inbox — otherwise switching filters
+  // could leave a message open that doesn't belong to the active view.
+  useEffect(() => {
+    if (!selected && filtered.length > 0) setSelected(filtered[0])
+  }, [filtered, selected])
 
   const unreadCount  = messages.filter(m => !m.is_read).length
   const selectedPrio = selected ? PRIORITY[selected.priority] || PRIORITY.normal : null

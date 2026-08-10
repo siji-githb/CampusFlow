@@ -174,10 +174,15 @@ export default function StaffProfilePage({ setActiveNav }) {
     }
   }
 
-  const handleDeleteAccount = async () => {
-    if (!window.confirm("Are you absolutely sure you want to delete your account? This action cannot be undone.")) {
-      return
-    }
+  const [deleteConfirmText, setDeleteConfirmText] = useState('')
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+
+  const handleDeleteAccount = () => {
+    setShowDeleteConfirm(true)
+  }
+
+  const handleConfirmDeleteAccount = async () => {
+    if (deleteConfirmText.trim().toUpperCase() !== 'DELETE') return
     setIsDeletingAccount(true)
     try {
       await deleteAccount(token)
@@ -185,6 +190,8 @@ export default function StaffProfilePage({ setActiveNav }) {
     } catch (err) {
       alert(err.message || 'Failed to delete account')
       setIsDeletingAccount(false)
+      setShowDeleteConfirm(false)
+      setDeleteConfirmText('')
     }
   }
 
@@ -350,10 +357,30 @@ export default function StaffProfilePage({ setActiveNav }) {
                 <h4 className="text-[16px] font-bold text-text-main m-0 mb-1">Delete account</h4>
                 <p className="text-[13px] text-text-sub m-0">Once you delete your account, there is no going back. Please be certain.</p>
               </div>
-              <button onClick={handleDeleteAccount} disabled={isDeletingAccount} className="flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl border border-red-200 text-[14px] font-semibold text-red-600 bg-red-50 hover:bg-red-600 hover:text-white transition-colors shadow-sm cursor-pointer disabled:opacity-70 disabled:cursor-not-allowed w-full md:w-auto">
-                {isDeletingAccount ? <Loader2 size={16} className="animate-spin" /> : <Trash2 size={16} />} 
-                {isDeletingAccount ? 'Deleting...' : 'Delete account'}
-              </button>
+              {!showDeleteConfirm ? (
+                <button onClick={handleDeleteAccount} disabled={isDeletingAccount} className="flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl border border-red-200 text-[14px] font-semibold text-red-600 bg-red-50 hover:bg-red-600 hover:text-white transition-colors shadow-sm cursor-pointer disabled:opacity-70 disabled:cursor-not-allowed w-full md:w-auto">
+                  <Trash2 size={16} /> 
+                  Delete account
+                </button>
+              ) : (
+                <div className="flex flex-col gap-3 w-full md:w-auto mt-4 md:mt-0">
+                  <input 
+                    type="text" 
+                    placeholder="Type DELETE to confirm" 
+                    value={deleteConfirmText} 
+                    onChange={e => setDeleteConfirmText(e.target.value)}
+                    className="w-full px-4 py-2.5 rounded-xl border border-border bg-white text-[14px] text-text-main focus:outline-none focus:border-maroon focus:ring-1 focus:ring-maroon transition-colors"
+                  />
+                  <div className="flex gap-2">
+                    <button onClick={() => { setShowDeleteConfirm(false); setDeleteConfirmText(''); }} disabled={isDeletingAccount} className="flex-1 px-4 py-2.5 rounded-xl border border-border text-[14px] font-semibold text-text-main bg-white hover:bg-gray-50 transition-colors shadow-sm cursor-pointer disabled:opacity-50">
+                      Cancel
+                    </button>
+                    <button onClick={handleConfirmDeleteAccount} disabled={isDeletingAccount || deleteConfirmText.trim().toUpperCase() !== 'DELETE'} className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-maroon text-white text-[14px] font-semibold hover:bg-maroon-dark transition-colors shadow-sm cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">
+                      {isDeletingAccount ? <><Loader2 size={16} className="animate-spin" /> Deleting</> : 'Confirm'}
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
           

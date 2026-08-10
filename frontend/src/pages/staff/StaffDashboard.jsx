@@ -169,7 +169,7 @@ export default function StaffDashboard() {
 
   // Data states
   const [queue, setQueue] = useState([])
-  const [badgeStats, setBadgeStats] = useState({ messages: 0, idRequests: 0 })
+  const [badgeStats, setBadgeStats] = useState({ messages: 0, idRequests: 0, priorityRequests: 0 })
   const [loadingQueue, setLoadingQueue] = useState(true)
   const [apptStats, setApptStats] = useState({ today_appointments: 0, completed_today: 0, total_monthly: 0 })
 
@@ -225,7 +225,7 @@ export default function StaffDashboard() {
     if (!token) return
     try {
       const [qData, aStats, msgs, reqs, priorityReqs] = await Promise.all([
-        getTodaysQueue(token),
+        getTodaysQueue(token).catch(() => []),
         getAppointmentStats(token).catch(() => ({ today_appointments: 0, completed_today: 0, total_monthly: 0 })),
         getMessages(token).catch(() => []),
         getIdRequests(token).catch(() => []),

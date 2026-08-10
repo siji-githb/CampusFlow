@@ -57,6 +57,9 @@ function EmailModal({ req, token, onClose, onSentAndResolve }) {
       const subject = 'Your CRMC Student ID – CampusFlow'
       await sendIdRequestEmail(token, req.id, subject, message)
       setSent(true)
+      setTimeout(() => {
+        onSentAndResolve(req.id)
+      }, 1000)
     } catch (err) {
       setSendError(err.message || 'Failed to send email. Check configuration.')
     } finally {
@@ -188,7 +191,7 @@ function EmailModal({ req, token, onClose, onSentAndResolve }) {
 
             {sent && (
               <div className="mb-4 py-2.5 px-3.5 rounded-lg bg-success-light border border-success-border text-success text-[13px] flex items-center gap-2">
-                <Check size={15} /> Email sent successfully to the student.
+                <Check size={15} /> Email sent and request marked resolved.
               </div>
             )}
 
@@ -201,14 +204,6 @@ function EmailModal({ req, token, onClose, onSentAndResolve }) {
                     ${(studentId.trim() && !sending) ? 'bg-maroon text-white cursor-pointer hover:bg-maroon-dark' : 'bg-border text-text-muted cursor-not-allowed'}`}
                 >
                   <Mail size={16} /> {sending ? 'Sending Email...' : 'Send Email Now'}
-                </button>
-              )}
-              {sent && (
-                <button
-                  onClick={() => onSentAndResolve(req.id)}
-                  className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-[14px] bg-success-light text-success border border-success-border cursor-pointer hover:bg-success hover:text-white transition-colors"
-                >
-                  <Check size={16} /> Mark Request as Resolved
                 </button>
               )}
             </div>
@@ -272,14 +267,21 @@ export default function IdRequestsPage() {
     setIsDeleting(true)
     setError('')
     try {
-      await Promise.all(
+      const results = await Promise.allSettled(
         Array.from(selectedIds).map(id => deleteIdRequest(token, id))
       )
+      const failed = results.filter(r => r.status === 'rejected').length
+      const succeeded = results.length - failed
+
       setIsSelectMode(false)
       setSelectedIds(new Set())
-      loadRequests()
+      await loadRequests()
+
+      if (failed > 0) {
+        setError(`Deleted ${succeeded} of ${results.length} request(s). ${failed} failed — they may have already been removed by another staff member.`)
+      }
     } catch (err) {
-      setError('Failed to delete some requests: ' + err.message)
+      setError('Failed to delete requests: ' + err.message)
     } finally {
       setIsDeleting(false)
     }

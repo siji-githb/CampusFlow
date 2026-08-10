@@ -17,6 +17,66 @@ const STATUS_STYLES = {
 
 import { CalendarWidget, SlotBtn } from '../../components/CalendarWidget'
 
+// ── Stepper ──
+function Stepper({ step }) {
+  const STEPS = ['Transaction', 'Date & Time', 'Confirm']
+  return (
+    <>
+      {/* Mobile Horizontal Stepper */}
+      <div className="flex items-center gap-0 mb-10 md:hidden">
+        {STEPS.map((label, i) => {
+          const num    = i + 1
+          const active = step === num
+          const done   = step > num
+          return (
+            <div key={i} className={`flex items-center ${i < 2 ? 'flex-1' : 'flex-none'}`}>
+              <div className="flex flex-col items-center gap-1.5 relative">
+                <div className={`w-7 h-7 rounded-full flex items-center justify-center text-[12px] font-bold z-10 transition-all duration-300 ${
+                  done || active ? 'bg-maroon text-white shadow-[0_2px_8px_rgba(123,26,42,0.25)]' : 'bg-off-white border-[1.5px] border-border-strong text-text-muted'
+                }`}>
+                  {done ? '✓' : num}
+                </div>
+                <span className={`text-[11px] whitespace-nowrap transition-colors duration-300 ${
+                  active ? 'font-bold text-maroon' : done ? 'font-medium text-text-main' : 'font-medium text-text-muted'
+                }`}>{label}</span>
+              </div>
+              {i < 2 && (
+                <div className={`flex-1 h-0.5 mx-2 self-start mt-3.25 transition-colors duration-300 ${done ? 'bg-maroon' : 'bg-border'}`} />
+              )}
+            </div>
+          )
+        })}
+      </div>
+
+      {/* Desktop Vertical Stepper */}
+      <div className="hidden md:block bg-white rounded-2xl border border-border p-6 shadow-sm">
+        <h3 className="text-[12px] font-bold text-text-main m-0 mb-6 uppercase tracking-wider">Booking Progress</h3>
+        <div className="flex flex-col gap-6 relative">
+          <div className="absolute left-3.25 top-3.5 bottom-3.5 w-0.5 bg-border z-0" />
+          
+          {STEPS.map((label, i) => {
+            const num    = i + 1
+            const active = step === num
+            const done   = step > num
+            return (
+              <div key={i} className="flex items-center gap-4 relative z-10">
+                <div className={`w-7 h-7 rounded-full flex items-center justify-center text-[12px] font-bold transition-all duration-300 ${
+                  active ? 'bg-maroon text-white shadow-[0_0_0_4px_rgba(123,26,42,0.1)]' : done ? 'bg-maroon text-white' : 'bg-white border-2 border-border text-text-muted'
+                }`}>
+                  {done ? '✓' : num}
+                </div>
+                <span className={`text-[14px] transition-colors duration-300 ${
+                  active ? 'font-bold text-maroon' : done ? 'font-semibold text-text-main' : 'font-medium text-text-muted'
+                }`}>{label}</span>
+              </div>
+            )
+          })}
+        </div>
+      </div>
+    </>
+  )
+}
+
 // ── Main Component ──
 export default function BookAppointment() {
   const { token } = useAuth()
