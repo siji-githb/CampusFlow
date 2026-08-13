@@ -241,7 +241,7 @@ export default function BookAppointment() {
         <h2 className="font-serif text-[26px] font-bold text-maroon m-0 mb-2">Appointment Confirmed!</h2>
         <p className="text-[15px] font-semibold text-text-main m-0 mb-1">{selectedType?.name}</p>
         <p className="text-[14px] text-text-sub m-0 mb-6 flex items-center justify-center gap-1.5">
-          <Calendar size={14} /> {fmtDate(selectedDate)} at {selectedSlot}
+          <Calendar size={14} /> {fmtDate(selectedDate)} at {fmt12h(selectedSlot)}
         </p>
         <div className="bg-gold-light rounded-[10px] py-3.5 px-4 mb-6 border border-gold-border text-left">
           <p className="text-[13px] text-gold m-0 font-medium leading-normal">
@@ -713,7 +713,7 @@ export default function BookAppointment() {
 
         {confirmingBook && (
           <div className="fixed inset-0 z-1000 flex items-center justify-center">
-            <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => !loading && setConfirmingBook(false)} />
+            <div className="absolute inset-0 bg-black/60 transition-opacity duration-300" onClick={() => !loading && setConfirmingBook(false)} />
             <div className="animate-fade-up relative w-[90%] max-w-[320px] bg-white rounded-[20px] p-6 text-center shadow-[0_10px_40px_rgba(0,0,0,0.2)]">
               <div className="w-12 h-12 rounded-full bg-gold-light text-gold flex items-center justify-center mx-auto mb-4">
                 <HelpCircle size={24} />

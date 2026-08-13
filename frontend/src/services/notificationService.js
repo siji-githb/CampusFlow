@@ -33,3 +33,13 @@ export const markAllNotificationsRead = async (token) => {
   if (!res.ok) throw new Error(data.detail || 'Failed to mark all read');
   return data;
 };
+
+export const clearAllNotifications = async (token) => {
+  const res = await fetch(`${API_URL}/notifications/clear-all`, {
+    method: 'DELETE',
+    headers: authHeader(token)
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.detail || 'Failed to clear notifications');
+  return data;
+};

@@ -204,8 +204,10 @@ def get_student_queue(student_id: str):
 
         ticket = tickets_res.data[0]
         
-        # If the underlying appointment was cancelled, abandon the ticket
-        if ticket.get("appointments") and ticket["appointments"].get("status") == "cancelled":
+        # If the underlying appointment was cancelled or deleted, abandon the ticket
+        appt_status = ticket.get("appointments", {}).get("status")
+        tx_name = ((ticket.get("appointments") or {}).get("transaction_types") or {}).get("name", "")
+        if (ticket.get("appointments") and appt_status == "cancelled") or "(deleted" in tx_name:
             admin.table("queue_tickets").update({"status": "cancelled"}).eq("id", ticket["id"]).execute()
             return None
         steps_res = admin.table("transaction_steps") \
@@ -259,12 +261,28 @@ def send_to_processing(queue_ticket_id: str, staff_id: str):
     """Staff moves a ticket to back-office processing without completing the step."""
     admin = get_admin()
     
-    # Update current step's location to "Back Office"
+    # 1. Check if ticket exists and is in_progress
+    ticket_res = admin.table("queue_tickets").select("id, status").eq("id", queue_ticket_id).execute()
+    if not ticket_res.data:
+        raise HTTPException(status_code=404, detail="Ticket not found")
+        
+    ticket = ticket_res.data[0]
+    if ticket["status"] != "in_progress":
+        raise HTTPException(status_code=400, detail=f"Cannot send to processing: Ticket is {ticket['status']}")
+    
+    # 2. Get current step
     steps_res = admin.table("transaction_steps").select("*").eq("queue_ticket_id", queue_ticket_id).order("step_number").execute()
     steps = steps_res.data or []
     current_step = next((s for s in steps if s["status"] == "in_progress"), None)
-    if current_step:
-        admin.table("transaction_steps").update({"location": "Back Office"}).eq("id", current_step["id"]).execute()
+    
+    if not current_step:
+        raise HTTPException(status_code=400, detail="No in-progress step found for this ticket")
+        
+    if current_step["location"] == "Back Office":
+        raise HTTPException(status_code=400, detail="Ticket is already in Back Office processing")
+
+    # 3. Update current step's location to "Back Office"
+    admin.table("transaction_steps").update({"location": "Back Office"}).eq("id", current_step["id"]).execute()
 
     return {"message": "Ticket sent to processing"}
 
@@ -433,17 +451,44 @@ def get_todays_queue(date_filter: str = None):
     try:
         # Use an inner join to filter by today's appointment date and fetch steps all at once
         tickets_res = admin.table("queue_tickets") \
-            .select("*, appointments!inner(appointment_date, time_slot, priority_class, transaction_types(name)), users(first_name, last_name, student_id), transaction_steps(*)") \
-            .in_("status", ["waiting", "in_progress", "completed"]) \
+            .select("*, appointments!inner(id, appointment_date, time_slot, priority_class, release_date, notes, transaction_types(name, processing_steps, required_documents)), users(first_name, last_name, student_id), transaction_steps(*)") \
+            .in_("status", ["waiting", "in_progress", "completed", "no_show", "cancelled"]) \
             .or_(f"created_at.gte.{today},status.eq.in_progress") \
             .order("created_at") \
             .execute()
 
         result = []
         for ticket in tickets_res.data:
+            tx_type = (ticket.get("appointments") or {}).get("transaction_types") or {}
+            tx_name = tx_type.get("name", "")
+            if "(deleted" in tx_name:
+                continue
+            
+            processing_steps = tx_type.get("processing_steps") or []
+            
             steps = ticket.pop("transaction_steps", [])
             # Sort steps locally by step_number
             steps = sorted(steps, key=lambda x: x.get("step_number", 0))
+            
+            # Stitch requires_presence from processing_steps JSON into transaction_steps
+            for i, step in enumerate(steps):
+                if i < len(processing_steps):
+                    raw_step = processing_steps[i]
+                    if isinstance(raw_step, dict):
+                        step["requires_presence"] = raw_step.get("requires_presence", True)
+                    else:
+                        step["requires_presence"] = True
+                else:
+                    step["requires_presence"] = True
+
+            # Filter out tickets that are in Release step and already have a release date set
+            # (These should only show up in DocumentReleasesPage "Uncollected")
+            active_step = next((s for s in steps if s["status"] == "in_progress"), None)
+            if active_step and "Release" in active_step.get("step_name", ""):
+                appt_data = ticket.get("appointments") or {}
+                if appt_data.get("release_date"):
+                    continue
+
             result.append({"ticket": ticket, "steps": steps})
 
         def get_priority_weight(ticket_item):
@@ -622,7 +667,7 @@ def get_uncollected_documents(threshold_days: int = 0):
         res = admin.table("transaction_steps") \
             .select("*, queue_tickets(id, queue_number, student_id, "
                     "users(first_name, last_name, student_id), "
-                    "appointments(transaction_types(name)))") \
+                    "appointments(transaction_types(name), priority_class, release_date))") \
             .ilike("step_name", "%Release%") \
             .eq("status", "in_progress") \
             .lt("activated_at", threshold_date) \
@@ -641,7 +686,16 @@ def get_uncollected_documents(threshold_days: int = 0):
 
         ticket = row.get("queue_tickets") or {}
         student = ticket.get("users") or {}
-        tx_name = ((ticket.get("appointments") or {}).get("transaction_types") or {}).get("name", "Unknown")
+        appt = ticket.get("appointments") or {}
+        
+        # Only show in Document Releases if the release date has been set
+        if not appt.get("release_date"):
+            continue
+            
+        raw_tx_name = (appt.get("transaction_types") or {}).get("name", "Unknown")
+        if "(deleted" in raw_tx_name:
+            continue
+        tx_name = raw_tx_name
 
         results.append({
             "queue_ticket_id": ticket.get("id"),
@@ -652,6 +706,8 @@ def get_uncollected_documents(threshold_days: int = 0):
             "days_waiting": days_waiting,
             "activated_at": row.get("activated_at"),
             "step_number": row.get("step_number"),
+            "priority_class": appt.get("priority_class"),
+            "release_date": appt.get("release_date"),
         })
 
     results.sort(key=lambda r: r["days_waiting"] or 0, reverse=True)
@@ -667,7 +723,7 @@ def get_collected_documents(limit: int = 50):
         res = admin.table("transaction_steps") \
             .select("*, queue_tickets(id, queue_number, student_id, "
                     "users(first_name, last_name, student_id), "
-                    "appointments(transaction_types(name)))") \
+                    "appointments(transaction_types(name), priority_class, release_date))") \
             .ilike("step_name", "%Release%") \
             .eq("status", "completed") \
             .order("confirmed_at", desc=True) \
@@ -681,7 +737,11 @@ def get_collected_documents(limit: int = 50):
     for row in (res.data or []):
         ticket = row.get("queue_tickets") or {}
         student = ticket.get("users") or {}
-        tx_name = ((ticket.get("appointments") or {}).get("transaction_types") or {}).get("name", "Unknown")
+        appt = ticket.get("appointments") or {}
+        raw_tx_name = (appt.get("transaction_types") or {}).get("name", "Unknown")
+        if "(deleted" in raw_tx_name:
+            continue
+        tx_name = raw_tx_name
 
         results.append({
             "queue_ticket_id": ticket.get("id"),
@@ -690,7 +750,9 @@ def get_collected_documents(limit: int = 50):
             "student_id": student.get("student_id"),
             "transaction_type": tx_name,
             "confirmed_at": row.get("confirmed_at"),
-            "released_to": row.get("released_to")
+            "released_to": row.get("released_to"),
+            "priority_class": appt.get("priority_class"),
+            "release_date": appt.get("release_date"),
         })
 
     return results
@@ -716,7 +778,10 @@ def get_my_documents_to_claim(student_id: str):
     results = []
     for row in (res.data or []):
         ticket = row.get("queue_tickets") or {}
-        tx_name = ((ticket.get("appointments") or {}).get("transaction_types") or {}).get("name", "Unknown")
+        raw_tx_name = ((ticket.get("appointments") or {}).get("transaction_types") or {}).get("name", "Unknown")
+        if "(deleted" in raw_tx_name:
+            continue
+        tx_name = raw_tx_name
         release_date = (ticket.get("appointments") or {}).get("release_date")
 
         results.append({
@@ -754,7 +819,10 @@ def get_public_live_queue():
             active_step = next((s for s in steps if s.get("status") == "in_progress"), None)
             
             location = active_step.get("location") if active_step else "Processing"
-            tx_name = ((ticket.get("appointments") or {}).get("transaction_types") or {}).get("name", "Transaction")
+            raw_tx_name = ((ticket.get("appointments") or {}).get("transaction_types") or {}).get("name", "Transaction")
+            if "(deleted" in raw_tx_name:
+                continue
+            tx_name = raw_tx_name
             
             results.append({
                 "queue_ticket_id": ticket.get("id"),

@@ -16,7 +16,7 @@ import NotificationDropdown from '../../components/NotificationDropdown'
 import { getMessages, markMessageRead } from '../../services/messagesService'
 import { getAppointmentStats } from '../../services/appointmentService'
 import { getPendingPriorityRequests } from '../../services/priorityService'
-import { Inbox, MessageSquare, BarChart2, Ticket, Calendar, ClipboardList, LogOut, Users, User, Settings, CheckSquare, Clock, CalendarClock, Monitor, MonitorX, HelpCircle, LayoutDashboard, ShieldCheck, Loader2, Menu, X, PanelLeftClose, FolderOpen } from 'lucide-react'
+import { Inbox, MessageSquare, BarChart2, Ticket, Calendar, ClipboardList, LogOut, Users, User, Settings, CheckSquare, Clock, CalendarClock, Monitor, MonitorX, HelpCircle, LayoutDashboard, ShieldCheck, Loader2, Menu, X, PanelLeftClose, FolderOpen, AlertCircle, IdCard } from 'lucide-react'
 import { getWindowAssignments, claimWindow, releaseWindow, getIdRequests } from '../../services/adminService'
 
 // ── Compact Queue Preview (Overview panel) ─────────────────────────────────────
@@ -39,19 +39,28 @@ function CompactQueuePreview({ queue, loading }) {
 
   return (
     <div className="flex flex-col">
-      <div className="flex flex-col gap-2">
+      <div className="flex flex-col gap-3.5">
         {active.map(({ ticket }) => {
           const name = ticket.users ? `${ticket.users.last_name}, ${ticket.users.first_name}` : 'Unknown'
           const isServing = ticket.status === 'in_progress'
+          const priorityClass = ticket.appointments?.priority_class
+
           return (
-            <div key={ticket.id} className={`flex items-center gap-3 px-3 py-2.5 rounded-[10px] border ${isServing ? 'border-success-border bg-success-light' : 'border-border bg-off-white'}`}>
-              <span className="font-serif text-[17px] font-extrabold text-maroon min-w-15">{ticket.queue_number}</span>
-              <div className="flex-1 min-w-0">
-                <div className="text-[13px] font-semibold text-text-main whitespace-nowrap overflow-hidden text-ellipsis">{name}</div>
-                <div className="text-[11px] text-text-muted mt-px">{ticket.appointments?.transaction_types?.name || 'Transaction'}</div>
+            <div key={ticket.id} className={`flex items-center gap-4 px-5 py-4 rounded-xl border ${isServing ? 'border-success-border bg-success-light' : 'border-border bg-off-white'}`}>
+              <span className="font-serif text-[18px] font-extrabold text-maroon min-w-16">{ticket.queue_number}</span>
+              <div className="flex-1 min-w-0 flex flex-col justify-center">
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="text-[14px] font-bold text-text-main truncate">{name}</span>
+                  {priorityClass && priorityClass !== 'regular' && (
+                    <span className="shrink-0 text-[10px] font-bold px-2 py-0.5 rounded-full bg-danger-light text-danger border border-danger-border tracking-wider uppercase">
+                      {priorityClass}
+                    </span>
+                  )}
+                </div>
+                <div className="text-[12px] text-text-sub font-medium">{ticket.appointments?.transaction_types?.name || 'Transaction'}</div>
               </div>
-              <span className={`text-[10px] font-bold px-2 py-0.75 rounded-full whitespace-nowrap border ${isServing ? 'bg-success-light text-success border-success-border' : 'bg-gold-light text-gold border-gold-border'}`}>
-                {isServing ? '● Serving' : '◔ Waiting'}
+              <span className={`text-[11px] font-bold px-2.5 py-1 rounded-full whitespace-nowrap border shrink-0 flex items-center gap-1.5 ${isServing ? 'bg-success-light text-success border-success-border' : 'bg-gold-light text-gold border-gold-border'}`}>
+                {isServing ? <><span className="w-1.5 h-1.5 rounded-full bg-success"></span> Serving</> : <><Clock size={12} className="opacity-80" /> Waiting</>}
               </span>
             </div>
           )
@@ -169,6 +178,8 @@ export default function StaffDashboard() {
 
   // Data states
   const [queue, setQueue] = useState([])
+  const [priorityData, setPriorityData] = useState([])
+  const [idRequestsData, setIdRequestsData] = useState([])
   const [badgeStats, setBadgeStats] = useState({ messages: 0, idRequests: 0, priorityRequests: 0 })
   const [loadingQueue, setLoadingQueue] = useState(true)
   const [apptStats, setApptStats] = useState({ today_appointments: 0, completed_today: 0, total_monthly: 0 })
@@ -233,6 +244,8 @@ export default function StaffDashboard() {
       ])
       setQueue(qData)
       setApptStats(aStats)
+      setPriorityData(priorityReqs)
+      setIdRequestsData(reqs.filter(r => r.status === 'pending'))
       setBadgeStats({
         messages: msgs.filter(m => !m.is_read).length,
         idRequests: reqs.filter(r => r.status === 'pending').length,
@@ -577,7 +590,7 @@ export default function StaffDashboard() {
               </div>
 
               {/* Two-column: Queue preview + AI Escalations */}
-              <div className="grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-5">
+              <div className="grid grid-cols-1 lg:grid-cols-[5fr_3fr] gap-6">
 
                 {/* Live Queue Preview */}
                 <div className="animate-fade-up bg-white rounded-2xl p-6 border border-border shadow-[0_1px_4px_rgba(0,0,0,0.04)]" style={{ animationDelay: '0.5s' }}>
@@ -593,23 +606,85 @@ export default function StaffDashboard() {
                   <CompactQueuePreview queue={queue} loading={loadingQueue} />
                 </div>
 
-                {/* AI Escalations Panel */}
-                <div className="animate-fade-up bg-white rounded-2xl p-6 border border-border shadow-[0_1px_4px_rgba(0,0,0,0.04)] flex flex-col" style={{ animationDelay: '0.6s' }}>
-                  <div className="flex items-center justify-between mb-4">
-                    <div>
-                      <p className="text-[11px] font-bold text-gold tracking-widest uppercase m-0 mb-1">Inbox</p>
-                      <h2 className="font-serif text-[18px] font-bold text-text-main m-0">AI Escalations</h2>
+                <div className="flex flex-col gap-5">
+                  {/* Priority Request Panel */}
+                  <div className="animate-fade-up flex-1 bg-white rounded-2xl p-6 border border-border shadow-[0_1px_4px_rgba(0,0,0,0.04)] flex flex-col" style={{ animationDelay: '0.6s' }}>
+                    <div className="flex items-center justify-between mb-4">
+                      <div>
+                        <p className="text-[11px] font-bold text-gold tracking-widest uppercase m-0 mb-1">Pending</p>
+                        <h2 className="font-serif text-[18px] font-bold text-text-main m-0 flex items-center gap-2">
+                          Priority Requests
+                          {badgeStats.priorityRequests > 0 && (
+                            <span className="bg-danger text-white text-[10px] font-bold px-2 py-0.5 rounded-full font-sans shadow-sm">New</span>
+                          )}
+                        </h2>
+                      </div>
+                      <button onClick={() => setActiveNav('priority-requests')} className="px-3.5 py-1.5 rounded-lg border border-border bg-off-white text-text-sub text-xs font-semibold cursor-pointer font-sans hover:bg-surface hover:text-text-main hover:border-maroon/30 transition-all shadow-sm flex items-center gap-1">
+                        View All
+                      </button>
                     </div>
-                    {badgeStats.messages > 0 && (
-                      <span className="bg-danger text-white text-[11px] font-bold px-2 py-0.5 rounded-full">New</span>
-                    )}
+                    <div className="flex-1 overflow-auto">
+                      {priorityData.length === 0 ? (
+                        <div className="flex flex-col items-center justify-center py-6 text-text-muted">
+                          <div className="w-12 h-12 rounded-xl bg-surface flex items-center justify-center mb-3 border border-border">
+                            <AlertCircle size={20} className="text-text-muted/60" />
+                          </div>
+                          <span className="text-[12.5px] font-medium">No priority requests</span>
+                        </div>
+                      ) : (
+                        <div className="flex flex-col gap-2">
+                          {priorityData.slice(0, 3).map(req => (
+                            <div key={req.id} className="bg-white rounded-xl border border-maroon-border px-3.5 py-3 shadow-sm cursor-pointer hover:bg-maroon-light/20 transition-colors" onClick={() => setActiveNav('priority-requests')}>
+                              <div className="flex items-center justify-between mb-1">
+                                <span className="text-[13px] font-bold text-text-main">{req.users?.first_name} {req.users?.last_name}</span>
+                                <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-danger-light text-danger border border-danger-border">{req.priority_type?.toUpperCase()}</span>
+                              </div>
+                              <div className="text-[11px] text-text-sub font-mono">{req.users?.student_id}</div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
                   </div>
-                  <div className="flex-1 overflow-auto">
-                    <CompactMessagesPreview />
+
+                  {/* ID Request Panel */}
+                  <div className="animate-fade-up flex-1 bg-white rounded-2xl p-6 border border-border shadow-[0_1px_4px_rgba(0,0,0,0.04)] flex flex-col" style={{ animationDelay: '0.7s' }}>
+                    <div className="flex items-center justify-between mb-4">
+                      <div>
+                        <p className="text-[11px] font-bold text-gold tracking-widest uppercase m-0 mb-1">Pending</p>
+                        <h2 className="font-serif text-[18px] font-bold text-text-main m-0 flex items-center gap-2">
+                          ID Requests
+                          {badgeStats.idRequests > 0 && (
+                            <span className="bg-maroon text-white text-[10px] font-bold px-2 py-0.5 rounded-full font-sans shadow-sm">{badgeStats.idRequests}</span>
+                          )}
+                        </h2>
+                      </div>
+                      <button onClick={() => setActiveNav('id-requests')} className="px-3.5 py-1.5 rounded-lg border border-border bg-off-white text-text-sub text-xs font-semibold cursor-pointer font-sans hover:bg-surface hover:text-text-main hover:border-maroon/30 transition-all shadow-sm flex items-center gap-1">
+                        View All
+                      </button>
+                    </div>
+                    <div className="flex-1 overflow-auto">
+                      {idRequestsData.length === 0 ? (
+                        <div className="flex flex-col items-center justify-center py-6 text-text-muted">
+                          <div className="w-12 h-12 rounded-xl bg-surface flex items-center justify-center mb-3 border border-border">
+                            <IdCard size={20} className="text-text-muted/60" />
+                          </div>
+                          <span className="text-[12.5px] font-medium">No ID requests</span>
+                        </div>
+                      ) : (
+                        <div className="flex flex-col gap-2">
+                          {idRequestsData.slice(0, 3).map(req => (
+                            <div key={req.id} className="bg-white rounded-xl border border-border px-3.5 py-3 shadow-sm cursor-pointer hover:bg-surface/50 transition-colors" onClick={() => setActiveNav('id-requests')}>
+                              <div className="flex items-center justify-between mb-1">
+                                <span className="text-[13px] font-bold text-text-main">{req.first_name} {req.last_name}</span>
+                              </div>
+                              <div className="text-[11px] text-text-sub font-mono">{req.email}</div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
                   </div>
-                  <button onClick={() => setActiveNav('messages')} className="mt-4 w-full p-2.5 rounded-xl border border-border bg-off-white text-text-sub text-[13px] font-semibold cursor-pointer font-sans hover:bg-border transition-colors">
-                    View All Messages
-                  </button>
                 </div>
               </div>
             </>

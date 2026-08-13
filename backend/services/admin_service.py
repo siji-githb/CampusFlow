@@ -101,8 +101,13 @@ def get_reports(days: int = 7, doc_type: str = None):
         from datetime import datetime
 
         for appt in appts.data:
-            tt_name = appt.get("transaction_types", {}).get("name", "Unknown") \
+            raw_tt_name = appt.get("transaction_types", {}).get("name", "Unknown") \
                 if appt.get("transaction_types") else "Unknown"
+            
+            if "(deleted" in raw_tt_name:
+                continue
+                
+            tt_name = raw_tt_name
             
             if doc_type and doc_type.lower() != "all":
                 if doc_type.lower() not in tt_name.lower():
@@ -157,6 +162,13 @@ def get_registrar_records(days: int = 30):
             .gte("appointment_date", str(start_date)) \
             .order("appointment_date", desc=True) \
             .execute()
+            
+        import re
+        for row in records.data:
+            raw_tx_name = (row.get("transaction_types") or {}).get("name", "Unknown")
+            row["transaction_types"] = row.get("transaction_types", {})
+            row["transaction_types"]["name"] = re.sub(r" \(deleted \d+\)$", "", raw_tx_name)
+            
         return records.data
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -354,7 +366,7 @@ def toggle_user_status(target_user_id: str, is_active: bool, actor_id: str = Non
 def get_transaction_types():
     admin = get_admin()
     try:
-        res = admin.table("transaction_types").select("*").order("created_at").execute()
+        res = admin.table("transaction_types").select("*").eq("is_active", True).order("created_at").execute()
         return res.data
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -373,7 +385,7 @@ def get_ai_insights():
 
     try:
         appts = admin.table("appointments") \
-            .select("status") \
+            .select("status, time_slot, transaction_type_id") \
             .eq("appointment_date", today) \
             .execute()
 
@@ -385,10 +397,57 @@ def get_ai_insights():
         pending   = sum(1 for a in data if a["status"] in ("confirmed", "waiting"))
         completion_rate = round(completed / total * 100) if total else 0
 
+        # Peak Hour
+        slot_counts: dict = {}
+        for a in data:
+            ts = (a.get("time_slot") or "").strip()
+            if ts:
+                slot_counts[ts] = slot_counts.get(ts, 0) + 1
+        if slot_counts:
+            peak_slot = max(slot_counts, key=slot_counts.__getitem__)
+            try:
+                h, m = int(peak_slot.split(":")[0]), int(peak_slot.split(":")[1])
+                peak_hour = f"{h % 12 or 12}:{str(m).zfill(2)} {'AM' if h < 12 else 'PM'}"
+            except Exception:
+                peak_hour = peak_slot
+        else:
+            peak_hour = "N/A"
+
+        # Busiest Document
+        tt_counts: dict = {}
+        tt_ids = list({a["transaction_type_id"] for a in data if a.get("transaction_type_id")})
+        if tt_ids:
+            tt_res = admin.table("transaction_types").select("id, name").in_("id", tt_ids).execute()
+            tt_map = {r["id"]: r["name"] for r in (tt_res.data or [])}
+            for a in data:
+                tt_id = a.get("transaction_type_id")
+                if tt_id and tt_id in tt_map:
+                    name = tt_map[tt_id]
+                    tt_counts[name] = tt_counts.get(name, 0) + 1
+        busiest_document = max(tt_counts, key=tt_counts.__getitem__) if tt_counts else "N/A"
+
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+    from services.predictive_service import compute_forecast, compute_no_show_risks, compute_volume_trend
+    forecast = compute_forecast(admin)
+    no_show_risk = compute_no_show_risks(admin)
+    trend = compute_volume_trend(admin)
+
     # ── AI summary call ───────────────────────────────────────────────────────
+    # Build context string from predictive data
+    trend_str = "N/A"
+    if not trend.get("insufficient_data"):
+        trend_str = f"{trend['direction']} by {abs(trend.get('percent_change', 0))}% ({trend.get('recent_count', 0)} recent vs {trend.get('prior_count', 0)} prior 14 days)"
+        if trend.get("driving_type"):
+            trend_str += f", driven by {trend['driving_type']}"
+
+    forecast_str = "N/A (not enough data)"
+    if not forecast.get("insufficient_data"):
+        forecast_str = f"{forecast.get('predicted_count', 0)} appointments expected on {forecast.get('weekday', 'tomorrow')}"
+        if forecast.get("top_transaction_type"):
+            forecast_str += f", top type: {forecast['top_transaction_type']}"
+
     try:
         from openai import OpenAI
         client = OpenAI(
@@ -403,14 +462,15 @@ def get_ai_insights():
                 "role": "user",
                 "content": (
                     f"You are an assistant for the Registrar's Office admin at Cebu Roosevelt Memorial Colleges.\n"
-                    f"Today's appointment data:\n"
-                    f"- Total: {total}\n"
-                    f"- Completed: {completed} ({completion_rate}% completion rate)\n"
-                    f"- No-shows: {no_shows}\n"
-                    f"- Cancelled: {cancelled}\n"
-                    f"- Pending: {pending}\n\n"
-                    f"Write a 2-3 sentence insight summary for the admin dashboard. "
-                    f"Be direct, factual, and actionable. No bullet points. No greetings."
+                    f"Here is today's predictive intelligence data:\n"
+                    f"- Peak Hour: {peak_hour}\n"
+                    f"- Busiest Document: {busiest_document}\n"
+                    f"- Served Today: {completed} out of {total} total appointments\n"
+                    f"- Tomorrow's Forecast: {forecast_str}\n"
+                    f"- 14-Day Trend: {trend_str}\n\n"
+                    f"Write a 2-3 sentence actionable insight for the admin based on the predictive intelligence above. "
+                    f"Focus on trends, forecasts, and staffing recommendations. "
+                    f"Be direct, factual, and forward-looking. No bullet points. No greetings."
                 )
             }]
         )
@@ -418,34 +478,33 @@ def get_ai_insights():
 
     except Exception:
         # Plain fallback — never crashes the dashboard
-        if total == 0:
-            insight = "No appointments are scheduled for today."
+        if total == 0 and forecast.get("insufficient_data"):
+            insight = "No appointments recorded today and not enough historical data for forecasting. The system will generate predictive insights once more appointment data accumulates."
+        elif total == 0:
+            insight = f"No appointments today. Tomorrow ({forecast.get('weekday', 'N/A')}) is forecasted at {forecast.get('predicted_count', 0)} appointments — plan staffing accordingly."
         else:
-            insight = (
-                f"Today has {total} appointment{'s' if total != 1 else ''} with a "
-                f"{completion_rate}% completion rate. "
-                f"{no_shows} no-show{'s' if no_shows != 1 else ''} recorded"
-                f"{' — consider sending reminders for future bookings.' if no_shows > 2 else '.'} "
-                f"{pending} appointment{'s' if pending != 1 else ''} still pending."
-            )
-
-    from services.predictive_service import compute_forecast, compute_no_show_risks, compute_volume_trend
-    forecast = compute_forecast(admin)
-    no_show_risk = compute_no_show_risks(admin)
-    trend = compute_volume_trend(admin)
+            parts = [f"Today processed {completed} of {total} appointment{'s' if total != 1 else ''}."]
+            if not trend.get("insufficient_data"):
+                parts.append(f"The 14-day trend is {trend['direction']} by {abs(trend.get('percent_change', 0))}%.")
+            if not forecast.get("insufficient_data"):
+                parts.append(f"Tomorrow expects ~{forecast.get('predicted_count', 0)} appointments.")
+            insight = " ".join(parts)
 
     return {
-        "date":            today,
-        "total":           total,
-        "completed":       completed,
-        "no_shows":        no_shows,
-        "cancelled":       cancelled,
-        "pending":         pending,
-        "completion_rate": completion_rate,
-        "insight":         insight,
-        "forecast":        forecast,
-        "no_show_risk":    no_show_risk,
-        "trend":           trend,
+        "date":             today,
+        "total":            total,
+        "completed":        completed,
+        "no_shows":         no_shows,
+        "cancelled":        cancelled,
+        "pending":          pending,
+        "completion_rate":  completion_rate,
+        "insight":          insight,
+        "forecast":         forecast,
+        "no_show_risk":     no_show_risk,
+        "trend":            trend,
+        "peak_hour":        peak_hour,
+        "busiest_document": busiest_document,
+        "served_today":     completed,
     }
 
 
@@ -553,9 +612,7 @@ def create_transaction_type(data, actor_id: str):
         "requires_semester": data.requires_semester or False,
         "requires_year_level": data.requires_year_level or False,
         "requires_school_year": data.requires_school_year or False,
-        "requires_purpose": data.requires_purpose or False,
-        "required_documents": data.required_documents or [],
-        "processing_steps": data.processing_steps or []
+        "requires_purpose": data.requires_purpose or False
     }
     
     desc = data.description or ""
@@ -564,7 +621,9 @@ def create_transaction_type(data, actor_id: str):
     payload = {
         "name": data.name,
         "description": desc_str,
-        "is_active": True
+        "is_active": True,
+        "required_documents": data.required_documents or [],
+        "processing_steps": data.processing_steps or []
     }
     
     try:
@@ -591,6 +650,10 @@ def update_transaction_type(tt_id: str, data, actor_id: str):
         payload["name"] = data.name
     if data.is_active is not None:
         payload["is_active"] = data.is_active
+    if data.required_documents is not None:
+        payload["required_documents"] = data.required_documents
+    if data.processing_steps is not None:
+        payload["processing_steps"] = data.processing_steps
         
     if data.description is not None or any(x is not None for x in [data.requires_semester, data.requires_year_level, data.requires_school_year, data.requires_purpose]):
         try:
@@ -618,10 +681,6 @@ def update_transaction_type(tt_id: str, data, actor_id: str):
                 config["requires_school_year"] = data.requires_school_year
             if data.requires_purpose is not None:
                 config["requires_purpose"] = data.requires_purpose
-            if data.required_documents is not None:
-                config["required_documents"] = data.required_documents
-            if data.processing_steps is not None:
-                config["processing_steps"] = data.processing_steps
                 
             payload["description"] = f"{base_desc}|||{json.dumps(config)}"
         except HTTPException:

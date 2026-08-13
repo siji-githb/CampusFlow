@@ -83,6 +83,29 @@ export default function AppointmentsPage() {
 
   const handleReschedule = async () => {
     if (!newDate || !newTime) return
+
+    // Validation
+    const [y, m, d] = newDate.split('-')
+    const dateObj = new Date(parseInt(y, 10), parseInt(m, 10) - 1, parseInt(d, 10))
+    const dayOfWeek = dateObj.getDay()
+    
+    const today = new Date()
+    const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`
+    
+    if (newDate < todayStr) {
+      alert("Cannot reschedule to a past date.")
+      return
+    }
+    if (dayOfWeek === 0 || dayOfWeek === 6) {
+      alert("Cannot reschedule to a weekend.")
+      return
+    }
+    const override = dateOverrides[newDate]
+    if (override && override.is_blocked) {
+      alert(`Cannot reschedule: ${override.reason || 'This date is blocked.'}`)
+      return
+    }
+
     setRescheduling(true)
     try {
       await rescheduleAppointment(token, rescheduleModal.id, newDate, newTime)
@@ -214,21 +237,6 @@ export default function AppointmentsPage() {
                 )
               })}
             </div>
-          </div>
-
-          <div className="bg-white rounded-2xl p-4 sm:p-6 border border-border shadow-[0_4px_12px_rgba(0,0,0,0.02)]">
-            <div className="text-[10px] font-bold text-text-muted tracking-widest uppercase mb-4">
-              Daily Filter
-            </div>
-            <label className="flex items-center justify-between cursor-pointer">
-              <div className="flex items-center gap-2.5">
-                <input type="checkbox" defaultChecked className="accent-maroon cursor-pointer" />
-                <span className="text-[13px] font-medium text-text-main">Appointed</span>
-              </div>
-              <span className="text-[11px] text-text-muted bg-off-white px-1.5 py-0.5 rounded-md">
-                {appointments.length}
-              </span>
-            </label>
           </div>
 
         </div>

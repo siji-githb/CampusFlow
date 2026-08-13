@@ -126,7 +126,11 @@ export default function MessagesPage() {
     finally { setLoading(false) }
   }, [token])
 
-  useEffect(() => { load() }, [load])
+  useEffect(() => { 
+    load() 
+    const t = setInterval(load, 15000)
+    return () => clearInterval(t)
+  }, [load])
 
 
 
@@ -147,8 +151,10 @@ export default function MessagesPage() {
     try {
       await replyToMessage(token, selected.id, replyText)
       setReplyText('')
-      setMessages(prev => prev.map(m => m.id === selected.id ? { ...m, is_read: true } : m))
-      setSelected(prev => ({ ...prev, is_read: true }))
+      const freshMessages = await getMessages(token)
+      setMessages(freshMessages)
+      const freshSelected = freshMessages.find(m => m.id === selected.id)
+      if (freshSelected) setSelected(freshSelected)
     } catch (err) {
       setError(err.message)
     } finally {

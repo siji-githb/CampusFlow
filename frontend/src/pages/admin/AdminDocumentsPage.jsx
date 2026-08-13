@@ -7,7 +7,7 @@ import {
   deleteTransactionType
 } from '../../services/adminService';
 import {
-  FileText, Plus, Edit2, Trash2, X, Check, Search, Save, AlertCircle, Settings, Eye, Loader2
+  FileText, Plus, Edit2, Trash2, X, Check, Search, Save, AlertCircle, Settings, Eye, Loader2, List
 } from 'lucide-react';
 
 export default function AdminDocumentsPage() {
@@ -40,6 +40,8 @@ export default function AdminDocumentsPage() {
   });
   const [docInput, setDocInput] = useState('');
   const [stepInput, setStepInput] = useState('');
+  const [showCustomDoc, setShowCustomDoc] = useState(false);
+  const [showCustomStep, setShowCustomStep] = useState(false);
 
   useEffect(() => {
     fetchTransactions();
@@ -120,11 +122,14 @@ export default function AdminDocumentsPage() {
       setIsViewMode(true);
     } else {
       setIsModalOpen(false);
+      setShowCustomDoc(false);
+      setShowCustomStep(false);
     }
   };
 
   const handleSave = async () => {
     if (!formData.name) return alert('Name is required');
+    if (!formData.processing_steps || formData.processing_steps.length === 0) return alert('At least one processing step is required.');
     setIsSaving(true);
     try {
       if (editingId) {
@@ -295,9 +300,11 @@ export default function AdminDocumentsPage() {
       {isModalOpen && (
         <div className="fixed inset-0 bg-black/30 z-50 flex items-center justify-center p-4 animate-fade-in">
           <div className="bg-white rounded-[20px] shadow-[0_10px_40px_rgba(0,0,0,0.12)] w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden animate-scale-up border border-border">
-            <div className="flex items-center justify-between p-5 px-6 border-b border-border bg-off-white">
-              <h2 className="m-0 text-[18px] font-bold font-serif text-text-main flex items-center gap-2">
-                {isViewMode ? <Eye size={18} className="text-maroon"/> : editingId ? <Edit2 size={18} className="text-maroon"/> : <Plus size={18} className="text-maroon"/>}
+            <div className="flex items-center justify-between p-6 px-8 border-b border-border bg-linear-to-r from-[#FDFBF7] to-white">
+              <h2 className="m-0 text-[20px] font-bold font-serif text-maroon flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-maroon/10 flex items-center justify-center">
+                  {isViewMode ? <Eye size={20} className="text-maroon"/> : editingId ? <Edit2 size={20} className="text-maroon"/> : <Plus size={20} className="text-maroon"/>}
+                </div>
                 {isViewMode ? 'Document Details' : editingId ? 'Edit Document Type' : 'Add Document Type'}
               </h2>
               <div className="flex items-center gap-2">
@@ -372,123 +379,209 @@ export default function AdminDocumentsPage() {
                 )}
 
                 {(!isViewMode || formData.required_documents.length > 0) && (
-                  <div>
-                    <label className="block text-[13px] font-bold text-text-main mb-1.5">Required Documents to Submit</label>
+                  <div className="bg-white p-5 rounded-2xl border border-border shadow-[0_2px_8px_rgba(0,0,0,0.02)]">
+                    <label className="text-[13px] font-bold text-text-main mb-3 flex items-center gap-1.5">
+                      <FileText size={14} className="text-maroon"/>
+                      Required Documents to Submit
+                    </label>
                     {!isViewMode && (
-                      <div className="flex gap-2 mb-3">
-                        <input 
-                          type="text"
-                          value={docInput}
-                          onChange={e => setDocInput(e.target.value)}
-                          placeholder="e.g. Student ID, Clearance..."
-                          className="flex-1 px-4 py-2.25 bg-white border border-border rounded-xl focus:outline-none focus:border-maroon focus:shadow-[0_0_0_3px_rgba(123,26,42,0.1)] transition-all font-sans text-[13px]"
-                          onKeyDown={e => {
-                            if (e.key === 'Enter') {
-                              e.preventDefault();
-                              if (docInput.trim()) {
-                                setFormData({...formData, required_documents: [...formData.required_documents, docInput.trim()]});
-                                setDocInput('');
-                              }
-                            }
-                          }}
-                        />
-                        <button 
-                          type="button"
-                          onClick={() => {
-                            if (docInput.trim()) {
-                              setFormData({...formData, required_documents: [...formData.required_documents, docInput.trim()]});
-                              setDocInput('');
-                            }
-                          }}
-                          className="bg-white border border-border text-text-main hover:bg-off-white px-3 py-2 rounded-xl text-sm font-medium cursor-pointer"
-                        >
-                          Add
-                        </button>
+                      <div className="mb-5 bg-off-white p-4 rounded-xl border border-border/60">
+                        <span className="text-[12px] font-semibold text-text-sub mb-3 block">Select a standard requirement to add:</span>
+                        <div className="flex flex-wrap gap-2 mb-3">
+                          {["Official Receipt", "Student ID", "Clearance", "Request Form", "Other"].map(doc => (
+                            <button
+                              key={doc}
+                              type="button"
+                              onClick={() => {
+                                if (doc === "Other") {
+                                  setShowCustomDoc(true);
+                                } else {
+                                  setShowCustomDoc(false);
+                                  setDocInput('');
+                                  if (!formData.required_documents.includes(doc)) {
+                                    setFormData(prev => ({
+                                      ...prev, 
+                                      required_documents: [...prev.required_documents, doc]
+                                    }));
+                                  }
+                                }
+                              }}
+                              className={`px-4 py-2 rounded-full text-[13px] font-medium border transition-all duration-200 cursor-pointer ${(doc === "Other" && showCustomDoc) ? 'bg-maroon text-white border-maroon shadow-[0_4px_12px_rgba(123,26,42,0.2)]' : 'bg-white text-text-main border-border hover:border-maroon/30 hover:bg-maroon/5'}`}
+                            >
+                              {doc}
+                            </button>
+                          ))}
+                        </div>
+                        {showCustomDoc && (
+                          <div className="flex gap-2 mt-3 animate-fade-in">
+                            <input 
+                              type="text"
+                              value={docInput}
+                              onChange={e => setDocInput(e.target.value)}
+                              placeholder="Type custom requirement..."
+                              className="flex-1 px-4 py-2.25 bg-white border border-border rounded-xl focus:outline-none focus:border-maroon focus:shadow-[0_0_0_3px_rgba(123,26,42,0.1)] transition-all font-sans text-[13px]"
+                              onKeyDown={e => {
+                                if (e.key === 'Enter') {
+                                  e.preventDefault();
+                                  if (docInput.trim() && !formData.required_documents.includes(docInput.trim())) {
+                                    setFormData({...formData, required_documents: [...formData.required_documents, docInput.trim()]});
+                                    setDocInput('');
+                                  }
+                                }
+                              }}
+                            />
+                            <button 
+                              type="button"
+                              onClick={() => {
+                                if (docInput.trim() && !formData.required_documents.includes(docInput.trim())) {
+                                  setFormData({...formData, required_documents: [...formData.required_documents, docInput.trim()]});
+                                  setDocInput('');
+                                }
+                              }}
+                              className="bg-maroon border border-maroon text-white hover:bg-maroon-dark px-5 py-2 rounded-xl text-sm font-medium cursor-pointer shadow-sm transition-colors"
+                            >
+                              Add Custom
+                            </button>
+                          </div>
+                        )}
                       </div>
                     )}
-                    {formData.required_documents.length > 0 && (
-                      <ul className="m-0 p-0 list-none space-y-1.5">
+                    {formData.required_documents.length > 0 ? (
+                      <ul className="m-0 p-0 list-none space-y-2">
                         {formData.required_documents.map((doc, idx) => (
-                          <li key={idx} className={`flex items-center justify-between bg-off-white px-3 py-2 rounded-lg text-sm border border-border ${isViewMode ? 'opacity-80' : ''}`}>
-                            <span>{doc}</span>
+                          <li key={idx} className="flex items-center justify-between bg-white border border-border/80 px-4 py-3 rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.02)] group hover:border-maroon/30 transition-colors">
+                            <div className="flex items-center gap-3">
+                              <div className="w-6 h-6 rounded-full bg-maroon/10 flex items-center justify-center">
+                                <Check size={12} className="text-maroon" strokeWidth={3} />
+                              </div>
+                              <span className="font-medium text-[14px] text-text-main">{doc}</span>
+                            </div>
                             {!isViewMode && (
-                              <button onClick={() => setFormData({...formData, required_documents: formData.required_documents.filter((_, i) => i !== idx)})} className="bg-transparent border-none text-text-muted hover:text-danger cursor-pointer p-0 flex">
+                              <button onClick={() => setFormData({...formData, required_documents: formData.required_documents.filter((_, i) => i !== idx)})} className="bg-transparent border-none text-text-muted hover:text-danger hover:bg-danger/5 rounded-md p-1.5 cursor-pointer flex transition-colors">
                                 <X size={14}/>
                               </button>
                             )}
                           </li>
                         ))}
                       </ul>
+                    ) : (
+                      <div className="text-center py-6 bg-off-white/50 rounded-xl border border-dashed border-border/80">
+                        <p className="text-[13px] text-text-muted m-0">No documents required.</p>
+                      </div>
                     )}
                   </div>
                 )}
 
                 {(!isViewMode || formData.processing_steps.length > 0) && (
-                  <div>
-                    <label className="block text-[13px] font-bold text-text-main mb-1.5">Processing Steps</label>
+                  <div className="bg-white p-5 rounded-2xl border border-border shadow-[0_2px_8px_rgba(0,0,0,0.02)]">
+                    <label className="text-[13px] font-bold text-text-main mb-3 flex items-center gap-1.5">
+                      <List size={14} className="text-maroon"/>
+                      Processing Steps Workflow
+                    </label>
                     {!isViewMode && (
-                      <div className="flex gap-2 mb-3">
-                        <input 
-                          type="text"
-                          value={stepInput}
-                          onChange={e => setStepInput(e.target.value)}
-                          placeholder="e.g. Verification, Printing..."
-                          className="flex-1 px-4 py-2.25 bg-white border border-border rounded-xl focus:outline-none focus:border-maroon focus:shadow-[0_0_0_3px_rgba(123,26,42,0.1)] transition-all font-sans text-[13px]"
-                          onKeyDown={e => {
-                            if (e.key === 'Enter') {
-                              e.preventDefault();
-                              if (stepInput.trim()) {
-                                setFormData({...formData, processing_steps: [...formData.processing_steps, { name: stepInput.trim(), requires_presence: false }]});
-                                setStepInput('');
-                              }
-                            }
-                          }}
-                        />
-                        <button 
-                          type="button"
-                          onClick={() => {
-                            if (stepInput.trim()) {
-                              setFormData({...formData, processing_steps: [...formData.processing_steps, { name: stepInput.trim(), requires_presence: false }]});
-                              setStepInput('');
-                            }
-                          }}
-                          className="bg-white border border-border text-text-main hover:bg-off-white px-3 py-2 rounded-xl text-sm font-medium cursor-pointer"
-                        >
-                          Add
-                        </button>
+                      <div className="mb-5 bg-off-white p-4 rounded-xl border border-border/60">
+                        <span className="text-[12px] font-semibold text-text-sub mb-3 block">Select a standard step to add:</span>
+                        <div className="flex flex-wrap gap-2 mb-3">
+                          {["Checking of Payment Receipt", "Preparation of Document", "Release", "Other"].map(step => (
+                            <button
+                              key={step}
+                              type="button"
+                              onClick={() => {
+                                if (step === "Other") {
+                                  setShowCustomStep(true);
+                                } else {
+                                  setShowCustomStep(false);
+                                  setStepInput('');
+                                  // Auto-add if it's a standard step (premium UX)
+                                  setFormData(prev => ({
+                                    ...prev, 
+                                    processing_steps: [...prev.processing_steps, { name: step, requires_presence: step === "Release" || step === "Checking of Payment Receipt" }]
+                                  }));
+                                }
+                              }}
+                              className={`px-4 py-2 rounded-full text-[13px] font-medium border transition-all duration-200 cursor-pointer ${(step === "Other" && showCustomStep) ? 'bg-maroon text-white border-maroon shadow-[0_4px_12px_rgba(123,26,42,0.2)]' : 'bg-white text-text-main border-border hover:border-maroon/30 hover:bg-maroon/5'}`}
+                            >
+                              {step}
+                            </button>
+                          ))}
+                        </div>
+                        {showCustomStep && (
+                          <div className="flex gap-2 mt-3 animate-fade-in">
+                            <input 
+                              type="text"
+                              value={stepInput}
+                              onChange={e => setStepInput(e.target.value)}
+                              placeholder="Type custom step name..."
+                              className="flex-1 px-4 py-2.25 bg-white border border-border rounded-xl focus:outline-none focus:border-maroon focus:shadow-[0_0_0_3px_rgba(123,26,42,0.1)] transition-all font-sans text-[13px]"
+                              onKeyDown={e => {
+                                if (e.key === 'Enter') {
+                                  e.preventDefault();
+                                  if (stepInput.trim()) {
+                                    setFormData({...formData, processing_steps: [...formData.processing_steps, { name: stepInput.trim(), requires_presence: false }]});
+                                    setStepInput('');
+                                  }
+                                }
+                              }}
+                            />
+                            <button 
+                              type="button"
+                              onClick={() => {
+                                if (stepInput.trim()) {
+                                  setFormData({...formData, processing_steps: [...formData.processing_steps, { name: stepInput.trim(), requires_presence: false }]});
+                                  setStepInput('');
+                                }
+                              }}
+                              className="bg-maroon border border-maroon text-white hover:bg-maroon-dark px-5 py-2 rounded-xl text-sm font-medium cursor-pointer shadow-sm transition-colors"
+                            >
+                              Add Custom
+                            </button>
+                          </div>
+                        )}
                       </div>
                     )}
-                    {formData.processing_steps.length > 0 && (
-                      <ul className="m-0 p-0 list-none space-y-1.5">
+                    {formData.processing_steps.length > 0 ? (
+                      <ul className="m-0 p-0 list-none space-y-3 relative before:absolute before:left-3.5 before:top-4 before:bottom-4 before:w-0.5 before:bg-border/60">
                         {formData.processing_steps.map((step, i) => (
-                          <li key={i} className="flex flex-col gap-2 bg-off-white px-3 py-2.5 rounded-lg text-sm border border-border">
-                            <div className="flex items-start justify-between">
-                              <span className="font-semibold">{i + 1}. {step.name}</span>
-                              {!isViewMode && (
-                                <button onClick={() => setFormData({...formData, processing_steps: formData.processing_steps.filter((_, idx) => idx !== i)})} className="bg-transparent border-none text-text-muted hover:text-danger cursor-pointer p-0 flex">
-                                  <X size={14}/>
-                                </button>
+                          <li key={i} className="relative flex items-start gap-4 group">
+                            <div className="shrink-0 w-7 h-7 rounded-full bg-white border-2 border-maroon/20 text-maroon flex items-center justify-center text-[12px] font-bold z-10 group-hover:border-maroon group-hover:bg-maroon group-hover:text-white transition-colors shadow-sm">
+                              {i + 1}
+                            </div>
+                            <div className="flex-1 bg-white border border-border/80 px-4 py-3 rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.02)] group-hover:border-maroon/30 transition-colors">
+                              <div className="flex items-start justify-between mb-1">
+                                <span className="font-bold text-[14px] text-text-main">{step.name}</span>
+                                {!isViewMode && (
+                                  <button onClick={() => setFormData({...formData, processing_steps: formData.processing_steps.filter((_, idx) => idx !== i)})} className="bg-transparent border-none text-text-muted hover:text-danger hover:bg-danger/5 rounded-md p-1 cursor-pointer flex transition-colors">
+                                    <X size={14}/>
+                                  </button>
+                                )}
+                              </div>
+                              {(!isViewMode || step.requires_presence) && (
+                                <label className={`flex items-center gap-2 mt-2 ${isViewMode ? 'opacity-80 cursor-default' : 'cursor-pointer hover:bg-off-white/50 p-1.5 -ml-1.5 rounded-lg'} self-start select-none transition-colors w-fit`}>
+                                  <div className={`w-4 h-4 rounded-sm flex items-center justify-center border transition-all duration-200 ${step.requires_presence ? 'bg-maroon border-maroon text-white' : 'bg-white border-border text-transparent'}`}>
+                                    <Check size={12} strokeWidth={3} />
+                                  </div>
+                                  <input 
+                                    type="checkbox" 
+                                    className="hidden"
+                                    checked={step.requires_presence}
+                                    disabled={isViewMode}
+                                    onChange={e => {
+                                      const newSteps = [...formData.processing_steps];
+                                      newSteps[i].requires_presence = e.target.checked;
+                                      setFormData({...formData, processing_steps: newSteps});
+                                    }}
+                                  />
+                                  <span className="text-[12px] font-medium text-text-sub">Requires student presence at counter</span>
+                                </label>
                               )}
                             </div>
-                            {(!isViewMode || step.requires_presence) && (
-                              <label className={`flex items-center gap-1.5 ${isViewMode ? 'opacity-80 cursor-default' : 'cursor-pointer'} self-start select-none`}>
-                                <input 
-                                  type="checkbox" 
-                                  checked={step.requires_presence}
-                                  disabled={isViewMode}
-                                  onChange={e => {
-                                    const newSteps = [...formData.processing_steps];
-                                    newSteps[i].requires_presence = e.target.checked;
-                                    setFormData({...formData, processing_steps: newSteps});
-                                  }}
-                                  className="accent-maroon cursor-pointer"
-                                />
-                                <span className="text-xs text-text-sub">Requires student presence</span>
-                              </label>
-                            )}
                           </li>
                         ))}
                       </ul>
+                    ) : (
+                      <div className="text-center py-6 bg-off-white/50 rounded-xl border border-dashed border-border/80">
+                        <p className="text-[13px] text-text-muted m-0">No processing steps added yet.</p>
+                      </div>
                     )}
                   </div>
                 )}

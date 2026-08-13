@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { createPortal } from 'react-dom'
 import { useAuth } from '../../context/useAuth'
-import { getTodaysQueue, confirmStep, callTicket, sendToProcessing, remindStudent, getLiveQueueStats } from '../../services/queueService'
+import { getTodaysQueue, confirmStep, callTicket, remindStudent, getLiveQueueStats } from '../../services/queueService'
 import { updateReleaseDate } from '../../services/adminService'
 import { Check, Circle, Clock, X, Users, CheckSquare, AlertTriangle, Download, Inbox, Play, Ticket, DoorOpen, Cog } from 'lucide-react'
 import QueueDetailsModal from '../../components/QueueDetailsModal'
@@ -189,8 +189,11 @@ export default function LiveQueuePage() {
       
       if (releaseDateToSet) {
         const ticketItem = queue.find(q => q.ticket.id === ticketId)
-        if (ticketItem && ticketItem.ticket.appointments?.id) {
-          await updateReleaseDate(token, ticketItem.ticket.appointments.id, releaseDateToSet)
+        if (ticketItem) {
+          const apptId = ticketItem.ticket.appointment_id || ticketItem.ticket.appointments?.id
+          if (apptId) {
+            await updateReleaseDate(token, apptId, releaseDateToSet)
+          }
         }
       }
 
@@ -225,24 +228,7 @@ export default function LiveQueuePage() {
     finally { setConfirming(null) }
   }
 
-  const handleSendToProcessing = async (ticketId, txName, studentName, releaseDateToSet) => {
-    setConfirming(ticketId); setError('')
-    try { 
-      await sendToProcessing(token, ticketId)
-      
-      if (releaseDateToSet) {
-        const ticketItem = queue.find(q => q.ticket.id === ticketId)
-        if (ticketItem && ticketItem.ticket.appointments?.id) {
-          await updateReleaseDate(token, ticketItem.ticket.appointments.id, releaseDateToSet)
-        }
-      }
 
-      await fetchQueue()
-      showToast(`${txName} for ${studentName} is being moved for processing`)
-    }
-    catch (e) { setError(e.message) }
-    finally { setConfirming(null) }
-  }
 
   const handleRemind = async (ticketId) => {
     setReminding(ticketId); setError('')
@@ -272,6 +258,13 @@ export default function LiveQueuePage() {
   // ── Filtered & searched queue ──
   const displayed = useMemo(() => {
     return queue.filter(({ ticket, steps }) => {
+      // Hide from Live Queue if it's currently on the Release step AND the release date is already set
+      // (This means it's waiting for pickup in the Document Releases page)
+      const currentStep = steps?.find(s => s.status === 'in_progress')
+      if (currentStep?.step_name?.includes('Release') && ticket.appointments?.release_date) {
+        return false;
+      }
+
       let statusOk = false
       if (filters.status === 'active') {
         statusOk = ['in_progress', 'pending', 'waiting'].includes(ticket.status)
@@ -330,7 +323,7 @@ export default function LiveQueuePage() {
     }
 
     return (
-      <div key={ticket.id} className={`grid ${showWait ? 'grid-cols-[110px_1.2fr_1.2fr_220px_70px_160px]' : 'grid-cols-[110px_1.2fr_1.2fr_220px_160px]'} gap-0 px-5 py-4 items-center transition-all duration-300
+      <div key={ticket.id} className={`grid ${showWait ? 'grid-cols-[150px_1.5fr_1.2fr_220px_70px_160px]' : 'grid-cols-[150px_1.5fr_1.2fr_220px_160px]'} gap-6 px-5 py-4 items-center transition-all duration-300
         ${idx < arrLength - 1 ? 'border-b border-border/60' : ''}
         ${ticket.status === 'in_progress' ? 'bg-success-light/30' : 'bg-white hover:bg-off-white/80 hover:shadow-sm hover:-translate-y-px'}
       `}>
@@ -345,16 +338,7 @@ export default function LiveQueuePage() {
           )}
           {ticket.status === 'in_progress' && inProgressStep?.location && (
             <div className="text-[11px] font-bold text-text-sub mt-1.5 flex items-center gap-1 uppercase tracking-[0.04em]">
-              {inProgressStep.location} serving
-            </div>
-          )}
-          {ticket.status === 'in_progress' && inProgressStep?.step_name?.includes('Release') && inProgressStep.activated_at && (
-            <div className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full mt-1.5 inline-block border ${
-              Math.floor((now.getTime() - Date.parse(inProgressStep.activated_at)) / (1000 * 3600 * 24)) >= 3
-                ? 'bg-danger-light text-danger border-danger-border'
-                : 'bg-surface text-text-muted border-border'
-            }`}>
-              Waiting {Math.floor((now.getTime() - Date.parse(inProgressStep.activated_at)) / (1000 * 3600 * 24))} days
+              {inProgressStep.location.toLowerCase() === 'back office' ? 'In Process' : `${inProgressStep.location} serving`}
             </div>
           )}
         </div>
@@ -374,11 +358,7 @@ export default function LiveQueuePage() {
         <div>
           <div className="text-xs font-semibold text-text-main leading-snug">{txName}</div>
           <div className="text-[11px] text-text-muted mt-0.5">{fmt12h(appt?.time_slot) || '—'}</div>
-          {!getRequiresPresence(steps) && (
-            <div className="text-[12px] font-bold text-maroon mt-1.5">
-              Release: {appt?.release_date ? new Date(appt.release_date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : 'Not set'}
-            </div>
-          )}
+
         </div>
 
         {/* Status + Progress */}
@@ -431,7 +411,7 @@ export default function LiveQueuePage() {
                     onClick={() => setViewingTicketId(ticket.id)}
                     className="px-4 py-2 rounded-full border border-maroon-border bg-maroon-light text-maroon text-[12px] font-bold cursor-pointer font-sans whitespace-nowrap hover:bg-maroon hover:text-white transition-all shadow-sm hover:-translate-y-0.5"
                   >
-                    View Progress
+                    Update Progress
                   </button>
                 </>
               )}
@@ -494,8 +474,9 @@ export default function LiveQueuePage() {
       />
 
       {error && (
-        <div className="px-4 py-3 rounded-[10px] bg-danger-light border border-danger-border text-danger text-[13px] flex items-center">
-          <AlertTriangle size={13} className="mr-1" /> {error}
+        <div className="px-4 py-3 rounded-[10px] bg-danger-light border border-danger-border text-danger text-[13px] flex items-center justify-between mb-4">
+          <div className="flex items-center"><AlertTriangle size={13} className="mr-1.5" /> {error}</div>
+          <button onClick={() => setError('')} className="bg-transparent border-none text-danger cursor-pointer hover:opacity-70 flex"><X size={15} /></button>
         </div>
       )}
 
@@ -506,17 +487,28 @@ export default function LiveQueuePage() {
         <div className="animate-fade-up flex-1 min-w-0" style={{ animationDelay: '0.4s' }}>
 
           {/* ═══ AT THE COUNTER — real physical line, call these in order ═══ */}
-          <div className="flex items-center justify-between mb-3.5">
-            <div>
-              <span className="text-[16px] font-serif font-bold text-text-main flex items-center gap-2">
-                <DoorOpen size={17} className="text-maroon" /> At the Counter
-              </span>
+          <div className="flex items-center justify-between mb-4 mt-2 px-1">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-linear-to-br from-maroon-light to-surface flex items-center justify-center border border-maroon-border shadow-sm">
+                <Users size={20} className="text-maroon" />
+              </div>
+              <div>
+                <h2 className="text-[22px] font-serif font-extrabold text-text-main m-0 leading-tight">At the Counter</h2>
+              </div>
             </div>
+            {!loading && atCounter.length > 0 && (
+              <div className="flex items-center gap-2 bg-white px-4 py-2 rounded-full border border-border shadow-sm">
+                <div className="w-2 h-2 rounded-full bg-maroon animate-pulse" />
+                <span className="text-[13px] font-bold text-text-main tracking-wide">
+                  {atCounter.length} <span className="text-text-muted font-semibold">at the counter</span>
+                </span>
+              </div>
+            )}
           </div>
 
           <div className="overflow-x-auto rounded-2xl border border-border shadow-[0_4px_16px_rgba(0,0,0,0.02)]">
             <div className="min-w-237.5">
-              <div className="grid grid-cols-[110px_1.2fr_1.2fr_220px_70px_160px] gap-0 px-5 py-3 bg-surface/50 backdrop-blur-sm border-b border-border">
+              <div className="grid grid-cols-[150px_1.5fr_1.2fr_220px_70px_160px] gap-6 px-5 py-3 bg-surface/50 backdrop-blur-sm border-b border-border">
                 {columnHeaders.map(col => (
                   <div key={col} className="text-[10px] font-bold text-text-muted tracking-[0.06em] uppercase">{col}</div>
                 ))}
@@ -526,7 +518,7 @@ export default function LiveQueuePage() {
             {loading ? (
               <div className="flex flex-col">
                 {[1, 2, 3].map(i => (
-                  <div key={i} className={`grid grid-cols-[110px_1.2fr_1.2fr_220px_70px_160px] gap-0 p-4 ${i < 3 ? 'border-b border-border' : ''}`}>
+                  <div key={i} className={`grid grid-cols-[150px_1.5fr_1.2fr_220px_70px_160px] gap-6 p-4 ${i < 3 ? 'border-b border-border' : ''}`}>
                     <div className="animate-pulse w-10 h-5 rounded bg-border" />
                     <div>
                       <div className="animate-pulse w-30 h-3.5 rounded bg-border mb-1.5" />
@@ -544,7 +536,7 @@ export default function LiveQueuePage() {
               </div>
             ) : atCounter.length === 0 ? (
               <div className="p-10 text-center">
-                <div className="flex justify-center text-text-muted mb-2.5"><DoorOpen size={32} /></div>
+                <div className="flex justify-center text-text-muted mb-2.5"><Users size={32} /></div>
                 <p className="text-sm font-semibold text-text-main m-0 mb-1">No one at the counter right now</p>
               </div>
             ) : (
@@ -554,28 +546,32 @@ export default function LiveQueuePage() {
           </div>
         </div>
 
-          {!loading && atCounter.length > 0 && (
-            <div className="mt-4 text-right px-2">
-              <span className="text-[12px] font-bold text-text-muted tracking-wide">
-                {atCounter.length} at the counter · Updated {lastUpdated || '—'}
-              </span>
-            </div>
-          )}
 
           {/* ═══ PROCESSING — back office, no line, work at own pace ═══ */}
-          <div className="mt-8">
-            <div className="flex items-center justify-between mb-3.5">
-              <div>
-                <span className="text-base font-serif font-bold text-text-main flex items-center gap-2">
-                  <Cog size={17} className="text-text-muted" /> Processing
-                </span>
+          <div className="mt-12">
+            <div className="flex items-center justify-between mb-4 px-1">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-linear-to-br from-surface to-off-white flex items-center justify-center border border-border shadow-sm">
+                  <Inbox size={20} className="text-text-muted" />
+                </div>
+                <div>
+                  <h2 className="text-[22px] font-serif font-extrabold text-text-main m-0 leading-tight">Processing</h2>
+                </div>
               </div>
+              {!loading && processingQueue.length > 0 && (
+                <div className="flex items-center gap-2 bg-white px-4 py-2 rounded-full border border-border shadow-sm">
+                  <div className="w-2 h-2 rounded-full bg-text-muted/50" />
+                  <span className="text-[13px] font-bold text-text-main tracking-wide">
+                    {processingQueue.length} <span className="text-text-muted font-semibold">in processing</span>
+                  </span>
+                </div>
+              )}
             </div>
 
             <div className="overflow-x-auto rounded-2xl border border-border shadow-[0_4px_16px_rgba(0,0,0,0.02)] opacity-95">
               <div className="min-w-212.5">
                 {!loading && processingQueue.length > 0 && (
-                  <div className="grid grid-cols-[110px_1.2fr_1.2fr_220px_160px] gap-0 px-5 py-3 bg-surface/50 backdrop-blur-sm border-b border-border">
+                  <div className="grid grid-cols-[150px_1.5fr_1.2fr_220px_160px] gap-6 px-5 py-3 bg-surface/50 backdrop-blur-sm border-b border-border">
                     {['QUEUE NO.', 'STUDENT DETAILS', 'TRANSACTION', 'STATUS / PROGRESS', 'ACTION'].map(col => (
                       <div key={col} className="text-[10px] font-bold text-text-muted tracking-[0.06em] uppercase">{col}</div>
                     ))}
@@ -587,7 +583,7 @@ export default function LiveQueuePage() {
                 <div className="p-6 text-center text-xs text-text-muted">Loading…</div>
               ) : processingQueue.length === 0 ? (
                 <div className="p-8 text-center border border-border rounded-[14px]">
-                  <div className="flex justify-center text-text-muted mb-2"><Cog size={28} /></div>
+                  <div className="flex justify-center text-text-muted mb-2"><Inbox size={28} /></div>
                   <p className="text-sm font-semibold text-text-main m-0 mb-1">Nothing in back-office processing</p>
                 </div>
               ) : (
@@ -653,7 +649,7 @@ export default function LiveQueuePage() {
           ticketData={queue.find(q => q.ticket.id === viewingTicketId)} 
           onClose={() => setViewingTicketId(null)} 
           onConfirm={handleConfirm}
-          onSendToProcessing={handleSendToProcessing}
+
           confirming={confirming}
           onSetReleaseDate={handleSetReleaseDate}
         />

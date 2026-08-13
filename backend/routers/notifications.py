@@ -31,6 +31,13 @@ async def mark_all_notifications_read(user=Depends(get_current_user)):
     return {"message": f"Marked {len(response.data) if response.data else 0} as read"}
 
 
+@router.delete("/clear-all")
+async def clear_all_notifications(user=Depends(get_current_user)):
+    admin = get_supabase_admin()
+    response = admin.table("notifications").delete().eq("user_id", user.id).execute()
+    return {"message": f"Cleared {len(response.data) if response.data else 0} notifications"}
+
+
 @router.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket, user=Depends(get_ws_user)):
     await manager.connect(websocket, user.id)

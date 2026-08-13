@@ -8,6 +8,7 @@
   --color-maroon-mid: rgba(123,26,42,0.08);
   --color-maroon-border: rgba(123,26,42,0.2);
   --color-gold: #B8900A;
+  --color-gold-dark: #8A6C07;
   --color-gold-light: #FDF6E3;
   --color-gold-border: rgba(184,144,10,0.3);
   --color-off-white: #F9F7F4;
@@ -17,6 +18,7 @@
   --color-text-sub: #57534E;
   --color-text-muted: #A8A29E;
   --color-success: #15803D;
+  --color-success-dark: #14532D;
   --color-success-light: #F0FDF4;
   --color-success-border: #BBF7D0;
   --color-danger: #DC2626;

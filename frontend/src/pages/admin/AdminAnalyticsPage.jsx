@@ -1,7 +1,9 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useAuth } from '../../context/useAuth'
-import { getReports, getAiInsights } from '../../services/adminService'
+import { getReports, getAiInsights, getTransactionTypes } from '../../services/adminService'
+import { getDocumentColor } from '../../utils/colors'
 import { Printer, Download, Filter, RotateCcw, Sparkles, ChevronDown, AlertTriangle, BarChart2, Bot, FileDown, FileText, Clock, CheckCircle, Activity } from 'lucide-react'
+import DonutChart from '../../components/DonutChart'
 
 const SERIES_COLORS = ['#7B1A2A', '#B8900A', '#1D4ED8', '#15803D', '#6D28D9', '#EA580C']
 
@@ -281,6 +283,11 @@ export default function AdminAnalyticsPage() {
   const [loading, setLoading]           = useState(true)
   const [insightLoading, setInsightLoading] = useState(false)
   const [error, setError]               = useState('')
+  const [transactionTypes, setTransactionTypes] = useState([])
+
+  useEffect(() => {
+    getTransactionTypes(token).then(data => setTransactionTypes(data)).catch(console.error)
+  }, [token])
 
   const load = useCallback(async () => {
     setLoading(true); setError('')
@@ -447,7 +454,7 @@ export default function AdminAnalyticsPage() {
     if (iA === -1 && iB === -1) return a.localeCompare(b)
     if (iA === -1) return 1; if (iB === -1) return -1
     return iA - iB
-  }).slice(0, 6)
+  })
 
   // Build bars: one per time period, each bar has segments per type
   const chartBars = monthlyReports.map(m => ({
@@ -490,15 +497,7 @@ export default function AdminAnalyticsPage() {
   const activeBars = chartBars.length > 0 && allTypeNames.length > 0 ? chartBars : fallbackBars
   const activeTypeNames = allTypeNames.length > 0 ? allTypeNames : fallbackTypeNames
 
-  const DOC_COLOR_MAP = {
-    'Transcript of Records (TOR)': '#7B1A2A',
-    'Certificate of Enrollment (COE)': '#B8900A',
-    'Diploma Release': '#1D4ED8',
-    'General Weighted Average (GWA)': '#15803D',
-    'Completion Form - Request': '#6D28D9',
-    'Completion Form - Submission': '#EA580C'
-  }
-  const activeColors = activeTypeNames.map((name, i) => DOC_COLOR_MAP[name] || TYPE_COLORS[i % TYPE_COLORS.length])
+  const activeColors = activeTypeNames.map(name => getDocumentColor(name))
 
   // Most requested type
   const mostRequested = filteredReportByType[0]
@@ -559,109 +558,141 @@ export default function AdminAnalyticsPage() {
         {insights ? (
           <>
             <p className="text-[15px] text-text-main font-medium leading-[1.65] m-0 mb-6">{insights.insight}</p>
-            <div className="grid grid-cols-5 gap-3 mb-5">
-              {[
-                { l: 'Total',      v: insights.total,                c: 'text-text-main'  },
-                { l: 'Completed',  v: insights.completed,            c: 'text-success' },
-                { l: 'No-shows',   v: insights.no_shows,             c: 'text-danger'   },
-                { l: 'Pending',    v: insights.pending,              c: 'text-gold'  },
-                { l: 'Completion', v: `${insights.completion_rate}%`,c: 'text-info'  },
-              ].map((s, i) => (
-                <div key={i} className="bg-white rounded-2xl p-4 border border-border text-center shadow-sm hover:-translate-y-0.5 transition-transform">
-                  <div className={`font-serif text-[24px] font-bold ${s.c} mb-1`}>{s.v}</div>
-                  <div className="text-[10px] font-extrabold text-text-muted uppercase tracking-[0.08em]">{s.l}</div>
-                </div>
-              ))}
-            </div>
-            <div className="text-[10px] font-extrabold text-text-muted uppercase tracking-[0.08em] mb-3 mt-1">Predictive Analytics</div>
-            <div className="grid grid-cols-3 gap-3 mb-5">
+            <div className="text-[10px] font-extrabold text-text-muted uppercase tracking-[0.08em] mb-3 mt-1">Predictive Intelligence</div>
+            <div className="grid grid-cols-3 gap-3 mb-3">
+              {/* Peak Hour */}
               <div className="bg-white rounded-2xl p-4 border border-border shadow-sm hover:-translate-y-0.5 transition-transform">
-                <div className="flex items-center gap-2 mb-2">
-                  <Clock size={14} className="text-info" />
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="w-7 h-7 rounded-lg bg-info-light flex items-center justify-center">
+                    <Clock size={14} className="text-info" />
+                  </div>
+                  <span className="text-[10px] font-extrabold text-text-muted uppercase tracking-[0.08em]">Peak Hour</span>
+                </div>
+                <div className="font-serif text-[26px] font-bold text-info leading-none mb-1">
+                  {insights.peak_hour && insights.peak_hour !== 'N/A' ? insights.peak_hour : '—'}
+                </div>
+                <div className="text-[11px] text-text-sub font-medium">
+                  {insights.peak_hour && insights.peak_hour !== 'N/A' ? 'Busiest time slot today' : 'No appointments today'}
+                </div>
+              </div>
+
+              {/* Busiest Document */}
+              <div className="bg-white rounded-2xl p-4 border border-border shadow-sm hover:-translate-y-0.5 transition-transform">
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="w-7 h-7 rounded-lg bg-gold-light flex items-center justify-center">
+                    <FileText size={14} className="text-gold" />
+                  </div>
+                  <span className="text-[10px] font-extrabold text-text-muted uppercase tracking-[0.08em]">Busiest Document</span>
+                </div>
+                <div className="font-serif text-[18px] font-bold text-gold leading-tight mb-1 line-clamp-2">
+                  {insights.busiest_document && insights.busiest_document !== 'N/A' ? insights.busiest_document : '—'}
+                </div>
+                <div className="text-[11px] text-text-sub font-medium">
+                  {insights.busiest_document && insights.busiest_document !== 'N/A' ? 'Most requested doc type' : 'No requests today'}
+                </div>
+              </div>
+
+              {/* Served Today */}
+              <div className="bg-white rounded-2xl p-4 border border-border shadow-sm hover:-translate-y-0.5 transition-transform">
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="w-7 h-7 rounded-lg bg-success-light flex items-center justify-center">
+                    <CheckCircle size={14} className="text-success" />
+                  </div>
+                  <span className="text-[10px] font-extrabold text-text-muted uppercase tracking-[0.08em]">Served Today</span>
+                </div>
+                <div className="font-serif text-[26px] font-bold text-success leading-none mb-1">
+                  {insights.served_today ?? 0}
+                </div>
+                <div className="text-[11px] text-text-sub font-medium">
+                  {insights.total > 0 ? `out of ${insights.total} total appointments` : 'No appointments today'}
+                </div>
+              </div>
+            </div>
+
+            {/* Forecast Row */}
+            <div className="grid grid-cols-3 gap-3 mb-5">
+              {/* Tomorrow's Forecast */}
+              <div className="bg-white rounded-2xl p-4 border border-border shadow-sm hover:-translate-y-0.5 transition-transform">
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="w-7 h-7 rounded-lg bg-maroon-light flex items-center justify-center">
+                    <Activity size={14} className="text-maroon" />
+                  </div>
                   <span className="text-[10px] font-extrabold text-text-muted uppercase tracking-[0.08em]">Tomorrow's Forecast</span>
                 </div>
                 {insights.forecast?.insufficient_data ? (
-                  <div className="text-[12px] text-text-sub font-medium leading-snug">
-                    Not enough history yet
-                    <div className="text-[10px] text-text-muted mt-0.5">{insights.forecast?.sample_count != null ? `(${insights.forecast.sample_count} sample${insights.forecast.sample_count !== 1 ? 's' : ''})` : ''}</div>
-                  </div>
+                  <>
+                    <div className="font-serif text-[26px] font-bold text-text-muted leading-none mb-1">—</div>
+                    <div className="text-[11px] text-text-sub font-medium">Not enough history yet</div>
+                  </>
                 ) : (
                   <>
-                    <div className="font-serif text-[28px] font-bold text-info leading-none mb-1">
-                      {insights.forecast?.predicted_count ?? '—'}
+                    <div className="font-serif text-[26px] font-bold text-maroon leading-none mb-1">
+                      {insights.forecast?.predicted_count ?? '—'} <span className="text-[14px] font-sans font-semibold text-text-muted">expected</span>
                     </div>
                     <div className="text-[11px] text-text-sub font-medium">
-                      {insights.forecast?.weekday}
-                      {insights.forecast?.top_transaction_type ? ` · ${insights.forecast.top_transaction_type}` : ''}
+                      {insights.forecast?.weekday}{insights.forecast?.top_transaction_type ? ` · Top: ${insights.forecast.top_transaction_type}` : ''}
                     </div>
-                    <div className="text-[10px] text-text-muted mt-0.5">based on {insights.forecast?.based_on_occurrences} historical {insights.forecast?.weekday}s</div>
                   </>
                 )}
               </div>
+
+              {/* 14-Day Trend */}
               <div className="bg-white rounded-2xl p-4 border border-border shadow-sm hover:-translate-y-0.5 transition-transform">
-                <div className="flex items-center gap-2 mb-2">
-                  <AlertTriangle size={14} className="text-danger" />
-                  <span className="text-[10px] font-extrabold text-text-muted uppercase tracking-[0.08em]">No-show Risk</span>
-                </div>
-                {insights.no_show_risk?.insufficient_data ? (
-                  <div className="text-[12px] text-text-sub font-medium leading-snug">Not enough history yet to score risk</div>
-                ) : (
-                  <>
-                    <div className={`font-serif text-[28px] font-bold leading-none mb-1 ${insights.no_show_risk?.flagged_count > 0 ? 'text-danger' : 'text-success'}`}>
-                      {insights.no_show_risk?.flagged_count ?? 0}
-                    </div>
-                    <div className="text-[11px] text-text-sub font-medium">flagged in next 3 days</div>
-                    <div className="text-[10px] text-text-muted mt-0.5">≥40% blended risk score</div>
-                  </>
-                )}
-              </div>
-              <div className="bg-white rounded-2xl p-4 border border-border shadow-sm hover:-translate-y-0.5 transition-transform">
-                <div className="flex items-center gap-2 mb-2">
-                  <Activity size={14} className="text-gold" />
+                <div className="flex items-center gap-2 mb-3">
+                  <div className={`w-7 h-7 rounded-lg flex items-center justify-center ${
+                    insights.trend?.direction === 'up' ? 'bg-success-light' :
+                    insights.trend?.direction === 'down' ? 'bg-danger-light' : 'bg-surface'
+                  }`}>
+                    <Activity size={14} className={
+                      insights.trend?.direction === 'up' ? 'text-success' :
+                      insights.trend?.direction === 'down' ? 'text-danger' : 'text-text-muted'
+                    } />
+                  </div>
                   <span className="text-[10px] font-extrabold text-text-muted uppercase tracking-[0.08em]">14-Day Trend</span>
                 </div>
                 {insights.trend?.insufficient_data ? (
-                  <div className="text-[12px] text-text-sub font-medium leading-snug">Not enough history yet</div>
+                  <>
+                    <div className="font-serif text-[26px] font-bold text-text-muted leading-none mb-1">—</div>
+                    <div className="text-[11px] text-text-sub font-medium">Not enough history yet</div>
+                  </>
                 ) : (
                   <>
-                    <div className={`font-serif text-[28px] font-bold leading-none mb-1 ${
+                    <div className={`font-serif text-[26px] font-bold leading-none mb-1 ${
                       insights.trend?.direction === 'up' ? 'text-success' :
                       insights.trend?.direction === 'down' ? 'text-danger' : 'text-text-main'
                     }`}>
-                      {insights.trend?.direction === 'up' ? '+' : insights.trend?.direction === 'down' ? '-' : ''}
-                      {Math.abs(insights.trend?.percent_change ?? 0)}%
+                      {insights.trend?.direction === 'up' ? '↑' : insights.trend?.direction === 'down' ? '↓' : '→'} {Math.abs(insights.trend?.percent_change ?? 0)}%
                     </div>
-                    <div className="text-[11px] text-text-sub font-medium capitalize">{insights.trend?.direction}</div>
-                    {insights.trend?.driving_type && (
-                      <div className="text-[10px] text-text-muted mt-0.5">driven by: {insights.trend.driving_type}</div>
-                    )}
+                    <div className="text-[11px] text-text-sub font-medium">
+                      {insights.trend?.recent_count} recent vs {insights.trend?.prior_count} prior
+                    </div>
+                  </>
+                )}
+              </div>
+
+              {/* Demand Driver */}
+              <div className="bg-white rounded-2xl p-4 border border-border shadow-sm hover:-translate-y-0.5 transition-transform">
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="w-7 h-7 rounded-lg bg-[#EDE9FE] flex items-center justify-center">
+                    <Sparkles size={14} className="text-[#6D28D9]" />
+                  </div>
+                  <span className="text-[10px] font-extrabold text-text-muted uppercase tracking-[0.08em]">Demand Document</span>
+                </div>
+                {insights.trend?.driving_type ? (
+                  <>
+                    <div className="font-serif text-[18px] font-bold text-[#6D28D9] leading-tight mb-1 line-clamp-2">
+                      {insights.trend.driving_type}
+                    </div>
+                    <div className="text-[11px] text-text-sub font-medium">Top growth contributor</div>
+                  </>
+                ) : (
+                  <>
+                    <div className="font-serif text-[26px] font-bold text-text-muted leading-none mb-1">—</div>
+                    <div className="text-[11px] text-text-sub font-medium">{insights.trend?.direction === 'down' ? 'Volume is declining' : 'No dominant driver detected'}</div>
                   </>
                 )}
               </div>
             </div>
-            {!insights.no_show_risk?.insufficient_data && insights.no_show_risk?.appointments?.length > 0 && (
-              <div>
-                <div className="text-[10px] font-extrabold text-text-muted uppercase tracking-[0.08em] mb-2">High-Risk Appointments</div>
-                <div className="rounded-2xl border border-border overflow-hidden">
-                  <div className="grid grid-cols-[2fr_2fr_1.2fr_1.2fr_1fr] bg-surface px-4 py-2.5 gap-3">
-                    {['Student', 'Transaction', 'Date', 'Time', 'Risk'].map(h => (
-                      <div key={h} className="text-[10px] font-extrabold text-text-muted uppercase tracking-[0.08em]">{h}</div>
-                    ))}
-                  </div>
-                  {insights.no_show_risk.appointments.map((appt, i) => (
-                    <div key={appt.appointment_id} className={`grid grid-cols-[2fr_2fr_1.2fr_1.2fr_1fr] px-4 py-3 gap-3 items-center transition-colors hover:bg-surface/60 ${i < insights.no_show_risk.appointments.length - 1 ? 'border-b border-border' : ''}`}>
-                      <div className="text-[13px] font-semibold text-text-main truncate">{appt.student_name}</div>
-                      <div className="text-[12px] text-text-sub truncate">{appt.transaction_type}</div>
-                      <div className="text-[12px] text-text-sub">{appt.appointment_date}</div>
-                      <div className="text-[12px] text-text-sub">{fmt12h(appt.time_slot)}</div>
-                      <div className={`text-[13px] font-bold ${appt.risk_score >= 60 ? 'text-danger' : 'text-gold'}`}>
-                        {appt.risk_score}%
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
           </>
         ) : (
           <p className="text-[14px] text-text-sub font-medium m-0">Click Refresh to generate today's AI-powered insight.</p>
@@ -692,12 +723,7 @@ export default function AdminAnalyticsPage() {
         <div className="w-px h-6 bg-border mx-1" />
         <FilterSelect label="Document" value={docType} onChange={setDocType} options={[
           { value: 'all', label: 'All Types' },
-          { value: 'Transcript of Records (TOR)', label: 'Transcript of Records (TOR)' },
-          { value: 'Certificate of Enrollment (COE)', label: 'Certificate of Enrollment (COE)' },
-          { value: 'Diploma Release', label: 'Diploma Release' },
-          { value: 'General Weighted Average (GWA)', label: 'General Weighted Average (GWA)' },
-          { value: 'Completion Form - Request', label: 'Completion Form - Request' },
-          { value: 'Completion Form - Submission', label: 'Completion Form - Submission' },
+          ...transactionTypes.map(t => ({ value: t.name, label: t.name }))
         ]} />
 
         <div className="ml-auto flex items-center gap-2.5">
@@ -783,7 +809,30 @@ export default function AdminAnalyticsPage() {
             <p className="text-[10px] font-extrabold text-gold uppercase tracking-[0.08em] m-0 mb-1.5">Breakdown</p>
             <h2 className="font-serif text-[20px] font-bold text-text-main m-0">By Transaction Type</h2>
           </div>
-          <div className="grid grid-cols-[repeat(auto-fit,minmax(220px,1fr))] gap-5">
+          <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-8 items-center">
+            <div className="flex justify-center lg:border-r border-border/50 lg:pr-4">
+              <DonutChart 
+                data={[...filteredReportByType].sort((a, b) => {
+                  const iA = TYPE_ORDER.indexOf(a.name)
+                  const iB = TYPE_ORDER.indexOf(b.name)
+                  if (iA === -1 && iB === -1) return b.count - a.count
+                  if (iA === -1) return 1
+                  if (iB === -1) return -1
+                  return iA - iB
+                })} 
+                total={totalVol} 
+                colors={[...filteredReportByType].sort((a, b) => {
+                  const iA = TYPE_ORDER.indexOf(a.name)
+                  const iB = TYPE_ORDER.indexOf(b.name)
+                  if (iA === -1 && iB === -1) return b.count - a.count
+                  if (iA === -1) return 1
+                  if (iB === -1) return -1
+                  return iA - iB
+                }).map(type => getDocumentColor(type.name))} 
+                hideLegend={true}
+              />
+            </div>
+            <div className="grid grid-cols-[repeat(auto-fit,minmax(220px,1fr))] gap-5">
             {[...filteredReportByType].sort((a, b) => {
               const iA = TYPE_ORDER.indexOf(a.name)
               const iB = TYPE_ORDER.indexOf(b.name)
@@ -793,28 +842,34 @@ export default function AdminAnalyticsPage() {
               return iA - iB
             }).map((type, i) => {
               const pct = totalVol > 0 ? Math.round((type.count / totalVol) * 100) : 0
-              const DOC_COLOR_MAP = {
-                'Transcript of Records (TOR)': '#7B1A2A',
-                'Certificate of Enrollment (COE)': '#B8900A',
-                'Diploma Release': '#1D4ED8',
-                'General Weighted Average (GWA)': '#15803D',
-                'Completion Form - Request': '#6D28D9',
-                'Completion Form - Submission': '#EA580C'
-              }
-              const color = DOC_COLOR_MAP[type.name] || SERIES_COLORS[i % SERIES_COLORS.length]
+              const color = getDocumentColor(type.name)
               return (
                 <div key={i} className="bg-white shadow-sm rounded-2xl p-5 border border-border hover:-translate-y-0.5 transition-transform">
-                  <div className="flex items-center justify-between mb-3">
-                    <span className="text-[14px] font-bold text-text-main">{type.name}</span>
-                    <span className="font-serif text-[22px] font-bold" style={{ color }}>{pct}%</span>
+                  <div className="flex items-center justify-between gap-4">
+                    <div className="flex-1">
+                      <div className="text-[13.5px] font-bold text-text-main mb-1.5 leading-tight">{type.name}</div>
+                      <div className="text-[11.5px] font-medium text-text-muted">{type.count.toLocaleString()} records</div>
+                    </div>
+                    <div className="relative shrink-0 flex items-center justify-center" style={{ width: 54, height: 54 }}>
+                      <svg width="54" height="54" className="-rotate-90 drop-shadow-sm">
+                        <circle cx="27" cy="27" r="22" fill="none" stroke="#F3F2F0" strokeWidth="5" />
+                        <circle 
+                          cx="27" cy="27" r="22" 
+                          fill="none" stroke={color} strokeWidth="5" 
+                          strokeDasharray={`${(pct / 100) * (2 * Math.PI * 22)} 139`} 
+                          strokeLinecap="round" 
+                          className="transition-all duration-1000 ease-out" 
+                        />
+                      </svg>
+                      <span className="absolute inset-0 flex items-center justify-center font-serif text-[13px] font-bold" style={{ color }}>
+                        {pct}%
+                      </span>
+                    </div>
                   </div>
-                  <div className="w-full h-1.5 bg-surface rounded-full mb-2">
-                    <div className="h-1.5 rounded-full transition-[width] duration-600 ease" style={{ background: color, width: `${pct}%` }} />
-                  </div>
-                  <span className="text-[12px] font-medium text-text-muted">{type.count.toLocaleString()} records</span>
                 </div>
               )
             })}
+            </div>
           </div>
         </div>
       )}

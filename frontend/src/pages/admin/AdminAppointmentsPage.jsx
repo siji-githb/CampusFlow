@@ -152,9 +152,14 @@ const RescheduleModal = ({ appt, onClose, onConfirm }) => {
   const handleSave = async () => {
     if (!date || !time) return
     setSaving(true)
-    await onConfirm(appt.id, date, time)
-    setSaving(false)
-    setShowConfirm(false)
+    const result = await onConfirm(appt.id, date, time)
+    if (result === true) {
+      setSaving(false)
+      setShowConfirm(false)
+    } else {
+      setSaving(false)
+      alert(result || "Failed to reschedule.")
+    }
   }
 
   const d = new Date()
@@ -212,7 +217,7 @@ const RescheduleModal = ({ appt, onClose, onConfirm }) => {
           </div>
           <h3 className="font-serif text-[20px] text-text-main m-0 mb-3">Confirm Reschedule</h3>
           <p className="text-[14px] text-text-sub m-0 mb-6 leading-relaxed">
-            You are about to reschedule this appointment to <strong>{new Date(date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</strong> at <strong>{format12Hour(time)}</strong>. Do you want to proceed?
+            You are about to reschedule this appointment to <strong>{new Date(date + "T00:00:00").toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</strong> at <strong>{format12Hour(time)}</strong>. Do you want to proceed?
           </p>
 
           <div className="flex gap-3 justify-center">
@@ -336,8 +341,10 @@ export default function AdminAppointmentsPage() {
       setRescheduleTarget(null)
       loadAppointments(selectedDate)
       getDashboardStats(token).then(setStats).catch(console.error)
+      return true
     } catch (err) {
       setError(err.message)
+      return err.message
     }
   }
 

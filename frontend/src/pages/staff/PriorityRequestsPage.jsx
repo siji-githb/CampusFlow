@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useAuth } from '../../context/useAuth'
 import { getPendingPriorityRequests, approvePriorityRequest, rejectPriorityRequest } from '../../services/priorityService'
 import { Check, X, ShieldCheck, Image as ImageIcon, Clock, Sparkles, ZoomIn, ZoomOut, RotateCcw } from 'lucide-react'
@@ -84,21 +84,23 @@ export default function PriorityRequestsPage() {
   const [isConfirming, setIsConfirming] = useState(null)
   const [previewUrl, setPreviewUrl] = useState(null)
 
-  useEffect(() => {
-    loadRequests()
-  }, [])
-
-  const loadRequests = async () => {
+  const loadRequests = useCallback(async (showSkeleton = true) => {
     try {
-      setLoading(true)
+      if (showSkeleton) setLoading(true)
       const data = await getPendingPriorityRequests(token)
       setRequests(data)
     } catch (err) {
       setError(err.message)
     } finally {
-      setLoading(false)
+      if (showSkeleton) setLoading(false)
     }
-  }
+  }, [token])
+
+  useEffect(() => {
+    loadRequests()
+    const t = setInterval(() => loadRequests(false), 15000)
+    return () => clearInterval(t)
+  }, [loadRequests])
 
   const handleApprove = async (id) => {
     setIsConfirming(id)

@@ -1,7 +1,8 @@
+import openai
 from openai import OpenAI
 from fastapi import HTTPException
 from config import get_settings
-from datetime import date
+from datetime import date, datetime
 import json
 import re
 from services.notification_service import notify_staff_urgent_message
@@ -33,6 +34,15 @@ def get_system_prompt():
     except Exception:
         config = {}
 
+    def format_12hr(time_str):
+        try:
+            return datetime.strptime(time_str, "%H:%M").strftime("%I:%M %p").lstrip("0")
+        except Exception:
+            return time_str
+
+    open_time = format_12hr(config.get('office_open_time', '08:00'))
+    close_time = format_12hr(config.get('office_close_time', '17:00'))
+
     tt_info = ""
     for tt in transaction_types:
         tt_info += f"\n- {tt['name']}: requires {', '.join(tt.get('required_documents') or [])}"
@@ -47,7 +57,7 @@ You help students with:
 
 AVAILABLE TRANSACTION TYPES:{tt_info}
 
-OFFICE HOURS: {config.get('office_open_time', '08:00')} - {config.get('office_close_time', '17:00')}, Monday to Saturday
+OFFICE HOURS: {open_time} - {close_time}, Monday to Saturday
 SLOT DURATION: {config.get('slot_duration_minutes', '30')} minutes per slot
 BOOKING CUTOFF: At least {config.get('booking_cutoff_days', '1')} day(s) in advance
 
@@ -587,8 +597,17 @@ def chat(student_id: str, user_message: str):
 
     except HTTPException:
         raise
+    except openai.RateLimitError:
+        raise HTTPException(status_code=429, detail="AI assistant is temporarily busy or rate-limited. Please try again in a few moments.")
+    except openai.APIStatusError as e:
+        if e.status_code == 429:
+            raise HTTPException(status_code=429, detail="AI assistant is temporarily busy or rate-limited. Please try again in a few moments.")
+        raise HTTPException(status_code=500, detail="AI service is temporarily unavailable. Please try again later.")
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"AI error: {str(e)}")
+        err_str = str(e)
+        if "429" in err_str or "rate limit" in err_str.lower():
+            raise HTTPException(status_code=429, detail="AI assistant is temporarily busy or rate-limited. Please try again in a few moments.")
+        raise HTTPException(status_code=500, detail=f"AI error: {err_str}")
 
 
 def clear_session(student_id: str):

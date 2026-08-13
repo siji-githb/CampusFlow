@@ -62,10 +62,10 @@ export default function StaffGlobalSearch({ setActiveNav }) {
   };
 
   return (
-    <div ref={containerRef} className="relative w-full max-w-75 hidden md:block">
+    <div ref={containerRef} className="relative w-full max-w-64 hidden md:block">
       <Search 
-        size={16} 
-        className="absolute top-1/2 -translate-y-1/2 pointer-events-none left-4 text-text-muted" 
+        size={15} 
+        className="absolute top-1/2 -translate-y-1/2 pointer-events-none left-3.5 text-text-muted" 
       />
       <input 
         type="text" 
@@ -79,7 +79,7 @@ export default function StaffGlobalSearch({ setActiveNav }) {
           if (query.trim() !== '') setIsOpen(true);
         }}
         onKeyDown={handleKeyDown}
-        className="w-full bg-surface border border-border text-text-main text-[13.5px] font-sans rounded-full py-2.5 pl-10 pr-4 focus:outline-none focus:bg-white focus:border-maroon/30 focus:ring-4 focus:ring-maroon/5 transition-all shadow-[inset_0_2px_4px_rgba(0,0,0,0.02)]"
+        className="w-full bg-surface border border-border text-text-main text-[13px] font-sans rounded-full py-1.5 pl-9 pr-4 focus:outline-none focus:bg-white focus:border-maroon/30 focus:ring-4 focus:ring-maroon/5 transition-all shadow-[inset_0_2px_4px_rgba(0,0,0,0.02)]"
       />
 
       {isOpen && displayItems.length > 0 && (

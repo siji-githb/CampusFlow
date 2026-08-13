@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { Bell, CheckCircle, Info, AlertTriangle, Check } from 'lucide-react';
 import { useAuth } from '../context/useAuth';
-import { getNotifications, markNotificationRead, markAllNotificationsRead } from '../services/notificationService';
+import { getNotifications, markNotificationRead, markAllNotificationsRead, clearAllNotifications } from '../services/notificationService';
 
 const M = {
   maroon: '#7B1A2A',
@@ -129,6 +129,15 @@ export default function NotificationDropdown({ isMobile = false, mobileRoute }) 
     }
   };
 
+  const handleClearAll = async () => {
+    try {
+      await clearAllNotifications(token);
+      setNotifications([]);
+    } catch (e) {
+      console.error('Failed to clear notifications', e);
+    }
+  };
+
   const unreadCount = notifications.filter(n => !n.is_read).length;
 
   const getIcon = (type) => {
@@ -187,14 +196,24 @@ export default function NotificationDropdown({ isMobile = false, mobileRoute }) 
         <div className="absolute right-0 top-8.75 w-[90vw] max-w-[320px] bg-white rounded-xl shadow-[0_10px_40px_rgba(0,0,0,0.15)] border border-border overflow-hidden animate-fade-up z-9999" ref={dropdownRef}>
           <div className="flex items-center justify-between p-3 border-b border-border bg-off-white">
             <h3 className="m-0 text-[14px] font-semibold text-text-main font-sans">Notifications</h3>
-            {unreadCount > 0 && (
-              <button 
-                onClick={handleMarkAllRead}
-                className="text-[11px] text-maroon hover:text-maroon-dark bg-transparent border-none cursor-pointer font-semibold"
-              >
-                Mark all read
-              </button>
-            )}
+            <div className="flex items-center gap-3">
+              {unreadCount > 0 && (
+                <button 
+                  onClick={handleMarkAllRead}
+                  className="text-[11px] text-maroon hover:text-maroon-dark bg-transparent border-none cursor-pointer font-semibold transition-colors"
+                >
+                  Mark all read
+                </button>
+              )}
+              {notifications.length > 0 && (
+                <button 
+                  onClick={handleClearAll}
+                  className="text-[11px] text-text-sub hover:text-danger bg-transparent border-none cursor-pointer font-semibold transition-colors"
+                >
+                  Clear all
+                </button>
+              )}
+            </div>
           </div>
           
           <div className="max-h-90 overflow-y-auto">

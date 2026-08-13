@@ -641,6 +641,16 @@ def set_release_date(appointment_id: str, release_date: str, actor_id: str = Non
         
         admin.table("appointments").update({"release_date": release_date}).eq("id", appointment_id).execute()
         
+        appt_res = admin.table("appointments").select("student_id").eq("id", appointment_id).execute()
+        if appt_res.data and appt_res.data[0].get("student_id"):
+            from services.notification_service import create_system_notification
+            create_system_notification(
+                user_id=appt_res.data[0]["student_id"],
+                title="Document Ready for Claiming",
+                message="Your document is ready. Please go to the 'To Claim' tab to claim your document.",
+                type="success"
+            )
+        
         if actor_id and old_date != release_date:
             log_audit_action(
                 user_id=actor_id,

@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { useAuth } from '../../context/useAuth'
 import { getIdRequests, updateIdRequestStatus, getStudentRecords, sendIdRequestEmail, deleteIdRequest } from '../../services/adminService'
 import { Check, X, Clock, HelpCircle, Mail, BookOpen, Send, User, Calendar, AtSign, Search, Trash2 } from 'lucide-react'
@@ -230,21 +230,23 @@ export default function IdRequestsPage() {
   const [selectedIds, setSelectedIds] = useState(new Set())
   const [isDeleting, setIsDeleting] = useState(false)
 
-  useEffect(() => {
-    loadRequests()
-  }, [])
-
-  const loadRequests = async () => {
+  const loadRequests = useCallback(async (showSkeleton = true) => {
     try {
-      setLoading(true)
+      if (showSkeleton) setLoading(true)
       const data = await getIdRequests(token)
       setRequests(data)
     } catch (err) {
       setError(err.message)
     } finally {
-      setLoading(false)
+      if (showSkeleton) setLoading(false)
     }
-  }
+  }, [token])
+
+  useEffect(() => {
+    loadRequests()
+    const t = setInterval(() => loadRequests(false), 15000)
+    return () => clearInterval(t)
+  }, [loadRequests])
 
   const handleUpdateStatus = async (id, status) => {
     try {

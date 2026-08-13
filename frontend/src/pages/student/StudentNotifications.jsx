@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../../context/useAuth';
 import StudentLayout from '../../components/layout/StudentLayout';
 import { Bell, CheckCircle, Info, AlertTriangle, Check } from 'lucide-react';
-import { getNotifications, markNotificationRead, markAllNotificationsRead } from '../../services/notificationService';
+import { getNotifications, markNotificationRead, markAllNotificationsRead, clearAllNotifications } from '../../services/notificationService';
 
 const M = {
   maroon: '#7B1A2A',
@@ -55,6 +55,15 @@ export default function StudentNotifications() {
     }
   };
 
+  const handleClearAll = async () => {
+    try {
+      await clearAllNotifications(token);
+      setNotifications([]);
+    } catch (err) {
+      console.error('Failed to clear notifications', err);
+    }
+  };
+
   const getIcon = (type) => {
     switch (type) {
       case 'success': return <CheckCircle size={20} color={M.success} />;
@@ -81,14 +90,24 @@ export default function StudentNotifications() {
       <div className="bg-white min-h-[calc(100vh-140px)]">
         <div className="flex items-center justify-between p-4 border-b border-border bg-off-white">
           <h3 className="m-0 text-[16px] font-semibold text-text-main font-sans">All Notifications</h3>
-          {unreadCount > 0 && (
-            <button 
-              onClick={handleMarkAllRead}
-              className="text-[13px] text-maroon hover:text-maroon-dark bg-transparent border-none cursor-pointer font-semibold"
-            >
-              Mark all read
-            </button>
-          )}
+          <div className="flex items-center gap-4">
+            {unreadCount > 0 && (
+              <button 
+                onClick={handleMarkAllRead}
+                className="text-[13px] text-maroon hover:text-maroon-dark bg-transparent border-none cursor-pointer font-semibold transition-colors"
+              >
+                Mark all read
+              </button>
+            )}
+            {notifications.length > 0 && (
+              <button 
+                onClick={handleClearAll}
+                className="text-[13px] text-text-sub hover:text-danger bg-transparent border-none cursor-pointer font-semibold transition-colors"
+              >
+                Clear all
+              </button>
+            )}
+          </div>
         </div>
         
         <div>

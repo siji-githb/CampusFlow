@@ -154,24 +154,21 @@ export default function StudentDashboard() {
 
         {/* ── Unified Hero greeting card ── */}
         <div 
-          className="animate-fade-up bg-linear-to-br from-maroon to-maroon-dark rounded-3xl md:rounded-3xl pt-6 px-5 pb-8 md:py-10 md:px-12 mb-8 relative overflow-hidden shadow-[0_8px_20px_rgba(123,26,42,0.15)] md:shadow-[0_20px_40px_-15px_rgba(123,26,42,0.3)]"
+          className="animate-fade-up bg-white rounded-3xl pt-6 px-5 pb-8 md:py-10 md:px-12 mb-8 relative overflow-hidden shadow-[0_16px_50px_rgba(0,0,0,0.04),0_0_0_1px_rgba(123,26,42,0.08)]"
           style={{ animationDelay: '0.1s' }}
         >
-          {/* Blurred abstract glows */}
-          <div className="absolute right-[-10%] top-[-30%] w-50 h-50 md:w-75 md:h-75 rounded-full pointer-events-none animate-float-bubble blur-2xl md:blur-2xl" style={{ background: `radial-gradient(circle, rgba(184,144,10,0.18) 0%, transparent 70%)` }} />
-          <div className="absolute right-[15%] bottom-[-45%] w-37.5 h-37.5 md:w-62.5 md:h-62.5 rounded-full pointer-events-none animate-float-bubble-alt blur-[20px] md:blur-[30px]" style={{ background: `radial-gradient(circle, rgba(255,255,255,0.06) 0%, transparent 70%)` }} />
+          {/* Blurred abstract glows (light theme) */}
+          <div className="absolute right-[-10%] top-[-30%] w-50 h-50 md:w-75 md:h-75 rounded-full pointer-events-none animate-float-bubble blur-2xl md:blur-2xl" style={{ background: `radial-gradient(circle, rgba(184,144,10,0.08) 0%, transparent 70%)` }} />
+          <div className="absolute right-[15%] bottom-[-45%] w-37.5 h-37.5 md:w-62.5 md:h-62.5 rounded-full pointer-events-none animate-float-bubble-alt blur-[20px] md:blur-[30px]" style={{ background: `radial-gradient(circle, rgba(123,26,42,0.06) 0%, transparent 70%)` }} />
 
           <div className="relative z-1">
-            <span className="inline-block text-[11px] font-bold text-gold uppercase tracking-[0.12em] mb-2 md:mb-3 bg-gold/15 px-2.5 py-1 rounded-[20px] border-[1.5px] border-gold/25">
-              Student Portal Active
-            </span>
-            <p className="md:hidden text-[13px] text-white/55 m-0 mb-1">{getGreeting()},</p>
-            <h1 className="font-serif text-[clamp(24px,5vw,42px)] font-bold text-white m-0 mb-2 md:mb-3 leading-[1.15]">
-              <span className="hidden md:inline">{getGreeting()}, </span>{user?.first_name || 'Student'}!
+            <p className="md:hidden text-[13px] text-text-sub font-medium m-0 mb-1">{getGreeting()},</p>
+            <h1 className="font-serif text-[clamp(24px,5vw,42px)] font-bold text-maroon m-0 mb-2 md:mb-3 leading-[1.15]">
+              <span className="hidden md:inline text-text-main">{getGreeting()}, </span>{user?.first_name || 'Student'}!
             </h1>
-            <p className="text-[13px] md:text-[15px] text-white/65 m-0 max-w-145 leading-normal md:leading-[1.6]">
+            <p className="text-[13px] md:text-[15px] text-text-sub font-medium m-0 max-w-145 leading-normal md:leading-[1.6]">
               <span className="md:hidden">Welcome to your CRMC Student Portal. Here is your campus overview for today.</span>
-              <span className="hidden md:inline">Manage your academic documents, track live queue ticket status, or chat with our virtual guide—all from your personalized dashboard.</span>
+              <span className="hidden md:inline">Manage your academic documents, track live queue ticket status, or chat with our virtual assistant—all from your personalized dashboard.</span>
             </p>
           </div>
         </div>
@@ -323,7 +320,10 @@ export default function StudentDashboard() {
           </div>
 
           {/* Large Live Queue Block */}
-          <div className="animate-fade-up order-first lg:order-0" style={{ animationDelay: '0.3s' }}>
+          <div 
+            className="animate-fade-up bg-transparent lg:bg-white rounded-[20px] p-0 lg:p-7 shadow-none lg:shadow-[0_8px_30px_rgba(0,0,0,0.02),0_0_0_1px_rgba(123,26,42,0.04)] order-first lg:order-0" 
+            style={{ animationDelay: '0.3s' }}
+          >
             <div className="flex justify-between items-end mb-3 lg:mb-4">
               <div>
                 <p className="text-[11px] font-semibold text-gold tracking-widest uppercase m-0 mb-0.5">Live Queue</p>

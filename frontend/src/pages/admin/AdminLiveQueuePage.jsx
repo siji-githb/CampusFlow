@@ -103,13 +103,13 @@ export default function AdminLiveQueuePage() {
     const confirmKey = `${ticket.id}-${ticket.current_step}`
 
     return (
-      <div key={ticket.id} className={`group grid ${showWait ? 'grid-cols-[120px_1.5fr_1.5fr_100px_120px]' : 'grid-cols-[120px_1.5fr_1.5fr_120px]'} p-[16px_24px] items-center transition-all duration-200 hover:bg-surface border-l-2 border-l-transparent ${isLast ? 'border-none' : 'border-b border-border'} bg-white`}>
+      <div key={ticket.id} className={`group grid ${showWait ? 'grid-cols-[150px_1.5fr_1.5fr_100px_120px]' : 'grid-cols-[150px_1.5fr_1.5fr_120px]'} gap-6 p-[16px_24px] items-center transition-all duration-200 hover:bg-surface border-l-2 border-l-transparent ${isLast ? 'border-none' : 'border-b border-border'} bg-white`}>
         <span className="font-serif text-[18px] font-bold text-maroon">{ticket.queue_number}</span>
         <div>
           <span className="text-[14px] font-bold text-text-main group-hover:text-maroon transition-colors block">{name}</span>
           {currentStep && currentStep.location && (
             <div className="text-[11px] font-bold text-text-sub mt-1 flex items-center gap-1 uppercase tracking-[0.04em]">
-              {currentStep.location} serving
+              {currentStep.location.toLowerCase() === 'back office' ? 'In Process' : `${currentStep.location} serving`}
             </div>
           )}
         </div>
@@ -173,17 +173,19 @@ export default function AdminLiveQueuePage() {
 
       {/* ── At the Counter ── */}
       <div className="animate-fade-up" style={{ animationDelay: '0.4s' }}>
-        <div className="flex items-center justify-between mb-4">
-          <div>
-            <h2 className="font-serif text-lg font-bold text-text-main m-0 flex items-center gap-2">
-              <DoorOpen size={18} className="text-maroon" /> At the Counter
-            </h2>
-            <p className="text-xs text-text-muted mt-1 mb-0 ml-7">Students physically waiting — call in order</p>
+        <div className="flex items-center justify-between mb-5 mt-2 px-1">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-linear-to-br from-maroon-light to-surface flex items-center justify-center border border-maroon-border shadow-sm">
+              <Users size={20} className="text-maroon" />
+            </div>
+            <div>
+              <h2 className="text-[22px] font-serif font-extrabold text-text-main m-0 leading-tight">At the Counter</h2>
+            </div>
           </div>
         </div>
 
         {/* Table header */}
-        <div className="grid grid-cols-[120px_1.5fr_1.5fr_100px_120px] p-[14px_24px] rounded-t-2xl bg-off-white border border-border border-b-0">
+        <div className="grid grid-cols-[150px_1.5fr_1.5fr_100px_120px] gap-6 p-[14px_24px] rounded-t-2xl bg-off-white border border-border border-b-0">
           {['Queue No.', 'Student Name', 'Transaction', 'Wait Time', 'Priority'].map(h => (
             <span key={h} className="text-[11px] font-bold text-text-muted uppercase tracking-[0.08em]">{h}</span>
           ))}
@@ -193,7 +195,7 @@ export default function AdminLiveQueuePage() {
         <div className="border border-border rounded-b-2xl overflow-hidden bg-white shadow-sm">
           {loading ? (
             [1, 2, 3].map((n, idx) => (
-              <div key={n} className={`grid grid-cols-[120px_1.5fr_1.5fr_100px_120px] p-4 items-center ${idx === 2 ? 'border-none' : 'border-b border-border/60'} bg-white`}>
+              <div key={n} className={`grid grid-cols-[150px_1.5fr_1.5fr_100px_120px] gap-6 p-4 items-center ${idx === 2 ? 'border-none' : 'border-b border-border/60'} bg-white`}>
                 <div className="animate-pulse w-12.5 h-4.5 rounded bg-border" />
                 <div className="animate-pulse w-24 h-4.5 rounded bg-border" />
                 <div className="animate-pulse w-28 h-4.5 rounded bg-border" />
@@ -203,7 +205,7 @@ export default function AdminLiveQueuePage() {
             ))
           ) : upNext.length === 0 ? (
             <div className="p-16 text-center">
-              <div className="flex justify-center mb-4 text-text-muted/50"><Inbox size={52} strokeWidth={1.5} /></div>
+              <div className="flex justify-center mb-4 text-text-muted/50"><Users size={52} strokeWidth={1.5} /></div>
               <p className="font-serif text-lg font-bold text-text-main m-0 mb-1">No one at the counter</p>
               <p className="text-[13px] text-text-muted m-0">No students are currently waiting to be served.</p>
             </div>
@@ -235,28 +237,31 @@ export default function AdminLiveQueuePage() {
         </div>
 
         {/* ── Processing ── */}
-        <div className="mt-8">
-          <div className="mb-4">
-            <h2 className="font-serif text-lg font-bold text-text-main m-0 flex items-center gap-2">
-              <Cog size={18} className="text-text-muted" /> Processing
-            </h2>
-            <p className="text-xs text-text-muted mt-1 mb-0 ml-7">Back-office — no one is waiting for these</p>
+        <div className="mt-12">
+          <div className="flex items-center justify-between mb-5 mt-2 px-1">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-linear-to-br from-surface to-off-white flex items-center justify-center border border-border shadow-sm">
+                <Inbox size={20} className="text-text-muted" />
+              </div>
+              <div>
+                <h2 className="text-[22px] font-serif font-extrabold text-text-main m-0 leading-tight">Processing</h2>
+              </div>
+            </div>
           </div>
 
           {processingQueue.length > 0 && (
-            <div className="grid grid-cols-[120px_1.5fr_1.5fr_120px] gap-0 px-6 py-3 rounded-t-[14px] bg-surface border border-b-0 border-border">
+            <div className="grid grid-cols-[150px_1.5fr_1.5fr_120px] gap-6 px-6 py-3 rounded-t-[14px] bg-surface/50 backdrop-blur-sm border border-b-0 border-border">
               {['Queue No.', 'Student Name', 'Transaction', 'Priority'].map(h => (
                 <div key={h} className="text-[10px] font-bold text-text-muted tracking-[0.08em] uppercase">{h}</div>
               ))}
             </div>
           )}
-
           <div className="border border-border rounded-b-2xl overflow-hidden bg-white shadow-sm opacity-90">
             {loading ? (
               <div className="p-8 text-center text-xs text-text-muted">Loading…</div>
             ) : processingQueue.length === 0 ? (
               <div className="text-center p-20 border border-border rounded-[14px]">
-                <div className="flex justify-center mb-3 text-text-muted/50"><Cog size={40} strokeWidth={1.5} /></div>
+                <div className="flex justify-center mb-3 text-text-muted/50"><Inbox size={40} strokeWidth={1.5} /></div>
                 <p className="font-serif text-base font-bold text-text-main m-0 mb-1">Nothing in processing</p>
                 <span className="text-xs text-text-muted ml-6 block mt-0.5">Tickets land here after being submitted, before release.</span>
               </div>

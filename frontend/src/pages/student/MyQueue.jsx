@@ -208,18 +208,33 @@ export default function MyQueue() {
             </div>
           ) : ticket ? (
             ticket.status === 'completed' ? (
-              <div className="animate-fade-up text-center py-16 px-8 bg-white rounded-2xl border border-border shadow-sm">
-                <div className="w-16 h-16 bg-success/10 rounded-full flex items-center justify-center text-success mx-auto mb-5 shadow-sm border border-success/20">
-                  <PartyPopper size={32} />
-                </div>
-                <h2 className="font-serif text-[26px] font-bold text-success-dark m-0 mb-3">Transaction Completed</h2>
-                <p className="text-[14px] text-text-sub m-0 mb-6 max-w-sm mx-auto leading-relaxed">
-                  Your transaction <strong className="text-maroon font-serif text-[18px]">{ticket.queue_number}</strong> is fully complete. Thank you!
-                </p>
-                <button onClick={() => setActiveTab('upcoming')} className="py-2.5 px-6 rounded-lg border border-border bg-off-white text-text-main text-[14px] font-semibold cursor-pointer hover:bg-white transition-colors">
-                  View Upcoming Appointments
-                </button>
-              </div>
+              (() => {
+                const releaseDate = ticket.appointments?.release_date;
+                const isReadyToClaim = releaseDate && new Date(releaseDate) <= new Date(new Date().setHours(23, 59, 59, 999));
+                
+                return (
+                  <div className="animate-fade-up text-center py-16 px-8 bg-white rounded-2xl border border-border shadow-sm">
+                    <div className="w-16 h-16 bg-success/10 rounded-full flex items-center justify-center text-success mx-auto mb-5 shadow-sm border border-success/20">
+                      <PartyPopper size={32} />
+                    </div>
+                    <h2 className="font-serif text-[26px] font-bold text-success-dark m-0 mb-3">
+                      {isReadyToClaim ? 'Ready for Claiming!' : 'Transaction Completed'}
+                    </h2>
+                    <p className="text-[14px] text-text-sub m-0 mb-6 max-w-sm mx-auto leading-relaxed">
+                      {isReadyToClaim ? (
+                        <>Your transaction <strong className="text-maroon font-serif text-[18px]">{ticket.queue_number}</strong> is fully complete and ready to be claimed. Please proceed to the <strong>To Claim</strong> tab.</>
+                      ) : releaseDate ? (
+                        <>Your transaction <strong className="text-maroon font-serif text-[18px]">{ticket.queue_number}</strong> is complete. Your document will be released on <strong>{new Date(releaseDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' })}</strong>.</>
+                      ) : (
+                        <>Your transaction <strong className="text-maroon font-serif text-[18px]">{ticket.queue_number}</strong> is fully complete. Thank you!</>
+                      )}
+                    </p>
+                    <button onClick={() => setActiveTab(isReadyToClaim ? 'claim' : 'upcoming')} className="py-2.5 px-6 rounded-lg border border-border bg-off-white text-text-main text-[14px] font-semibold cursor-pointer hover:bg-white transition-colors">
+                      {isReadyToClaim ? 'Go to To Claim Tab' : 'View Upcoming Appointments'}
+                    </button>
+                  </div>
+                );
+              })()
             ) : (
             <div className="animate-fade-up">
               {/* Queue ticket card */}
@@ -287,14 +302,14 @@ export default function MyQueue() {
                         {/* Step dot + connector */}
                         <div className="flex flex-col items-center">
                           <div className={`w-7 h-7 rounded-full shrink-0 flex items-center justify-center text-[12px] font-bold ${
-                            step.status === 'completed' ? 'bg-maroon text-white' : 
+                            step.status === 'completed' || (step.status === 'in_progress' && step.step_name.toLowerCase().includes('release') && ticket.appointments?.release_date) ? 'bg-maroon text-white' : 
                             step.status === 'in_progress' ? 'bg-gold text-white shadow-[0_0_0_4px_rgba(184,144,10,0.15)]' : 
                             'bg-border text-text-sub'
                           }`}>
-                            {step.status === 'completed' ? '✓' : step.step_number}
+                            {step.status === 'completed' || (step.status === 'in_progress' && step.step_name.toLowerCase().includes('release') && ticket.appointments?.release_date) ? '✓' : step.step_number}
                           </div>
                           {!isLast && (
-                            <div className={`w-0.5 flex-1 min-h-6 my-1 ${step.status === 'completed' ? 'bg-maroon' : 'bg-border'}`} />
+                            <div className={`w-0.5 flex-1 min-h-6 my-1 ${step.status === 'completed' || (step.status === 'in_progress' && step.step_name.toLowerCase().includes('release') && ticket.appointments?.release_date) ? 'bg-maroon' : 'bg-border'}`} />
                           )}
                         </div>
 
@@ -307,7 +322,9 @@ export default function MyQueue() {
                                background: STEP_STYLE[step.status]?.bg || '#F9F9F9',
                                color: STEP_STYLE[step.status]?.color || '#706B65'
                             }}>
-                              {step.status === 'in_progress' ? (stepRequiresPresence ? 'In Progress' : 'Processing') : step.status === 'completed' ? 'Done' : 'Pending'}
+                              {step.status === 'in_progress' ? (
+                                step.step_name.toLowerCase().includes('release') && ticket.appointments?.release_date ? 'Ready to Claim' : (stepRequiresPresence ? 'In Progress' : 'Processing')
+                              ) : step.status === 'completed' ? 'Done' : 'Pending'}
                             </span>
                           </div>
 
@@ -322,7 +339,17 @@ export default function MyQueue() {
 
                           {/* Sub-labels — this is the core fix: back-office steps no
                               longer tell the student to "proceed to a counter" */}
-                          {step.status === 'in_progress' && stepRequiresPresence && (
+                          {step.status === 'in_progress' && step.step_name.toLowerCase().includes('release') && ticket.appointments?.release_date && (
+                            <div className="mt-1.5 p-3 bg-success/10 border border-success/20 rounded-xl">
+                              <p className="text-[13px] text-success-dark m-0 flex items-center gap-1.5 font-bold tracking-wide">
+                                <Check size={14} className="text-success" /> Document is Ready!
+                              </p>
+                              <p className="text-[11px] text-success-dark/80 m-0 mt-1 ml-5">
+                                Please proceed to {step.location} to claim your document. Present your queue number to the staff.
+                              </p>
+                            </div>
+                          )}
+                          {step.status === 'in_progress' && stepRequiresPresence && !(step.step_name.toLowerCase().includes('release') && ticket.appointments?.release_date) && (
                             <div className="mt-1.5 p-3 bg-gold/10 border border-gold/20 rounded-xl">
                               <p className="text-[13px] text-gold-dark m-0 flex items-center gap-1.5 font-bold tracking-wide">
                                 <Hourglass size={14} className="text-gold animate-pulse" /> Please proceed to {step.location}
@@ -347,6 +374,21 @@ export default function MyQueue() {
               </div>
             </div>
             )
+          ) : documentsToClaim.length > 0 ? (
+            <div className="animate-fade-up text-center py-16 px-8 rounded-2xl border border-border shadow-sm bg-success/5">
+              <div className="w-16 h-16 bg-success/10 rounded-full flex items-center justify-center text-success mx-auto mb-5 shadow-sm border border-success/20">
+                <PartyPopper size={32} />
+              </div>
+              <h2 className="font-serif text-[26px] font-bold text-success-dark m-0 mb-3">
+                Document is Ready!
+              </h2>
+              <p className="text-[14px] text-text-sub m-0 mb-6 max-w-sm mx-auto leading-relaxed">
+                Your document was ready. Please go to the <strong>To Claim</strong> tab to claim your document.
+              </p>
+              <button onClick={() => setActiveTab('claim')} className="py-2.5 px-6 rounded-lg border border-border bg-maroon text-white text-[14px] font-semibold cursor-pointer hover:bg-maroon-dark transition-colors shadow-sm">
+                Go to Claim Tab
+              </button>
+            </div>
           ) : (
             <div className="animate-fade-up text-center py-16 px-8 bg-white rounded-2xl border border-border shadow-sm">
               <div className="text-text-muted mb-4 flex justify-center"><Ticket size={48} className="text-gold" /></div>
@@ -430,20 +472,40 @@ export default function MyQueue() {
           {documentsToClaim.length > 0 ? (
             <div className="flex flex-col gap-4 animate-fade-up">
               {documentsToClaim.map(doc => (
-                <div key={doc.queue_ticket_id} className="bg-green-50 border border-green-200 rounded-2xl p-6 shadow-sm">
-                  <div className="flex items-center gap-4 mb-4">
-                    <div className="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center text-green-600 shrink-0">
-                      <FileCheck size={24} />
-                    </div>
+                <div key={doc.queue_ticket_id} className="bg-maroon rounded-2xl p-7 mb-2 shadow-2xl border border-maroon-light/20 relative overflow-hidden">
+                  {/* Premium Background Glows */}
+                  <div className="absolute -top-20 -right-20 w-64 h-64 bg-gold/15 rounded-full blur-[60px] pointer-events-none" />
+                  <div className="absolute top-1/2 -left-10 w-32 h-32 bg-white/5 rounded-full blur-2xl pointer-events-none" />
+                  
+                  {/* Ticket perforated edge effect */}
+                  <div className="absolute left-0 right-0 top-1/2 -mt-px h-0.5 w-full flex justify-between overflow-hidden opacity-30 pointer-events-none">
+                     <div className="w-full border-t-[3px] border-dashed border-gold/40"></div>
+                  </div>
+                  
+                  <div className="relative z-10 flex justify-between items-start mb-6 pb-6">
                     <div>
-                      <p className="text-[12px] font-bold text-green-800 uppercase tracking-widest mb-1">Queue {doc.queue_number}</p>
-                      <h3 className="text-[18px] font-bold text-green-900 m-0 leading-tight">{doc.transaction_type}</h3>
+                      <p className="text-[11px] text-gold m-0 mb-2 uppercase tracking-[0.15em] font-bold flex items-center gap-2">
+                        <Ticket size={14} className="text-gold" /> Official Claim Stub
+                      </p>
+                      <div className="font-serif text-[48px] font-extrabold text-white leading-none drop-shadow-md tracking-tight">{doc.queue_number}</div>
+                    </div>
+                    <div className="bg-gold px-4 py-2 rounded-full border border-gold-light/20 shadow-md">
+                      <span className="text-[11px] font-extrabold text-white uppercase tracking-widest">Ready for Pickup</span>
                     </div>
                   </div>
                   
-                  <div className="bg-white rounded-xl border border-green-100 p-4">
-                    <p className="text-[14px] text-text-sub m-0 mb-1 font-semibold">Status: Ready for Pickup</p>
-                    <p className="text-[13px] text-text-sub m-0">Your document is now ready to be claimed at {doc.location || "the Registrar's Office"}. Please proceed to the counter and present your student ID.</p>
+                  <div className="relative z-10 bg-white/5 p-5 rounded-xl border border-white/10 backdrop-blur-sm">
+                    <p className="text-[16px] font-bold text-white m-0 mb-1 leading-snug">{doc.transaction_type}</p>
+                    <p className="text-[13px] text-white/70 m-0 font-medium">
+                      Location: <span className="text-gold-light font-bold">{doc.location || "Registrar's Office"}</span>
+                    </p>
+                  </div>
+                  
+                  <div className="relative z-10 mt-5">
+                    <p className="text-[12.5px] text-white/90 m-0 leading-relaxed font-medium bg-maroon-dark/60 p-4 rounded-xl border border-white/5 flex gap-3 items-start shadow-inner">
+                      <span className="shrink-0 w-5 h-5 rounded-full bg-gold/20 flex items-center justify-center text-gold font-bold text-[12px] border border-gold/30">!</span>
+                      <span><strong className="text-gold-light">Instruction:</strong> Please present this digital claim stub at the window to claim your document.</span>
+                    </p>
                   </div>
                 </div>
               ))}

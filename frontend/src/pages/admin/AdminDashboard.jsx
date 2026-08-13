@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/useAuth'
 import campusFlowLogo from '../../assets/logo.png'
@@ -17,6 +17,8 @@ import {
 } from '../../services/adminService'
 import NotificationDropdown from '../../components/NotificationDropdown'
 import AdminGlobalSearch from '../../components/AdminGlobalSearch'
+import DonutChart from '../../components/DonutChart'
+import { getDocumentColor } from '../../utils/colors'
 
 // ── Sidebar Nav Item ───────────────────────────────────────────────────────────
 const SideItem = ({ icon, label, active, onClick }) => (
@@ -48,78 +50,6 @@ const Ring = ({ pct, color, size = 48 }) => {
         className="transition-[stroke-dasharray] duration-600 ease"
       />
     </svg>
-  )
-}
-
-// ── Donut Chart ────────────────────────────────────────────────────────────────
-const DonutChart = ({ data, total, colors }) => {
-  const [hovered, setHovered] = useState(null)
-  
-  const size = 220
-  const strokeWidth = 45
-  const r = (size - strokeWidth) / 2
-  const circ = 2 * Math.PI * r
-  
-  let currentOffset = 0
-  
-  return (
-    <div className="flex flex-col items-center py-4">
-      <div className="relative" style={{ width: size, height: size }}>
-        <svg width={size} height={size} className="-rotate-90 drop-shadow-sm">
-          <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="#EAE7E2" strokeWidth={strokeWidth} />
-          {data.map((tx, i) => {
-            const pct = total > 0 ? tx.count / total : 0
-            const dash = pct * circ
-            const offset = currentOffset
-            currentOffset += dash
-            
-            // tiny gap if piece is big enough
-            const visibleDash = dash > 2 ? dash - 2 : dash
-            const isHovered = hovered === i
-            
-            return (
-              <circle
-                key={i}
-                cx={size / 2}
-                cy={size / 2}
-                r={r}
-                fill="none"
-                stroke={colors[i % colors.length]}
-                strokeWidth={strokeWidth}
-                strokeDasharray={`${visibleDash} ${circ}`}
-                strokeDashoffset={-offset}
-                className={`transition-all duration-300 ease-out cursor-pointer ${hovered !== null && !isHovered ? 'opacity-30' : 'opacity-100'}`}
-                onMouseEnter={() => setHovered(i)}
-                onMouseLeave={() => setHovered(null)}
-              />
-            )
-          })}
-        </svg>
-        <div className="absolute inset-0 flex flex-col items-center justify-center text-center pointer-events-none transition-all duration-300">
-          <div className="text-[14px] font-semibold text-text-main transition-colors">
-            {hovered !== null ? data[hovered].name : 'Total'}
-          </div>
-          <div className="text-[32px] font-bold text-text-main leading-tight transition-all">
-            {hovered !== null ? data[hovered].count : total}
-          </div>
-        </div>
-      </div>
-      
-      {/* Legend */}
-      <div className="flex flex-wrap justify-center gap-x-6 gap-y-3 mt-8">
-        {data.map((tx, i) => (
-          <div 
-            key={i} 
-            className={`flex items-center gap-2.5 cursor-pointer transition-opacity duration-200 ${hovered !== null && hovered !== i ? 'opacity-40' : 'opacity-100'}`}
-            onMouseEnter={() => setHovered(i)}
-            onMouseLeave={() => setHovered(null)}
-          >
-            <div className="w-3.5 h-3.5 rounded-full shadow-sm" style={{ backgroundColor: colors[i % colors.length] }} />
-            <div className="text-[13.5px] font-semibold text-text-main">{tx.name}</div>
-          </div>
-        ))}
-      </div>
-    </div>
   )
 }
 
@@ -269,20 +199,44 @@ function OverviewTab() {
     return new Date(d.getFullYear(), d.getMonth(), 1)
   })
 
-  useEffect(() => {
+  const fetchStats = useCallback(() => {
     getDashboardStats(token)
-      .then(s => setStats(s))
-      .catch(e => setError(e.message))
+      .then(s => {
+        setStats(s)
+        setError('')
+      })
+      .catch(e => {
+        setError(e.message)
+        console.error("Dashboard stats poll error:", e)
+      })
       .finally(() => setLoading(false))
   }, [token])
 
   useEffect(() => {
-    setChartLoading(true)
+    fetchStats()
+    const t = setInterval(fetchStats, 15000)
+    return () => clearInterval(t)
+  }, [fetchStats])
+
+  const fetchReports = useCallback(() => {
     getReports(token, 7)
-      .then(r => setReport(r))
-      .catch(e => setError(e.message))
+      .then(r => {
+        setReport(r)
+        setError('')
+      })
+      .catch(e => {
+        setError(e.message)
+        console.error("Dashboard reports poll error:", e)
+      })
       .finally(() => setChartLoading(false))
   }, [token])
+
+  useEffect(() => {
+    setChartLoading(true)
+    fetchReports()
+    const t = setInterval(fetchReports, 60000)
+    return () => clearInterval(t)
+  }, [fetchReports])
 
   if (error) return (
     <div className="py-3.5 px-4.5 rounded-xl bg-danger-light text-danger border border-danger-border">{error}</div>
@@ -361,16 +315,8 @@ function OverviewTab() {
   // Transaction distribution from report
   const txTypes = report?.by_type || []
   const txTotal = txTypes.reduce((s, t) => s + t.count, 0) || 1
-  const TX_COLORS = ['#7B1A2A', '#B8900A', '#1D4ED8', '#15803D', '#6D28D9']
-  const DOC_COLOR_MAP = {
-    'Transcript of Records (TOR)': '#7B1A2A',
-    'Certificate of Enrollment (COE)': '#B8900A',
-    'Diploma Release': '#1D4ED8',
-    'General Weighted Average (GWA)': '#15803D',
-    'Completion Form - Request': '#6D28D9',
-    'Completion Form - Submission': '#EA580C'
-  }
-  const donutColors = txTypes.slice(0, 5).map((t, i) => DOC_COLOR_MAP[t.name] || TX_COLORS[i % TX_COLORS.length])
+
+  const donutColors = txTypes.map(t => getDocumentColor(t.name))
 
   return (
     <div>
@@ -406,7 +352,7 @@ function OverviewTab() {
       </div>
 
       {/* Bottom row: Chart + Distribution */}
-      <div className="grid grid-cols-[1fr_300px] gap-5">
+      <div className="grid grid-cols-[1fr_300px] gap-5 items-start">
 
         {/* Appointments Chart */}
         <div className="animate-fade-up bg-white rounded-2xl p-6 border border-border shadow-sm" style={{ animationDelay: '0.4s' }}>
@@ -495,9 +441,9 @@ function OverviewTab() {
               </div>
             </div>
           </div>
-          <div className="relative h-65 pt-2 pb-6">
+          <div className="relative pt-2">
             {chartLoading && (
-              <div className="absolute inset-0 bg-white/70 z-10 flex items-center justify-center">
+              <div className="absolute inset-0 bg-white/70 z-10 flex items-center justify-center min-h-37.5">
                 <div className="typing-indicator font-bold text-[24px] text-maroon">Loading</div>
               </div>
             )}
@@ -527,7 +473,7 @@ function OverviewTab() {
           ) : txTypes.length === 0 ? (
             <div className="text-center py-8 text-text-muted text-[13px]">No transaction data</div>
           ) : (
-            <DonutChart data={txTypes.slice(0, 5)} total={txTotal} colors={donutColors} />
+            <DonutChart data={txTypes} total={txTotal} colors={donutColors} />
           )}
 
 
