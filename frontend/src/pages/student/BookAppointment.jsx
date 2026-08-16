@@ -1,9 +1,82 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '../../context/useAuth'
 import StudentLayout from '../../components/layout/StudentLayout'
 import { getTransactionTypes, getAvailableSlots, bookAppointment, getBookingConfig } from '../../services/appointmentService'
-import { CheckCircle, Calendar, Users, CloudSun, Sun, Image as ImageIcon, FileText, Clock, MapPin, Mail, HelpCircle, ChevronLeft, Info, AlertTriangle } from 'lucide-react'
+import { 
+  CheckCircle, Calendar, Users, CloudSun, Sun, Image as ImageIcon, FileText, 
+  Clock, MapPin, Mail, HelpCircle, ChevronLeft, Info, AlertTriangle, ChevronDown, Tag, GraduationCap 
+} from 'lucide-react'
+
+// ── Custom Dropdown Component ──
+const CustomSelect = ({ label, value, onChange, options, placeholder = 'Select…', icon, className = '' }) => {
+  const [isOpen, setIsOpen] = useState(false)
+  const containerRef = useRef(null)
+
+  const selectedOption = options.find(o => (typeof o === 'object' ? o.value === value : o === value))
+  const displayLabel = selectedOption ? (typeof selectedOption === 'object' ? selectedOption.label : selectedOption) : ''
+
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (containerRef.current && !containerRef.current.contains(e.target)) {
+        setIsOpen(false)
+      }
+    }
+    if (isOpen) {
+      document.addEventListener('mousedown', handleClickOutside)
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [isOpen])
+
+  return (
+    <div className={`relative ${className}`} ref={containerRef}>
+      {label && <label className="block text-[11px] font-bold text-text-sub uppercase tracking-wider mb-1.5">{label}</label>}
+      <button
+        type="button"
+        onClick={() => setIsOpen(!isOpen)}
+        className={`w-full flex items-center justify-between py-2.5 px-3.5 rounded-xl border-[1.5px] bg-white text-[13px] font-sans text-left transition-all shadow-[0_2px_8px_rgba(0,0,0,0.03)] cursor-pointer ${
+          isOpen ? 'border-maroon ring-2 ring-maroon/10 shadow-[0_4px_12px_rgba(123,26,42,0.08)]' : 'border-border hover:border-maroon/40'
+        }`}
+      >
+        <div className="flex items-center gap-2 truncate pr-2">
+          {icon && <span className="text-gold shrink-0">{icon}</span>}
+          <span className={`truncate ${value ? 'font-semibold text-text-main' : 'text-text-muted'}`}>
+            {displayLabel || placeholder}
+          </span>
+        </div>
+        <ChevronDown size={16} className={`text-text-sub transition-transform duration-200 shrink-0 ${isOpen ? 'rotate-180 text-maroon' : ''}`} />
+      </button>
+
+      {isOpen && (
+        <div className="absolute left-0 top-full mt-1.5 w-full bg-white rounded-xl border border-border shadow-[0_10px_30px_rgba(0,0,0,0.12)] p-1.5 z-50 animate-fade-up max-h-60 overflow-y-auto" style={{ animationDuration: '0.15s' }}>
+          {options.map((opt, i) => {
+            const optVal = typeof opt === 'object' ? opt.value : opt
+            const optLabel = typeof opt === 'object' ? opt.label : opt
+            const isSelected = value === optVal
+
+            return (
+              <div
+                key={i}
+                onClick={() => {
+                  onChange(optVal)
+                  setIsOpen(false)
+                }}
+                className={`py-2 px-3 rounded-lg cursor-pointer flex items-center justify-between text-[13px] transition-colors ${
+                  isSelected ? 'bg-maroon-light text-maroon font-bold' : 'text-text-main hover:bg-off-white font-medium'
+                }`}
+              >
+                <span>{optLabel}</span>
+                {isSelected && <div className="w-1.5 h-1.5 rounded-full bg-maroon shrink-0" />}
+              </div>
+            )
+          })}
+        </div>
+      )}
+    </div>
+  )
+}
 
 // ── Status Styles ──
 const STATUS_STYLES = {
@@ -347,44 +420,62 @@ export default function BookAppointment() {
             </p>
 
             {types.length === 0 && (
-              <div className="flex flex-col gap-3 md:grid md:grid-cols-2 md:gap-4">
-                {[1, 2, 3, 4].map(i => (
-                  <div key={i} className="bg-white border-[1.5px] border-border rounded-xl py-5 px-6 flex justify-between items-start gap-3">
-                    <div className="flex-1">
-                      <div className="animate-pulse w-45 h-4.5 rounded bg-border mb-2" />
-                      <div className="animate-pulse w-full h-3 rounded bg-border mb-1.5" />
-                      <div className="animate-pulse w-[80%] h-3 rounded bg-border mb-4" />
-                      <div className="flex gap-1.5">
-                        <div className="animate-pulse w-16 h-4.5 rounded-full bg-border" />
-                        <div className="animate-pulse w-20 h-4.5 rounded-full bg-border" />
-                      </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-stretch">
+                {[1, 2, 3, 4, 5, 6].map(i => (
+                  <div key={i} className="h-full bg-white border-[1.5px] border-border rounded-2xl p-5.5 flex flex-col justify-between">
+                    <div>
+                      <div className="animate-pulse w-48 h-5 rounded bg-border mb-3" />
+                      <div className="animate-pulse w-full h-3.5 rounded bg-border mb-2" />
+                      <div className="animate-pulse w-4/5 h-3.5 rounded bg-border mb-4" />
                     </div>
-                    <div className="animate-pulse w-5 h-5 rounded bg-border mt-0.5 md:hidden" />
+                    <div className="pt-3 border-t border-border/40 flex gap-2">
+                      <div className="animate-pulse w-24 h-5.5 rounded-lg bg-border" />
+                    </div>
                   </div>
                 ))}
               </div>
             )}
 
-            <div className="flex flex-col gap-3 md:grid md:grid-cols-2 md:gap-4">
-              {types.map(t => (
-                <button key={t.id} type="button"
-                  onClick={() => { setSelectedType(t); setStep(2) }}
-                  className="text-left bg-white border-[1.5px] border-border rounded-xl p-5 cursor-pointer transition-all duration-200 shadow-[0_1px_4px_rgba(0,0,0,0.03)] flex flex-col justify-between items-start gap-3 hover:border-maroon hover:shadow-[0_4px_16px_rgba(123,26,42,0.08)] hover:-translate-y-0.5"
-                >
-                  <div className="w-full">
-                    <div className="flex justify-between items-start w-full mb-1.5">
-                      <h3 className="font-serif text-[16px] font-bold text-maroon m-0 pr-2">{t.name}</h3>
-                      <span className="text-text-muted text-[18px] leading-none shrink-0 md:hidden">›</span>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-stretch">
+              {types.map(t => {
+                const reqDocs = t.required_documents || t.config?.required_documents || [];
+                return (
+                  <button 
+                    key={t.id} 
+                    type="button"
+                    onClick={() => { setSelectedType(t); setStep(2) }}
+                    className="group h-full text-left bg-white border-[1.5px] border-border rounded-2xl p-5.5 cursor-pointer transition-all duration-200 shadow-[0_2px_8px_rgba(0,0,0,0.03)] flex flex-col justify-between hover:border-maroon hover:shadow-[0_8px_24px_rgba(123,26,42,0.09)] hover:-translate-y-0.5"
+                  >
+                    {/* Top: Title & Description */}
+                    <div className="flex-1 flex flex-col w-full mb-4">
+                      <div className="flex justify-between items-start w-full gap-2 mb-2">
+                        <h3 className="font-serif text-[16px] font-bold text-maroon m-0 leading-snug group-hover:text-maroon-dark transition-colors">
+                          {t.name}
+                        </h3>
+                        <span className="text-text-muted text-[16px] leading-none shrink-0 group-hover:text-maroon group-hover:translate-x-0.5 transition-all">›</span>
+                      </div>
+                      <p className="text-[13px] text-text-sub m-0 leading-relaxed">
+                        {t.clean_description}
+                      </p>
                     </div>
-                    <p className="text-[13px] text-text-sub m-0 mb-3.5 leading-normal">{t.clean_description}</p>
-                    <div className="flex flex-wrap gap-1.5">
-                      {(t.config?.required_documents || t.required_documents || []).map((doc, j) => (
-                        <span key={j} className="text-[11px] text-text-sub bg-off-white py-0.75 px-2.5 rounded-full border border-border font-medium">{doc}</span>
-                      ))}
+
+                    {/* Bottom: Requirements Badges (Pinned to bottom baseline) */}
+                    <div className="w-full pt-3.5 border-t border-border/40 mt-auto flex flex-wrap gap-1.5 items-center">
+                      {reqDocs.length > 0 ? (
+                        reqDocs.map((doc, j) => (
+                          <span key={j} className="text-[11px] text-text-sub bg-off-white py-1 px-2.5 rounded-lg border border-border font-medium">
+                            {doc}
+                          </span>
+                        ))
+                      ) : (
+                        <span className="text-[11px] text-text-muted italic py-0.5">
+                          No physical requirements
+                        </span>
+                      )}
                     </div>
-                  </div>
-                </button>
-              ))}
+                  </button>
+                );
+              })}
             </div>
           </div>
         )}
@@ -401,55 +492,36 @@ export default function BookAppointment() {
 
             {/* Dynamic Academic Info selection */}
             {needsAcademicInfo && (
-              <div className="bg-white rounded-[14px] border-[1.5px] border-border p-6 mb-5 shadow-[0_1px_4px_rgba(0,0,0,0.03)]">
-                <p className="text-[12px] font-bold text-text-main m-0 mb-1 uppercase tracking-wider">Required Information</p>
+              <div className="bg-white rounded-2xl border-[1.5px] border-border p-6 mb-5 shadow-[0_2px_8px_rgba(0,0,0,0.03)]">
+                <p className="text-[12px] font-bold text-text-main m-0 mb-1 uppercase tracking-wider">Required Academic Information</p>
                 <p className="text-[12px] text-text-sub m-0 mb-4">Please provide the following academic details for your request.</p>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   {needsSemester && (
-                    <div>
-                      <label className="block text-[11px] font-semibold text-text-sub mb-1.5">Semester</label>
-                      <select
-                        value={gwaSemester}
-                        onChange={e => setGwaSemester(e.target.value)}
-                        className="w-full p-2.5 rounded-lg border-[1.5px] border-border bg-off-white text-[13px] text-text-main font-sans focus:outline-none focus:border-maroon-border"
-                      >
-                        <option value="">Select…</option>
-                        <option value="1st Semester">1st Semester</option>
-                        <option value="2nd Semester">2nd Semester</option>
-                        <option value="Summer">Summer</option>
-                      </select>
-                    </div>
+                    <CustomSelect
+                      label="Semester"
+                      value={gwaSemester}
+                      onChange={setGwaSemester}
+                      placeholder="Select Semester…"
+                      options={['1st Semester', '2nd Semester', 'Summer']}
+                    />
                   )}
                   {needsYearLevel && (
-                    <div>
-                      <label className="block text-[11px] font-semibold text-text-sub mb-1.5">Year Level</label>
-                      <select
-                        value={gwaYearLevel}
-                        onChange={e => setGwaYearLevel(e.target.value)}
-                        className="w-full p-2.5 rounded-lg border-[1.5px] border-border bg-off-white text-[13px] text-text-main font-sans focus:outline-none focus:border-maroon-border"
-                      >
-                        <option value="">Select…</option>
-                        <option value="1st Year">1st Year</option>
-                        <option value="2nd Year">2nd Year</option>
-                        <option value="3rd Year">3rd Year</option>
-                        <option value="4th Year">4th Year</option>
-                      </select>
-                    </div>
+                    <CustomSelect
+                      label="Year Level"
+                      value={gwaYearLevel}
+                      onChange={setGwaYearLevel}
+                      placeholder="Select Year Level…"
+                      options={['1st Year', '2nd Year', '3rd Year', '4th Year']}
+                    />
                   )}
                   {needsSchoolYear && (
-                    <div>
-                      <label className="block text-[11px] font-semibold text-text-sub mb-1.5">School Year</label>
-                      <select
-                        value={gwaSchoolYear}
-                        onChange={e => setGwaSchoolYear(e.target.value)}
-                        className="w-full p-2.5 rounded-lg border-[1.5px] border-border bg-off-white text-[13px] text-text-main font-sans focus:outline-none focus:border-maroon-border"
-                      >
-                        <option value="">Select…</option>
-                        {schoolYearOptions.map(sy => (
-                          <option key={sy} value={sy}>{sy}</option>
-                        ))}
-                      </select>
-                    </div>
+                    <CustomSelect
+                      label="School Year"
+                      value={gwaSchoolYear}
+                      onChange={setGwaSchoolYear}
+                      placeholder="Select S.Y.…"
+                      options={schoolYearOptions}
+                    />
                   )}
                 </div>
               </div>
@@ -547,25 +619,26 @@ export default function BookAppointment() {
                     <p className="text-[11px] text-text-sub m-0 mb-3">
                       Let us know what this document will be used for.
                     </p>
-                    <select
+                    <CustomSelect
                       value={purpose}
-                      onChange={e => setPurpose(e.target.value)}
-                      className="w-full p-2.5 rounded-lg border-[1.5px] border-border bg-off-white text-[13px] text-text-main font-sans focus:outline-none focus:border-maroon-border mb-3"
-                    >
-                      <option value="">Select purpose…</option>
-                      <option value="Employment">Employment</option>
-                      <option value="Further Studies / Scholarship">Further Studies / Scholarship</option>
-                      <option value="Board Exam Application">Board Exam Application</option>
-                      <option value="Visa / Travel Requirement">Visa / Travel Requirement</option>
-                      <option value="Other">Other</option>
-                    </select>
+                      onChange={setPurpose}
+                      placeholder="Select purpose of request…"
+                      icon={<Tag size={14} />}
+                      className="mb-3"
+                      options={[
+                        { value: 'Employment', label: 'Employment' },
+                        { value: 'Scholarship', label: 'Scholarship' },
+                        { value: 'Board Exam Application', label: 'Board Exam Application' },
+                        { value: 'Other', label: 'Other' },
+                      ]}
+                    />
                     {purpose === 'Other' && (
                       <input
                         type="text"
                         value={purposeOther}
                         onChange={e => setPurposeOther(e.target.value)}
-                        placeholder="Please specify"
-                        className="w-full p-2.5 rounded-lg border-[1.5px] border-border bg-off-white text-[13px] text-text-main font-sans focus:outline-none focus:border-maroon-border"
+                        placeholder="Please specify your purpose…"
+                        className="w-full py-2.5 px-3.5 rounded-xl border-[1.5px] border-border bg-white text-[13px] text-text-main font-sans focus:outline-none focus:border-maroon focus:ring-2 focus:ring-maroon/10 shadow-[0_2px_8px_rgba(0,0,0,0.03)] transition-all"
                       />
                     )}
                   </div>

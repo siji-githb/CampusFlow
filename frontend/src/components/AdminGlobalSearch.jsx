@@ -4,7 +4,7 @@ import { Search, LayoutDashboard, BarChart2, Ticket, Calendar, FolderOpen, Clipb
 const SEARCH_ITEMS = [
   { id: 'overview', label: 'Dashboard Overview', icon: LayoutDashboard, desc: 'View high-level summary and statistics' },
   { id: 'reports', label: 'Analytics & Reports', icon: BarChart2, desc: 'Detailed metrics and performance data' },
-  { id: 'queue', label: 'Live Queue Management', icon: Ticket, desc: 'Manage the active front desk queue' },
+  { id: 'queue', label: 'Live Queue & Releases Monitoring', icon: Ticket, desc: 'Monitor active counter windows, queue line, and document pickups' },
   { id: 'appts', label: 'Appointments', icon: Calendar, desc: 'Manage scheduled student appointments' },
   { id: 'records', label: 'Registrar Records', icon: FolderOpen, desc: 'Access academic and institutional records' },
   { id: 'student_records', label: 'Master List', icon: ClipboardList, desc: 'Manage student data and documents' },
@@ -84,7 +84,7 @@ export default function AdminGlobalSearch({ setActiveNav }) {
       />
 
       {isOpen && displayItems.length > 0 && (
-        <div className="absolute left-0 top-full mt-2 w-full bg-white rounded-2xl shadow-[0_12px_40px_rgba(0,0,0,0.12),0_0_0_1px_rgba(0,0,0,0.04)] overflow-hidden z-50 flex flex-col py-2 transition-all origin-top">
+        <div className="absolute right-0 top-full mt-2 w-72 bg-white rounded-2xl shadow-[0_12px_40px_rgba(0,0,0,0.12),0_0_0_1px_rgba(0,0,0,0.04)] overflow-hidden z-50 flex flex-col py-2 transition-all origin-top border border-border">
           {displayItems.map((item, index) => {
             const Icon = item.icon;
             const isActive = index === activeIndex;

@@ -134,9 +134,55 @@ export default function PriorityRequestsPage() {
 
   if (loading) {
     return (
-      <div className="animate-pulse flex flex-col gap-3 max-w-5xl">
-        <div className="h-8 w-48 bg-border rounded-md mb-4" />
-        {[1, 2, 3].map(i => <div key={i} className="h-32 bg-border rounded-xl" />)}
+      <div className="animate-fade-in max-w-5xl">
+        {/* Header Skeleton */}
+        <div className="mb-6 animate-pulse">
+          <div className="h-3 w-20 bg-border/60 rounded mb-2" />
+          <div className="h-7 w-56 bg-border/70 rounded-lg mb-2" />
+          <div className="h-3.5 w-96 max-w-full bg-border/40 rounded" />
+        </div>
+
+        {/* Request Cards Skeleton */}
+        <div className="grid gap-4">
+          {[1, 2, 3].map(i => (
+            <div key={i} className="bg-white rounded-2xl border border-border shadow-sm p-6 flex flex-col md:flex-row items-stretch justify-between gap-6 animate-pulse">
+              
+              {/* Left Content Skeleton */}
+              <div className="flex-1 flex flex-col justify-between">
+                <div>
+                  <div className="flex items-center gap-3 mb-3 flex-wrap">
+                    <div className="h-6 w-44 bg-border/70 rounded-md" />
+                    <div className="h-5 w-24 bg-border/50 rounded-md" />
+                  </div>
+                  <div className="flex items-center gap-3 mb-5">
+                    <div className="h-5 w-16 bg-border/50 rounded-md" />
+                    <div className="h-4 w-36 bg-border/40 rounded" />
+                  </div>
+                </div>
+
+                {/* AI Box Skeleton */}
+                <div className="rounded-xl border border-border/60 bg-slate-50/70 p-4">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="h-4 w-36 bg-border/60 rounded" />
+                    <div className="h-4 w-12 bg-border/50 rounded-full" />
+                  </div>
+                  <div className="space-y-1.5 pl-2">
+                    <div className="h-3.5 w-full bg-border/40 rounded" />
+                    <div className="h-3.5 w-4/5 bg-border/40 rounded" />
+                  </div>
+                </div>
+              </div>
+
+              {/* Right Action Sidebar Skeleton */}
+              <div className="flex flex-col gap-3 shrink-0 w-full md:w-52 justify-center">
+                <div className="h-10 w-full bg-border/40 rounded-xl" />
+                <div className="h-10 w-full bg-border/60 rounded-xl" />
+                <div className="h-10 w-full bg-border/40 rounded-xl" />
+              </div>
+
+            </div>
+          ))}
+        </div>
       </div>
     )
   }

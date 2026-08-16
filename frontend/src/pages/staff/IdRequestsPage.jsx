@@ -291,9 +291,55 @@ export default function IdRequestsPage() {
 
   if (loading) {
     return (
-      <div className="animate-pulse flex flex-col gap-3">
-        <div className="h-8 w-48 bg-border rounded-md mb-4" />
-        {[1, 2, 3].map(i => <div key={i} className="h-24 bg-border rounded-xl" />)}
+      <div className="animate-fade-in max-w-5xl">
+        {/* Header Skeleton */}
+        <div className="mb-6 animate-pulse">
+          <div className="h-3 w-28 bg-border/60 rounded mb-2" />
+          <div className="h-7 w-60 bg-border/70 rounded-lg mb-2" />
+          <div className="h-3.5 w-110 max-w-full bg-border/40 rounded" />
+        </div>
+
+        {/* Section 1: Needs Action Skeleton */}
+        <div className="mb-8 animate-pulse">
+          <div className="h-5 w-40 bg-border/60 rounded mb-3.5" />
+          <div className="grid gap-4">
+            {[1, 2].map(i => (
+              <div key={i} className="bg-white rounded-2xl border-[1.5px] border-maroon-border/30 p-5 shadow-sm flex flex-col sm:flex-row sm:items-start justify-between gap-4">
+                <div className="flex-1">
+                  <div className="h-5 w-48 bg-border/70 rounded-md mb-2.5" />
+                  <div className="flex flex-wrap items-center gap-4 mt-2">
+                    <div className="h-4 w-52 bg-border/50 rounded" />
+                    <div className="h-4 w-36 bg-border/50 rounded" />
+                  </div>
+                  <div className="h-3 w-44 bg-border/40 rounded mt-3.5" />
+                </div>
+                <div className="h-10 w-full sm:w-32 bg-border/60 rounded-lg shrink-0" />
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Section 2: Request History Skeleton */}
+        <div className="animate-pulse">
+          <div className="h-5 w-36 bg-border/60 rounded mb-3.5" />
+          <div className="grid gap-3">
+            {[1, 2].map(i => (
+              <div key={i} className="bg-white rounded-2xl border border-border p-5 shadow-xs flex flex-col sm:flex-row sm:items-start justify-between gap-4">
+                <div className="flex-1">
+                  <div className="flex items-center gap-3 mb-2">
+                    <div className="h-5 w-40 bg-border/60 rounded-md" />
+                    <div className="h-4 w-20 bg-border/40 rounded-full" />
+                  </div>
+                  <div className="flex flex-wrap items-center gap-4 mt-1.5">
+                    <div className="h-4 w-48 bg-border/40 rounded" />
+                    <div className="h-4 w-32 bg-border/40 rounded" />
+                  </div>
+                </div>
+                <div className="h-4 w-36 bg-border/40 rounded shrink-0" />
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
     )
   }

@@ -3,7 +3,8 @@ import { createPortal } from 'react-dom'
 import { useAuth } from '../../context/useAuth'
 import { getTodaysQueue, confirmStep, callTicket, remindStudent, getLiveQueueStats } from '../../services/queueService'
 import { updateReleaseDate } from '../../services/adminService'
-import { Check, Circle, Clock, X, Users, CheckSquare, AlertTriangle, Download, Inbox, Play, Ticket, DoorOpen, Cog } from 'lucide-react'
+import { getTransactionTypes } from '../../services/appointmentService'
+import { Check, CheckCircle2, Circle, Clock, X, Users, CheckSquare, AlertTriangle, Download, Inbox, Play, Ticket, DoorOpen, Cog, ChevronDown, SlidersHorizontal } from 'lucide-react'
 import QueueDetailsModal from '../../components/QueueDetailsModal'
 
 // ── Status config ──────────────────────────────────────────────────────────────
@@ -64,57 +65,90 @@ const StepsBar = ({ steps, current, total }) => (
 )
 
 
-// ── Filter Sidebar ─────────────────────────────────────────────────────────────
-const FilterBar = ({ filters, onChange, onReset }) => {
+const CustomDropdown = ({ value, onChange, options }) => {
+  const [isOpen, setIsOpen] = useState(false)
+  const currentLabel = options.find(o => o.value === value)?.label || value
+
   return (
-    <div className="bg-white/80 backdrop-blur-md rounded-2xl border border-border shadow-[0_2px_8px_rgba(0,0,0,0.02)] px-5 py-4 flex flex-wrap items-center gap-4 animate-fade-up" style={{ animationDelay: '0.4s' }}>
-      <div className="text-[11px] font-bold text-text-muted uppercase tracking-[0.08em] mr-2 flex items-center gap-1.5"><Cog size={14} /> Filters</div>
+    <div className="relative z-10 w-full group">
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className="w-full flex items-center justify-between px-4 py-2 rounded-full border border-border bg-white text-[12.5px] text-text-main font-semibold outline-none cursor-pointer font-sans hover:border-maroon/30 transition-all shadow-sm"
+      >
+        <span className="truncate pr-2">{currentLabel}</span>
+        <ChevronDown size={14} className={`text-text-muted transition-transform duration-200 shrink-0 ${isOpen ? 'rotate-180' : 'group-hover:text-text-main'}`} />
+      </button>
+      {isOpen && (
+        <>
+          <div className="fixed inset-0 z-40" onClick={() => setIsOpen(false)} />
+          <div className="absolute left-0 top-full mt-2 w-[120%] bg-white rounded-xl border border-border shadow-lg p-2 z-50 animate-fade-up max-h-75 overflow-y-auto" style={{ animationDuration: '0.2s' }}>
+            {options.map(o => {
+              const isActive = value === o.value;
+              return (
+                <div
+                  key={o.value}
+                  onClick={() => { onChange(o.value); setIsOpen(false); }}
+                  className={`p-2 rounded-lg cursor-pointer flex items-center justify-between transition-colors ${isActive ? 'bg-maroon/5 text-maroon' : 'text-text-main hover:bg-off-white'}`}
+                >
+                  <div className="flex items-center gap-2.5">
+                    <div className={`w-3 h-3 rounded-full border flex items-center justify-center shrink-0 ${isActive ? 'border-maroon' : 'border-text-muted/40'}`}>
+                      {isActive && <div className="w-1.5 h-1.5 bg-maroon rounded-full" />}
+                    </div>
+                    <span className="text-[12px] font-semibold whitespace-nowrap">{o.label}</span>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        </>
+      )}
+    </div>
+  )
+}
+
+// ── Filter Sidebar ─────────────────────────────────────────────────────────────
+const FilterBar = ({ filters, onChange, onReset, availableTxTypes = [] }) => {
+  return (
+    <div className="bg-white/80 backdrop-blur-md rounded-2xl border border-border shadow-[0_2px_8px_rgba(0,0,0,0.02)] px-5 py-4 flex flex-wrap items-center gap-4 animate-fade-up relative z-20" style={{ animationDelay: '0.4s' }}>
+      <div className="text-[11px] font-bold text-text-muted uppercase tracking-[0.08em] mr-2 flex items-center gap-1.5"><SlidersHorizontal size={14} /> Filters</div>
       
       {/* Status Dropdown */}
       <div className="flex-1 min-w-37.5">
-        <select
+        <CustomDropdown
           value={filters.status}
-          onChange={e => onChange({ ...filters, status: e.target.value })}
-          className="w-full px-4 py-2 rounded-full border border-border bg-white text-[12.5px] text-text-main font-semibold outline-none cursor-pointer font-sans hover:border-maroon-border focus:border-maroon focus:ring-2 focus:ring-maroon/20 transition-all shadow-sm appearance-none bg-[url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2214%22%20height%3D%2214%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%2357534E%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpolyline%20points%3D%226%209%2012%2015%2018%209%22%3E%3C%2Fpolyline%3E%3C%2Fsvg%3E')] bg-no-repeat bg-position-[calc(100%-12px)_center]"
-        >
-          <option value="active">Active (Serving & Waiting)</option>
-          <option value="in_progress">Serving Now</option>
-          <option value="pending">Pending</option>
-          <option value="waiting">Waiting</option>
-          <option value="completed">Completed</option>
-          <option value="no_show">No Show</option>
-          <option value="cancelled">Cancelled</option>
-          <option value="all">All Statuses</option>
-        </select>
+          onChange={val => onChange({ ...filters, status: val })}
+          options={[
+            { value: 'active', label: 'Active (Serving & Waiting)' },
+            { value: 'in_progress', label: 'Serving Now' },
+            { value: 'waiting', label: 'Waiting' },
+            { value: 'completed', label: 'Completed' },
+          ]}
+        />
       </div>
 
       {/* Priority Dropdown */}
       <div className="flex-1 min-w-37.5">
-        <select
+        <CustomDropdown
           value={filters.priority}
-          onChange={e => onChange({ ...filters, priority: e.target.value })}
-          className="w-full px-4 py-2 rounded-full border border-border bg-white text-[12.5px] text-text-main font-semibold outline-none cursor-pointer font-sans hover:border-maroon-border focus:border-maroon focus:ring-2 focus:ring-maroon/20 transition-all shadow-sm appearance-none bg-[url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2214%22%20height%3D%2214%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%2357534E%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpolyline%20points%3D%226%209%2012%2015%2018%209%22%3E%3C%2Fpolyline%3E%3C%2Fsvg%3E')] bg-no-repeat bg-position-[calc(100%-12px)_center]"
-        >
-          <option value="all">All Priorities</option>
-          <option value="high">High Priority</option>
-          <option value="regular">Regular Priority</option>
-        </select>
+          onChange={val => onChange({ ...filters, priority: val })}
+          options={[
+            { value: 'all', label: 'All Priorities' },
+            { value: 'high', label: 'High Priority' },
+            { value: 'regular', label: 'Regular Priority' },
+          ]}
+        />
       </div>
 
       {/* Transaction Type Dropdown */}
-      <div className="flex-1 min-w-37.5">
-        <select
+      <div className="flex-1 min-w-40">
+        <CustomDropdown
           value={filters.transactionType}
-          onChange={e => onChange({ ...filters, transactionType: e.target.value })}
-          className="w-full px-4 py-2 rounded-full border border-border bg-white text-[12.5px] text-text-main font-semibold outline-none cursor-pointer font-sans hover:border-maroon-border focus:border-maroon focus:ring-2 focus:ring-maroon/20 transition-all shadow-sm appearance-none bg-[url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2214%22%20height%3D%2214%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%2357534E%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpolyline%20points%3D%226%209%2012%2015%2018%209%22%3E%3C%2Fpolyline%3E%3C%2Fsvg%3E')] bg-no-repeat bg-position-[calc(100%-12px)_center]"
-        >
-          <option value="all">All Transactions</option>
-          <option value="TOR">Transcript of Records</option>
-          <option value="COE">Certificate of Enrollment</option>
-          <option value="Diploma">Diploma Release</option>
-          <option value="GWA">General Weighted Average</option>
-          <option value="Completion Form">Completion Form</option>
-        </select>
+          onChange={val => onChange({ ...filters, transactionType: val })}
+          options={[
+            { value: 'all', label: 'All Transactions' },
+            ...availableTxTypes.map(t => ({ value: t, label: t }))
+          ]}
+        />
       </div>
 
       <button onClick={onReset} className="px-5 py-2 rounded-full border border-border bg-off-white text-text-main text-[12.5px] font-bold cursor-pointer font-sans hover:bg-white hover:border-maroon-border hover:text-maroon hover:shadow-sm transition-all whitespace-nowrap">
@@ -139,6 +173,7 @@ export default function LiveQueuePage() {
   const [viewingTicketId, setViewingTicketId] = useState(null)
   const [completedPage, setCompletedPage] = useState(1)
   const [toastMsg, setToastMsg] = useState(null)
+  const [availableTxTypes, setAvailableTxTypes] = useState([])
 
   const [queueStats, setQueueStats] = useState({ avg_wait_minutes: 0, peak_forecast: 'No Data' })
 
@@ -147,14 +182,11 @@ export default function LiveQueuePage() {
     setTimeout(() => setToastMsg(null), 4000)
   }
 
-  const availableTxTypes = useMemo(() => {
-    const types = new Set()
-    queue.forEach(q => {
-      const name = q.ticket.appointments?.transaction_types?.name
-      if (name) types.add(name)
-    })
-    return Array.from(types).sort()
-  }, [queue])
+  useEffect(() => {
+    getTransactionTypes()
+      .then(data => setAvailableTxTypes(data.map(t => t.name)))
+      .catch(console.error)
+  }, [])
 
   // Clock tick
   useEffect(() => {
@@ -214,6 +246,7 @@ export default function LiveQueuePage() {
       await fetchQueue()
     } catch (e) {
       setError(e.message)
+      throw e
     }
   }
 
@@ -395,7 +428,7 @@ export default function LiveQueuePage() {
                         : 'border-blue-border bg-blue-light text-blue hover:bg-blue hover:text-white'}
                     `}
                   >
-                    {confirming === ticket.id ? '...' : 'Call'}
+                    {confirming === ticket.id ? '...' : 'Call Ticket'}
                   </button>
                   <button
                     onClick={() => setViewingTicketId(ticket.id)}
@@ -471,6 +504,7 @@ export default function LiveQueuePage() {
         filters={filters}
         onChange={setFilters}
         onReset={() => setFilters({ status: 'active', priority: 'all', transactionType: 'all' })}
+        availableTxTypes={availableTxTypes}
       />
 
       {error && (
@@ -657,11 +691,14 @@ export default function LiveQueuePage() {
 
       {/* ── Toast Notification ── */}
       {toastMsg && (
-        <div className="fixed top-8 left-1/2 -translate-x-1/2 bg-success text-white px-6 py-3.5 rounded-full shadow-[0_8px_30px_rgba(34,197,94,0.4)] border border-green-500 z-2000 animate-fade-down font-sans text-[14.5px] font-bold flex items-center gap-3 whitespace-nowrap">
-          <div className="bg-white text-success rounded-full p-0.5">
-            <Check size={14} strokeWidth={4} />
+        <div className="fixed bottom-10 right-8 z-9999 flex items-center gap-3 px-5 py-3.5 rounded-xl shadow-[0_12px_32px_rgba(0,0,0,0.18)] border border-[#005200] bg-[#006600] text-white text-[13.5px] font-bold animate-fade-up">
+          <div className="w-5 h-5 rounded-full bg-white/20 flex items-center justify-center shrink-0">
+            <Check size={13} className="text-white stroke-3" />
           </div>
-          {toastMsg}
+          <span className="text-white">{toastMsg}</span>
+          <button onClick={() => setToastMsg(null)} className="ml-2.5 bg-transparent border-none text-white/80 hover:text-white cursor-pointer p-0 flex items-center shrink-0 transition-opacity">
+            <X size={14} strokeWidth={2.5} />
+          </button>
         </div>
       )}
 

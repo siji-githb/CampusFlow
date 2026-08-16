@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/useAuth'
 import campusFlowLogo from '../../assets/logo.png'
-import AdminLiveQueuePage from './AdminLiveQueuePage'
+import AdminQueueMonitoringPage from './AdminQueueMonitoringPage'
 import AdminAppointmentsPage from './AdminAppointmentsPage'
 import AdminAnalyticsPage from './AdminAnalyticsPage'
 import AdminRegistrarRecordsPage from './AdminRegistrarRecordsPage'
@@ -10,7 +10,7 @@ import AdminUserManagementPage from './AdminUserManagementPage'
 import AdminOfficeConfigPage from './AdminOfficeConfigPage'
 import AdminAuditLogPage from './AdminAuditLogPage'
 import AdminDocumentsPage from './AdminDocumentsPage'
-import StudentRecordsPage from '../staff/StudentRecordsPage'
+import MasterListPage from '../staff/MasterListPage'
 import { Calendar, Ticket, Clock, Bot, Search, Shield, BarChart2, LineChart as LineChartIcon, FolderOpen, Users, Settings, MessageSquare, Bell, LogOut, LayoutDashboard, CheckSquare, ChevronLeft, ChevronRight, ClipboardList, FileText } from 'lucide-react'
 import {
   getDashboardStats, getReports
@@ -256,7 +256,7 @@ function OverviewTab() {
     {
       label: 'Active Queue',
       value: loading || !stats ? null : stats?.active_queue || 0,
-      sub: loading || !stats ? '—' : 'Currently in progress',
+      sub: loading || !stats ? '—' : 'Currently in line',
       subColorClass: 'text-text-muted',
       icon: <Ticket size={20} />,
       colorClass: 'text-gold',
@@ -498,7 +498,7 @@ export default function AdminDashboard() {
       items: [
         { id: 'overview', icon: <LayoutDashboard size={18} />, label: 'Dashboard' },
         { id: 'reports', icon: <BarChart2 size={18} />, label: 'Analytics' },
-        { id: 'queue', icon: <Ticket size={18} />, label: 'Live Queue' },
+        { id: 'queue', icon: <Ticket size={18} />, label: 'Live Queue & Releases' },
         { id: 'appts', icon: <Calendar size={18} />, label: 'Appointments' },
       ]
     },
@@ -559,10 +559,12 @@ export default function AdminDashboard() {
 
         {/* Top Bar */}
         <header className="bg-white border-b border-border px-8 h-15 flex items-center justify-between sticky top-0 z-40 shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
-          <AdminGlobalSearch setActiveNav={setActiveNav} />
+          <div></div>
 
           {/* Right controls */}
-          <div className="flex items-center gap-2.5">
+          <div className="flex items-center gap-3">
+            <AdminGlobalSearch setActiveNav={setActiveNav} />
+
             {/* Bell */}
             <NotificationDropdown />
 
@@ -631,10 +633,10 @@ export default function AdminDashboard() {
           {activeNav === 'config' && <AdminOfficeConfigPage />}
           {activeNav === 'users' && <AdminUserManagementPage />}
           {activeNav === 'audit' && <AdminAuditLogPage />}
-          {activeNav === 'queue' && <AdminLiveQueuePage />}
+          {(activeNav === 'queue' || activeNav === 'releases') && <AdminQueueMonitoringPage />}
           {activeNav === 'appts' && <AdminAppointmentsPage />}
           {activeNav === 'records' && <AdminRegistrarRecordsPage />}
-          {activeNav === 'student_records' && <StudentRecordsPage />}
+          {activeNav === 'student_records' && <MasterListPage />}
         </main>
       </div>
     </div>

@@ -5,7 +5,7 @@ import campusFlowLogo from '../../assets/logo.png'
 import LiveQueuePage from './LiveQueuePage'
 import MessagesPage from './MessagesPage'
 import AppointmentsPage from './AppointmentsPage'
-import StudentRecordsPage from './StudentRecordsPage'
+import MasterListPage from './MasterListPage'
 import IdRequestsPage from './IdRequestsPage'
 import StaffGlobalSearch from '../../components/StaffGlobalSearch'
 import StaffProfilePage from './StaffProfilePage'
@@ -292,7 +292,7 @@ export default function StaffDashboard() {
   const stats = [
     { icon: <Users size={20} />, value: activeInQueue.toString(), label: 'Active in Queue', sub: "Waiting students", colorClass: 'text-maroon', bgClass: 'bg-maroon-light', loading: loadingQueue, delay: '0.1s' },
     { icon: <CheckSquare size={20} />, value: completedToday.toString(), label: 'Completed Today', sub: "Fully serviced", colorClass: 'text-gold', bgClass: 'bg-gold-light', loading: loadingQueue, delay: '0.2s' },
-    { icon: <Clock size={20} />, value: `${avgWait}m`, label: 'Avg. Process Time', sub: avgWait > 15 ? "High wait times" : "Processing efficiently", subColorClass: avgWait > 15 ? "text-danger" : "text-text-muted", colorClass: 'text-maroon', bgClass: 'bg-maroon-light', loading: loadingQueue, delay: '0.3s' },
+    { icon: <Clock size={20} />, value: `${avgWait}m`, label: 'Avg. Serving Time', sub: avgWait > 15 ? "High wait times" : "Serving efficiently", subColorClass: avgWait > 15 ? "text-danger" : "text-text-muted", colorClass: 'text-maroon', bgClass: 'bg-maroon-light', loading: loadingQueue, delay: '0.3s' },
     { icon: <CalendarClock size={20} />, value: pendingAppts.toString(), label: 'Today\'s Appts.', sub: "Scheduled today", colorClass: 'text-gold', bgClass: 'bg-gold-light', loading: loadingQueue, delay: '0.4s' },
   ]
 
@@ -633,52 +633,13 @@ export default function StaffDashboard() {
                         </div>
                       ) : (
                         <div className="flex flex-col gap-2">
-                          {priorityData.slice(0, 3).map(req => (
+                          {priorityData.slice(0, 5).map(req => (
                             <div key={req.id} className="bg-white rounded-xl border border-maroon-border px-3.5 py-3 shadow-sm cursor-pointer hover:bg-maroon-light/20 transition-colors" onClick={() => setActiveNav('priority-requests')}>
                               <div className="flex items-center justify-between mb-1">
                                 <span className="text-[13px] font-bold text-text-main">{req.users?.first_name} {req.users?.last_name}</span>
                                 <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-danger-light text-danger border border-danger-border">{req.priority_type?.toUpperCase()}</span>
                               </div>
                               <div className="text-[11px] text-text-sub font-mono">{req.users?.student_id}</div>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* ID Request Panel */}
-                  <div className="animate-fade-up flex-1 bg-white rounded-2xl p-6 border border-border shadow-[0_1px_4px_rgba(0,0,0,0.04)] flex flex-col" style={{ animationDelay: '0.7s' }}>
-                    <div className="flex items-center justify-between mb-4">
-                      <div>
-                        <p className="text-[11px] font-bold text-gold tracking-widest uppercase m-0 mb-1">Pending</p>
-                        <h2 className="font-serif text-[18px] font-bold text-text-main m-0 flex items-center gap-2">
-                          ID Requests
-                          {badgeStats.idRequests > 0 && (
-                            <span className="bg-maroon text-white text-[10px] font-bold px-2 py-0.5 rounded-full font-sans shadow-sm">{badgeStats.idRequests}</span>
-                          )}
-                        </h2>
-                      </div>
-                      <button onClick={() => setActiveNav('id-requests')} className="px-3.5 py-1.5 rounded-lg border border-border bg-off-white text-text-sub text-xs font-semibold cursor-pointer font-sans hover:bg-surface hover:text-text-main hover:border-maroon/30 transition-all shadow-sm flex items-center gap-1">
-                        View All
-                      </button>
-                    </div>
-                    <div className="flex-1 overflow-auto">
-                      {idRequestsData.length === 0 ? (
-                        <div className="flex flex-col items-center justify-center py-6 text-text-muted">
-                          <div className="w-12 h-12 rounded-xl bg-surface flex items-center justify-center mb-3 border border-border">
-                            <IdCard size={20} className="text-text-muted/60" />
-                          </div>
-                          <span className="text-[12.5px] font-medium">No ID requests</span>
-                        </div>
-                      ) : (
-                        <div className="flex flex-col gap-2">
-                          {idRequestsData.slice(0, 3).map(req => (
-                            <div key={req.id} className="bg-white rounded-xl border border-border px-3.5 py-3 shadow-sm cursor-pointer hover:bg-surface/50 transition-colors" onClick={() => setActiveNav('id-requests')}>
-                              <div className="flex items-center justify-between mb-1">
-                                <span className="text-[13px] font-bold text-text-main">{req.first_name} {req.last_name}</span>
-                              </div>
-                              <div className="text-[11px] text-text-sub font-mono">{req.email}</div>
                             </div>
                           ))}
                         </div>
@@ -712,7 +673,7 @@ export default function StaffDashboard() {
 
           {/* ──── MASTER LIST VIEW ──── */}
           {activeNav === 'records' && (
-            <StudentRecordsPage />
+            <MasterListPage />
           )}
 
           {/* ──── PRIORITY REQUESTS VIEW ──── */}

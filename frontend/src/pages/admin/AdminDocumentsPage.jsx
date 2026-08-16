@@ -7,7 +7,7 @@ import {
   deleteTransactionType
 } from '../../services/adminService';
 import {
-  FileText, Plus, Edit2, Trash2, X, Check, Search, Save, AlertCircle, Settings, Eye, Loader2, List
+  FileText, Plus, Edit2, Trash2, X, Check, Search, Save, AlertCircle, Settings, Eye, Loader2, List, CheckCircle2, AlertTriangle
 } from 'lucide-react';
 
 export default function AdminDocumentsPage() {
@@ -16,6 +16,12 @@ export default function AdminDocumentsPage() {
   const [loading, setLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+  const [toastMsg, setToastMsg] = useState(null);
+
+  const showToast = (msg, type = 'success') => {
+    setToastMsg({ text: typeof msg === 'string' ? msg : JSON.stringify(msg), type });
+    setTimeout(() => setToastMsg(null), 3500);
+  };
 
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -78,6 +84,10 @@ export default function AdminDocumentsPage() {
     setIsViewMode(mode === 'view');
     if (tx) {
       setEditingId(tx.id);
+      const rawSteps = tx.processing_steps || tx.config?.processing_steps || [];
+      const normalizedSteps = rawSteps.map(s => 
+        typeof s === 'string' ? { name: s, requires_presence: false } : { name: s.name || '', requires_presence: !!s.requires_presence }
+      );
       setFormData({
         name: tx.name,
         description: tx.clean_description,
@@ -85,8 +95,8 @@ export default function AdminDocumentsPage() {
         requires_year_level: tx.config?.requires_year_level || false,
         requires_school_year: tx.config?.requires_school_year || false,
         requires_purpose: tx.config?.requires_purpose || false,
-        required_documents: tx.config?.required_documents || tx.required_documents || [],
-        processing_steps: tx.config?.processing_steps || tx.processing_steps || []
+        required_documents: tx.required_documents || tx.config?.required_documents || [],
+        processing_steps: normalizedSteps
       });
     } else {
       setEditingId(null);
@@ -108,6 +118,10 @@ export default function AdminDocumentsPage() {
     if (editingId) {
       const tx = transactions.find(t => t.id === editingId);
       if (tx) {
+        const rawSteps = tx.processing_steps || tx.config?.processing_steps || [];
+        const normalizedSteps = rawSteps.map(s => 
+          typeof s === 'string' ? { name: s, requires_presence: false } : { name: s.name || '', requires_presence: !!s.requires_presence }
+        );
         setFormData({
           name: tx.name,
           description: tx.clean_description,
@@ -115,8 +129,8 @@ export default function AdminDocumentsPage() {
           requires_year_level: tx.config?.requires_year_level || false,
           requires_school_year: tx.config?.requires_school_year || false,
           requires_purpose: tx.config?.requires_purpose || false,
-          required_documents: tx.config?.required_documents || tx.required_documents || [],
-          processing_steps: tx.config?.processing_steps || tx.processing_steps || []
+          required_documents: tx.required_documents || tx.config?.required_documents || [],
+          processing_steps: normalizedSteps
         });
       }
       setIsViewMode(true);
@@ -128,19 +142,21 @@ export default function AdminDocumentsPage() {
   };
 
   const handleSave = async () => {
-    if (!formData.name) return alert('Name is required');
-    if (!formData.processing_steps || formData.processing_steps.length === 0) return alert('At least one processing step is required.');
+    if (!formData.name) return showToast('Name is required', 'error');
+    if (!formData.processing_steps || formData.processing_steps.length === 0) return showToast('At least one processing step is required.', 'error');
     setIsSaving(true);
     try {
       if (editingId) {
         await updateTransactionType(token, editingId, formData);
+        showToast('Document type updated successfully!');
       } else {
         await createTransactionType(token, formData);
+        showToast('Document type created successfully!');
       }
       setIsModalOpen(false);
       fetchTransactions();
     } catch (err) {
-      alert(err.message);
+      showToast(err.message || 'Failed to save document type', 'error');
     } finally {
       setIsSaving(false);
     }
@@ -159,8 +175,9 @@ export default function AdminDocumentsPage() {
       setDeleteModalOpen(false);
       setDeletingId(null);
       fetchTransactions();
+      showToast('Document type deleted successfully!');
     } catch (err) {
-      alert(err.message);
+      showToast(err.message || 'Failed to delete document type', 'error');
     } finally {
       setIsDeleting(false);
     }
@@ -173,6 +190,27 @@ export default function AdminDocumentsPage() {
 
   return (
     <>
+      {/* ── Toast Notification ── */}
+      {toastMsg && (
+        <div className={`fixed bottom-10 right-8 z-9999 flex items-center gap-3 px-5 py-3.5 rounded-xl shadow-[0_12px_32px_rgba(0,0,0,0.18)] border text-[13.5px] font-bold animate-fade-up ${
+          toastMsg.type === 'error' 
+            ? 'bg-red-600 text-white border-red-700' 
+            : 'bg-[#006600] text-white border-[#005200]'
+        }`}>
+          {toastMsg.type === 'error' ? (
+            <AlertTriangle size={17} className="shrink-0 text-white" />
+          ) : (
+            <div className="w-5 h-5 rounded-full bg-white/20 flex items-center justify-center shrink-0">
+              <Check size={13} className="text-white stroke-3" />
+            </div>
+          )}
+          <span className="text-white">{toastMsg.text}</span>
+          <button onClick={() => setToastMsg(null)} className="ml-2.5 bg-transparent border-none text-white/80 hover:text-white cursor-pointer p-0 flex items-center shrink-0 transition-opacity">
+            <X size={14} strokeWidth={2.5} />
+          </button>
+        </div>
+      )}
+
       <div className="max-w-6xl mx-auto h-full overflow-y-auto pb-10 pr-2 custom-scrollbar">
         <div className="mb-8">
           <div className="text-[11px] font-bold text-gold uppercase tracking-[0.06em] mb-2">SYSTEM CONFIGURATION</div>
@@ -263,26 +301,26 @@ export default function AdminDocumentsPage() {
                   </div>
                 )}
 
-                {((tx.config?.required_documents || tx.required_documents || []).length > 0 || (tx.config?.processing_steps || tx.processing_steps || []).length > 0) && (
+                {((tx.required_documents || tx.config?.required_documents || []).length > 0 || (tx.processing_steps || tx.config?.processing_steps || []).length > 0) && (
                   <div className="flex flex-col gap-4 mb-2 p-4 bg-off-white/50 rounded-xl border border-border/50 mt-auto">
-                    {((tx.config?.required_documents || tx.required_documents || []).length > 0) && (
+                    {((tx.required_documents || tx.config?.required_documents || []).length > 0) && (
                       <div>
                         <span className="text-[11px] font-bold text-text-muted uppercase tracking-wider mb-2 block">Requirements</span>
                         <ul className="m-0 p-0 pl-4 list-disc text-[13px] text-text-sub space-y-1">
-                          {(tx.config?.required_documents || tx.required_documents).map((doc, i) => (
+                          {(tx.required_documents || tx.config?.required_documents || []).map((doc, i) => (
                             <li key={i} className="pl-1 marker:text-maroon/40">{doc}</li>
                           ))}
                         </ul>
                       </div>
                     )}
-                    {((tx.config?.processing_steps || tx.processing_steps || []).length > 0) && (
+                    {((tx.processing_steps || tx.config?.processing_steps || []).length > 0) && (
                       <div>
                         <span className="text-[11px] font-bold text-text-muted uppercase tracking-wider mb-2 block">Processing Steps</span>
                         <div className="flex flex-col gap-2">
-                          {(tx.config?.processing_steps || tx.processing_steps).map((step, i) => (
+                          {(tx.processing_steps || tx.config?.processing_steps || []).map((step, i) => (
                             <div key={i} className="flex items-start gap-2 text-[13px] text-text-sub">
                               <span className="shrink-0 w-4 h-4 rounded-full bg-maroon/10 text-maroon flex items-center justify-center text-[10px] font-bold mt-0.5">{i + 1}</span>
-                              <span className="leading-tight">{step.name} {step.requires_presence && <span className="text-[10px] text-gold font-bold ml-1">(Requires Presence)</span>}</span>
+                              <span className="leading-tight">{typeof step === 'object' ? step.name : step} {((typeof step === 'object' && step.requires_presence) || false) && <span className="text-[10px] text-gold font-bold ml-1">(Requires Presence)</span>}</span>
                             </div>
                           ))}
                         </div>
@@ -353,22 +391,24 @@ export default function AdminDocumentsPage() {
                       <AlertCircle size={14} className="text-maroon"/>
                       Required Student Information
                     </label>
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className="flex flex-col gap-2.5">
                       {[
                         { id: 'requires_semester', label: 'Semester' },
                         { id: 'requires_year_level', label: 'Year Level' },
                         { id: 'requires_school_year', label: 'School Year' },
                         { id: 'requires_purpose', label: 'Purpose of Request' }
                       ].filter(field => !isViewMode || formData[field.id]).map(field => (
-                        <label key={field.id} className={`flex items-center gap-2 p-3 rounded-xl transition-all duration-200 border ${formData[field.id] ? 'bg-maroon-light border-maroon/20' : 'bg-white border-border hover:border-maroon/30'} ${isViewMode ? 'opacity-80' : 'cursor-pointer'}`}>
-                          <div className={`w-5 h-5 rounded-md flex items-center justify-center border transition-all duration-200 ${formData[field.id] ? 'bg-maroon border-maroon text-white shadow-[0_2px_4px_rgba(123,26,42,0.2)]' : 'bg-off-white border-border text-transparent'}`}>
-                            <Check size={14} strokeWidth={3} />
+                        <label key={field.id} className={`flex items-center gap-3 p-3 px-4 rounded-xl transition-all duration-200 border ${formData[field.id] ? 'bg-maroon-light/60 border-maroon/25 shadow-xs' : 'bg-white border-border hover:border-maroon/30 hover:bg-off-white/40'} ${isViewMode ? 'opacity-80' : 'cursor-pointer'}`}>
+                          <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all duration-200 shrink-0 ${formData[field.id] ? 'border-maroon bg-white shadow-xs' : 'border-border-strong/60 bg-white'}`}>
+                            {formData[field.id] && (
+                              <div className="w-2.5 h-2.5 rounded-full bg-maroon animate-scale-up" />
+                            )}
                           </div>
                           <span className="text-sm font-medium text-text-main select-none">{field.label}</span>
                           <input 
                             type="checkbox" 
                             className="hidden"
-                            checked={formData[field.id]}
+                            checked={!!formData[field.id]}
                             disabled={isViewMode}
                             onChange={e => setFormData({...formData, [field.id]: e.target.checked})}
                           />
@@ -388,7 +428,7 @@ export default function AdminDocumentsPage() {
                       <div className="mb-5 bg-off-white p-4 rounded-xl border border-border/60">
                         <span className="text-[12px] font-semibold text-text-sub mb-3 block">Select a standard requirement to add:</span>
                         <div className="flex flex-wrap gap-2 mb-3">
-                          {["Official Receipt", "Student ID", "Clearance", "Request Form", "Other"].map(doc => (
+                          {["Official Receipt of Payment", "Clearance", "Request Form", "Other"].map(doc => (
                             <button
                               key={doc}
                               type="button"
@@ -557,13 +597,15 @@ export default function AdminDocumentsPage() {
                               </div>
                               {(!isViewMode || step.requires_presence) && (
                                 <label className={`flex items-center gap-2 mt-2 ${isViewMode ? 'opacity-80 cursor-default' : 'cursor-pointer hover:bg-off-white/50 p-1.5 -ml-1.5 rounded-lg'} self-start select-none transition-colors w-fit`}>
-                                  <div className={`w-4 h-4 rounded-sm flex items-center justify-center border transition-all duration-200 ${step.requires_presence ? 'bg-maroon border-maroon text-white' : 'bg-white border-border text-transparent'}`}>
-                                    <Check size={12} strokeWidth={3} />
+                                  <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center transition-all duration-200 shrink-0 ${step.requires_presence ? 'border-maroon bg-white' : 'border-border-strong/60 bg-white'}`}>
+                                    {step.requires_presence && (
+                                      <div className="w-2 h-2 rounded-full bg-maroon" />
+                                    )}
                                   </div>
                                   <input 
                                     type="checkbox" 
                                     className="hidden"
-                                    checked={step.requires_presence}
+                                    checked={!!step.requires_presence}
                                     disabled={isViewMode}
                                     onChange={e => {
                                       const newSteps = [...formData.processing_steps];

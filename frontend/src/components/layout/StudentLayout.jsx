@@ -673,15 +673,19 @@ export default function StudentLayout({ children, activeTab, mobileTitle, backTo
               <img src={campusFlowLogo} alt="CampusFlow Logo" className="w-8 h-8 rounded-full bg-white object-contain border border-slate-200 shadow-sm" />
             )}
             <div>
-              <div className="font-serif text-[15px] font-bold text-maroon">{mobileTitle || 'CampusFlow'}</div>
+              <div className="font-serif text-[13.5px] font-bold text-maroon">{mobileTitle || 'CampusFlow'}</div>
               {!mobileTitle && (
-                <div className="text-[10px] text-text-muted tracking-[0.04em] uppercase font-semibold mt-0.5">Student Portal</div>
+                <div className="text-[8.5px] text-text-muted tracking-[0.06em] uppercase font-bold mt-0.5">Student Portal</div>
               )}
             </div>
           </div>
           <div className="flex items-center gap-3">
-            <GlobalSearch isMobile={true} onAiPrompt={handleAiPrompt} />
-            <NotificationDropdown isMobile={true} mobileRoute="/student/notifications" />
+            {location.pathname === '/student/dashboard' && (
+              <>
+                <GlobalSearch isMobile={true} onAiPrompt={handleAiPrompt} />
+                <NotificationDropdown isMobile={true} mobileRoute="/student/notifications" />
+              </>
+            )}
             <ProfileDropdown />
           </div>
         </header>

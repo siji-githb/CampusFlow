@@ -435,18 +435,20 @@ def get_ai_insights():
     trend = compute_volume_trend(admin)
 
     # ── AI summary call ───────────────────────────────────────────────────────
-    # Build context string from predictive data
-    trend_str = "N/A"
+    # Build context string from predictive data with clear, rounded metrics
+    trend_str = "Stable (no major change in recent weeks)"
     if not trend.get("insufficient_data"):
-        trend_str = f"{trend['direction']} by {abs(trend.get('percent_change', 0))}% ({trend.get('recent_count', 0)} recent vs {trend.get('prior_count', 0)} prior 14 days)"
+        pct = round(abs(trend.get('percent_change', 0)))
+        direction_word = "up" if trend.get('direction') == 'up' else ("down" if trend.get('direction') == 'down' else "steady")
+        trend_str = f"Student requests are {direction_word} by {pct}% ({trend.get('recent_count', 0)} requests in the last 2 weeks vs {trend.get('prior_count', 0)} in the previous 2 weeks)"
         if trend.get("driving_type"):
-            trend_str += f", driven by {trend['driving_type']}"
+            trend_str += f", mostly for {trend['driving_type']}"
 
-    forecast_str = "N/A (not enough data)"
+    forecast_str = "Not enough data yet"
     if not forecast.get("insufficient_data"):
-        forecast_str = f"{forecast.get('predicted_count', 0)} appointments expected on {forecast.get('weekday', 'tomorrow')}"
+        forecast_str = f"Around {forecast.get('predicted_count', 0)} students are expected on {forecast.get('weekday', 'tomorrow')}"
         if forecast.get("top_transaction_type"):
-            forecast_str += f", top type: {forecast['top_transaction_type']}"
+            forecast_str += f", mostly requesting {forecast['top_transaction_type']}"
 
     try:
         from openai import OpenAI
@@ -456,38 +458,47 @@ def get_ai_insights():
         )
         resp = client.chat.completions.create(
             model=settings.openai_model,
-            max_tokens=200,
-            temperature=0.7,
+            max_tokens=180,
+            temperature=0.5,
             messages=[{
                 "role": "user",
                 "content": (
-                    f"You are an assistant for the Registrar's Office admin at Cebu Roosevelt Memorial Colleges.\n"
-                    f"Here is today's predictive intelligence data:\n"
-                    f"- Peak Hour: {peak_hour}\n"
-                    f"- Busiest Document: {busiest_document}\n"
-                    f"- Served Today: {completed} out of {total} total appointments\n"
-                    f"- Tomorrow's Forecast: {forecast_str}\n"
-                    f"- 14-Day Trend: {trend_str}\n\n"
-                    f"Write a 2-3 sentence actionable insight for the admin based on the predictive intelligence above. "
-                    f"Focus on trends, forecasts, and staffing recommendations. "
-                    f"Be direct, factual, and forward-looking. No bullet points. No greetings."
+                    f"You are a helpful assistant for the Registrar's Office at Cebu Roosevelt Memorial Colleges.\n"
+                    f"Here is the latest data:\n"
+                    f"- Peak Hour Today: {peak_hour}\n"
+                    f"- Most Requested Document: {busiest_document}\n"
+                    f"- Served Today: {completed} out of {total} appointments\n"
+                    f"- Expected Tomorrow: {forecast_str}\n"
+                    f"- 2-Week Trend: {trend_str}\n\n"
+                    f"Write a 2-sentence summary in simple, everyday, easy-to-understand English for school staff and admins:\n"
+                    f"1. First sentence: Clearly state what is happening with student visits or requests (use rounded percentages like 42% instead of 42.1%).\n"
+                    f"2. Second sentence: Give a simple, practical tip (like preparing document copies in advance or having extra staff ready at the counter).\n"
+                    f"RULES:\n"
+                    f"- Use simple, natural, conversational words. Avoid heavy corporate jargon, complex buzzwords, or overly formal phrases.\n"
+                    f"- Keep it short, direct, and helpful.\n"
+                    f"- Do not use bullet points, titles, or greetings."
                 )
             }]
         )
         insight = resp.choices[0].message.content.strip()
 
     except Exception:
-        # Plain fallback — never crashes the dashboard
+        # Plain fallback — easy to understand, never crashes
         if total == 0 and forecast.get("insufficient_data"):
-            insight = "No appointments recorded today and not enough historical data for forecasting. The system will generate predictive insights once more appointment data accumulates."
+            insight = "No appointments recorded today yet. As more students visit, the system will share helpful tips on busy hours and popular documents."
         elif total == 0:
-            insight = f"No appointments today. Tomorrow ({forecast.get('weekday', 'N/A')}) is forecasted at {forecast.get('predicted_count', 0)} appointments — plan staffing accordingly."
+            count = forecast.get('predicted_count', 0)
+            day = forecast.get('weekday', 'tomorrow')
+            insight = f"There are no appointments scheduled for today. About {count} student{'s are' if count != 1 else ' is'} expected on {day}, so please make sure the counter is ready."
         else:
-            parts = [f"Today processed {completed} of {total} appointment{'s' if total != 1 else ''}."]
+            parts = [f"We served {completed} out of {total} student{'s' if total != 1 else ''} today."]
             if not trend.get("insufficient_data"):
-                parts.append(f"The 14-day trend is {trend['direction']} by {abs(trend.get('percent_change', 0))}%.")
+                direction = "up" if trend['direction'] == 'up' else "down"
+                pct = round(abs(trend.get('percent_change', 0)))
+                driving = f", mostly for {trend['driving_type']}" if trend.get("driving_type") else ""
+                parts.append(f"Student requests are {direction} by {pct}% over the last two weeks{driving}.")
             if not forecast.get("insufficient_data"):
-                parts.append(f"Tomorrow expects ~{forecast.get('predicted_count', 0)} appointments.")
+                parts.append(f"Around {forecast.get('predicted_count', 0)} students are expected tomorrow.")
             insight = " ".join(parts)
 
     return {
@@ -671,6 +682,10 @@ def update_transaction_type(tt_id: str, data, actor_id: str):
                 except:
                     pass
                     
+            # Remove any stale redundant duplicate keys from config
+            config.pop("processing_steps", None)
+            config.pop("required_documents", None)
+
             if data.description is not None:
                 base_desc = data.description
             if data.requires_semester is not None:

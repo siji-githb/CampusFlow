@@ -1,25 +1,57 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { useAuth } from '../../context/useAuth'
 import { getReports, getAiInsights, getTransactionTypes } from '../../services/adminService'
 import { getDocumentColor } from '../../utils/colors'
-import { Printer, Download, Filter, RotateCcw, Sparkles, ChevronDown, AlertTriangle, BarChart2, Bot, FileDown, FileText, Clock, CheckCircle, Activity } from 'lucide-react'
+import { Download, RotateCcw, Sparkles, ChevronDown, AlertTriangle, BarChart2, Bot, FileText, Clock, CheckCircle, Activity, Award, XCircle, CheckCircle2, Layers, Loader2 } from 'lucide-react'
 import DonutChart from '../../components/DonutChart'
 
 const SERIES_COLORS = ['#7B1A2A', '#B8900A', '#1D4ED8', '#15803D', '#6D28D9', '#EA580C']
 
 // ── Filter Pill ────────────────────────────────────────────────────────────────
-const FilterSelect = ({ label, value, options, onChange, disabled }) => (
-  <div className={`flex items-center gap-2.5 mr-1.5 ${disabled ? 'opacity-40 pointer-events-none' : ''}`}>
-    <span className="text-[10px] font-extrabold text-text-muted uppercase tracking-[0.08em] pt-0.5 whitespace-nowrap">{label}</span>
-    <div className="relative group">
-      <select value={value} onChange={e => onChange(e.target.value)} disabled={disabled}
-        className="appearance-none py-2 pr-8 pl-3.5 rounded-xl border border-border bg-white shadow-[0_2px_8px_rgba(0,0,0,0.04)] text-[13px] font-bold text-text-main outline-none cursor-pointer font-sans min-w-32.5 transition-colors group-hover:border-text-muted/30 disabled:bg-gray-50 disabled:text-gray-400">
-        {options.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-      </select>
-      <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-text-muted transition-colors group-hover:text-text-main" />
+const FilterSelect = ({ label, value, options, onChange, disabled, widthClass = "min-w-32.5" }) => {
+  const [isOpen, setIsOpen] = useState(false)
+  const currentLabel = options.find(o => o.value === value)?.label || value
+
+  return (
+    <div className={`flex items-center gap-2.5 mr-1.5 ${disabled ? 'opacity-40 pointer-events-none' : ''}`}>
+      <span className="text-[10px] font-extrabold text-text-muted uppercase tracking-[0.08em] pt-0.5 whitespace-nowrap">{label}</span>
+      <div className="relative z-10 group">
+        <button
+          onClick={() => setIsOpen(!isOpen)}
+          disabled={disabled}
+          className={`appearance-none flex items-center justify-between py-2 pr-3.5 pl-3.5 rounded-xl border border-border bg-white shadow-[0_2px_8px_rgba(0,0,0,0.04)] text-[13px] font-bold text-text-main outline-none cursor-pointer font-sans ${widthClass} transition-colors hover:border-maroon/30 disabled:bg-gray-50 disabled:text-gray-400`}
+        >
+          <span className="pr-4 truncate text-left" style={{ maxWidth: '240px' }}>{currentLabel}</span>
+          <ChevronDown size={14} className={`text-text-muted transition-transform duration-200 shrink-0 ${isOpen ? 'rotate-180' : 'group-hover:text-text-main'}`} />
+        </button>
+        {isOpen && (
+          <>
+            <div className="fixed inset-0 z-40" onClick={() => setIsOpen(false)} />
+            <div className={`absolute left-0 top-full mt-2 bg-white rounded-xl border border-border shadow-lg p-2 z-50 ${widthClass === 'min-w-32.5' ? 'min-w-45' : 'min-w-full max-w-[320px]'} animate-fade-up max-h-75 overflow-y-auto`} style={{ animationDuration: '0.2s' }}>
+              {options.map(o => {
+                const isActive = value === o.value;
+                return (
+                  <div
+                    key={o.value}
+                    onClick={() => { onChange(o.value); setIsOpen(false); }}
+                    className={`p-2 rounded-lg cursor-pointer flex items-center justify-between transition-colors ${isActive ? 'bg-maroon/5 text-maroon' : 'text-text-main hover:bg-off-white'}`}
+                  >
+                    <div className="flex items-center gap-2.5">
+                       <div className={`w-3 h-3 rounded-full border flex items-center justify-center shrink-0 ${isActive ? 'border-maroon' : 'border-text-muted/40'}`}>
+                         {isActive && <div className="w-1.5 h-1.5 bg-maroon rounded-full" />}
+                       </div>
+                       <span className="text-[12px] font-semibold">{o.label}</span>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </>
+        )}
+      </div>
     </div>
-  </div>
-)
+  )
+}
 
 // ── Stacked Bar Chart (Premium) ────────────────────────────────────────────────
 function StackedBarChart({ bars, typeNames, colors, yAxisLabel }) {
@@ -521,6 +553,50 @@ export default function AdminAnalyticsPage() {
     }
   })
 
+  // ── Monthly Performance Summary & Donut Data ──
+  const performanceTotals = useMemo(() => {
+    return annualReports.reduce((acc, m) => {
+      const tot = typeof m.total === 'number' ? m.total : 0
+      const comp = typeof m.completed === 'number' ? m.completed : 0
+      const canc = typeof m.cancelled === 'number' ? m.cancelled : 0
+      const noSh = typeof m.no_show === 'number' ? m.no_show : 0
+      return {
+        total: acc.total + tot,
+        completed: acc.completed + comp,
+        cancelled: acc.cancelled + canc,
+        noShow: acc.noShow + noSh
+      }
+    }, { total: 0, completed: 0, cancelled: 0, noShow: 0 })
+  }, [annualReports])
+
+  const completionPct = performanceTotals.total > 0
+    ? Math.round((performanceTotals.completed / performanceTotals.total) * 100)
+    : 0
+  const cancellationPct = performanceTotals.total > 0
+    ? Math.round((performanceTotals.cancelled / performanceTotals.total) * 100)
+    : 0
+  const noShowPct = performanceTotals.total > 0
+    ? Math.round((performanceTotals.noShow / performanceTotals.total) * 100)
+    : 0
+
+  const statusDonutData = useMemo(() => {
+    return [
+      { name: 'Completed', count: performanceTotals.completed },
+      { name: 'Cancelled', count: performanceTotals.cancelled },
+      { name: 'No Show', count: performanceTotals.noShow },
+    ]
+  }, [performanceTotals])
+
+  const statusDonutColors = ['#15803D', '#DC2626', '#B8900A']
+
+  // Best month with most completed transactions
+  const bestMonth = useMemo(() => {
+    if (!annualReports.length) return null
+    const valid = annualReports.filter(r => (r.completed || 0) > 0)
+    if (!valid.length) return null
+    return valid.reduce((best, cur) => (cur.completed || 0) > (best.completed || 0) ? cur : best, valid[0])
+  }, [annualReports])
+
   return (
     <div>
       {/* ── Page Header ── */}
@@ -552,10 +628,56 @@ export default function AdminAnalyticsPage() {
           </div>
           <button onClick={loadInsights} disabled={insightLoading}
             className={`py-2 px-4 rounded-xl border border-border bg-white shadow-sm text-text-main text-[12px] font-bold cursor-pointer font-sans transition-all ${insightLoading ? 'opacity-70 cursor-not-allowed' : 'opacity-100 hover:bg-surface hover:-translate-y-0.5'}`}>
-            {insightLoading ? 'Generating…' : <span className="flex items-center gap-1.5"><Sparkles size={14} className="text-maroon" /> Refresh AI</span>}
+            {insightLoading ? (
+              <span className="flex items-center gap-1.5"><Loader2 size={14} className="text-maroon animate-spin" /> Generating…</span>
+            ) : (
+              <span className="flex items-center gap-1.5"><Sparkles size={14} className="text-maroon" /> Refresh AI</span>
+            )}
           </button>
         </div>
-        {insights ? (
+
+        {insightLoading ? (
+          /* ── Dedicated AI Card Skeleton State ── */
+          <div className="animate-pulse flex flex-col gap-4">
+            {/* Paragraph lines skeleton */}
+            <div className="space-y-2 mb-3">
+              <div className="h-4 bg-border/70 rounded-md w-full" />
+              <div className="h-4 bg-border/70 rounded-md w-[88%]" />
+              <div className="h-4 bg-border/60 rounded-md w-[60%]" />
+            </div>
+
+            {/* Sub-header skeleton */}
+            <div className="h-3 bg-border/40 rounded w-36 mb-1 mt-1" />
+
+            {/* Row 1: 3 cards skeleton */}
+            <div className="grid grid-cols-3 gap-3 mb-1">
+              {[1, 2, 3].map(i => (
+                <div key={i} className="bg-white rounded-2xl p-4 border border-border shadow-sm flex flex-col justify-between">
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="w-7 h-7 rounded-lg bg-border/50" />
+                    <div className="h-3 bg-border/40 rounded w-20" />
+                  </div>
+                  <div className="h-7 bg-border/60 rounded w-24 mb-2" />
+                  <div className="h-3 bg-border/30 rounded w-32" />
+                </div>
+              ))}
+            </div>
+
+            {/* Row 2: 3 cards skeleton */}
+            <div className="grid grid-cols-3 gap-3 mb-1">
+              {[1, 2, 3].map(i => (
+                <div key={i} className="bg-white rounded-2xl p-4 border border-border shadow-sm flex flex-col justify-between">
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="w-7 h-7 rounded-lg bg-border/50" />
+                    <div className="h-3 bg-border/40 rounded w-28" />
+                  </div>
+                  <div className="h-7 bg-border/60 rounded w-20 mb-2" />
+                  <div className="h-3 bg-border/30 rounded w-36" />
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : insights ? (
           <>
             <p className="text-[15px] text-text-main font-medium leading-[1.65] m-0 mb-6">{insights.insight}</p>
             <div className="text-[10px] font-extrabold text-text-muted uppercase tracking-[0.08em] mb-3 mt-1">Predictive Intelligence</div>
@@ -661,7 +783,7 @@ export default function AdminAnalyticsPage() {
                       insights.trend?.direction === 'up' ? 'text-success' :
                       insights.trend?.direction === 'down' ? 'text-danger' : 'text-text-main'
                     }`}>
-                      {insights.trend?.direction === 'up' ? '↑' : insights.trend?.direction === 'down' ? '↓' : '→'} {Math.abs(insights.trend?.percent_change ?? 0)}%
+                      {insights.trend?.direction === 'up' ? '↑' : insights.trend?.direction === 'down' ? '↓' : '→'} {Math.round(Math.abs(insights.trend?.percent_change ?? 0))}%
                     </div>
                     <div className="text-[11px] text-text-sub font-medium">
                       {insights.trend?.recent_count} recent vs {insights.trend?.prior_count} prior
@@ -676,19 +798,19 @@ export default function AdminAnalyticsPage() {
                   <div className="w-7 h-7 rounded-lg bg-[#EDE9FE] flex items-center justify-center">
                     <Sparkles size={14} className="text-[#6D28D9]" />
                   </div>
-                  <span className="text-[10px] font-extrabold text-text-muted uppercase tracking-[0.08em]">Demand Document</span>
+                  <span className="text-[10px] font-extrabold text-text-muted uppercase tracking-[0.08em]">Most In-Demand</span>
                 </div>
                 {insights.trend?.driving_type ? (
                   <>
                     <div className="font-serif text-[18px] font-bold text-[#6D28D9] leading-tight mb-1 line-clamp-2">
                       {insights.trend.driving_type}
                     </div>
-                    <div className="text-[11px] text-text-sub font-medium">Top growth contributor</div>
+                    <div className="text-[11px] text-text-sub font-medium">Highest student demand lately</div>
                   </>
                 ) : (
                   <>
                     <div className="font-serif text-[26px] font-bold text-text-muted leading-none mb-1">—</div>
-                    <div className="text-[11px] text-text-sub font-medium">{insights.trend?.direction === 'down' ? 'Volume is declining' : 'No dominant driver detected'}</div>
+                    <div className="text-[11px] text-text-sub font-medium">{insights.trend?.direction === 'down' ? 'Volume is decreasing' : 'Demand is evenly spread'}</div>
                   </>
                 )}
               </div>
@@ -721,7 +843,7 @@ export default function AdminAnalyticsPage() {
           { value: '11', label: 'December' },
         ]} />
         <div className="w-px h-6 bg-border mx-1" />
-        <FilterSelect label="Document" value={docType} onChange={setDocType} options={[
+        <FilterSelect label="Document" value={docType} onChange={setDocType} widthClass="w-65" options={[
           { value: 'all', label: 'All Types' },
           ...transactionTypes.map(t => ({ value: t.name, label: t.name }))
         ]} />
@@ -874,113 +996,265 @@ export default function AdminAnalyticsPage() {
         </div>
       )}
 
-      {/* ── Monthly Performance Detail Table ── */}
+      {/* ── Monthly Performance & Fulfillment Section ── */}
       <div className="animate-fade-up bg-white rounded-2xl border border-border/80 shadow-[0_8px_30px_rgba(0,0,0,0.04)] mb-7 overflow-hidden" style={{ animationDelay: '0.7s' }}>
-        {/* Table header */}
-        <div className="flex items-center justify-between p-[24px_28px] bg-white border-b border-border/50">
+        
+        {/* Section Header */}
+        <div className="flex items-center justify-between p-6 sm:p-7 bg-white border-b border-border/60 flex-wrap gap-4">
           <div>
-            <p className="text-[10px] font-extrabold text-gold uppercase tracking-widest m-0 mb-2">Detail</p>
-            <h2 className="font-serif text-[22px] font-bold text-text-main m-0 flex items-center gap-3">
-              Monthly Performance
-              <span className="px-2.5 py-1 rounded-lg bg-off-white border border-border text-[11px] font-sans font-bold text-text-muted tracking-wider shadow-sm">
+            <p className="text-[10px] font-extrabold text-gold uppercase tracking-widest m-0 mb-1.5">ANNUAL METRICS</p>
+            <h2 className="font-serif text-[22px] font-bold text-maroon m-0 flex items-center gap-3">
+              Monthly Performance &amp; Fulfillment
+              <span className="px-2.5 py-1 rounded-lg bg-maroon-light border border-maroon-border text-[11px] font-sans font-bold text-maroon tracking-wider shadow-xs">
                 {new Date().getFullYear()}
               </span>
             </h2>
+            <p className="text-[12px] text-text-sub m-0 mt-1">
+              Annual breakdown of appointment outcomes, cancellation rates, and monthly fulfillment totals.
+            </p>
           </div>
-          <button onClick={() => exportCSV(tableRows, 'campusflow_monthly_report.csv')}
-            className="py-2.5 px-5 rounded-xl border border-border/80 bg-white shadow-sm text-text-main text-[13px] font-bold cursor-pointer font-sans flex items-center gap-2 hover:bg-surface hover:-translate-y-0.5 transition-all">
-            <FileDown size={16} /> Export CSV
+          <button 
+            onClick={() => exportCSV(tableRows, 'campusflow_monthly_performance.csv')}
+            className="py-2.5 px-4.5 rounded-xl border border-border bg-white shadow-xs text-text-main text-[12.5px] font-bold cursor-pointer font-sans flex items-center gap-2 hover:bg-surface hover:border-maroon/30 transition-all"
+          >
+            <Download size={15} className="text-text-muted" /> Export CSV
           </button>
         </div>
 
-        {/* Column headers */}
-        <div className="grid grid-cols-[140px_repeat(4,1fr)_160px] p-[16px_28px] bg-[#fafafa] border-b border-border/50">
-          {['Month', 'Total', 'Completed', 'Cancelled', 'No Show', 'Completion Rate'].map(h => (
-            <span key={h} className="text-[10px] font-extrabold text-text-muted uppercase tracking-widest">{h}</span>
-          ))}
-        </div>
-
-        {/* Rows */}
-        <div className="bg-white rounded-b-2xl overflow-hidden">
-        {loading ? (
-          <div>
-            {[1, 2, 3, 4].map((i) => (
-              <div key={i} className="grid grid-cols-[140px_repeat(4,1fr)_160px] p-[20px_28px] border-b border-border/50">
-                <div className="flex items-center gap-3">
-                  <div className="w-2 h-2 bg-border rounded-full animate-pulse" />
-                  <div className="animate-pulse h-4.5 w-[60%] bg-border rounded" />
+        {/* ── Performance Donut & Executive Summary ── */}
+        <div className="p-6 sm:p-7 bg-off-white/40 border-b border-border/60">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
+            
+            {/* Left: Outcome Donut Report */}
+            <div className="lg:col-span-5 bg-white p-6 rounded-2xl border border-border shadow-xs flex flex-col items-center justify-center">
+              <div className="w-full flex items-center justify-between mb-2">
+                <div>
+                  <span className="text-[10px] font-extrabold text-gold uppercase tracking-wider block">OUTCOME REPORT</span>
+                  <h3 className="font-serif text-[16px] font-bold text-text-main m-0">Appointment Status </h3>
                 </div>
-                {[1, 2, 3, 4, 5].map((j) => (
-                  <div key={j} className="animate-pulse h-4.5 w-[50%] bg-border rounded my-auto" />
-                ))}
+                <span className="text-[11px] font-bold text-text-muted bg-surface px-2.5 py-1 rounded-full border border-border/80">
+                  {performanceTotals.total} Total
+                </span>
               </div>
-            ))}
-          </div>
-        ) : tableRows.length === 0 ? (
-          <div className="p-[60px_24px] text-center text-text-muted font-medium">No monthly data available yet.</div>
-        ) : (
-          tableRows.map((row, i) => {
-            const compRate = parseInt(row['Completion Rate']) || 0
-            const barColor = compRate >= 90 ? 'bg-success' : compRate >= 70 ? 'bg-gold' : 'bg-danger'
-            const textColor = compRate >= 90 ? 'text-success' : compRate >= 70 ? 'text-gold' : 'text-danger'
-            return (
-              <div key={i} className={`group grid grid-cols-[140px_repeat(4,1fr)_160px] p-[20px_28px] items-center transition-all duration-300 hover:bg-[#fafafa] ${i < tableRows.length - 1 ? 'border-b border-border/50' : 'border-none'} bg-white`}>
-                <div className="flex items-center gap-3">
-                  <div className="w-2 h-2 rounded-full bg-border group-hover:bg-maroon transition-colors" />
-                  <span className="font-serif text-[15px] font-bold text-text-main group-hover:text-maroon transition-colors">{row.Period}</span>
+
+              {loading ? (
+                <div className="h-56 flex items-center justify-center">
+                  <div className="w-8 h-8 border-2 border-maroon border-t-transparent rounded-full animate-spin" />
                 </div>
-                <span className="text-[15px] font-bold text-text-main">{row.Total.toLocaleString()}</span>
-                <div className="flex items-center gap-2.5">
-                  <div className="w-1.5 h-1.5 rounded-full bg-success"></div>
-                  <span className="text-[14px] font-semibold text-text-sub">{row.Completed.toLocaleString()}</span>
+              ) : performanceTotals.total === 0 ? (
+                <div className="h-56 flex flex-col items-center justify-center text-text-muted text-sm text-center">
+                  <Layers size={32} className="opacity-30 mb-2" />
+                  No appointment records recorded this year yet
                 </div>
-                <div className="flex items-center gap-2.5">
-                  <div className="w-1.5 h-1.5 rounded-full bg-danger"></div>
-                  <span className="text-[14px] font-semibold text-text-sub">{row.Cancelled.toLocaleString()}</span>
-                </div>
-                <span className="text-[14px] font-medium text-text-sub pl-2">{row['No Show'].toLocaleString()}</span>
-                <div className="flex items-center gap-3">
-                  <div className="flex-1 h-2 bg-surface rounded-full overflow-hidden">
-                    <div className={`h-full rounded-full transition-all duration-1000 ${barColor}`} style={{ width: `${compRate}%` }} />
+              ) : (
+                <DonutChart
+                  data={statusDonutData}
+                  total={performanceTotals.total}
+                  colors={statusDonutColors}
+                  hideLegend={true}
+                />
+              )}
+
+              {/* Custom Status Legend Row */}
+              <div className="grid grid-cols-3 gap-2.5 w-full mt-4 pt-3 border-t border-border">
+                <div className="p-2 rounded-xl bg-success/5 border border-success/15 text-center">
+                  <div className="text-[10px] font-extrabold text-success uppercase tracking-wider flex items-center justify-center gap-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-success inline-block" /> Completed
                   </div>
-                  <span className={`text-[13px] font-bold min-w-9 ${textColor}`}>{row['Completion Rate']}</span>
+                  <div className="font-serif text-[15px] font-bold text-success mt-0.5">{performanceTotals.completed} <span className="text-[11px] font-sans text-text-muted">({completionPct}%)</span></div>
                 </div>
-              </div>
-            )
-          })
-        )}
-        </div>
 
-        {/* Summary footer */}
-        {!loading && tableRows.length > 0 && (() => {
-          const totals = tableRows.reduce((acc, r) => ({
-            total: acc.total + r.Total,
-            completed: acc.completed + r.Completed,
-            cancelled: acc.cancelled + r.Cancelled,
-            noShow: acc.noShow + r['No Show'],
-          }), { total: 0, completed: 0, cancelled: 0, noShow: 0 })
-          const overallRate = totals.total > 0 ? Math.round((totals.completed / totals.total) * 100) : 0
-          return (
-            <div className="grid grid-cols-[140px_repeat(4,1fr)_160px] p-[20px_28px] bg-maroon-light border-t border-maroon-border rounded-b-2xl items-center">
-              <div className="flex items-center gap-3">
-                <div className="w-2 h-2 rounded-full bg-maroon shadow-[0_0_8px_rgba(123,26,42,0.4)]" />
-                <span className="text-[11px] font-extrabold text-maroon uppercase tracking-widest pt-0.5">Annual Total</span>
-              </div>
-              <span className="font-serif text-[18px] font-bold text-maroon">{totals.total.toLocaleString()}</span>
-              <span className="font-serif text-[18px] font-bold text-success">{totals.completed.toLocaleString()}</span>
-              <span className="font-serif text-[18px] font-bold text-danger">{totals.cancelled.toLocaleString()}</span>
-              <span className="font-serif text-[18px] font-bold text-text-main pl-2">{totals.noShow.toLocaleString()}</span>
-              <div className="flex items-center gap-3">
-                <div className="flex-1 h-2 bg-maroon-border rounded-full overflow-hidden">
-                  <div className="h-full rounded-full bg-maroon transition-all duration-1000" style={{ width: `${overallRate}%` }} />
+                <div className="p-2 rounded-xl bg-danger/5 border border-danger/15 text-center">
+                  <div className="text-[10px] font-extrabold text-danger uppercase tracking-wider flex items-center justify-center gap-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-danger inline-block" /> Cancelled
+                  </div>
+                  <div className="font-serif text-[15px] font-bold text-danger mt-0.5">{performanceTotals.cancelled} <span className="text-[11px] font-sans text-text-muted">({cancellationPct}%)</span></div>
                 </div>
-                <span className="font-serif text-[16px] font-bold text-maroon">{overallRate}%</span>
+
+                <div className="p-2 rounded-xl bg-gold/5 border border-gold/20 text-center">
+                  <div className="text-[10px] font-extrabold text-gold-dark uppercase tracking-wider flex items-center justify-center gap-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-gold inline-block" /> No Show
+                  </div>
+                  <div className="font-serif text-[15px] font-bold text-gold-dark mt-0.5">{performanceTotals.noShow} <span className="text-[11px] font-sans text-text-muted">({noShowPct}%)</span></div>
+                </div>
               </div>
             </div>
-          )
-        })()}
-      </div>
 
+            {/* Right: Key Summary Highlights */}
+            <div className="lg:col-span-7 flex flex-col gap-3.5">
+              
+              {/* Highlight Card 1: Fulfillment Efficiency */}
+              <div className="bg-white p-5 rounded-2xl border border-border shadow-xs flex items-center justify-between gap-4">
+                <div className="flex items-center gap-3.5">
+                  <div className="w-12 h-12 rounded-xl bg-success-light text-success flex items-center justify-center shrink-0 border border-success-border">
+                    <CheckCircle2 size={24} />
+                  </div>
+                  <div>
+                    <div className="text-[10px] font-extrabold text-text-muted uppercase tracking-wider">Overall Completion Rate</div>
+                    <div className="font-serif text-[26px] font-extrabold text-success leading-tight mt-0.5">
+                      {completionPct}%
+                    </div>
+                    <div className="text-[11.5px] text-text-sub font-medium mt-0.5">
+                      {performanceTotals.completed} out of {performanceTotals.total} scheduled appointments successfully completed
+                    </div>
+                  </div>
+                </div>
+                <div className="hidden sm:block">
+                  <span className={`text-[11px] font-bold px-3 py-1.5 rounded-full border ${completionPct >= 80 ? 'bg-success-light text-success border-success-border' : 'bg-gold-light text-gold border-gold-border'}`}>
+                    {completionPct >= 80 ? 'High Fulfillment' : 'Moderate Fulfillment'}
+                  </span>
+                </div>
+              </div>
+
+              {/* Highlight Card 2: Drop-Off Rate & Peak Month */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                
+                {/* Drop-off breakdown */}
+                <div className="bg-white p-4.5 rounded-2xl border border-border shadow-xs flex flex-col justify-between">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-[10px] font-extrabold text-text-muted uppercase tracking-wider">Total Drop-Off</span>
+                    <div className="w-7 h-7 rounded-lg bg-danger-light text-danger flex items-center justify-center border border-danger-border">
+                      <XCircle size={15} />
+                    </div>
+                  </div>
+                  <div>
+                    <div className="font-serif text-[22px] font-bold text-danger leading-none mb-1">
+                      {cancellationPct + noShowPct}%
+                    </div>
+                    <div className="text-[11px] text-text-sub font-medium">
+                      {performanceTotals.cancelled + performanceTotals.noShow} missed appointments
+                    </div>
+                  </div>
+                </div>
+
+                {/* Peak Month */}
+                <div className="bg-white p-4.5 rounded-2xl border border-border shadow-xs flex flex-col justify-between">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-[10px] font-extrabold text-text-muted uppercase tracking-wider">Peak Month</span>
+                    <div className="w-7 h-7 rounded-lg bg-gold/10 text-gold flex items-center justify-center border border-gold/20">
+                      <Award size={15} />
+                    </div>
+                  </div>
+                  <div>
+                    <div className="font-serif text-[18px] font-bold text-text-main leading-none mb-1 truncate">
+                      {bestMonth ? bestMonth.month : '—'}
+                    </div>
+                    <div className="text-[11px] text-text-sub font-medium">
+                      {bestMonth ? `${bestMonth.completed} completed (${bestMonth.total > 0 ? Math.round((bestMonth.completed / bestMonth.total) * 100) : 0}%)` : 'No completed appointments yet'}
+                    </div>
+                  </div>
+                </div>
+
+              </div>
+
+              {/* Highlight Card 3: Executive Summary Note */}
+              <div className="p-4 rounded-2xl bg-maroon-light/60 border border-maroon-border/80 flex items-start gap-3">
+                <div className="w-8 h-8 rounded-xl bg-white text-maroon flex items-center justify-center shrink-0 border border-maroon-border mt-0.5">
+                  <Sparkles size={16} />
+                </div>
+                <div>
+                  <div className="text-[12px] font-bold text-maroon">Performance Summary</div>
+                  <p className="text-[12px] text-text-main font-medium leading-relaxed m-0 mt-0.5">
+                    {performanceTotals.total === 0 
+                      ? "No appointments have been recorded for this year yet. Historical completion trends will display as students book and attend appointments."
+                      : `The office maintains a ${completionPct}% completion rate across ${performanceTotals.total} total bookings. Cancellations (${cancellationPct}%) and no-shows (${noShowPct}%) remain within normal registrar operating thresholds.`
+                    }
+                  </p>
+                </div>
+              </div>
+
+            </div>
+
+          </div>
+        </div>
+
+        {/* ── Monthly Breakdown Table ── */}
+        <div className="p-5 px-6 sm:px-7 bg-white border-b border-border flex items-center justify-between">
+          <h3 className="font-serif text-[16px] font-bold text-text-main m-0">Month-by-Month Breakdown</h3>
+          <span className="text-[11.5px] text-text-muted font-medium">Showing all 12 months</span>
+        </div>
+
+        {/* Column Headers */}
+        <div className="grid grid-cols-[140px_repeat(4,1fr)_160px] p-[14px_28px] bg-surface/60 border-b border-border text-[10.5px] font-extrabold text-text-muted uppercase tracking-[0.08em]">
+          <span>Month</span>
+          <span>Total</span>
+          <span>Completed</span>
+          <span>Cancelled</span>
+          <span>No Show</span>
+          <span>Completion Rate</span>
+        </div>
+
+        {/* Table Rows */}
+        <div className="bg-white">
+          {loading ? (
+            <div>
+              {[1, 2, 3, 4].map((i) => (
+                <div key={i} className="grid grid-cols-[140px_repeat(4,1fr)_160px] p-[18px_28px] border-b border-border/50">
+                  <div className="flex items-center gap-3">
+                    <div className="w-2 h-2 bg-border rounded-full animate-pulse" />
+                    <div className="animate-pulse h-4.5 w-[60%] bg-border rounded" />
+                  </div>
+                  {[1, 2, 3, 4, 5].map((j) => (
+                    <div key={j} className="animate-pulse h-4.5 w-[50%] bg-border rounded my-auto" />
+                  ))}
+                </div>
+              ))}
+            </div>
+          ) : tableRows.length === 0 ? (
+            <div className="p-[60px_24px] text-center text-text-muted font-medium">No monthly data available yet.</div>
+          ) : (
+            tableRows.map((row, i) => {
+              const compRate = parseInt(row['Completion Rate']) || 0
+              const barColor = compRate >= 90 ? 'bg-success' : compRate >= 70 ? 'bg-gold' : 'bg-danger'
+              const textColor = compRate >= 90 ? 'text-success' : compRate >= 70 ? 'text-gold' : 'text-danger'
+              return (
+                <div key={i} className={`group grid grid-cols-[140px_repeat(4,1fr)_160px] p-[16px_28px] items-center transition-all duration-200 hover:bg-off-white/70 ${i < tableRows.length - 1 ? 'border-b border-border/50' : 'border-none'} bg-white`}>
+                  <div className="flex items-center gap-3">
+                    <div className="w-2 h-2 rounded-full bg-border group-hover:bg-maroon transition-colors" />
+                    <span className="font-serif text-[14.5px] font-bold text-text-main group-hover:text-maroon transition-colors">{row.Period}</span>
+                  </div>
+                  <span className="text-[14.5px] font-bold text-text-main">{row.Total.toLocaleString()}</span>
+                  <div className="flex items-center gap-2">
+                    <div className="w-1.5 h-1.5 rounded-full bg-success"></div>
+                    <span className="text-[13.5px] font-semibold text-text-sub">{row.Completed.toLocaleString()}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-1.5 h-1.5 rounded-full bg-danger"></div>
+                    <span className="text-[13.5px] font-semibold text-text-sub">{row.Cancelled.toLocaleString()}</span>
+                  </div>
+                  <span className="text-[13.5px] font-medium text-text-sub pl-2">{row['No Show'].toLocaleString()}</span>
+                  <div className="flex items-center gap-3">
+                    <div className="flex-1 h-2 bg-surface rounded-full overflow-hidden">
+                      <div className={`h-full rounded-full transition-all duration-700 ${barColor}`} style={{ width: `${compRate}%` }} />
+                    </div>
+                    <span className={`text-[12.5px] font-bold min-w-9 ${textColor}`}>{row['Completion Rate']}</span>
+                  </div>
+                </div>
+              )
+            })
+          )}
+        </div>
+
+        {/* Summary Footer */}
+        {!loading && tableRows.length > 0 && (
+          <div className="grid grid-cols-[140px_repeat(4,1fr)_160px] p-[18px_28px] bg-maroon-light border-t border-maroon-border items-center">
+            <div className="flex items-center gap-3">
+              <div className="w-2.5 h-2.5 rounded-full bg-maroon shadow-xs" />
+              <span className="text-[11px] font-extrabold text-maroon uppercase tracking-widest pt-0.5">Annual Total</span>
+            </div>
+            <span className="font-serif text-[17px] font-bold text-maroon">{performanceTotals.total.toLocaleString()}</span>
+            <span className="font-serif text-[17px] font-bold text-success">{performanceTotals.completed.toLocaleString()}</span>
+            <span className="font-serif text-[17px] font-bold text-danger">{performanceTotals.cancelled.toLocaleString()}</span>
+            <span className="font-serif text-[17px] font-bold text-text-main pl-2">{performanceTotals.noShow.toLocaleString()}</span>
+            <div className="flex items-center gap-3">
+              <div className="flex-1 h-2 bg-maroon-border rounded-full overflow-hidden">
+                <div className="h-full rounded-full bg-maroon transition-all duration-700" style={{ width: `${completionPct}%` }} />
+              </div>
+              <span className="font-serif text-[16px] font-bold text-maroon">{completionPct}%</span>
+            </div>
+          </div>
+        )}
+      </div>
 
     </div>
   )

@@ -38,8 +38,14 @@ export default function StudentDashboard() {
       const d = new Date();
       const today = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
       
-      // 1. Fetch appointments
-      const allAppts = await getMyAppointments(token);
+      // Fetch all dashboard data concurrently
+      const [allAppts, qData, publicData, claimData] = await Promise.all([
+        getMyAppointments(token).catch(() => []),
+        getMyQueue(token).catch(() => ({ ticket: null })),
+        getPublicLiveQueue(token).catch(() => []),
+        getMyDocumentsToClaim(token).catch(() => [])
+      ]);
+
       const formatTime12 = (t) => {
         if (!t) return '';
         const parts = t.split(':');
@@ -51,8 +57,42 @@ export default function StudentDashboard() {
         return `${h12}:${m} ${ampm}`;
       };
 
-      const upcoming = allAppts
-        .filter(a => a.appointment_date >= today && a.status === 'confirmed')
+      // 1. Process active live queue ticket
+      const activeTicketApptId = qData?.ticket?.appointment_id || qData?.ticket?.appointments?.id;
+      if (qData?.ticket && (qData.ticket.status === 'pending' || qData.ticket.status === 'waiting' || qData.ticket.status === 'in_progress')) {
+        const steps = qData.steps || [];
+        const currentStep = steps.find(s => s.status === 'in_progress');
+        const isRelease = currentStep?.step_name?.toLowerCase().includes('release');
+        const isPrep = currentStep?.step_name?.toLowerCase().includes('preparation');
+        const isCounterActive = qData.ticket.status === 'in_progress' && !isPrep && !isRelease && currentStep?.requires_presence !== false;
+
+        setLiveTicket({
+          id: qData.ticket.appointment_id,
+          queue_number: qData.ticket.queue_number,
+          status: qData.ticket.status,
+          isRelease: !!isRelease,
+          isPrep: !!isPrep,
+          isCounterActive: !!isCounterActive,
+          current_step: isRelease ? 'Ready for Pickup' : isPrep ? 'Processing Document' : (currentStep?.step_name || 'Serving'),
+          transaction_type: qData.ticket.appointments?.transaction_types?.name || 'Registrar'
+        });
+      } else {
+        setLiveTicket(null);
+      }
+
+      // 2. Filter upcoming appointments (exclude any active in queue, completed, or cancelled)
+      const upcoming = (allAppts || [])
+        .filter(a => {
+          const ticketsList = Array.isArray(a.queue_tickets) ? a.queue_tickets : (a.queue_tickets ? [a.queue_tickets] : []);
+          const hasActiveTicket = (activeTicketApptId && activeTicketApptId === a.id) || ticketsList.some(qt => qt.status === 'waiting' || qt.status === 'in_progress');
+          const isCompleted = a.status === 'completed' || ticketsList.some(qt => qt.status === 'completed');
+          const isCancelled = a.status === 'cancelled' || a.status === 'no_show';
+          
+          if (hasActiveTicket || isCompleted || isCancelled) {
+            return false;
+          }
+          return a.appointment_date >= today;
+        })
         .slice(0, 3)
         .map(a => ({
           id: a.id,
@@ -64,49 +104,9 @@ export default function StudentDashboard() {
         }));
       setAppointments(upcoming);
 
-      // 2. Fetch live queue ticket
-      const qData = await getMyQueue(token);
-      if (qData.ticket && (qData.ticket.status === 'pending' || qData.ticket.status === 'in_progress')) {
-        let estMins = '--';
-        try {
-          const estData = await getTimeEstimate(token, qData.ticket.appointment_id);
-          if (estData.estimates && estData.estimates.length > 0) {
-            // Find the pending step estimate or just use the first one
-            const est = estData.estimates.find(e => e.label.includes('min')) || estData.estimates[0];
-            if (est) {
-              estMins = est.label.split(' ')[0] || '--';
-            }
-          }
-        } catch (error) {
-          // fail silently for time estimate parsing
-        }
-
-        setLiveTicket({
-          id: qData.ticket.appointment_id,
-          queue_number: qData.ticket.queue_number,
-          est_wait_mins: estMins,
-          currently_serving: 'Processing',
-          transaction_type: qData.ticket.appointments?.transaction_types?.name || 'Registrar'
-        });
-      } else {
-        setLiveTicket(null);
-      }
-      
-      // 3. Fetch public live queue (now serving)
-      try {
-        const publicData = await getPublicLiveQueue(token);
-        setActiveCounterTickets(publicData || []);
-      } catch (err) {
-        // silent fail
-      }
-
-      // 4. Fetch documents to claim
-      try {
-        const claimData = await getMyDocumentsToClaim(token);
-        setDocumentsToClaim(claimData || []);
-      } catch (err) {
-        // silent fail
-      }
+      // 3. Set public live queue & documents to claim
+      setActiveCounterTickets(publicData || []);
+      setDocumentsToClaim(claimData || []);
     } catch (e) {
       console.error('Failed to load dashboard data:', e);
     } finally {
@@ -136,7 +136,7 @@ export default function StudentDashboard() {
         {/* ── Documents to Claim Alert ── */}
         {documentsToClaim.length > 0 && (
           <div 
-            onClick={() => navigate('/student/queue?tab=claim')}
+            onClick={() => navigate('/student/queue')}
             className="animate-fade-up bg-green-50 hover:bg-green-100 border border-green-200 rounded-2xl p-4 mb-6 cursor-pointer transition-all flex items-center justify-between shadow-sm"
           >
             <div className="flex items-center gap-4">
@@ -166,8 +166,8 @@ export default function StudentDashboard() {
             <h1 className="font-serif text-[clamp(24px,5vw,42px)] font-bold text-maroon m-0 mb-2 md:mb-3 leading-[1.15]">
               <span className="hidden md:inline text-text-main">{getGreeting()}, </span>{user?.first_name || 'Student'}!
             </h1>
-            <p className="text-[13px] md:text-[15px] text-text-sub font-medium m-0 max-w-145 leading-normal md:leading-[1.6]">
-              <span className="md:hidden">Welcome to your CRMC Student Portal. Here is your campus overview for today.</span>
+            <p className="text-[11px] md:text-[13px] text-text-sub font-medium m-0 max-w-145 leading-normal md:leading-[1.6]">
+              <span className="md:hidden">Manage your academic documents, track live queue ticket status, or chat with our virtual assistant—all from your personalized dashboard.</span>
               <span className="hidden md:inline">Manage your academic documents, track live queue ticket status, or chat with our virtual assistant—all from your personalized dashboard.</span>
             </p>
           </div>
@@ -199,17 +199,36 @@ export default function StudentDashboard() {
             </button>
 
             {/* My Queue compact card */}
-            <div className={`bg-white rounded-2xl p-5 md:p-6 border ${liveTicket ? 'border-gold/30 shadow-[0_4px_16px_rgba(184,144,10,0.06)]' : 'border-border shadow-[0_2px_8px_rgba(0,0,0,0.02)]'} flex items-center gap-4 transition-all duration-300`}>
-              <div className={`w-12 h-12 rounded-[14px] flex items-center justify-center shrink-0 ${liveTicket ? 'text-gold bg-linear-to-br from-gold/10 to-gold/5 border border-gold/20' : 'text-text-muted bg-off-white border border-border'}`}>
-                <Ticket size={22} className={liveTicket ? 'text-gold' : 'opacity-70'} />
+            <div 
+              onClick={() => liveTicket && navigate('/student/queue')}
+              className={`bg-white rounded-2xl p-5 md:p-6 border ${liveTicket ? 'border-gold/30 shadow-[0_4px_16px_rgba(184,144,10,0.06)] cursor-pointer hover:border-maroon/30 hover:shadow-[0_8px_24px_rgba(123,26,42,0.08)]' : 'border-border shadow-[0_2px_8px_rgba(0,0,0,0.02)]'} flex items-center gap-4 transition-all duration-300`}
+            >
+              <div className={`w-12 h-12 rounded-[14px] flex items-center justify-center shrink-0 ${
+                liveTicket?.isRelease 
+                  ? 'text-success bg-linear-to-br from-success/10 to-success/5 border border-success/20' 
+                  : liveTicket 
+                  ? 'text-gold bg-linear-to-br from-gold/10 to-gold/5 border border-gold/20' 
+                  : 'text-text-muted bg-off-white border border-border'
+              }`}>
+                <Ticket size={22} className={liveTicket?.isRelease ? 'text-success' : liveTicket ? 'text-gold' : 'opacity-70'} />
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between mb-1.5">
                   <span className="text-[10px] font-bold text-text-muted tracking-widest uppercase">My Queue Status</span>
                   {liveTicket && (
-                    <span className="flex items-center gap-1.5 text-[10px] font-bold text-gold bg-gold/10 px-2.5 py-0.5 rounded-full border border-gold/20">
-                      <span className="w-1.5 h-1.5 rounded-full bg-gold inline-block animate-pulse-live" /> LIVE
-                    </span>
+                    liveTicket.isRelease ? (
+                      <span className="flex items-center gap-1.5 text-[10px] font-bold text-success bg-success/10 px-2.5 py-0.5 rounded-full border border-success/20">
+                        <span className="w-1.5 h-1.5 rounded-full bg-success inline-block animate-pulse" /> READY FOR PICKUP
+                      </span>
+                    ) : liveTicket.isPrep ? (
+                      <span className="flex items-center gap-1.5 text-[10px] font-bold text-gold-dark bg-gold/10 px-2.5 py-0.5 rounded-full border border-gold/20">
+                        <span className="w-1.5 h-1.5 rounded-full bg-gold inline-block animate-pulse" /> PROCESSING
+                      </span>
+                    ) : (
+                      <span className="flex items-center gap-1.5 text-[10px] font-bold text-gold bg-gold/10 px-2.5 py-0.5 rounded-full border border-gold/20">
+                        <span className="w-1.5 h-1.5 rounded-full bg-gold inline-block animate-pulse-live" /> LIVE
+                      </span>
+                    )
                   )}
                 </div>
                 {loading ? (
@@ -218,7 +237,7 @@ export default function StudentDashboard() {
                   <div>
                     <div className="text-[16px] font-bold text-maroon font-serif leading-tight">{liveTicket.queue_number}</div>
                     <div className="text-[12px] text-text-sub mt-0.5 whitespace-nowrap overflow-hidden text-ellipsis">
-                      <span className="font-medium text-text-main">{liveTicket.transaction_type || 'Registrar'}</span> • Wait: {liveTicket.est_wait_mins} min
+                      <span className="font-medium text-text-main">{liveTicket.transaction_type || 'Registrar'}</span>
                     </div>
                   </div>
                 ) : (
@@ -342,42 +361,50 @@ export default function StudentDashboard() {
                 </div>
                 <div className="animate-pulse w-full h-11 rounded-[10px] bg-border" />
               </div>
-            ) : liveTicket ? (
+            ) : (liveTicket && liveTicket.isCounterActive) ? (
               <div className="bg-surface rounded-2xl py-6 px-5 shadow-[0_4px_12px_rgba(0,0,0,0.03),0_0_0_1px_rgba(123,26,42,0.04)] text-center">
                 <p className="text-[11px] font-semibold text-text-sub tracking-[0.12em] uppercase m-0 mb-2">Your Queue Number</p>
                 <div className="font-serif text-[42px] lg:text-[56px] font-bold text-maroon leading-none m-0 mb-3 tracking-[-0.02em]">
                   {liveTicket.queue_number}
                 </div>
-                <div className="flex justify-center gap-4 bg-white p-3 rounded-[10px] border border-maroon/5 mx-auto mb-4 w-full">
-                  <div className="flex-1">
-                    <span className="text-[10px] text-text-muted block">Serving</span>
-                    <strong className="text-[13px] text-text-main">{liveTicket.currently_serving}</strong>
-                  </div>
-                  <div className="w-px bg-border" />
-                  <div className="flex-1">
-                    <span className="text-[10px] text-text-muted block">Est. Wait</span>
-                    <strong className="text-[13px] text-text-main">{liveTicket.est_wait_mins} min</strong>
-                  </div>
+                <div className="bg-white p-3 rounded-[10px] border border-maroon/5 mx-auto mb-4 w-full text-center">
+                  <span className="text-[10px] text-text-muted block uppercase tracking-wider font-semibold mb-0.5">Current Status</span>
+                  <strong className="text-[13px] text-maroon font-bold">{liveTicket.current_step}</strong>
                 </div>
               </div>
             ) : activeCounterTickets.length > 0 ? (
-              <div className="bg-white rounded-2xl p-5 shadow-[0_2px_8px_rgba(0,0,0,0.02),0_0_0_1px_rgba(123,26,42,0.04)]">
-                <p className="text-[11px] font-semibold text-text-sub tracking-[0.12em] uppercase m-0 mb-3 text-center">Now Serving</p>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {activeCounterTickets.map((t) => (
-                    <div key={t.queue_ticket_id} className="flex items-center gap-3 p-3 rounded-xl border border-border bg-off-white">
-                      <div className="font-serif text-[24px] font-bold text-maroon leading-none tracking-[-0.02em] min-w-17.5 text-center">
-                        {t.queue_number}
-                      </div>
-                      <div className="w-px h-8 bg-border" />
-                      <div className="flex-1 overflow-hidden">
-                        <div className="text-[10px] text-text-muted uppercase tracking-wider block mb-0.5">{t.location}</div>
-                        <div className="text-[13px] text-text-main font-medium whitespace-nowrap overflow-hidden text-ellipsis">{t.transaction_type}</div>
-                      </div>
-                    </div>
-                  ))}
+              activeCounterTickets.length === 1 ? (
+                <div className="bg-surface rounded-2xl py-6 px-5 border border-border text-center shadow-[0_4px_12px_rgba(0,0,0,0.03),0_0_0_1px_rgba(123,26,42,0.04)]">
+                  <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-gold/10 text-gold-dark text-[11px] font-extrabold uppercase tracking-wider mb-2.5 border border-gold/25">
+                    <span className="w-1.5 h-1.5 rounded-full bg-gold animate-pulse" /> {activeCounterTickets[0].location || 'Window'}
+                  </div>
+                  <div className="font-serif text-[42px] lg:text-[56px] font-bold text-maroon leading-none m-0 mb-3 tracking-[-0.02em]">
+                    {activeCounterTickets[0].queue_number}
+                  </div>
+                  <div className="bg-white p-3 rounded-[10px] border border-maroon/5 mx-auto w-full text-center">
+                    <span className="text-[10px] text-text-muted block uppercase tracking-wider font-semibold mb-0.5">Now Serving</span>
+                    <strong className="text-[13px] text-text-main font-bold truncate block">{activeCounterTickets[0].transaction_type}</strong>
+                  </div>
                 </div>
-              </div>
+              ) : (
+                <div className="bg-white rounded-2xl p-5 shadow-[0_2px_8px_rgba(0,0,0,0.02),0_0_0_1px_rgba(123,26,42,0.04)]">
+                  <p className="text-[11px] font-semibold text-text-sub tracking-[0.12em] uppercase m-0 mb-3 text-center">Now Serving</p>
+                  <div className="grid grid-cols-1 gap-2.5">
+                    {activeCounterTickets.map((t) => (
+                      <div key={t.queue_ticket_id} className="flex items-center gap-4 p-3.5 rounded-xl border border-border bg-off-white">
+                        <div className="font-serif text-[28px] font-bold text-maroon leading-none tracking-[-0.02em] shrink-0 min-w-22 text-center">
+                          {t.queue_number}
+                        </div>
+                        <div className="w-px h-9 bg-border shrink-0" />
+                        <div className="flex-1 min-w-0">
+                          <div className="text-[11px] font-bold text-gold-dark uppercase tracking-wider block mb-0.5">{t.location}</div>
+                          <div className="text-[13px] text-text-main font-semibold truncate">{t.transaction_type}</div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )
             ) : (
               <div className="relative text-center p-8 lg:p-10 flex-1 flex flex-col justify-center items-center bg-white rounded-[20px] border border-border shadow-[0_2px_8px_rgba(0,0,0,0.02)] overflow-hidden transition-all duration-300 hover:shadow-[0_8px_24px_rgba(123,26,42,0.06)] hover:border-maroon/20">
                 {/* Decorative background blobs */}

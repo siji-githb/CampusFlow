@@ -88,10 +88,15 @@ export const updateOfficeConfig = async (token, key, value) => {
   const res = await fetch(`${API_URL}/admin/office-config`, {
     method: 'PATCH',
     headers: authHeader(token),
-    body: JSON.stringify({ key, value })
+    body: JSON.stringify({ key, value: String(value) })
   })
   const data = await res.json()
-  if (!res.ok) throw new Error(data.detail || 'Failed to update config')
+  if (!res.ok) {
+    const errorMsg = Array.isArray(data.detail)
+      ? data.detail.map(d => d.msg || JSON.stringify(d)).join(', ')
+      : (typeof data.detail === 'string' ? data.detail : 'Failed to update config')
+    throw new Error(errorMsg)
+  }
   return data
 }
 

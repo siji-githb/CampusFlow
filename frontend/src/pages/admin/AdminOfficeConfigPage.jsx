@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '../../context/useAuth'
 import { getOfficeConfig, updateOfficeConfig } from '../../services/adminService'
-import { Check, AlertTriangle, Settings } from 'lucide-react'
+import { Check, AlertTriangle, Settings, CheckCircle2, X, Loader2 } from 'lucide-react'
 
 const SETTINGS_CATEGORIES = {
   general: ['office_open_time', 'office_close_time', 'lunch_break_start', 'lunch_break_end'],
@@ -33,7 +33,8 @@ export default function AdminOfficeConfigPage() {
     getOfficeConfig(token)
       .then(data => {
         setConfig(data)
-        const init = {}; data.forEach(c => { init[c.key] = c.value })
+        const init = {}
+        data.forEach(c => { init[c.key] = c.value })
         setEdited(init)
       })
       .catch(() => setToast({ type: 'error', msg: 'Failed to load configuration' }))
@@ -45,25 +46,32 @@ export default function AdminOfficeConfigPage() {
     setTimeout(() => setToast(null), 3000)
   }
 
-  const handleSave = (key) => {
-    setConfirmSave(key)
+  const handleEdit = (key, value) => {
+    setEdited(prev => ({ ...prev, [key]: value }))
   }
 
-  const executeSave = async () => {
-    const key = confirmSave
-    setConfirmSave(null)
+  const handleSave = async (key) => {
+    const val = edited[key]
+    if (val === undefined) return
     setSaving(key)
     try {
-      await updateOfficeConfig(token, key, edited[key])
-      const data = await getOfficeConfig(token)
-      setConfig(data)
+      await updateOfficeConfig(token, key, String(val))
+      setConfig(prev => prev.map(item => item.key === key ? { ...item, value: String(val) } : item))
       showToast('success', `Updated "${LABELS[key]?.title || key}" successfully.`)
     } catch (e) {
       showToast('error', e.message || 'Failed to update setting.')
-      setEdited(prev => ({ ...prev, [key]: config.find(c => c.key === key)?.value }))
     } finally {
       setSaving(null)
+      setConfirmSave(null)
     }
+  }
+
+  const handleReset = (key) => {
+    setEdited(prev => {
+      const next = { ...prev }
+      delete next[key]
+      return next
+    })
   }
 
   const hasChanges = (key) => {
@@ -78,7 +86,7 @@ export default function AdminOfficeConfigPage() {
 
       return (
         <div key={key} className={`flex items-center justify-between p-[24px_28px] gap-6 flex-wrap transition-colors duration-200 ${i < keys.length - 1 ? 'border-b border-border' : 'border-none'} ${isChanged ? 'bg-maroon-light' : 'bg-transparent'}`}>
-          <div className="flex-1 min-w-[200px]">
+          <div className="flex-1 min-w-50">
             <p className="text-[15px] font-semibold text-text-main m-0 mb-1">{LABELS[key]?.title || key}</p>
             <p className="text-[13px] text-text-sub m-0 leading-snug">{LABELS[key]?.desc}</p>
           </div>
@@ -87,13 +95,20 @@ export default function AdminOfficeConfigPage() {
               type={isTimeField ? 'time' : 'number'}
               value={edited[key] ?? ''}
               onChange={e => setEdited({ ...edited, [key]: e.target.value })}
-              className={`py-[11px] px-4 rounded-[10px] bg-white text-[14px] outline-none font-sans text-text-main transition-all duration-200 border-[1.5px] focus:border-maroon ${isTimeField ? 'w-[130px] text-left' : 'w-[100px] text-center'} ${isChanged ? 'border-maroon shadow-[0_0_0_3px_rgba(123,26,42,0.1)]' : 'border-border'}`}
+              className={`py-2.75 px-4 rounded-[10px] bg-white text-[14px] outline-none font-sans text-text-main transition-all duration-200 border-[1.5px] focus:border-maroon ${isTimeField ? 'w-32.5 text-left' : 'w-25 text-center'} ${isChanged ? 'border-maroon shadow-[0_0_0_3px_rgba(123,26,42,0.1)]' : 'border-border'}`}
             />
             <button
               onClick={() => handleSave(key)}
               disabled={saving === key || !isChanged}
-              className={`py-[11px] px-6 rounded-[10px] border-none text-[14px] font-bold font-sans transition-all duration-200 ${saving === key ? 'bg-[#B8667A] text-white cursor-not-allowed' : isChanged ? 'bg-maroon text-white cursor-pointer shadow-[0_4px_12px_rgba(123,26,42,0.2)]' : 'bg-border text-text-muted cursor-not-allowed'}`}>
-              {saving === key ? 'Saving…' : 'Save'}
+              className={`py-2.75 px-6 rounded-[10px] border-none text-[14px] font-bold font-sans transition-all duration-200 flex items-center justify-center gap-2 min-w-24 ${saving === key ? 'bg-[#B8667A] text-white cursor-not-allowed' : isChanged ? 'bg-maroon text-white cursor-pointer shadow-[0_4px_12px_rgba(123,26,42,0.2)]' : 'bg-border text-text-muted cursor-not-allowed'}`}>
+              {saving === key ? (
+                <>
+                  <Loader2 size={16} className="animate-spin text-white shrink-0" />
+                  <span>Saving</span>
+                </>
+              ) : (
+                'Save'
+              )}
             </button>
           </div>
         </div>
@@ -105,9 +120,22 @@ export default function AdminOfficeConfigPage() {
     <div>
       {/* Toast Notification */}
       {toast && (
-        <div className={`fixed top-[30px] left-1/2 -translate-x-1/2 z-9999 text-white py-3.5 px-6 rounded-xl shadow-[0_10px_30px_rgba(0,0,0,0.15)] text-[14px] font-semibold flex items-center gap-2.5 animate-slide-down ${toast.type === 'success' ? 'bg-success' : 'bg-danger'}`}>
-          <span>{toast.type === 'success' ? <Check size={16} /> : <AlertTriangle size={16} />}</span>
-          {toast.msg}
+        <div className={`fixed bottom-10 right-8 z-9999 flex items-center gap-3 px-5 py-3.5 rounded-xl shadow-[0_12px_32px_rgba(0,0,0,0.18)] border text-[13.5px] font-bold animate-fade-up ${
+          toast.type === 'error' 
+            ? 'bg-red-600 text-white border-red-700' 
+            : 'bg-[#006600] text-white border-[#005200]'
+        }`}>
+          {toast.type === 'error' ? (
+            <AlertTriangle size={17} className="shrink-0 text-white" />
+          ) : (
+            <div className="w-5 h-5 rounded-full bg-white/20 flex items-center justify-center shrink-0">
+              <Check size={13} className="text-white stroke-3" />
+            </div>
+          )}
+          <span className="text-white">{toast.msg}</span>
+          <button onClick={() => setToast(null)} className="ml-2.5 bg-transparent border-none text-white/80 hover:text-white cursor-pointer p-0 flex items-center shrink-0 transition-opacity">
+            <X size={14} strokeWidth={2.5} />
+          </button>
         </div>
       )}
 
@@ -117,7 +145,7 @@ export default function AdminOfficeConfigPage() {
         <h1 className="font-serif text-[26px] font-bold text-maroon m-0 mb-2 flex items-center gap-3">
           <Settings className="text-maroon" size={24} /> Office Configuration
         </h1>
-        <p className="text-[12px] text-text-sub m-0 leading-relaxed max-w-[650px]">
+        <p className="text-[12px] text-text-sub m-0 leading-relaxed max-w-162.5">
           Manage operational hours, daily request caps, and appointment rules.
         </p>
       </div>
@@ -126,7 +154,7 @@ export default function AdminOfficeConfigPage() {
         <div className="flex flex-col gap-6">
           {[1,2,3].map(section => (
             <section key={section}>
-              <div className="w-[150px] h-3.5 rounded mb-3 ml-1 animate-pulse bg-border" />
+              <div className="w-37.5 h-3.5 rounded mb-3 ml-1 animate-pulse bg-border" />
               <div className="bg-white rounded-2xl border border-border overflow-hidden">
                 {[1,2,3].map(i => (
                   <div key={i} className={`h-20 animate-pulse bg-surface ${i < 3 ? 'border-b border-border' : 'border-none'}`} />
@@ -167,22 +195,36 @@ export default function AdminOfficeConfigPage() {
 
       {/* Confirmation Modal */}
       {confirmSave && (
-        <div className="fixed inset-0 bg-black/50 z-10000 flex items-center justify-center animate-fade-in">
-          <div className="bg-white rounded-2xl p-8 w-[90%] max-w-[400px] shadow-[0_20px_40px_rgba(0,0,0,0.2)] text-center animate-slide-up">
-            <div className="text-[40px] mb-4">⚙️</div>
-            <h3 className="m-0 mb-3 text-[20px] font-bold text-text-main">Confirm Changes</h3>
-            <p className="m-0 mb-6 text-[15px] text-text-sub leading-relaxed">
+        <div className="fixed inset-0 bg-black/70 z-10000 flex items-center justify-center p-4 animate-fade-in">
+          <div className="bg-[#0A2218] text-white rounded-3xl p-8 w-[90%] max-w-100 shadow-[0_25px_80px_rgba(0,0,0,0.6)] border border-emerald-800/50 text-center animate-fade-up">
+            <div className="w-14 h-14 rounded-2xl bg-emerald-900/50 border border-emerald-700/50 flex items-center justify-center mx-auto mb-4 text-gold">
+              <Settings size={26} />
+            </div>
+            <h3 className="m-0 mb-2 font-serif text-[22px] font-bold text-white">Confirm Changes</h3>
+            <p className="m-0 mb-6 text-[14px] text-emerald-200/90 leading-relaxed">
               Are you sure you want to save changes to <br/>
-              <strong className="text-maroon">{LABELS[confirmSave]?.title || confirmSave}</strong>?
+              <strong className="text-gold">{LABELS[confirmSave]?.title || confirmSave}</strong>?
             </p>
             <div className="flex gap-3">
-              <button onClick={() => setConfirmSave(null)}
-                className="flex-1 p-3 rounded-[10px] bg-surface text-text-sub border-none text-[14px] font-semibold cursor-pointer transition-colors duration-200 hover:bg-border">
+              <button 
+                onClick={() => setConfirmSave(null)}
+                className="flex-1 py-3 px-4 rounded-xl bg-white/10 text-white/80 border-none text-[13.5px] font-semibold cursor-pointer transition-colors duration-200 hover:bg-white/20 hover:text-white"
+              >
                 Cancel
               </button>
-              <button onClick={executeSave}
-                className="flex-1 p-3 rounded-[10px] bg-maroon text-white border-none text-[14px] font-semibold cursor-pointer transition-colors duration-200 hover:bg-maroon-dark shadow-[0_4px_12px_rgba(123,26,42,0.2)]">
-                Yes, Save
+              <button 
+                onClick={() => handleSave(confirmSave)}
+                disabled={saving === confirmSave}
+                className={`flex-1 py-3 px-4 rounded-xl bg-gold text-[#061811] border-none text-[13.5px] font-extrabold transition-colors duration-200 shadow-md flex items-center justify-center gap-2 ${saving === confirmSave ? 'opacity-80 cursor-not-allowed' : 'cursor-pointer hover:bg-yellow-400'}`}
+              >
+                {saving === confirmSave ? (
+                  <>
+                    <Loader2 size={16} className="animate-spin text-[#061811] shrink-0" />
+                    <span>Saving...</span>
+                  </>
+                ) : (
+                  'Yes, Save'
+                )}
               </button>
             </div>
           </div>

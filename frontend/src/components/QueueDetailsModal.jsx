@@ -1,280 +1,559 @@
 import React, { useState } from 'react'
 import { createPortal } from 'react-dom'
-import { X, Check, DoorOpen, Cog, Users, Ticket, Loader2, Circle, CircleDot } from 'lucide-react'
+import { 
+  X, 
+  Check, 
+  CheckCircle2, 
+  AlertTriangle, 
+  Users, 
+  Ticket, 
+  Loader2, 
+  Circle, 
+  CircleDot, 
+  Clock, 
+  Calendar, 
+  FileText, 
+  Sparkles, 
+  ShieldCheck,
+  DoorOpen,
+  ClipboardList,
+  Info
+} from 'lucide-react'
 
-// ── Queue Details Modal ──
+// ── Helper: Clean Document Description (strips JSON config suffix if present) ──
+function getCleanDocDescription(rawDesc) {
+  if (!rawDesc) return ''
+  const parts = rawDesc.split('|||')
+  return parts[0]?.trim() || ''
+}
 
+// ── Helper: Resolve Step Description ──────────────────────────────────────────
+function getStepDescription(step, index, totalSteps) {
+  if (step.description && typeof step.description === 'string' && step.description.trim()) {
+    return step.description.trim()
+  }
+
+  const name = (step.step_name || '').toLowerCase()
+
+  if (name.includes('receipt') || name.includes('payment') || name.includes('checking of receipt')) {
+    return 'Present and verify the official payment receipt issued by the Cashier\'s Office.'
+  }
+  if (name.includes('form issuance') || name.includes('issuance of form')) {
+    return 'Issue the official blank clearance or application request form to the student.'
+  }
+  if (name.includes('form submission') || name.includes('submission of form')) {
+    return 'Receive and review the completed, signed application form together with attached requirements.'
+  }
+  if (name.includes('filing') || name.includes('verification') || name.includes('evaluat') || name.includes('checking of records')) {
+    return 'Verify scholastic records, grades, and academic eligibility against official university archives.'
+  }
+  if (name.includes('preparation') || name.includes('printing') || name.includes('signing') || name.includes('dry seal')) {
+    return 'Process, print, sign, and dry-seal the requested official document..'
+  }
+  if (name.includes('release') || name.includes('issuance') || name.includes('collection') || name.includes('pickup')) {
+    return 'Hand over the verified document to the student and log the official release timestamp.'
+  }
+  if (name.includes('assessment') || name.includes('interview')) {
+    return 'Evaluate student eligibility and assess document request requirements.'
+  }
+
+  if (index === 0) {
+    return 'Initial verification of student credentials and request prerequisites.'
+  } else if (index === totalSteps - 1) {
+    return 'Final review and official releasing of the processed document.'
+  }
+  return 'Administrative verification and data processing for this workflow stage.'
+}
+
+// ── Queue Details Modal ───────────────────────────────────────────────────────
 export default function QueueDetailsModal({ ticketData, onClose, onConfirm, confirming, onSetReleaseDate }) {
   const { ticket, steps } = ticketData
   const student = ticket.users
   const name    = student ? `${student.last_name}, ${student.first_name}` : 'Unknown'
   const appt    = ticket.appointments
+  const txType  = appt?.transaction_types
+  
+  const docDescription = getCleanDocDescription(txType?.description)
+  const requiredDocs = txType?.required_documents || []
   
   const getTodayStr = () => new Date().toISOString().split('T')[0]
   const [releaseDate, setReleaseDate] = useState(appt?.release_date || getTodayStr())
-  const [loadingSetNotify, setLoadingSetNotify] = useState(false)
-  const [loadingReadyNow, setLoadingReadyNow] = useState(false)
-  const [toastMsg, setToastMsg] = useState('')
+  const [toastMsg, setToastMsg] = useState(null)
 
-  const showToast = (msg) => {
-    setToastMsg(msg)
-    setTimeout(() => setToastMsg(''), 3000)
+  const showToast = (msg, type = 'success') => {
+    setToastMsg({ text: typeof msg === 'string' ? msg : JSON.stringify(msg), type })
+    setTimeout(() => setToastMsg(null), 3000)
   }
   
-  const [releasedTo, setReleasedTo] = useState('')
   const [documentVerified, setDocumentVerified] = useState(false)
+  const [isReleasing, setIsReleasing] = useState(false)
 
   return createPortal((
-    <div className="fixed inset-0 z-1000 flex items-center justify-center">
-      <div className="absolute inset-0 bg-black/60 transition-opacity duration-300" onClick={onClose} />
-      <div className="animate-fade-up relative w-full max-w-200 bg-white rounded-4xl p-8 max-h-[90vh] overflow-y-auto shadow-2xl">
+    <div className="fixed inset-0 z-1000 flex items-center justify-center p-4 sm:p-6 md:p-8">
+      {/* Backdrop */}
+      <div 
+        className="fixed inset-0 bg-black/55 backdrop-blur-[2px] transition-opacity duration-300" 
+        onClick={onClose} 
+      />
+
+      {/* Modal Dialog */}
+      <div className="animate-fade-up relative w-full max-w-4xl bg-white text-text-main rounded-3xl p-6 sm:p-8 md:p-10 max-h-[90vh] overflow-y-auto shadow-[0_25px_80px_rgba(0,0,0,0.18)] border border-border z-10 custom-scrollbar">
         
         {/* Header */}
-        <div className="flex justify-between items-start mb-6">
+        <div className="flex justify-between items-start mb-6 pb-5 border-b border-border gap-4">
           <div>
-            <div className="text-xs font-bold text-gold uppercase tracking-[0.08em] mb-1.5 flex items-center gap-1.5"><Ticket size={14}/> Queue Details</div>
-            <h2 className="font-serif text-[32px] font-extrabold text-maroon m-0 leading-none">{ticket.queue_number}</h2>
+            <div className="flex items-center gap-2 mb-2 flex-wrap">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-gold-light text-gold text-[11px] font-extrabold uppercase tracking-wider border border-gold-border">
+                <Ticket size={13} /> Queue Ticket Details
+              </span>
+              {ticket.priority_class && ticket.priority_class !== 'regular' && (
+                <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-maroon-light text-maroon text-[11px] font-extrabold uppercase tracking-wider border border-maroon-border">
+                  <ShieldCheck size={13} /> {ticket.priority_class} Priority
+                </span>
+              )}
+            </div>
+            
+            <div className="flex items-baseline gap-4 flex-wrap">
+              <h2 className="font-serif text-[36px] sm:text-[42px] font-extrabold text-maroon m-0 leading-none tracking-tight">
+                {ticket.queue_number}
+              </h2>
+              <span className={`text-[12px] font-extrabold px-3 py-1 rounded-full border ${
+                ticket.status === 'in_progress' 
+                  ? 'bg-maroon-light text-maroon border-maroon-border' 
+                  : ticket.status === 'completed'
+                  ? 'bg-success-light text-success border-success-border'
+                  : 'bg-gold-light text-gold border-gold-border'
+              }`}>
+                {ticket.status === 'in_progress' ? '● In Progress' : ticket.status === 'completed' ? '✓ Completed' : 'Waiting in Queue'}
+              </span>
+            </div>
           </div>
-          <button onClick={onClose} className="bg-surface/50 border-none cursor-pointer text-text-muted flex items-center justify-center hover:bg-border hover:text-text-main transition-colors p-2 rounded-full"><X size={20} /></button>
+
+          <button 
+            onClick={onClose} 
+            className="w-10 h-10 rounded-full bg-surface text-text-muted hover:bg-border/80 hover:text-text-main transition-all flex items-center justify-center border border-border cursor-pointer shrink-0 shadow-xs hover:scale-105 active:scale-95"
+            title="Close"
+          >
+            <X size={18} />
+          </button>
         </div>
 
-        {/* Info Cards */}
-        <div className="grid grid-cols-2 gap-5 mb-10">
-          <div className="p-6 bg-linear-to-br from-surface to-off-white rounded-[20px] border border-border shadow-[0_2px_15px_rgba(0,0,0,0.03)] backdrop-blur-md relative overflow-hidden">
-            <div className="absolute top-0 left-0 w-1 h-full bg-gold"></div>
-            <div className="text-[10px] text-text-muted uppercase font-black tracking-widest mb-2 flex items-center gap-1.5"><Users size={14} /> Student Details</div>
-            <div className="text-[18px] font-extrabold text-text-main mb-1">{name}</div>
-            <div className="text-[14px] text-text-sub font-mono font-medium">{student?.student_id || '—'}</div>
+        {/* Info Cards Grid (Student Info + Requested Document Details) */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-7">
+          {/* Student Details Card */}
+          <div className="p-5 sm:p-6 bg-surface/70 rounded-2xl border border-border shadow-xs flex items-start gap-4">
+            <div className="w-12 h-12 rounded-xl bg-maroon-light text-maroon flex items-center justify-center shrink-0 border border-maroon-border">
+              <Users size={22} />
+            </div>
+            <div className="flex-1 min-w-0">
+              <span className="text-[10.5px] text-text-muted uppercase font-extrabold tracking-wider block mb-1">
+                Student Information
+              </span>
+              <div className="text-[16px] font-bold text-text-main leading-snug truncate mb-1.5">
+                {name}
+              </div>
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-[12px] text-text-sub font-mono font-bold bg-white px-2.5 py-0.5 rounded-lg border border-border">
+                  ID: {student?.student_id || '—'}
+                </span>
+                {student?.email && (
+                  <span className="text-[11.5px] text-text-muted truncate max-w-44">
+                    {student.email}
+                  </span>
+                )}
+              </div>
+            </div>
           </div>
-          <div className="p-6 bg-linear-to-br from-surface to-off-white rounded-[20px] border border-border shadow-[0_2px_15px_rgba(0,0,0,0.03)] backdrop-blur-md relative overflow-hidden">
-            <div className="absolute top-0 left-0 w-1 h-full bg-maroon"></div>
-            <div className="text-[10px] text-text-muted uppercase font-black tracking-widest mb-2 flex items-center gap-1.5"><Ticket size={14} /> Transaction</div>
-            <div className="text-[16px] font-bold text-text-main leading-snug">{appt?.transaction_types?.name}</div>
+
+          {/* Requested Document Details Card */}
+          <div className="p-5 sm:p-6 bg-surface/70 rounded-2xl border border-border shadow-xs flex items-start gap-4">
+            <div className="w-12 h-12 rounded-xl bg-gold-light text-gold flex items-center justify-center shrink-0 border border-gold-border">
+              <FileText size={22} />
+            </div>
+            <div className="flex-1 min-w-0">
+              <span className="text-[10.5px] text-text-muted uppercase font-extrabold tracking-wider block mb-1">
+                Requested Document
+              </span>
+              <div className="text-[16px] font-bold text-text-main leading-snug mb-1">
+                {txType?.name || 'Standard Service'}
+              </div>
+              <div className="text-[12px] text-text-sub flex items-center gap-1.5 font-medium mb-1.5">
+                <Calendar size={13} className="text-text-muted" />
+                {appt?.appointment_date ? new Date(appt.appointment_date).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' }) : 'Walk-in Ticket'}
+                {appt?.time_slot && ` • ${appt.time_slot}`}
+              </div>
+              {docDescription && (
+                <p className="text-[11.5px] text-text-sub font-normal m-0 line-clamp-2 leading-relaxed bg-white/70 p-2 rounded-lg border border-border/60">
+                  {docDescription}
+                </p>
+              )}
+            </div>
           </div>
         </div>
 
+        {/* Detailed Document Requirements & Student Remarks Banner (If Present) */}
+        {(requiredDocs.length > 0 || appt?.notes) && (
+          <div className="mb-7 p-4.5 bg-surface/50 rounded-2xl border border-border/80 flex flex-col gap-3">
+            {requiredDocs.length > 0 && (
+              <div>
+                <span className="text-[10.5px] font-extrabold text-text-muted uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
+                  <ClipboardList size={13} className="text-gold" /> Required Document Attachments
+                </span>
+                <div className="flex flex-wrap gap-1.5">
+                  {requiredDocs.map((doc, i) => (
+                    <span 
+                      key={i} 
+                      className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white border border-border text-[11.5px] font-semibold text-text-main shadow-2xs"
+                    >
+                      <CheckCircle2 size={12} className="text-success shrink-0" />
+                      <span>{doc}</span>
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
 
+            {appt?.notes && (
+              <div className={requiredDocs.length > 0 ? "pt-2.5 border-t border-border/60" : ""}>
+                <span className="text-[10.5px] font-extrabold text-text-muted uppercase tracking-wider mb-1 flex items-center gap-1.5">
+                  <Info size={13} className="text-maroon" /> Student Remarks / Purpose
+                </span>
+                <p className="text-[12.5px] text-text-main font-medium m-0 whitespace-pre-wrap leading-relaxed">
+                  {appt.notes}
+                </p>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Steps or Extra Info depending on status */}
         {ticket.status !== 'pending' && ticket.status !== 'waiting' ? (
-        <div>
-          <h3 className="text-sm font-bold text-text-main uppercase tracking-[0.06em] mb-5">Processing Steps</h3>
-          <div className="flex flex-col gap-0">
-            {steps.map((step, idx, filteredArr) => {
-              const isLast = idx === filteredArr.length - 1
-              const isCurrent = ticket.status === 'in_progress' && step.status === 'in_progress'
-              const confirmKey = `${ticket.id}-${step.step_number}`
-              const isConfirming = confirming === confirmKey
-              
-              const isReceiptSub = step.step_name.includes('Checking') || step.step_name.includes('Receipt Submission')
-              const isFormSub = step.step_name.includes('Form Submission')
-              const isFilingVerif = step.step_name.includes('Filing & Verification')
-              const isFormIssuance = step.step_name.includes('Form Issuance')
-              
-              const isPrepDoc = step.step_name.includes('Preparation of Document')
-              const isRelease = step.step_name.includes('Release')
-              
-              let confirmLabel = 'Confirm Step';
-              let instructionText = step.requires_presence !== false ? 'Please confirm to proceed' : 'Active Step — processing, no line';
-              
-              if (isPrepDoc) {
-                confirmLabel = 'Document Prepared';
-                instructionText = 'Click Document Prepared once ready';
-              } else if (isRelease) {
-                confirmLabel = 'Release';
-                instructionText = 'Click Released to move it to the Document Release';
-              } else if (isReceiptSub) {
-                confirmLabel = 'Payment Checked';
-                instructionText = 'Click Payment Checked once receipt is verified';
-              } else if (isFormSub) {
-                confirmLabel = 'Form Received';
-                instructionText = 'Click Form Received once document is submitted';
-              } else if (isFilingVerif) {
-                confirmLabel = 'Mark as Verified';
-                instructionText = 'Click Mark as Verified once filed';
-              } else if (isFormIssuance) {
-                confirmLabel = 'Form Issued';
-                instructionText = 'Click Form Issued once given to student';
-              } else if (step.requires_presence !== false) {
-                instructionText = 'Click Mark as done once ready';
-              }
-              
-              return (
-                <div key={step.id} className="flex gap-5">
-                  <div className="flex flex-col items-center">
-                    <div className={`w-10 h-10 rounded-full shrink-0 flex items-center justify-center text-[14px] font-black shadow-md transition-all duration-300
-                      ${step.status === 'completed' ? 'bg-success text-white ring-4 ring-success-light/30' : 
-                        step.status === 'in_progress' ? 'bg-maroon text-white ring-4 ring-maroon-light' : 
-                        'bg-surface border-2 border-border text-text-muted'}`}
-                    >
-                      {step.status === 'completed' ? <Check size={18} strokeWidth={3} /> : step.step_number}
+          <div>
+            <div className="flex items-center justify-between mb-5">
+              <h3 className="text-[11px] font-extrabold text-text-muted uppercase tracking-[0.08em] flex items-center gap-1.5 m-0">
+                <Clock size={14} className="text-maroon" /> Workflow Processing Steps
+              </h3>
+              <span className="text-[12px] font-bold text-text-sub">
+                {steps.filter(s => s.status === 'completed').length} of {steps.length} completed
+              </span>
+            </div>
+            
+            <div className="flex flex-col gap-0">
+              {steps.map((step, idx, filteredArr) => {
+                const isLast = idx === filteredArr.length - 1
+                const isCurrent = ticket.status === 'in_progress' && step.status === 'in_progress'
+                const isCompleted = step.status === 'completed'
+                const confirmKey = `${ticket.id}-${step.step_number}`
+                const isConfirming = confirming === confirmKey
+                
+                const isReceiptSub = step.step_name.includes('Checking') || step.step_name.includes('Receipt Submission')
+                const isFormSub = step.step_name.includes('Form Submission')
+                const isFilingVerif = step.step_name.includes('Filing & Verification')
+                const isFormIssuance = step.step_name.includes('Form Issuance')
+                const isPrepDoc = step.step_name.includes('Preparation of Document')
+                const isRelease = step.step_name.includes('Release')
+                
+                let confirmLabel = 'Confirm Step'
+                let instructionText = step.requires_presence !== false ? 'Please verify requirements and confirm this step' : 'Active background step (processing document)'
+                
+                if (isPrepDoc) {
+                  confirmLabel = 'Document Prepared'
+                  instructionText = 'Click when document printing/processing is completed'
+                } else if (isRelease) {
+                  confirmLabel = 'Release Document'
+                  instructionText = 'Set availability date and move ticket to Document Releases'
+                } else if (isReceiptSub) {
+                  confirmLabel = 'Payment Checked'
+                  instructionText = 'Click once student official receipt is verified'
+                } else if (isFormSub) {
+                  confirmLabel = 'Form Received'
+                  instructionText = 'Click once clearance/completion form is submitted'
+                } else if (isFilingVerif) {
+                  confirmLabel = 'Mark as Verified'
+                  instructionText = 'Click once records are verified and filed'
+                } else if (isFormIssuance) {
+                  confirmLabel = 'Form Issued'
+                  instructionText = 'Click once blank form is issued to student'
+                } else if (step.requires_presence !== false) {
+                  instructionText = 'Verify and mark step as done'
+                }
+
+                const stepDesc = getStepDescription(step, idx, filteredArr.length)
+                
+                return (
+                  <div key={step.id} className="flex gap-4 sm:gap-6">
+                    {/* Step Indicator & Spine */}
+                    <div className="flex flex-col items-center">
+                      <div className={`w-10 h-10 rounded-full shrink-0 flex items-center justify-center text-[13.5px] font-extrabold transition-all duration-300 ${
+                        isCompleted 
+                          ? 'bg-success text-white ring-4 ring-success-light shadow-xs' 
+                          : isCurrent 
+                          ? 'bg-maroon text-white ring-4 ring-maroon-light shadow-sm' 
+                          : 'bg-white border-2 border-border text-text-muted'
+                      }`}>
+                        {isCompleted ? <Check size={18} strokeWidth={3} /> : step.step_number}
+                      </div>
+                      {!isLast && (
+                        <div className={`w-0.5 flex-1 min-h-14 my-2 transition-colors duration-500 ${
+                          isCompleted ? 'bg-success/50' : 'bg-border'
+                        }`} />
+                      )}
                     </div>
-                    {!isLast && <div className={`w-0.5 flex-1 min-h-12 my-2 transition-colors duration-500 ${step.status === 'completed' ? 'bg-success/50' : 'bg-border/60'}`} />}
-                  </div>
-                  <div className={`flex-1 ${isLast ? 'pb-0' : 'pb-8'}`}>
-                    <div className={`flex flex-col gap-4 rounded-2xl transition-all duration-300 ${isCurrent ? 'bg-white p-6 border border-maroon-border shadow-[0_4px_24px_rgba(123,26,42,0.06)] -mt-3 relative z-10' : 'bg-transparent py-2 border-none mt-0 opacity-60 hover:opacity-100'}`}>
-                      
-                      {/* Step Header Row */}
-                      <div className="flex justify-between items-start gap-4 flex-wrap">
-                        <div>
-                          <div className={`text-[17px] font-extrabold ${step.status === 'completed' ? 'text-success' : 'text-text-main'}`}>{step.step_name}</div>
-                          {step.status === 'completed' && step.confirmed_at && (
-                            <div className="text-[12.5px] font-medium text-text-muted mt-1">Confirmed at {new Date(step.confirmed_at).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}</div>
-                          )}
+
+                    {/* Step Card Content */}
+                    <div className={`flex-1 ${isLast ? 'pb-0' : 'pb-6'}`}>
+                      <div className={`flex flex-col gap-3 rounded-2xl transition-all duration-300 ${
+                        isCurrent 
+                          ? 'bg-white p-5 sm:p-6 border-2 border-maroon/20 shadow-md ring-4 ring-maroon/5 -mt-1' 
+                          : isCompleted
+                          ? 'bg-surface/50 p-4.5 rounded-2xl border border-border/80'
+                          : 'bg-surface/30 p-4.5 rounded-2xl border border-border/50 opacity-65'
+                      }`}>
+                        
+                        {/* Step Header Row */}
+                        <div className="flex justify-between items-start gap-4 flex-wrap">
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 flex-wrap mb-1">
+                              <span className={`text-[15.5px] font-bold ${
+                                isCompleted ? 'text-success' : isCurrent ? 'text-text-main' : 'text-text-sub'
+                              }`}>
+                                {step.step_name}
+                              </span>
+
+                              {isCurrent && (
+                                <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-maroon-light text-maroon border border-maroon-border">
+                                  Current Action
+                                </span>
+                              )}
+
+                              {/* Presence Badge */}
+                              {step.requires_presence === false ? (
+                                <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-gold-light text-gold border border-gold-border">
+                                  <Sparkles size={11} /> Back-Office Processing
+                                </span>
+                              ) : (
+                                <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-surface border border-border text-text-muted">
+                                  <Users size={11} /> Student Presence Required
+                                </span>
+                              )}
+
+                              {step.location && (
+                                <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-surface border border-border text-text-muted">
+                                  <DoorOpen size={11} /> {step.location}
+                                </span>
+                              )}
+                            </div>
+
+                            {/* Step Description */}
+                            <p className="text-[12.5px] text-text-sub font-normal m-0 leading-relaxed mt-1">
+                              {stepDesc}
+                            </p>
+                            
+                            {isCompleted && step.confirmed_at && (
+                              <div className="text-[12px] font-medium text-text-muted mt-2 flex items-center gap-1.5">
+                                <CheckCircle2 size={13} className="text-success" />
+                                Completed on {new Date(step.confirmed_at).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
+                              </div>
+                            )}
+
+                            {isCurrent && (
+                              <div className="text-[12.5px] text-maroon font-semibold mt-2 flex items-center gap-1.5">
+                                <span className="w-1.5 h-1.5 rounded-full bg-maroon animate-ping inline-block" />
+                                {instructionText}
+                              </div>
+                            )}
+                          </div>
+                          
+                          {/* Action Button for Current Step */}
                           {isCurrent && (
-                            <div className="text-[13px] text-gold mt-1.5 font-bold tracking-wide">
-                              {instructionText}
+                            <div className="shrink-0">
+                              <button
+                                onClick={async () => {
+                                  if (isReleasing) return
+                                  const finalDate = releaseDate || getTodayStr()
+
+                                  if (isRelease) {
+                                    if (!documentVerified) {
+                                      alert('Please confirm the document is complete, correct, and ready for release before continuing.')
+                                      return
+                                    }
+                                    const apptId = ticket.appointment_id || ticket.appointments?.id
+                                    if (!apptId) {
+                                      alert('Error: Appointment ID is missing.')
+                                      return
+                                    }
+                                    setIsReleasing(true)
+                                    try {
+                                      await onSetReleaseDate(apptId, finalDate)
+                                      showToast('Document moved to Document Releases')
+                                    } catch (err) {
+                                      showToast(err?.message || 'Failed to set release date. Please try again.', 'error')
+                                      setIsReleasing(false)
+                                      return
+                                    }
+                                    setIsReleasing(false)
+                                  } else {
+                                    await onConfirm(ticket.id, step.step_number, txType?.name, name, confirmLabel, null, '', false)
+                                  }
+                                  onClose()
+                                }}
+                                disabled={isConfirming || isReleasing || (isRelease && (!releaseDate || !documentVerified))}
+                                className={`px-5 py-2.5 rounded-xl text-[13px] font-extrabold font-sans transition-all shadow-xs inline-flex items-center gap-2 ${
+                                  isConfirming || isReleasing || (isRelease && (!releaseDate || !documentVerified)) 
+                                    ? 'bg-border text-text-muted cursor-not-allowed shadow-none' 
+                                    : 'bg-maroon hover:bg-maroon-dark text-white cursor-pointer hover:shadow-sm active:scale-98'
+                                }`}
+                              >
+                                {isReleasing || isConfirming ? (
+                                  <>
+                                    <Loader2 size={14} className="animate-spin" />
+                                    {isReleasing ? 'Processing Release…' : 'Confirming…'}
+                                  </>
+                                ) : (
+                                  <>
+                                    <Check size={14} className="stroke-3" />
+                                    {confirmLabel}
+                                  </>
+                                )}
+                              </button>
                             </div>
                           )}
                         </div>
-                        
-                        {/* Action Buttons */}
-                        {isCurrent && (
-                          <div className="flex items-center gap-3 shrink-0">
 
-                            <button
-                              onClick={async () => {
-                                const finalDate = releaseDate || getTodayStr()
-                                if (isRelease) {
-                                  const apptId = ticket.appointment_id || ticket.appointments?.id;
-                                  if (apptId) {
-                                    await onSetReleaseDate(apptId, finalDate);
-                                    showToast('Release date updated successfully');
-                                  } else {
-                                    alert('Error: Appointment ID is missing.');
-                                    return; // stop if there's an error
-                                  }
-                                } else {
-                                  await onConfirm(ticket.id, step.step_number, appt?.transaction_types?.name, name, confirmLabel, finalDate, releasedTo, documentVerified)
-                                }
-                                onClose()
-                              }}
-                              disabled={isConfirming || (isRelease && !releaseDate)}
-                              className={`px-5 py-2.5 rounded-xl border border-maroon text-[13px] font-bold font-sans transition-all shadow-sm hover:-translate-y-0.5
-                                ${isConfirming || (isRelease && !releaseDate) ? 'bg-white text-maroon/40 border-maroon/40 cursor-not-allowed shadow-none' : 'bg-white text-maroon cursor-pointer hover:bg-maroon hover:text-white'}
-                              `}
-                            >
-                              {isConfirming ? 'Confirming...' : confirmLabel}
-                            </button>
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Release Form Below Title */}
-                      {isCurrent && isRelease && (
-                        <div className="mt-2 pt-5 border-t border-border/80">
-                          <div className="flex flex-col gap-5">
-                            <div>
-                              <label className="block text-[11px] font-bold text-text-muted uppercase tracking-[0.06em] mb-3">
-                                Choose released date to notify student:
-                              </label>
-                              <div className="flex flex-col gap-3">
-                                <div className="flex gap-4 items-center">
-                                  <label 
-                                    className={`flex items-center gap-2.5 px-4 py-2.5 rounded-full cursor-pointer transition-all duration-200 border ${releaseDate === getTodayStr() ? 'bg-maroon/5 border-maroon/20 text-maroon shadow-[0_2px_8px_rgba(123,26,42,0.05)]' : 'bg-transparent border-transparent text-text-sub hover:text-text-main hover:bg-black/5'}`}
-                                    onClick={() => setReleaseDate(getTodayStr())}
-                                  >
-                                    {releaseDate === getTodayStr() ? <CircleDot size={18} className="text-maroon" /> : <Circle size={18} className="text-text-muted" />}
-                                    <span className="font-bold text-[14px]">Ready Now</span>
-                                  </label>
-
-                                  <label 
-                                    className={`flex items-center gap-2.5 px-4 py-2.5 rounded-full cursor-pointer transition-all duration-200 border ${releaseDate !== getTodayStr() ? 'bg-maroon/5 border-maroon/20 text-maroon shadow-[0_2px_8px_rgba(123,26,42,0.05)]' : 'bg-transparent border-transparent text-text-sub hover:text-text-main hover:bg-black/5'}`}
-                                    onClick={() => setReleaseDate('')}
-                                  >
-                                    {releaseDate !== getTodayStr() ? <CircleDot size={18} className="text-maroon" /> : <Circle size={18} className="text-text-muted" />}
-                                    <span className="font-bold text-[14px]">Schedule Date</span>
-                                  </label>
-                                </div>
+                        {/* Release Form (when current step is Release) */}
+                        {isCurrent && isRelease && (
+                          <div className="mt-3 pt-4 border-t border-border">
+                            <div className="flex flex-col gap-4">
+                              <div>
+                                <label className="block text-[11px] font-extrabold text-text-muted uppercase tracking-wider mb-2.5">
+                                  Select Document Release Date:
+                                </label>
                                 
-                                {releaseDate !== getTodayStr() && (
-                                  <div className="animate-fade-in w-full max-w-50">
-                                    <input 
-                                      type="date" 
-                                      value={releaseDate} 
-                                      onChange={e => setReleaseDate(e.target.value)}
-                                      className="w-full px-4 py-2.5 rounded-xl border border-border bg-off-white text-[14px] font-semibold outline-none text-text-main focus:border-maroon focus:bg-white focus:ring-2 focus:ring-maroon/10 transition-all"
-                                    />
-                                  </div>
-                                )}
+                                <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
+                                  <div className="flex bg-surface p-1 rounded-xl border border-border shadow-xs">
+                                    <button 
+                                      type="button"
+                                      onClick={() => setReleaseDate(getTodayStr())}
+                                      className={`px-4 py-2 rounded-lg text-[12.5px] font-bold transition-all cursor-pointer flex items-center gap-2 ${
+                                        releaseDate === getTodayStr() 
+                                          ? 'bg-maroon text-white shadow-xs' 
+                                          : 'bg-transparent text-text-sub hover:text-text-main'
+                                      }`}
+                                    >
+                                      {releaseDate === getTodayStr() ? <CircleDot size={15} /> : <Circle size={15} />}
+                                      Ready Today
+                                    </button>
 
+                                    <button 
+                                      type="button"
+                                      onClick={() => setReleaseDate('')}
+                                      className={`px-4 py-2 rounded-lg text-[12.5px] font-bold transition-all cursor-pointer flex items-center gap-2 ${
+                                        releaseDate !== getTodayStr() 
+                                          ? 'bg-maroon text-white shadow-xs' 
+                                          : 'bg-transparent text-text-sub hover:text-text-main'
+                                      }`}
+                                    >
+                                      {releaseDate !== getTodayStr() ? <CircleDot size={15} /> : <Circle size={15} />}
+                                      Schedule Date
+                                    </button>
+                                  </div>
+
+                                  {releaseDate !== getTodayStr() && (
+                                    <div className="animate-fade-in w-full sm:w-auto">
+                                      <input 
+                                        type="date" 
+                                        value={releaseDate} 
+                                        onChange={e => setReleaseDate(e.target.value)}
+                                        className="w-full sm:w-auto px-4 py-2 rounded-xl border border-border bg-white text-[13.5px] font-medium outline-none text-text-main focus:border-maroon transition-all shadow-xs"
+                                      />
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                              
+                              {/* Verification confirmation checkbox */}
+                              <div className="p-4 rounded-xl bg-surface border border-border flex items-start gap-3.5">
+                                <input 
+                                  type="checkbox" 
+                                  id="verifyDoc" 
+                                  checked={documentVerified}
+                                  onChange={e => setDocumentVerified(e.target.checked)}
+                                  className="mt-0.5 w-5 h-5 accent-maroon rounded cursor-pointer shrink-0"
+                                />
+                                <label htmlFor="verifyDoc" className="text-[13.5px] text-text-main font-semibold leading-snug cursor-pointer select-none">
+                                  I confirm that the requested document is verified, signed, and ready for release to the student.
+                                </label>
                               </div>
                             </div>
                           </div>
-                          
-                          <div className="mt-5 p-4 rounded-xl bg-gold-light/40 border border-gold-border/60 flex items-start gap-3 transition-colors hover:bg-gold-light/60">
-                            <input 
-                              type="checkbox" 
-                              id="verifyDoc" 
-                              checked={documentVerified}
-                              onChange={e => setDocumentVerified(e.target.checked)}
-                              className="mt-0.5 w-5 h-5 text-maroon focus:ring-maroon border-border rounded cursor-pointer transition-all"
-                            />
-                            <label htmlFor="verifyDoc" className="text-[14px] text-text-main font-semibold leading-snug cursor-pointer select-none">
-                              I confirm that the document is complete, correct, and ready for release.
-                            </label>
-                          </div>
-                        </div>
-                      )}
+                        )}
+
+                      </div>
                     </div>
                   </div>
-                </div>
-              )
-            })}
+                )
+              })}
+            </div>
           </div>
-        </div>
         ) : (
+          /* Additional Details for Pending / Waiting Tickets */
           <div>
-            <h3 className="text-sm font-bold text-text-main uppercase tracking-[0.06em] mb-4">Additional Details</h3>
-            <div className="grid grid-cols-2 gap-4 mb-2">
-              <div className="p-5 bg-white rounded-2xl border border-border shadow-sm flex flex-col gap-1">
-                <label className="text-[10px] text-text-muted uppercase font-black tracking-widest mb-1">Appointment Date</label>
-                <div className="text-[15px] font-bold text-text-main">
-                  {appt?.appointment_date ? new Date(appt.appointment_date).toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' }) : 'Walk-in'}
+            <h3 className="text-[11px] font-extrabold text-text-muted uppercase tracking-[0.08em] mb-4 flex items-center gap-1.5">
+              <Calendar size={14} className="text-maroon" /> Additional Ticket Details
+            </h3>
+            
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3.5 mb-4">
+              <div className="p-4 bg-surface rounded-2xl border border-border shadow-xs flex flex-col gap-1">
+                <label className="text-[10px] text-text-muted uppercase font-extrabold tracking-wider">Appointment Date</label>
+                <div className="text-[14px] font-bold text-text-main">
+                  {appt?.appointment_date ? new Date(appt.appointment_date).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' }) : 'Walk-in'}
                 </div>
               </div>
-              <div className="p-5 bg-white rounded-2xl border border-border shadow-sm flex flex-col gap-1">
-                <label className="text-[10px] text-text-muted uppercase font-black tracking-widest mb-1">Time Slot</label>
-                <div className="text-[15px] font-bold text-text-main">
+
+              <div className="p-4 bg-surface rounded-2xl border border-border shadow-xs flex flex-col gap-1">
+                <label className="text-[10px] text-text-muted uppercase font-extrabold tracking-wider">Time Slot</label>
+                <div className="text-[14px] font-bold text-text-main">
                   {appt?.time_slot ? (() => {
-                    const parts = appt.time_slot.split(':');
-                    if (parts.length < 2) return appt.time_slot;
-                    const h = parseInt(parts[0], 10);
-                    const ampm = h >= 12 ? 'PM' : 'AM';
-                    return `${h % 12 || 12}:${parts[1]} ${ampm}`;
+                    const parts = appt.time_slot.split(':')
+                    if (parts.length < 2) return appt.time_slot
+                    const h = parseInt(parts[0], 10)
+                    const ampm = h >= 12 ? 'PM' : 'AM'
+                    return `${h % 12 || 12}:${parts[1]} ${ampm}`
                   })() : 'Any time'}
                 </div>
               </div>
-              <div className="p-5 bg-white rounded-2xl border border-border shadow-sm flex flex-col gap-1">
-                <label className="text-[10px] text-text-muted uppercase font-black tracking-widest mb-1">Priority</label>
-                <div className="text-[15px] font-bold text-text-main capitalize">
+
+              <div className="p-4 bg-surface rounded-2xl border border-border shadow-xs flex flex-col gap-1">
+                <label className="text-[10px] text-text-muted uppercase font-extrabold tracking-wider">Priority Category</label>
+                <div className="text-[14px] font-bold text-text-main capitalize">
                   {appt?.priority_class || 'Regular'}
                 </div>
               </div>
-              <div className="p-5 bg-white rounded-2xl border border-border shadow-sm flex flex-col gap-1">
-                <label className="text-[10px] text-text-muted uppercase font-black tracking-widest mb-1">Ticket Issued At</label>
-                <div className="text-[15px] font-bold text-text-main">
+
+              <div className="p-4 bg-surface rounded-2xl border border-border shadow-xs flex flex-col gap-1">
+                <label className="text-[10px] text-text-muted uppercase font-extrabold tracking-wider">Ticket Issued At</label>
+                <div className="text-[14px] font-bold text-text-main">
                   {ticket.created_at ? new Date(ticket.created_at).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }) : '—'}
                 </div>
               </div>
             </div>
             
-            {(appt?.notes || (appt?.transaction_types?.required_documents && appt.transaction_types.required_documents.length > 0)) && (
-              <div className="grid grid-cols-1 gap-4 mb-2">
+            {(appt?.notes || requiredDocs.length > 0) && (
+              <div className="space-y-3.5">
                 {appt?.notes && (
-                  <div className="p-5 bg-white rounded-2xl border border-border shadow-sm flex flex-col gap-1">
-                    <label className="text-[10px] text-text-muted uppercase font-black tracking-widest mb-1">Request Details (Purpose, Semester, Year)</label>
-                    <div className="text-[14px] font-medium text-text-main whitespace-pre-wrap leading-relaxed">
+                  <div className="p-4.5 bg-surface rounded-2xl border border-border shadow-xs flex flex-col gap-1.5">
+                    <label className="text-[10px] text-text-muted uppercase font-extrabold tracking-wider">Purpose / Remarks</label>
+                    <div className="text-[13.5px] font-medium text-text-main whitespace-pre-wrap leading-relaxed">
                       {appt.notes}
                     </div>
                   </div>
                 )}
                 
-                {appt?.transaction_types?.required_documents && appt.transaction_types.required_documents.length > 0 && (
-                  <div className="p-5 bg-white rounded-2xl border border-border shadow-sm flex flex-col gap-1">
-                    <label className="text-[10px] text-text-muted uppercase font-black tracking-widest mb-1">Required Documents</label>
-                    <ul className="text-[14px] font-medium text-text-main pl-4 m-0 space-y-1">
-                      {appt.transaction_types.required_documents.map((doc, idx) => (
+                {requiredDocs.length > 0 && (
+                  <div className="p-4.5 bg-surface rounded-2xl border border-border shadow-xs flex flex-col gap-1.5">
+                    <label className="text-[10px] text-text-muted uppercase font-extrabold tracking-wider">Required Documents</label>
+                    <ul className="text-[13px] font-medium text-text-main pl-4 m-0 space-y-1">
+                      {requiredDocs.map((doc, idx) => (
                         <li key={idx}>{doc}</li>
                       ))}
                     </ul>
@@ -286,11 +565,27 @@ export default function QueueDetailsModal({ ticketData, onClose, onConfirm, conf
         )}
       </div>
       
-      {/* Toast Notification */}
+      {/* Toast Notification (Adhering to strict #006600 rule) */}
       {toastMsg && (
-        <div className="absolute top-6 left-1/2 -translate-x-1/2 bg-gray-900 text-white px-5 py-3 rounded-full text-[13.5px] font-semibold shadow-lg animate-fade-down z-9999 flex items-center gap-2">
-          <Check size={16} className="text-success" />
-          {toastMsg}
+        <div className={`fixed bottom-10 right-8 z-10000 flex items-center gap-3 px-5 py-3.5 rounded-xl shadow-[0_12px_32px_rgba(0,0,0,0.18)] border text-[13.5px] font-bold animate-fade-up ${
+          toastMsg.type === 'error'
+            ? 'bg-danger text-white border-danger-border'
+            : 'bg-[#006600] text-white border-[#005200]'
+        }`}>
+          {toastMsg.type === 'error' ? (
+            <AlertTriangle size={17} className="shrink-0 text-white" />
+          ) : (
+            <div className="w-5 h-5 rounded-full bg-white/20 flex items-center justify-center shrink-0">
+              <Check size={13} className="text-white stroke-3" />
+            </div>
+          )}
+          <span className="text-white">{toastMsg.text}</span>
+          <button 
+            onClick={() => setToastMsg(null)} 
+            className="ml-2.5 bg-transparent border-none text-white/80 hover:text-white cursor-pointer p-0 flex items-center shrink-0 transition-opacity"
+          >
+            <X size={14} strokeWidth={2.5} />
+          </button>
         </div>
       )}
     </div>

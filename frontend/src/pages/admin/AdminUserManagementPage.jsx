@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useAuth } from '../../context/useAuth'
 import { getAllUsers, updateUserRole, getDashboardStats, toggleUserStatus } from '../../services/adminService'
-import { GraduationCap, Briefcase, Shield, AlertTriangle, Check, Search, X as XIcon, Users, Pencil, MoreVertical, Ban, CheckCircle } from 'lucide-react'
+import { GraduationCap, Briefcase, Shield, AlertTriangle, Check, Search, X as XIcon, Users, Pencil, MoreVertical, Ban, CheckCircle, CheckCircle2, X } from 'lucide-react'
 
 // ── Role config ────────────────────────────────────────────────────────────────
 const ROLE_CFG = {
@@ -128,10 +128,14 @@ export default function AdminUserManagementPage() {
   const [loading, setLoading]     = useState(true)
   const [statsLoading, setStatsLoading] = useState(true)
   const [saving, setSaving]       = useState(false)
-  const [error, setError]         = useState('')
-  const [success, setSuccess]     = useState('')
+  const [toastMsg, setToastMsg]   = useState(null)
   const [search, setSearch]       = useState('')
   const [activeTab, setActiveTab] = useState('all')
+
+  const showToast = (msg, type = 'success') => {
+    setToastMsg({ text: typeof msg === 'string' ? msg : JSON.stringify(msg), type })
+    setTimeout(() => setToastMsg(null), 3500)
+  }
   const [editUser, setEditUser]   = useState(null)
   const [dropdownOpen, setDropdownOpen] = useState(null)
   const [page, setPage]           = useState(1)
@@ -150,25 +154,29 @@ export default function AdminUserManagementPage() {
   }, [fetchUsers, token])
 
   const handleSaveRole = async (userId, role) => {
-    setSaving(true); setError(''); setSuccess('')
+    setSaving(true)
     try {
       await updateUserRole(token, userId, role)
       await fetchUsers()
-      setSuccess('Role updated successfully.')
+      showToast('Role updated successfully.')
       setEditUser(null)
-    } catch (e) { setError(e.message) }
-    finally { setSaving(false) }
+    } catch (e) {
+      showToast(e.message || 'Failed to update role.', 'error')
+    } finally {
+      setSaving(false)
+    }
   }
 
   const handleToggleStatus = async (userId, currentStatus) => {
-    setError(''); setSuccess('')
     try {
       const newStatus = !currentStatus
       await toggleUserStatus(token, userId, newStatus)
       await fetchUsers()
-      setSuccess(`User successfully ${newStatus ? 'reactivated' : 'suspended'}.`)
+      showToast(`User successfully ${newStatus ? 'reactivated' : 'suspended'}.`)
       setDropdownOpen(null)
-    } catch (e) { setError(e.message) }
+    } catch (e) {
+      showToast(e.message || 'Failed to change status.', 'error')
+    }
   }
 
   // ── Counts ─────────────────────────────────────────────────────────────────
@@ -200,6 +208,27 @@ export default function AdminUserManagementPage() {
 
   return (
     <div>
+      {/* ── Toast Notification ── */}
+      {toastMsg && (
+        <div className={`fixed bottom-10 right-8 z-9999 flex items-center gap-3 px-5 py-3.5 rounded-xl shadow-[0_12px_32px_rgba(0,0,0,0.18)] border text-[13.5px] font-bold animate-fade-up ${
+          toastMsg.type === 'error' 
+            ? 'bg-red-600 text-white border-red-700' 
+            : 'bg-[#006600] text-white border-[#005200]'
+        }`}>
+          {toastMsg.type === 'error' ? (
+            <AlertTriangle size={17} className="shrink-0 text-white" />
+          ) : (
+            <div className="w-5 h-5 rounded-full bg-white/20 flex items-center justify-center shrink-0">
+              <Check size={13} className="text-white stroke-3" />
+            </div>
+          )}
+          <span className="text-white">{toastMsg.text}</span>
+          <button onClick={() => setToastMsg(null)} className="ml-2.5 bg-transparent border-none text-white/80 hover:text-white cursor-pointer p-0 flex items-center shrink-0 transition-opacity">
+            <X size={14} strokeWidth={2.5} />
+          </button>
+        </div>
+      )}
+
       {/* ── Header ── */}
       <div className="mb-6">
         <div className="text-[11px] font-bold text-gold uppercase tracking-[0.06em] mb-2">USER MANAGEMENT</div>
@@ -210,10 +239,6 @@ export default function AdminUserManagementPage() {
           Manage system accounts, adjust roles, and export the user directory.
         </p>
       </div>
-
-      {/* Alerts */}
-      {error   && <div className="p-[12px_16px] rounded-[10px] bg-danger-light text-danger border border-danger-border mb-5 text-[13px] flex items-center gap-2"><AlertTriangle size={16} /> {error}</div>}
-      {success && <div className="p-[12px_16px] rounded-[10px] bg-success-light text-success border border-success-border mb-5 text-[13px] flex items-center gap-2"><Check size={16} /> {success}</div>}
 
       {/* ── Stat Cards ── */}
       <div className="grid grid-cols-4 gap-4 mb-7">

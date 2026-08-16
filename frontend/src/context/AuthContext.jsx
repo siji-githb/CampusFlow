@@ -26,6 +26,7 @@ export function AuthProvider({ children }) {
     if (refreshTokenValue) {
       localStorage.setItem('cf_refresh', refreshTokenValue)
     }
+    lastRefreshedAtRef.current = Date.now()
   }
 
   const updateUser = (newUserData) => {
@@ -58,6 +59,13 @@ export function AuthProvider({ children }) {
     setIsLoggingOut(false)
   }
 
+  const lastRefreshedAtRef = useRef(Date.now())
+
+  // Only auto-refresh again if it's been at least this long since the
+  // last successful refresh — prevents redundant calls if the user
+  // quickly alt-tabs back and forth.
+  const MIN_REFRESH_GAP_MS = 5 * 60 * 1000 // 5 minutes
+
   const silentRefresh = useCallback(async () => {
     if (!refreshTokenRef.current) return
     try {
@@ -66,6 +74,7 @@ export function AuthProvider({ children }) {
       refreshTokenRef.current = result.refresh_token
       localStorage.setItem('cf_token', result.access_token)
       localStorage.setItem('cf_refresh', result.refresh_token)
+      lastRefreshedAtRef.current = Date.now()
     } catch (e) {
       console.error('Silent session refresh failed, logging out:', e.message)
       logout()
@@ -76,6 +85,31 @@ export function AuthProvider({ children }) {
     if (!token) return
     const interval = setInterval(silentRefresh, SILENT_REFRESH_INTERVAL_MS)
     return () => clearInterval(interval)
+  }, [token, silentRefresh])
+
+  // Browsers throttle/pause setInterval on backgrounded tabs, so the
+  // scheduled refresh above can silently miss its window during long
+  // periods of inactivity. This checks and refreshes proactively the
+  // moment the user actually returns to the tab, which is exactly
+  // when a stale token would otherwise cause a 401/403.
+  useEffect(() => {
+    if (!token) return
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState !== 'visible') return
+      const timeSinceLastRefresh = Date.now() - lastRefreshedAtRef.current
+      if (timeSinceLastRefresh > MIN_REFRESH_GAP_MS) {
+        silentRefresh()
+      }
+    }
+
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+    window.addEventListener('focus', handleVisibilityChange)
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
+      window.removeEventListener('focus', handleVisibilityChange)
+    }
   }, [token, silentRefresh])
 
   return (

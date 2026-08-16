@@ -316,7 +316,7 @@ def get_student_appointments(student_id: str):
 
     try:
         res = admin.table("appointments") \
-            .select("*, transaction_types(name, processing_steps, required_documents), queue_tickets(id, status)") \
+            .select("*, transaction_types(name, processing_steps, required_documents), queue_tickets(id, status, queue_number, current_step, total_steps)") \
             .eq("student_id", student_id) \
             .order("appointment_date", desc=True) \
             .execute()
@@ -328,10 +328,10 @@ def get_student_appointments(student_id: str):
 def cancel_appointment(appointment_id: str, student_id: str):
     admin = get_admin()
 
-    # Verify ownership
+    # Verify ownership and transaction details
     try:
         res = admin.table("appointments") \
-            .select("*") \
+            .select("*, transaction_types(name)") \
             .eq("id", appointment_id) \
             .eq("student_id", student_id) \
             .single() \
@@ -373,10 +373,29 @@ def cancel_appointment(appointment_id: str, student_id: str):
             severity="Warning"
         )
         
+        # Format transaction name, date, and time
+        tx_name = (appt.get("transaction_types") or {}).get("name") or "transaction"
+        try:
+            from datetime import datetime
+            d_obj = datetime.strptime(appt['appointment_date'], "%Y-%m-%d")
+            formatted_date = d_obj.strftime("%B %d, %Y")
+        except Exception:
+            formatted_date = appt['appointment_date']
+
+        time_str = ""
+        if appt.get("time_slot"):
+            try:
+                from datetime import datetime
+                ts = appt["time_slot"][:5]
+                t_obj = datetime.strptime(ts, "%H:%M")
+                time_str = f" at {t_obj.strftime('%I:%M %p').lstrip('0')}"
+            except Exception:
+                time_str = f" at {appt['time_slot']}"
+
         create_system_notification(
             user_id=student_id,
             title="Appointment Cancelled",
-            message=f"Your appointment on {appt['appointment_date']} was cancelled.",
+            message=f"Your appointment for {tx_name} scheduled on {formatted_date}{time_str} has been cancelled. You may book a new slot anytime.",
             type="warning"
         )
         return {"message": "Appointment cancelled successfully"}
@@ -641,15 +660,34 @@ def set_release_date(appointment_id: str, release_date: str, actor_id: str = Non
         
         admin.table("appointments").update({"release_date": release_date}).eq("id", appointment_id).execute()
         
-        appt_res = admin.table("appointments").select("student_id").eq("id", appointment_id).execute()
-        if appt_res.data and appt_res.data[0].get("student_id"):
+        appt_res = admin.table("appointments").select("student_id, release_date, transaction_types(name)").eq("id", appointment_id).single().execute()
+        if appt_res.data and appt_res.data.get("student_id"):
             from services.notification_service import create_system_notification
-            create_system_notification(
-                user_id=appt_res.data[0]["student_id"],
-                title="Document Ready for Claiming",
-                message="Your document is ready. Please go to the 'To Claim' tab to claim your document.",
-                type="success"
-            )
+            from datetime import date
+            today_str = str(date.today())
+            tx_name = (appt_res.data.get("transaction_types") or {}).get("name", "document")
+
+            if release_date == today_str:
+                create_system_notification(
+                    user_id=appt_res.data["student_id"],
+                    title="Document Ready for Release",
+                    message=f"Your {tx_name} is ready for pickup today at the Registrar's Office. Please present your claim stub or student ID.",
+                    type="success"
+                )
+            else:
+                try:
+                    from datetime import datetime
+                    rd_obj = datetime.strptime(release_date, "%Y-%m-%d")
+                    formatted_rd = rd_obj.strftime("%B %d, %Y")
+                except Exception:
+                    formatted_rd = release_date
+
+                create_system_notification(
+                    user_id=appt_res.data["student_id"],
+                    title="Document Release Date Scheduled",
+                    message=f"Your {tx_name} has been scheduled for claiming on {formatted_rd}. Please visit the Registrar's Office on or after this date to claim it.",
+                    type="info"
+                )
         
         if actor_id and old_date != release_date:
             log_audit_action(

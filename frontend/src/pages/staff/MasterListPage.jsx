@@ -4,7 +4,7 @@ import { getStudentRecords, uploadStudentRecords, addStudentRecord, deleteStuden
 import { FileSpreadsheet, Edit, Trash2, ClipboardList, Search, ChevronDown } from 'lucide-react'
 import { useAuth } from '../../context/useAuth'
 
-export default function StudentRecordsPage() {
+export default function MasterListPage() {
   const { token } = useAuth()
   const [records, setRecords] = useState([])
   const [loading, setLoading] = useState(true)
@@ -28,6 +28,7 @@ export default function StudentRecordsPage() {
   const [selectedRecords, setSelectedRecords] = useState(new Set())
   const [isBulkDeleting, setIsBulkDeleting] = useState(false)
   const [showBulkDeleteModal, setShowBulkDeleteModal] = useState(false)
+  const [openDropdown, setOpenDropdown] = useState(null)
 
   const displayedRecords = records.filter(r => {
     const matchCourse = courseFilter === 'All' || r.course === courseFilter
@@ -139,9 +140,12 @@ export default function StudentRecordsPage() {
   const handleManualAdd = async (e) => {
     e.preventDefault()
     setError(''); setSuccess('')
+    if (!form.course) {
+      setError('Please select a course.')
+    }
     try {
       await addStudentRecord(token, form)
-      setSuccess('Student added successfully')
+      setSuccess('Student added successfully to Master List')
       setForm({ student_id: '', first_name: '', last_name: '', course: '', priority_class: 'regular' })
       fetchRecords()
     } catch (err) {
@@ -178,6 +182,10 @@ export default function StudentRecordsPage() {
   const handleEditSubmit = async (e) => {
     e.preventDefault()
     setError(''); setSuccess('')
+    if (!editForm.course) {
+      setError('Please select a course.')
+      return
+    }
     try {
       await editStudentRecord(token, editingRecord, editForm)
       setSuccess('Record updated successfully')
@@ -193,7 +201,7 @@ export default function StudentRecordsPage() {
       
       <div className="mb-6">
         <p className="text-[11px] font-bold text-gold tracking-widest uppercase m-0 mb-1.5">User Management</p>
-        <h1 className="font-serif text-[26px] font-bold text-text-main m-0 flex items-center gap-2">
+        <h1 className="font-serif text-[26px] font-bold text-maroon m-0 flex items-center gap-2">
           <ClipboardList size={24} className="text-maroon" /> Master List
         </h1>
         <p className="text-[12px] text-text-sub mt-2 mb-0">
@@ -215,22 +223,50 @@ export default function StudentRecordsPage() {
                 <label className="text-[11px] font-semibold text-text-sub mb-1 block">Last Name</label>
                 <input type="text" required value={editForm.last_name} onChange={e => setEditForm({ ...editForm, last_name: e.target.value })} className="px-3.5 py-2.5 rounded-lg border border-border text-[13px] outline-none bg-white text-text-main w-full transition-colors focus:border-maroon" />
               </div>
-              <div>
+              <div className="relative z-10">
                 <label className="text-[11px] font-semibold text-text-sub mb-1 block">Course</label>
-                <div className="relative">
-                  <select required value={editForm.course} onChange={e => setEditForm({ ...editForm, course: e.target.value })} className="px-3.5 py-2.5 rounded-lg border border-border text-[13px] outline-none bg-white text-text-main w-full transition-colors appearance-none focus:border-maroon pr-10">
-                    <option value="" disabled>Select Course...</option>
-                    <option value="Bachelor of Science in Information Technology">Bachelor of Science in Information Technology</option>
-                    <option value="Bachelor of Science in Business Administration">Bachelor of Science in Business Administration</option>
-                    <option value="Bachelor of Elementary Education">Bachelor of Elementary Education</option>
-                    <option value="Bachelor of Secondary Education">Bachelor of Secondary Education</option>
-                    <option value="Bachelor of Science in Criminology">Bachelor of Science in Criminology</option>
-                    <option value="Bachelor of Science in Hospitality Management">Bachelor of Science in Hospitality Management</option>
-                    <option value="Bachelor of Science in Tourism Management">Bachelor of Science in Tourism Management</option>
-                    <option value="Bachelor of Science in Accountancy">Bachelor of Science in Accountancy</option>
-                  </select>
-                  <ChevronDown size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-text-sub pointer-events-none" />
-                </div>
+                <button
+                  type="button"
+                  onClick={() => setOpenDropdown(openDropdown === 'editCourse' ? null : 'editCourse')}
+                  className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-lg border border-border bg-white text-[13px] font-semibold cursor-pointer hover:border-maroon/30 transition-colors ${editForm.course ? 'text-text-main' : 'text-text-muted'}`}
+                >
+                  <span className="truncate pr-2">{editForm.course || 'Select Course...'}</span>
+                  <ChevronDown size={16} className={`text-text-sub shrink-0 transition-transform duration-200 ${openDropdown === 'editCourse' ? 'rotate-180' : ''}`} />
+                </button>
+                
+                {openDropdown === 'editCourse' && (
+                  <>
+                    <div className="fixed inset-0 z-40" onClick={() => setOpenDropdown(null)} />
+                    <div className="absolute left-0 right-0 top-full mt-2 bg-white rounded-xl border border-border shadow-[0_4px_20px_rgba(0,0,0,0.08)] p-2 z-50 animate-fade-up max-h-50 overflow-y-auto" style={{ animationDuration: '0.2s' }}>
+                      {[
+                        'Bachelor of Science in Information Technology',
+                        'Bachelor of Science in Business Administration',
+                        'Bachelor of Elementary Education',
+                        'Bachelor of Secondary Education',
+                        'Bachelor of Science in Criminology',
+                        'Bachelor of Science in Hospitality Management',
+                        'Bachelor of Science in Tourism Management',
+                        'Bachelor of Science in Accountancy'
+                      ].map(c => {
+                        const isActive = editForm.course === c
+                        return (
+                          <div
+                            key={c}
+                            onClick={() => { setEditForm({ ...editForm, course: c }); setOpenDropdown(null); }}
+                            className={`p-2.5 rounded-lg cursor-pointer transition-colors ${isActive ? 'bg-maroon/5 border border-maroon/20' : 'hover:bg-off-white border border-transparent'}`}
+                          >
+                            <div className="flex items-center gap-3">
+                               <div className={`w-3 h-3 rounded-full border flex items-center justify-center shrink-0 ${isActive ? 'border-maroon' : 'border-text-muted/40'}`}>
+                                 {isActive && <div className="w-1.5 h-1.5 bg-maroon rounded-full" />}
+                               </div>
+                               <span className={`text-[12px] font-semibold truncate ${isActive ? 'text-maroon' : 'text-text-main'}`}>{c}</span>
+                            </div>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </>
+                )}
               </div>
               <div>
                 <label className="text-[11px] font-semibold text-text-sub mb-2 block tracking-wide uppercase">Priority Class</label>
@@ -299,7 +335,7 @@ export default function StudentRecordsPage() {
       {error && <div className="px-4 py-3 bg-danger-light text-danger rounded-lg mb-4 text-sm animate-fade-up">{error}</div>}
       {success && <div className="px-4 py-3 bg-success-light text-success rounded-lg mb-4 text-sm animate-fade-up">{success}</div>}
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6 animate-fade-up">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6 animate-fade-up relative z-20">
 
         {/* Upload Excel */}
         <div className="bg-white p-5 sm:p-6 rounded-2xl shadow-[0_4px_12px_rgba(0,0,0,0.05)] border border-border">
@@ -345,19 +381,49 @@ export default function StudentRecordsPage() {
             <div>
               <input type="text" placeholder="Last Name" required value={form.last_name} onChange={e => setForm({ ...form, last_name: e.target.value })} className="px-3.5 py-2.5 rounded-lg border border-border text-[13px] outline-none bg-white text-text-main w-full transition-colors focus:border-maroon" />
             </div>
-            <div className="sm:col-span-2 relative">
-              <select required value={form.course} onChange={e => setForm({ ...form, course: e.target.value })} className={`px-3.5 py-2.5 rounded-lg border border-border text-[13px] outline-none bg-white w-full transition-colors appearance-none focus:border-maroon pr-10 ${form.course ? 'text-text-main' : 'text-text-muted'}`}>
-                <option value="" disabled>Select Course...</option>
-                <option value="Bachelor of Science in Information Technology">Bachelor of Science in Information Technology</option>
-                <option value="Bachelor of Science in Business Administration">Bachelor of Science in Business Administration</option>
-                <option value="Bachelor of Elementary Education">Bachelor of Elementary Education</option>
-                <option value="Bachelor of Secondary Education">Bachelor of Secondary Education</option>
-                <option value="Bachelor of Science in Criminology">Bachelor of Science in Criminology</option>
-                <option value="Bachelor of Science in Hospitality Management">Bachelor of Science in Hospitality Management</option>
-                <option value="Bachelor of Science in Tourism Management">Bachelor of Science in Tourism Management</option>
-                <option value="Bachelor of Science in Accountancy">Bachelor of Science in Accountancy</option>
-              </select>
-              <ChevronDown size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-text-sub pointer-events-none" />
+            <div className="sm:col-span-2 relative z-10">
+              <button
+                type="button"
+                onClick={() => setOpenDropdown(openDropdown === 'addCourse' ? null : 'addCourse')}
+                className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-lg border border-border bg-white text-[13px] font-semibold cursor-pointer hover:border-maroon/30 transition-colors ${form.course ? 'text-text-main' : 'text-text-muted'}`}
+              >
+                <span className="truncate pr-2">{form.course || 'Select Course...'}</span>
+                <ChevronDown size={16} className={`text-text-sub shrink-0 transition-transform duration-200 ${openDropdown === 'addCourse' ? 'rotate-180' : ''}`} />
+              </button>
+              
+              {openDropdown === 'addCourse' && (
+                <>
+                  <div className="fixed inset-0 z-40" onClick={() => setOpenDropdown(null)} />
+                  <div className="absolute left-0 right-0 top-full mt-2 bg-white rounded-xl border border-border shadow-lg p-2 z-50 animate-fade-up max-h-62.5 overflow-y-auto" style={{ animationDuration: '0.2s' }}>
+                    {[
+                      'Bachelor of Science in Information Technology',
+                      'Bachelor of Science in Business Administration',
+                      'Bachelor of Elementary Education',
+                      'Bachelor of Secondary Education',
+                      'Bachelor of Science in Criminology',
+                      'Bachelor of Science in Hospitality Management',
+                      'Bachelor of Science in Tourism Management',
+                      'Bachelor of Science in Accountancy'
+                    ].map(c => {
+                      const isActive = form.course === c
+                      return (
+                        <div
+                          key={c}
+                          onClick={() => { setForm({ ...form, course: c }); setOpenDropdown(null); }}
+                          className={`p-2.5 rounded-lg cursor-pointer transition-colors ${isActive ? 'bg-maroon/5 border border-maroon/20' : 'hover:bg-off-white border border-transparent'}`}
+                        >
+                          <div className="flex items-center gap-3">
+                             <div className={`w-3 h-3 rounded-full border flex items-center justify-center shrink-0 ${isActive ? 'border-maroon' : 'border-text-muted/40'}`}>
+                               {isActive && <div className="w-1.5 h-1.5 bg-maroon rounded-full" />}
+                             </div>
+                             <span className={`text-[12px] font-semibold truncate ${isActive ? 'text-maroon' : 'text-text-main'}`}>{c}</span>
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </>
+              )}
             </div>
             <div className="sm:col-span-2">
               <label className="text-[11px] font-semibold text-text-sub mb-2 block tracking-wide uppercase">Student Priority</label>
@@ -383,8 +449,8 @@ export default function StudentRecordsPage() {
       </div>
 
       {/* Records Table */}
-      <div className="bg-white rounded-2xl shadow-[0_4px_12px_rgba(0,0,0,0.05)] border border-border overflow-hidden animate-fade-up" style={{ animationDelay: '0.2s' }}>
-        <div className="px-4 sm:px-6 py-4 sm:py-5 border-b border-border flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
+      <div className="bg-white rounded-2xl shadow-[0_4px_12px_rgba(0,0,0,0.05)] border border-border animate-fade-up relative z-10" style={{ animationDelay: '0.2s' }}>
+        <div className="px-4 sm:px-6 py-4 sm:py-5 border-b border-border flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 rounded-t-2xl">
           <h3 className="text-base font-semibold text-text-main m-0 font-serif">School Directory</h3>
           <div className="flex flex-wrap items-center gap-2 sm:gap-3 w-full sm:w-auto">
             {selectedRecords.size > 0 && (
@@ -402,21 +468,49 @@ export default function StudentRecordsPage() {
               />
               <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-text-muted"><Search size={14} /></span>
             </div>
-            <select
-              value={courseFilter}
-              onChange={e => setCourseFilter(e.target.value)}
-              className="px-3 py-1.5 rounded-lg border border-border bg-off-white text-[12px] text-text-main outline-none cursor-pointer font-sans focus:border-maroon transition-colors"
-            >
-              <option value="All">All Courses</option>
-              <option value="Bachelor of Science in Information Technology">BS Information Technology</option>
-              <option value="Bachelor of Science in Business Administration">BS Business Administration</option>
-              <option value="Bachelor of Elementary Education">B Elementary Education</option>
-              <option value="Bachelor of Secondary Education">B Secondary Education</option>
-              <option value="Bachelor of Science in Criminology">BS Criminology</option>
-              <option value="Bachelor of Science in Hospitality Management">BS Hospitality Management</option>
-              <option value="Bachelor of Science in Tourism Management">BS Tourism Management</option>
-              <option value="Bachelor of Science in Accountancy">BS Accountancy</option>
-            </select>
+            <div className="relative z-10">
+              <button
+                onClick={() => setOpenDropdown(openDropdown === 'courseFilter' ? null : 'courseFilter')}
+                className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-border bg-off-white text-[12px] text-text-main font-semibold cursor-pointer hover:border-maroon/30 transition-colors"
+              >
+                <span>{courseFilter === 'All' ? 'All Courses' : courseFilter.replace('Bachelor of Science in ', 'BS ').replace('Bachelor of ', 'B ')}</span>
+                <ChevronDown size={14} className={`text-text-muted transition-transform duration-200 ${openDropdown === 'courseFilter' ? 'rotate-180' : ''}`} />
+              </button>
+              {openDropdown === 'courseFilter' && (
+                <>
+                  <div className="fixed inset-0 z-40" onClick={() => setOpenDropdown(null)} />
+                  <div className="absolute right-0 sm:left-0 top-full mt-2 bg-white rounded-xl border border-border shadow-lg p-2 z-50 min-w-65 animate-fade-up max-h-75 overflow-y-auto" style={{ animationDuration: '0.2s' }}>
+                    {[
+                      { v: 'All', l: 'All Courses' },
+                      { v: 'Bachelor of Science in Information Technology', l: 'BS Information Technology' },
+                      { v: 'Bachelor of Science in Business Administration', l: 'BS Business Administration' },
+                      { v: 'Bachelor of Elementary Education', l: 'B Elementary Education' },
+                      { v: 'Bachelor of Secondary Education', l: 'B Secondary Education' },
+                      { v: 'Bachelor of Science in Criminology', l: 'BS Criminology' },
+                      { v: 'Bachelor of Science in Hospitality Management', l: 'BS Hospitality Management' },
+                      { v: 'Bachelor of Science in Tourism Management', l: 'BS Tourism Management' },
+                      { v: 'Bachelor of Science in Accountancy', l: 'BS Accountancy' }
+                    ].map(c => {
+                      const isActive = courseFilter === c.v
+                      return (
+                        <div
+                          key={c.v}
+                          onClick={() => { setCourseFilter(c.v); setOpenDropdown(null); }}
+                          className={`p-2 rounded-lg cursor-pointer flex items-center justify-between transition-colors ${isActive ? 'bg-maroon/5 text-maroon' : 'text-text-main hover:bg-off-white'}`}
+                        >
+                          <div className="flex items-center gap-2.5">
+                             <div className={`w-3 h-3 rounded-full border flex items-center justify-center ${isActive ? 'border-maroon' : 'border-text-muted/40'}`}>
+                               {isActive && <div className="w-1.5 h-1.5 bg-maroon rounded-full" />}
+                             </div>
+                             <span className="text-[12px] font-semibold">{c.l}</span>
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </>
+              )}
+            </div>
             <span className="text-xs text-text-sub bg-off-white px-2.5 py-1 rounded-full font-semibold">
               {displayedRecords.length} Records
             </span>
@@ -493,7 +587,7 @@ export default function StudentRecordsPage() {
         </div>
         
         {/* Pagination Controls */}
-        <div className="px-6 py-4 border-t border-border flex justify-between items-center bg-off-white">
+        <div className="px-6 py-4 border-t border-border flex justify-between items-center bg-off-white rounded-b-2xl">
           <div className="text-[13px] text-text-sub font-medium">
             Showing <span className="font-bold text-text-main">{displayedRecords.length === 0 ? 0 : startIndex + 1}-{endIndex}</span> of <span className="font-bold text-text-main">{displayedRecords.length}</span> records
           </div>

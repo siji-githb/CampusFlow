@@ -63,8 +63,11 @@ def activate_queue(appointment_id: str, student_id: str):
         .eq("appointment_id", appointment_id) \
         .execute()
     if existing.data:
-        # Return existing ticket with steps
         ticket = existing.data[0]
+        # If it was previously marked cancelled, reactivate it back to waiting
+        if ticket.get("status") == "cancelled":
+            admin.table("queue_tickets").update({"status": "waiting"}).eq("id", ticket["id"]).execute()
+            ticket["status"] = "waiting"
         steps = admin.table("transaction_steps") \
             .select("*") \
             .eq("queue_ticket_id", ticket["id"]) \
@@ -89,8 +92,8 @@ def activate_queue(appointment_id: str, student_id: str):
             # Re-read the live daily count on every attempt so a retried insert
             # uses the accurate post-collision count rather than a stale value.
             count_res = admin.table("queue_tickets") \
-                .select("id", count="exact") \
-                .gte("created_at", today_str) \
+                .select("id, appointments!inner(appointment_date)", count="exact") \
+                .eq("appointments.appointment_date", today_str) \
                 .execute()
             daily_count = count_res.count if count_res.count is not None else len(count_res.data)
             queue_number = generate_queue_number(tt["name"], daily_count + 1)
@@ -152,20 +155,28 @@ def activate_queue(appointment_id: str, student_id: str):
         .execute()
 
     # Trigger notification
+    tx_name = tt.get("name", "document")
     if processing_steps:
         _, first_requires_presence = _normalize_step(processing_steps[0])
     else:
         first_requires_presence = True
-    first_message = (
-        f"Your ticket {queue_number} has been generated. Please proceed to: {step_names_only[0]}."
-        if first_requires_presence
-        else f"Your ticket {queue_number} has been generated. Your request is being processed — we'll notify you when it's ready."
-    )
+
+    if first_requires_presence:
+        first_message = (
+            f"Your queue ticket {queue_number} has been generated for {tx_name}. "
+            f"Please monitor your queue status and wait for your number to be called."
+        )
+    else:
+        first_message = (
+            f"Your queue ticket {queue_number} has been generated for {tx_name}. "
+            f"Your request is now being processed in the back office — we'll notify you when it's ready."
+        )
+
     create_system_notification(
         user_id=student_id,
         title="Queue Activated",
         message=first_message,
-        type="info"
+        type="info",
     )
 
     return {"ticket": ticket, "steps": steps_res.data}
@@ -175,41 +186,43 @@ def get_student_queue(student_id: str):
     """Get active queue ticket for a student."""
     admin = get_admin()
     
-    # Auto-cleanup stale tickets from previous days
     try:
         from datetime import date
         today_str = str(date.today())
-        admin.table("queue_tickets") \
-            .update({"status": "cancelled"}) \
-            .eq("student_id", student_id) \
-            .eq("status", "waiting") \
-            .lt("created_at", today_str) \
-            .execute()
-    except Exception:
-        pass
-
-    try:
-        today_str = str(date.today())
+        
+        # 1. Fetch tickets for this student ordered by creation date
         tickets_res = admin.table("queue_tickets") \
             .select("*, appointments(appointment_date, time_slot, status, transaction_types(name))") \
             .eq("student_id", student_id) \
             .in_("status", ["waiting", "in_progress", "completed"]) \
-            .or_(f"created_at.gte.{today_str},status.eq.in_progress") \
             .order("created_at", desc=True) \
-            .limit(1) \
             .execute()
 
         if not tickets_res.data:
             return None
 
-        ticket = tickets_res.data[0]
-        
-        # If the underlying appointment was cancelled or deleted, abandon the ticket
-        appt_status = ticket.get("appointments", {}).get("status")
-        tx_name = ((ticket.get("appointments") or {}).get("transaction_types") or {}).get("name", "")
-        if (ticket.get("appointments") and appt_status == "cancelled") or "(deleted" in tx_name:
-            admin.table("queue_tickets").update({"status": "cancelled"}).eq("id", ticket["id"]).execute()
+        # 2. Pick the active ticket: prioritize waiting or in_progress, or today's completed ticket
+        active_ticket = None
+        for t in tickets_res.data:
+            appt = t.get("appointments") or {}
+            appt_status = appt.get("status")
+            tx_name = (appt.get("transaction_types") or {}).get("name", "")
+            
+            # Skip if appointment was cancelled or deleted
+            if appt_status == "cancelled" or "(deleted" in tx_name:
+                continue
+                
+            if t["status"] in ["waiting", "in_progress"]:
+                active_ticket = t
+                break
+            elif t["status"] == "completed" and appt.get("appointment_date") == today_str:
+                active_ticket = t
+                break
+
+        if not active_ticket:
             return None
+
+        ticket = active_ticket
         steps_res = admin.table("transaction_steps") \
             .select("*") \
             .eq("queue_ticket_id", ticket["id"]) \
@@ -243,13 +256,26 @@ def call_ticket(queue_ticket_id: str, staff_id: str):
 
     # 4. Trigger notification
     try:
-        ticket_res = admin.table("queue_tickets").select("queue_number, student_id").eq("id", queue_ticket_id).single().execute()
+        ticket_res = admin.table("queue_tickets").select("queue_number, student_id, appointments(transaction_types(name))").eq("id", queue_ticket_id).single().execute()
         if ticket_res.data:
+            q_num = ticket_res.data.get("queue_number", "")
+            tx_name = ((ticket_res.data.get("appointments") or {}).get("transaction_types") or {}).get("name", "")
+            tx_label = f" for {tx_name}" if tx_name else ""
             create_system_notification(
                 user_id=ticket_res.data["student_id"],
-                title="Ticket Called",
-                message=f"Your ticket {ticket_res.data['queue_number']} has been called to {window_label}. Please proceed.",
+                title=f"Now Serving • Ticket {q_num}",
+                message=f"Your ticket {q_num}{tx_label} has been called to {window_label}. Please proceed to the window to be served.",
                 type="info"
+            )
+            
+            log_audit_action(
+                user_id=staff_id,
+                action="Called queue ticket",
+                table_name="queue_tickets",
+                record_id=queue_ticket_id,
+                status="Success",
+                changes=f"Called ticket {ticket_res.data.get('queue_number')} to {window_label}",
+                severity="Info"
             )
     except Exception:
         pass
@@ -262,7 +288,7 @@ def send_to_processing(queue_ticket_id: str, staff_id: str):
     admin = get_admin()
     
     # 1. Check if ticket exists and is in_progress
-    ticket_res = admin.table("queue_tickets").select("id, status").eq("id", queue_ticket_id).execute()
+    ticket_res = admin.table("queue_tickets").select("id, status, queue_number").eq("id", queue_ticket_id).execute()
     if not ticket_res.data:
         raise HTTPException(status_code=404, detail="Ticket not found")
         
@@ -284,6 +310,16 @@ def send_to_processing(queue_ticket_id: str, staff_id: str):
     # 3. Update current step's location to "Back Office"
     admin.table("transaction_steps").update({"location": "Back Office"}).eq("id", current_step["id"]).execute()
 
+    log_audit_action(
+        user_id=staff_id,
+        action="Routed ticket to back-office",
+        table_name="transaction_steps",
+        record_id=current_step["id"],
+        status="Success",
+        changes=f"Ticket {ticket.get('queue_number', '')} step '{current_step.get('step_name', '')}' shifted to Back Office",
+        severity="Info"
+    )
+
     return {"message": "Ticket sent to processing"}
 
 
@@ -292,11 +328,12 @@ def remind_student(queue_ticket_id: str, staff_id: str):
     admin = get_admin()
     
     # Get ticket info
-    ticket_res = admin.table("queue_tickets").select("student_id, queue_number").eq("id", queue_ticket_id).execute()
+    ticket_res = admin.table("queue_tickets").select("student_id, queue_number, appointments(transaction_types(name))").eq("id", queue_ticket_id).execute()
     if not ticket_res.data:
         raise HTTPException(status_code=404, detail="Ticket not found")
         
     ticket = ticket_res.data[0]
+    tx_name = ((ticket.get("appointments") or {}).get("transaction_types") or {}).get("name", "document")
     
     # 1. Get staff's assigned window
     from services.admin_service import get_window_assignments
@@ -307,8 +344,18 @@ def remind_student(queue_ticket_id: str, staff_id: str):
     create_system_notification(
         user_id=ticket["student_id"],
         title="Document Ready for Release",
-        message=f"Your ticket {ticket['queue_number']} is ready. Please proceed to {window_label} to claim your document.",
+        message=f"Reminder: Your {tx_name} (Ticket {ticket['queue_number']}) is ready for pickup. Please proceed to {window_label} to claim your document.",
         type="info"
+    )
+
+    log_audit_action(
+        user_id=staff_id,
+        action="Sent student reminder",
+        table_name="queue_tickets",
+        record_id=queue_ticket_id,
+        status="Success",
+        changes=f"Reminder sent for ticket {ticket.get('queue_number')} at {window_label}",
+        severity="Info"
     )
 
     return {"message": "Reminder sent successfully"}
@@ -323,45 +370,55 @@ def confirm_step(queue_ticket_id: str, step_number: int, staff_id: str,
     # Get the ticket
     try:
         ticket_res = admin.table("queue_tickets") \
-            .select("*") \
+            .select("id, student_id, appointment_id, queue_number, total_steps, current_step") \
             .eq("id", queue_ticket_id) \
-            .single() \
             .execute()
-        ticket = ticket_res.data
-    except Exception:
-        raise HTTPException(status_code=404, detail="Queue ticket not found")
+        if not ticket_res.data:
+            raise HTTPException(status_code=404, detail="Ticket not found")
+        ticket = ticket_res.data[0]
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
-    # Get the step
+    # Mark current step completed
     try:
         step_res = admin.table("transaction_steps") \
-            .select("*") \
+            .select("id, step_name, status, step_number") \
             .eq("queue_ticket_id", queue_ticket_id) \
             .eq("step_number", step_number) \
-            .single() \
             .execute()
-        step = step_res.data
-    except Exception:
-        raise HTTPException(status_code=404, detail="Step not found")
+        if not step_res.data:
+            raise HTTPException(status_code=404, detail=f"Step {step_number} not found")
+        step = step_res.data[0]
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
-    if step["status"] == "completed":
-        raise HTTPException(status_code=400, detail="Step already completed")
+    now_iso = datetime.now(timezone.utc).isoformat()
+    update_data = {
+        "status": "completed",
+        "confirmed_by": staff_id,
+        "confirmed_at": now_iso,
+    }
 
-    # Release-specific gate
-    is_release_step = "Release" in step["step_name"]
-    if is_release_step and not document_verified:
-        raise HTTPException(status_code=400, detail="You must confirm the document is correct before releasing it.")
+    is_release_step = "Release" in step.get("step_name", "") or step_number == ticket["total_steps"]
 
-    now = datetime.now(timezone.utc).isoformat()
+    if is_release_step:
+        if not document_verified:
+            raise HTTPException(
+                status_code=400,
+                detail="Staff must check and verify the physical/digital document before releasing."
+            )
 
-    # Mark current step as completed
-    admin.table("transaction_steps") \
-        .update({
-            "status": "completed",
-            "confirmed_by": staff_id,
-            "confirmed_at": now
-        }) \
-        .eq("id", step["id"]) \
-        .execute()
+    try:
+        admin.table("transaction_steps") \
+            .update(update_data) \
+            .eq("id", step["id"]) \
+            .execute()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
         
     audit_changes = "Step marked completed"
     if is_release_step:
@@ -381,6 +438,14 @@ def confirm_step(queue_ticket_id: str, step_number: int, staff_id: str,
     total_steps = ticket["total_steps"]
     next_step = step_number + 1
 
+    try:
+        appt_res = admin.table("appointments").select("transaction_types(name)").eq("id", ticket["appointment_id"]).single().execute()
+        tx_name = appt_res.data.get("transaction_types", {}).get("name") if appt_res.data else "document"
+    except Exception:
+        tx_name = "document"
+
+    current_step_name = step.get("step_name", f"Step {step_number}")
+
     if next_step > total_steps:
         # All steps done — complete the ticket and appointment
         admin.table("queue_tickets") \
@@ -395,7 +460,7 @@ def confirm_step(queue_ticket_id: str, step_number: int, staff_id: str,
         create_system_notification(
             user_id=ticket["student_id"],
             title="Transaction Completed",
-            message=f"Your transaction {ticket['queue_number']} is fully complete. Thank you!",
+            message=f"Your request for {tx_name} (Ticket {ticket['queue_number']}) has been completed and released. Thank you!",
             type="success"
         )
         return {"message": "Transaction completed", "status": "completed"}
@@ -416,29 +481,25 @@ def confirm_step(queue_ticket_id: str, step_number: int, staff_id: str,
         next_requires_presence = next_step_data.get("requires_presence", True)
         next_step_name = next_step_data.get("step_name", f"Step {next_step}")
 
-        if next_requires_presence:
-            if "Release" in next_step_name or "Issuance" in next_step_name:
-                from services.admin_service import get_window_assignments
-                assignments = get_window_assignments()
-                window_num = assignments.get("assignments", {}).get(staff_id)
-                window_label = f"Window {window_num}" if window_num else "Counter"
-                
-                try:
-                    appt_res = admin.table("appointments").select("transaction_types(name)").eq("id", ticket["appointment_id"]).single().execute()
-                    tx_name = appt_res.data.get("transaction_types", {}).get("name") if appt_res.data else "document"
-                except Exception:
-                    tx_name = "document"
-                
-                message = f"Your {tx_name} for ticket {ticket['queue_number']} is ready for release. Please proceed to {window_label} to claim your document."
-            else:
-                message = f"Step {step_number} confirmed. Please proceed to: {next_step_name}."
+        if "Release" in next_step_name or "Issuance" in next_step_name:
+            from services.admin_service import get_window_assignments
+            assignments = get_window_assignments()
+            window_num = assignments.get("assignments", {}).get(staff_id)
+            window_label = f"Window {window_num}" if window_num else "Counter"
+            
+            notif_title = "Document Ready for Release"
+            notif_message = f"Your {tx_name} (Ticket {ticket['queue_number']}) is ready for release. Please proceed to {window_label} to claim your document."
+        elif not next_requires_presence:
+            notif_title = f"Step {step_number} Completed • In Processing"
+            notif_message = f"Step {step_number} ({current_step_name}) has been confirmed. Your {tx_name} is now being processed in the back office — we'll notify you once ready for pickup."
         else:
-            message = f"Step {step_number} confirmed. Your request is now being processed — no need to wait in line, we'll notify you when it's ready."
+            notif_title = f"Step {step_number} Completed"
+            notif_message = f"Step {step_number} ({current_step_name}) is confirmed. Please wait for your ticket to be called for {next_step_name}."
 
         create_system_notification(
             user_id=ticket["student_id"],
-            title="Step Confirmed",
-            message=message,
+            title=notif_title,
+            message=notif_message,
             type="info"
         )
         return {"message": f"Step {step_number} confirmed. Moved to step {next_step}.", "status": "in_progress"}
@@ -451,9 +512,9 @@ def get_todays_queue(date_filter: str = None):
     try:
         # Use an inner join to filter by today's appointment date and fetch steps all at once
         tickets_res = admin.table("queue_tickets") \
-            .select("*, appointments!inner(id, appointment_date, time_slot, priority_class, release_date, notes, transaction_types(name, processing_steps, required_documents)), users(first_name, last_name, student_id), transaction_steps(*)") \
+            .select("*, appointments!inner(id, appointment_date, time_slot, priority_class, release_date, notes, transaction_types(name, description, processing_steps, required_documents)), users(first_name, last_name, student_id, email), transaction_steps(*)") \
+            .eq("appointments.appointment_date", today) \
             .in_("status", ["waiting", "in_progress", "completed", "no_show", "cancelled"]) \
-            .or_(f"created_at.gte.{today},status.eq.in_progress") \
             .order("created_at") \
             .execute()
 
@@ -470,16 +531,19 @@ def get_todays_queue(date_filter: str = None):
             # Sort steps locally by step_number
             steps = sorted(steps, key=lambda x: x.get("step_number", 0))
             
-            # Stitch requires_presence from processing_steps JSON into transaction_steps
+            # Stitch requires_presence and description from processing_steps JSON into transaction_steps
             for i, step in enumerate(steps):
                 if i < len(processing_steps):
                     raw_step = processing_steps[i]
                     if isinstance(raw_step, dict):
                         step["requires_presence"] = raw_step.get("requires_presence", True)
+                        step["description"] = raw_step.get("description") or ""
                     else:
                         step["requires_presence"] = True
+                        step["description"] = ""
                 else:
                     step["requires_presence"] = True
+                    step["description"] = ""
 
             # Filter out tickets that are in Release step and already have a release date set
             # (These should only show up in DocumentReleasesPage "Uncollected")
@@ -586,26 +650,29 @@ def get_time_estimate(appointment_id: str, student_id: str):
 
 
 def get_live_queue_stats():
-    """Get dynamic live queue stats like avg wait time and peak forecast."""
+    """Get dynamic live queue stats like avg wait time and peak forecast based on today's queue."""
     try:
         admin = get_admin()
         today = str(date.today())
-        from datetime import datetime
+        from datetime import datetime, timezone
 
-        # 1. Avg Wait Time — computed from real step durations
-        recent_steps = admin.table("transaction_steps") \
-            .select("created_at, confirmed_at") \
-            .not_.is_("confirmed_at", "null") \
+        now_utc = datetime.now(timezone.utc)
+
+        # 1. Check steps completed TODAY
+        today_completed_steps = admin.table("transaction_steps") \
+            .select("created_at, confirmed_at, activated_at") \
+            .gte("confirmed_at", today) \
             .neq("location", "Back Office") \
-            .order("confirmed_at", desc=True) \
-            .limit(50) \
             .execute()
-            
+
         total_seconds = 0
         valid_steps = 0
-        for row in (recent_steps.data or []):
+        for row in (today_completed_steps.data or []):
             try:
-                start = datetime.fromisoformat(row["created_at"].replace("Z", "+00:00"))
+                start_raw = row.get("activated_at") or row.get("created_at")
+                if not start_raw or not row.get("confirmed_at"):
+                    continue
+                start = datetime.fromisoformat(start_raw.replace("Z", "+00:00"))
                 end = datetime.fromisoformat(row["confirmed_at"].replace("Z", "+00:00"))
                 secs = (end - start).total_seconds()
                 if 0 < secs < 7200:  # ignore outliers over 2 hours
@@ -614,12 +681,38 @@ def get_live_queue_stats():
             except Exception:
                 pass
 
-        # Default fallback: 8 minutes (480 seconds) when no history exists yet
-        avg_total_secs = round(total_seconds / valid_steps) if valid_steps > 0 else 480
+        if valid_steps > 0:
+            avg_total_secs = round(total_seconds / valid_steps)
+        else:
+            # 2. Check active tickets currently in queue today
+            today_active_tickets = admin.table("queue_tickets") \
+                .select("id, created_at, status") \
+                .in_("status", ["waiting", "in_progress", "pending"]) \
+                .gte("created_at", today) \
+                .execute()
+
+            active_wait = 0
+            active_count = 0
+            for t in (today_active_tickets.data or []):
+                try:
+                    c_at = datetime.fromisoformat(t["created_at"].replace("Z", "+00:00"))
+                    diff = (now_utc - c_at).total_seconds()
+                    if 0 <= diff < 7200:
+                        active_wait += diff
+                        active_count += 1
+                except Exception:
+                    pass
+
+            if active_count > 0:
+                avg_total_secs = round(active_wait / active_count)
+            else:
+                # No active queue or backlog today
+                avg_total_secs = 0
+
         avg_mins = avg_total_secs // 60
         avg_secs = avg_total_secs % 60
 
-        # 2. Peak Forecast
+        # 3. Peak Forecast from today's appointments
         today_appts = admin.table("appointments") \
             .select("time_slot") \
             .eq("appointment_date", today) \
@@ -676,26 +769,32 @@ def get_uncollected_documents(threshold_days: int = 0):
         raise HTTPException(status_code=500, detail=str(e))
 
     results = []
-    now = datetime.now(timezone.utc)
+    from datetime import date
+    today_date = datetime.now(timezone.utc).date()
     for row in (res.data or []):
-        try:
-            activated = datetime.fromisoformat(row["activated_at"].replace("Z", "+00:00"))
-            days_waiting = (now - activated).days
-        except Exception:
-            days_waiting = None
-
         ticket = row.get("queue_tickets") or {}
         student = ticket.get("users") or {}
         appt = ticket.get("appointments") or {}
+        release_date_str = appt.get("release_date")
         
         # Only show in Document Releases if the release date has been set
-        if not appt.get("release_date"):
+        if not release_date_str:
             continue
             
         raw_tx_name = (appt.get("transaction_types") or {}).get("name", "Unknown")
         if "(deleted" in raw_tx_name:
             continue
         tx_name = raw_tx_name
+
+        # Calculate waiting time relative to assigned release_date
+        try:
+            if "T" in str(release_date_str):
+                rel_date = datetime.fromisoformat(str(release_date_str).replace("Z", "+00:00")).date()
+            else:
+                rel_date = date.fromisoformat(str(release_date_str))
+            days_waiting = (today_date - rel_date).days
+        except Exception:
+            days_waiting = 0
 
         results.append({
             "queue_ticket_id": ticket.get("id"),
@@ -798,7 +897,7 @@ def get_my_documents_to_claim(student_id: str):
 
 def get_public_live_queue():
     """
-    Get all active queue tickets currently being served.
+    Get all active queue tickets currently being served at a physical counter window.
     Returns only non-PII data (queue number, location, type).
     For the student dashboard 'Now Serving' view.
     """
@@ -807,7 +906,7 @@ def get_public_live_queue():
     try:
         # Fetch tickets currently in progress for today
         tickets_res = admin.table("queue_tickets") \
-            .select("id, queue_number, appointments!inner(transaction_types(name)), transaction_steps(status, location)") \
+            .select("id, queue_number, appointments!inner(transaction_types(name, processing_steps)), transaction_steps(step_number, step_name, status, location)") \
             .eq("status", "in_progress") \
             .gte("created_at", today) \
             .execute()
@@ -817,8 +916,16 @@ def get_public_live_queue():
             # Find the active step to get the counter/location
             steps = ticket.get("transaction_steps", [])
             active_step = next((s for s in steps if s.get("status") == "in_progress"), None)
+            if not active_step:
+                continue
             
-            location = active_step.get("location") if active_step else "Processing"
+            step_name = (active_step.get("step_name") or "").lower()
+            location = active_step.get("location") or "Counter"
+            
+            # If step is preparation of document, release, or back office, exclude from live counter list
+            if "preparation" in step_name or "release" in step_name or location.lower() == "back office":
+                continue
+
             raw_tx_name = ((ticket.get("appointments") or {}).get("transaction_types") or {}).get("name", "Transaction")
             if "(deleted" in raw_tx_name:
                 continue
