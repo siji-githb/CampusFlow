@@ -1,6 +1,5 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
-import { useAuth } from '../context/useAuth'
 import { Calendar, Ticket, Route, Bot, Zap, BarChart3, ChevronRight, Menu, X } from 'lucide-react'
 import campusFlowLogo from '../assets/logo.png'
 import loginImage from '../assets/landing_page.png'
@@ -22,33 +21,14 @@ const STEPS = [
 
 export default function Landing() {
   const navigate  = useNavigate()
-  const { user }  = useAuth()
   const [isMenuOpen, setIsMenuOpen] = useState(false)
-
-  useEffect(() => {
-    if (user) {
-      if (user.role === 'student') navigate('/student/dashboard', { replace: true })
-      else if (user.role === 'staff') navigate('/staff/dashboard', { replace: true })
-      else navigate('/admin/dashboard', { replace: true })
-    }
-  }, [user, navigate])
-
-  const handlePrimary = () => {
-    if (user) {
-      if (user.role === 'student') navigate('/student/dashboard')
-      else if (user.role === 'staff') navigate('/staff/dashboard')
-      else navigate('/admin/dashboard')
-    } else {
-      navigate('/register')
-    }
-  }
 
   return (
     <div className="font-sans bg-slate-50 min-h-screen text-slate-800">
 
       {/* ── Header (Z-Pattern Top) ── */}
       <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-lg border-b border-slate-200 shadow-sm">
-        <div className="max-w-[1280px] mx-auto px-6 h-20 flex items-center justify-between">
+        <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
           
           {/* Top Left: Branding */}
           <Link to="/" className="flex items-center gap-3 no-underline group" aria-label="CampusFlow Home">
@@ -71,20 +51,12 @@ export default function Landing() {
             
             {/* Action Buttons */}
             <div className="flex items-center gap-3 md:border-l md:border-slate-200 md:pl-6">
-              {user ? (
-                <button onClick={handlePrimary} className="rounded-xl border-none bg-maroon text-white text-[14px] font-bold cursor-pointer py-2.5 px-6 shadow-[0_4px_12px_rgba(123,26,42,0.15)] hover:bg-maroon-dark hover:-translate-y-px hover:shadow-[0_6px_16px_rgba(123,26,42,0.25)] transition-all flex items-center gap-1.5">
-                  Dashboard <ChevronRight size={16} strokeWidth={2.5} />
-                </button>
-              ) : (
-                <>
-                  <button onClick={() => navigate('/login')} className="hidden sm:block rounded-xl border border-slate-200 bg-white text-slate-700 text-[14px] font-bold cursor-pointer py-2.5 px-6 hover:bg-slate-50 hover:text-slate-900 transition-colors shadow-sm">
-                    Sign In
-                  </button>
-                  <button onClick={() => navigate('/register')} className="hidden md:block rounded-xl border-none bg-maroon text-white text-[14px] font-bold cursor-pointer py-2.5 px-6 shadow-[0_4px_12px_rgba(123,26,42,0.15)] hover:bg-maroon-dark hover:-translate-y-px hover:shadow-[0_6px_16px_rgba(123,26,42,0.25)] transition-all">
-                    Register
-                  </button>
-                </>
-              )}
+              <button onClick={() => navigate('/login')} className="hidden sm:block rounded-xl border border-slate-200 bg-white text-slate-700 text-[14px] font-bold cursor-pointer py-2.5 px-6 hover:bg-slate-50 hover:text-slate-900 transition-colors shadow-sm">
+                Sign In
+              </button>
+              <button onClick={() => navigate('/register')} className="hidden md:block rounded-xl border-none bg-maroon text-white text-[14px] font-bold cursor-pointer py-2.5 px-6 shadow-[0_4px_12px_rgba(123,26,42,0.15)] hover:bg-maroon-dark hover:-translate-y-px hover:shadow-[0_6px_16px_rgba(123,26,42,0.25)] transition-all">
+                Register
+              </button>
             </div>
 
             {/* Mobile Hamburger Menu */}
@@ -104,16 +76,12 @@ export default function Landing() {
                 <a href="#hero" onClick={() => setIsMenuOpen(false)} className="px-4 py-3 rounded-xl text-[14px] font-bold text-slate-700 hover:bg-slate-50 hover:text-maroon transition-colors no-underline">Home</a>
                 <a href="#features" onClick={() => setIsMenuOpen(false)} className="px-4 py-3 rounded-xl text-[14px] font-bold text-slate-700 hover:bg-slate-50 hover:text-maroon transition-colors no-underline">Features</a>
                 <a href="#process" onClick={() => setIsMenuOpen(false)} className="px-4 py-3 rounded-xl text-[14px] font-bold text-slate-700 hover:bg-slate-50 hover:text-maroon transition-colors no-underline">How it works</a>
-                {!user && (
-                  <>
-                    <div className="mt-1 pt-1 border-t border-slate-100 sm:hidden">
-                      <a onClick={() => { setIsMenuOpen(false); navigate('/login'); }} className="block w-full px-4 py-3 rounded-xl text-[14px] font-bold text-slate-700 hover:bg-slate-50 hover:text-maroon transition-colors no-underline cursor-pointer">Sign In</a>
-                    </div>
-                    <div className="mt-1 pt-1 border-t border-slate-100">
-                      <a onClick={() => { setIsMenuOpen(false); navigate('/register'); }} className="block w-full px-4 py-3 rounded-xl text-[14px] font-bold text-maroon hover:bg-maroon/5 transition-colors no-underline cursor-pointer">Register</a>
-                    </div>
-                  </>
-                )}
+                <div className="mt-1 pt-1 border-t border-slate-100 sm:hidden">
+                  <a onClick={() => { setIsMenuOpen(false); navigate('/login'); }} className="block w-full px-4 py-3 rounded-xl text-[14px] font-bold text-slate-700 hover:bg-slate-50 hover:text-maroon transition-colors no-underline cursor-pointer">Sign In</a>
+                </div>
+                <div className="mt-1 pt-1 border-t border-slate-100">
+                  <a onClick={() => { setIsMenuOpen(false); navigate('/register'); }} className="block w-full px-4 py-3 rounded-xl text-[14px] font-bold text-maroon hover:bg-maroon/5 transition-colors no-underline cursor-pointer">Register</a>
+                </div>
               </nav>
             </div>
           </nav>
@@ -125,32 +93,29 @@ export default function Landing() {
         <section id="hero" className="relative pt-8 pb-24 md:pt-12 md:pb-32 px-6 overflow-hidden bg-white">
           {/* Subtle Enterprise Background Texture */}
           <div className="absolute inset-0 pointer-events-none opacity-5 bg-[radial-gradient(circle,#7B1A2A_1px,transparent_1px)] bg-size-[24px_24px]" />
-          <div className="absolute top-0 right-0 w-[800px] h-[800px] bg-maroon/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3 pointer-events-none" />
+          <div className="absolute top-0 right-0 w-200 h-200 bg-maroon/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3 pointer-events-none" />
 
-          <div className="max-w-[1280px] mx-auto flex flex-col md:flex-row items-center justify-between gap-12 relative z-10">
+          <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-12 relative z-10">
             
             {/* Bottom Left: Headline & Primary CTA */}
-            <div className="flex-1 max-w-[640px] text-center md:text-left">
-
+            <div className="flex-1 max-w-160 text-center md:text-left">
 
               <h1 className="font-serif font-extrabold text-slate-900 text-[clamp(28px,3.5vw,52px)] leading-[1.1] tracking-tight m-0 mb-12 animate-fade-up" style={{ animationDelay: '0.1s' }}>
                 No More Long Lines<br />
                 at the <span className="text-maroon">Registrar's Office</span>
               </h1>
 
-              <p className="text-slate-500 text-[clamp(0.95rem,1.1vw,1rem)] leading-relaxed m-0 mb-8 max-w-[500px] mx-auto md:mx-0 font-medium animate-fade-up" style={{ animationDelay: '0.2s' }}>
+              <p className="text-slate-500 text-[clamp(0.95rem,1.1vw,1rem)] leading-relaxed m-0 mb-8 max-w-125 mx-auto md:mx-0 font-medium animate-fade-up" style={{ animationDelay: '0.2s' }}>
                 CampusFlow is an AI-powered appointment and queue management system guiding CRMC students through every registrar transaction seamlessly.
               </p>
 
               <div className="flex flex-col sm:flex-row gap-4 justify-center md:justify-start animate-fade-up" style={{ animationDelay: '0.3s' }}>
-                <button onClick={handlePrimary} className="rounded-xl border-none bg-maroon text-white font-bold cursor-pointer font-sans shadow-[0_4px_16px_rgba(123,26,42,0.2)] py-3 px-6 text-[14.5px] hover:bg-maroon-dark hover:translate-y-[-2px] hover:shadow-[0_8px_24px_rgba(123,26,42,0.3)] transition-all flex items-center justify-center gap-2">
-                  {user ? 'Go to Dashboard' : 'Book an Appointment'} <ChevronRight size={16} strokeWidth={2.5} />
+                <button onClick={() => navigate('/register')} className="rounded-xl border-none bg-maroon text-white font-bold cursor-pointer font-sans shadow-[0_4px_16px_rgba(123,26,42,0.2)] py-3 px-6 text-[14.5px] hover:bg-maroon-dark hover:-translate-y-0.5 hover:shadow-[0_8px_24px_rgba(123,26,42,0.3)] transition-all flex items-center justify-center gap-2">
+                  Book an Appointment <ChevronRight size={16} strokeWidth={2.5} />
                 </button>
-                {!user && (
-                  <button onClick={() => navigate('/login')} className="rounded-xl border border-slate-200 bg-white text-slate-700 font-bold cursor-pointer font-sans py-3 px-6 text-[14.5px] shadow-sm hover:bg-slate-50 hover:text-slate-900 transition-colors">
-                    Sign in to account
-                  </button>
-                )}
+                <button onClick={() => navigate('/login')} className="rounded-xl border border-slate-200 bg-white text-slate-700 font-bold cursor-pointer font-sans py-3 px-6 text-[14.5px] shadow-sm hover:bg-slate-50 hover:text-slate-900 transition-colors">
+                  Sign in to account
+                </button>
               </div>
 
               {/* Trust/Stats Mini-footer (Desktop) */}
@@ -169,8 +134,8 @@ export default function Landing() {
             </div>
 
             {/* Bottom Right: Hero Image & Mobile Stats */}
-            <div className="flex-1 w-full max-w-[500px] md:max-w-none flex flex-col items-center md:items-end justify-center animate-fade-up" style={{ animationDelay: '0.3s' }}>
-              <div className="relative w-full max-w-[600px] aspect-square md:aspect-auto md:h-[600px] rounded-[40px] bg-slate-50 border border-slate-100 shadow-2xl flex items-center justify-center p-8 overflow-hidden group">
+            <div className="flex-1 w-full max-w-125 md:max-w-none flex flex-col items-center md:items-end justify-center animate-fade-up" style={{ animationDelay: '0.3s' }}>
+              <div className="relative w-full max-w-150 aspect-square md:aspect-auto md:h-150 rounded-[40px] bg-slate-50 border border-slate-100 shadow-2xl flex items-center justify-center p-8 overflow-hidden group">
                 <div className="absolute inset-0 bg-linear-to-br from-white/40 to-transparent z-10 pointer-events-none" />
                 <img 
                   src={loginImage} 
@@ -199,8 +164,8 @@ export default function Landing() {
 
         {/* ── Features Section (Enterprise Cards) ── */}
         <section id="features" className="py-24 px-6 bg-slate-50 border-t border-slate-200">
-          <div className="max-w-[1280px] mx-auto">
-            <header className="text-center mb-16 max-w-[600px] mx-auto animate-fade-up">
+          <div className="max-w-7xl mx-auto">
+            <header className="text-center mb-16 max-w-150 mx-auto animate-fade-up">
               <h2 className="text-[13px] font-bold text-maroon tracking-[0.15em] uppercase m-0 mb-3">
                 System Capabilities
               </h2>
@@ -225,8 +190,8 @@ export default function Landing() {
 
         {/* ── Process Section ── */}
         <section id="process" className="py-24 px-6 bg-white border-t border-slate-200">
-          <div className="max-w-[1280px] mx-auto">
-            <header className="text-center mb-16 max-w-[600px] mx-auto animate-fade-up">
+          <div className="max-w-7xl mx-auto">
+            <header className="text-center mb-16 max-w-150 mx-auto animate-fade-up">
               <h2 className="text-[13px] font-bold text-maroon tracking-[0.15em] uppercase m-0 mb-3">
                 Simple Workflow
               </h2>
@@ -237,7 +202,7 @@ export default function Landing() {
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8 lg:gap-12 relative">
               {/* Connecting line for desktop */}
-              <div className="hidden md:block absolute top-[40px] left-[16%] right-[16%] h-px bg-slate-200" />
+              <div className="hidden md:block absolute top-10 left-[16%] right-[16%] h-px bg-slate-200" />
               
               {STEPS.map((s, i) => (
                 <article key={i} className="relative z-10 flex flex-col items-center text-center animate-fade-up" style={{ animationDelay: `${0.1 + (i * 0.1)}s` }}>
@@ -245,14 +210,14 @@ export default function Landing() {
                     {s.step}
                   </div>
                   <h4 className="text-[16px] font-bold text-slate-900 m-0 mb-2 tracking-tight">{s.title}</h4>
-                  <p className="text-[13.5px] text-slate-500 m-0 leading-relaxed font-medium max-w-[260px]">{s.desc}</p>
+                  <p className="text-[13.5px] text-slate-500 m-0 leading-relaxed font-medium max-w-65">{s.desc}</p>
                 </article>
               ))}
             </div>
 
             <div className="mt-20 text-center">
-              <button onClick={handlePrimary} className="rounded-xl border-none bg-maroon text-white font-bold cursor-pointer font-sans shadow-[0_4px_16px_rgba(123,26,42,0.2)] py-4 px-10 text-[16px] hover:bg-maroon-dark hover:translate-y-[-2px] hover:shadow-[0_8px_24px_rgba(123,26,42,0.3)] transition-all">
-                {user ? 'View Your Appointments' : 'Get Started Now'}
+              <button onClick={() => navigate('/register')} className="rounded-xl border-none bg-maroon text-white font-bold cursor-pointer font-sans shadow-[0_4px_16px_rgba(123,26,42,0.2)] py-4 px-10 text-[16px] hover:bg-maroon-dark hover:-translate-y-0.5 hover:shadow-[0_8px_24px_rgba(123,26,42,0.3)] transition-all">
+                Get Started Now
               </button>
             </div>
           </div>
@@ -262,7 +227,7 @@ export default function Landing() {
 
       {/* ── Footer & Sitemap (SEO Optimized) ── */}
       <footer className="bg-slate-900 pt-20 pb-10 px-6 border-t border-slate-800 text-slate-400 font-medium">
-        <div className="max-w-[1280px] mx-auto">
+        <div className="max-w-7xl mx-auto">
           
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-12 mb-16">
             
@@ -275,7 +240,7 @@ export default function Landing() {
                   <div className="text-[11px] font-bold text-slate-500 tracking-wider uppercase">Registrar System</div>
                 </div>
               </Link>
-              <p className="text-[14px] leading-relaxed mb-6 max-w-[400px]">
+              <p className="text-[14px] leading-relaxed mb-6 max-w-100">
                 An intelligent queueing and appointment system built to streamline registrar operations and improve the student experience at CRMC.
               </p>
               <div className="text-[13px] border-l-2 border-maroon pl-4">
@@ -304,8 +269,6 @@ export default function Landing() {
                 <li><Link to="/register" className="hover:text-white transition-colors no-underline">Create Account</Link></li>
               </ul>
             </nav>
-
-
 
           </div>
 

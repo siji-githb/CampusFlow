@@ -16,12 +16,19 @@ import NotificationDropdown from '../../components/NotificationDropdown'
 import { getMessages, markMessageRead } from '../../services/messagesService'
 import { getAppointmentStats } from '../../services/appointmentService'
 import { getPendingPriorityRequests } from '../../services/priorityService'
-import { Inbox, MessageSquare, BarChart2, Ticket, Calendar, ClipboardList, LogOut, Users, User, Settings, CheckSquare, Clock, CalendarClock, Monitor, MonitorX, HelpCircle, LayoutDashboard, ShieldCheck, Loader2, Menu, X, PanelLeftClose, FolderOpen, AlertCircle, IdCard } from 'lucide-react'
+import { Inbox, MessageSquare, BarChart2, Ticket, Calendar, ClipboardList, LogOut, Users, User, Settings, CheckSquare, Clock, CalendarClock, Monitor, MonitorX, HelpCircle, LayoutDashboard, ShieldCheck, Loader2, Menu, X, PanelLeftClose, FolderOpen, AlertCircle, IdCard, ChevronRight } from 'lucide-react'
 import { getWindowAssignments, claimWindow, releaseWindow, getIdRequests } from '../../services/adminService'
 
 // ── Compact Queue Preview (Overview panel) ─────────────────────────────────────
 function CompactQueuePreview({ queue, loading }) {
-  const activeAll = queue.filter(q => q.ticket.status !== 'completed')
+  const getRequiresPresence = (steps) => {
+    const current = steps?.find(s => s.status === 'in_progress') || steps?.[0]
+    if (current?.location === 'Back Office') return false
+    return current?.requires_presence !== false // default true
+  }
+
+  // Filter only active tickets that are at the physical counter (exclude processing table)
+  const activeAll = queue.filter(q => q.ticket.status !== 'completed' && getRequiresPresence(q.steps))
   const active = activeAll.slice(0, 5)
 
   if (loading) return (
@@ -33,7 +40,7 @@ function CompactQueuePreview({ queue, loading }) {
   if (active.length === 0) return (
     <div className="text-center py-7 text-text-muted text-[13px]">
       <div className="mb-2 flex justify-center"><Inbox size={32} /></div>
-      No active tickets right now
+      No active tickets at the counter right now
     </div>
   )
 
@@ -68,7 +75,7 @@ function CompactQueuePreview({ queue, loading }) {
       </div>
       <div className="mt-4 text-right">
         <span className="text-[11px] font-bold text-text-muted tracking-wide">
-          Showing {active.length} out of {activeAll.length} tickets
+          Showing {active.length} out of {activeAll.length} tickets at the counter
         </span>
       </div>
     </div>
@@ -599,8 +606,12 @@ export default function StaffDashboard() {
                       <p className="text-[11px] font-bold text-gold tracking-widest uppercase m-0 mb-1">Real-Time</p>
                       <h2 className="font-serif text-[18px] font-bold text-text-main m-0">Live Queue Management</h2>
                     </div>
-                    <button onClick={() => setActiveNav('queue')} className="px-3.5 py-1.5 rounded-lg border border-maroon-border bg-maroon-light text-maroon text-xs font-semibold cursor-pointer font-sans hover:bg-maroon-border transition-colors">
+                    <button 
+                      onClick={() => setActiveNav('queue')} 
+                      className="group px-3.5 py-1.5 rounded-xl border border-maroon-border bg-maroon-light text-maroon hover:bg-maroon hover:text-white hover:border-maroon text-xs font-semibold cursor-pointer font-sans transition-all duration-200 shadow-2xs hover:shadow-xs flex items-center gap-1 shrink-0"
+                    >
                       View All
+                      <ChevronRight size={13} className="transition-transform duration-200 group-hover:translate-x-0.5" />
                     </button>
                   </div>
                   <CompactQueuePreview queue={queue} loading={loadingQueue} />
@@ -619,8 +630,12 @@ export default function StaffDashboard() {
                           )}
                         </h2>
                       </div>
-                      <button onClick={() => setActiveNav('priority-requests')} className="px-3.5 py-1.5 rounded-lg border border-border bg-off-white text-text-sub text-xs font-semibold cursor-pointer font-sans hover:bg-surface hover:text-text-main hover:border-maroon/30 transition-all shadow-sm flex items-center gap-1">
+                      <button 
+                        onClick={() => setActiveNav('priority-requests')} 
+                        className="group px-3.5 py-1.5 rounded-xl border border-maroon-border bg-maroon-light text-maroon hover:bg-maroon hover:text-white hover:border-maroon text-xs font-semibold cursor-pointer font-sans transition-all duration-200 shadow-2xs hover:shadow-xs flex items-center gap-1 shrink-0"
+                      >
                         View All
+                        <ChevronRight size={13} className="transition-transform duration-200 group-hover:translate-x-0.5" />
                       </button>
                     </div>
                     <div className="flex-1 overflow-auto">

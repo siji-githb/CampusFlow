@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom'
 import { useAuth } from '../../context/useAuth'
 import { getAllAppointments, getAppointmentStats, rescheduleAppointment, getBookingConfig } from '../../services/appointmentService'
 import { Calendar, RefreshCw, BarChart2, Circle, User, Tag, X, FileText, Activity } from 'lucide-react'
+import CustomDatePicker from '../../components/common/CustomDatePicker'
 
 export default function AppointmentsPage() {
   const { token } = useAuth()
@@ -505,7 +506,12 @@ export default function AppointmentsPage() {
             <h2 className="m-0 mb-4 text-maroon font-serif text-[22px] font-bold">Reschedule Appointment</h2>
             <div className="mb-4">
               <label className="block text-xs font-semibold text-text-sub mb-1.5">New Date</label>
-              <input type="date" value={newDate} onChange={e => setNewDate(e.target.value)} className="w-full p-2.5 rounded-lg border border-border text-sm outline-none font-sans focus:border-maroon transition-colors" />
+              <CustomDatePicker
+                value={newDate}
+                onChange={setNewDate}
+                placeholder="Select new appointment date…"
+                className="w-full"
+              />
             </div>
             <div className="mb-6">
               <label className="block text-xs font-semibold text-text-sub mb-1.5">New Time Slot</label>

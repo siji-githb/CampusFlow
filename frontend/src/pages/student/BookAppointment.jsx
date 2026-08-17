@@ -335,10 +335,10 @@ export default function BookAppointment() {
   )
 
   return (
-    <StudentLayout activeTab="book" mobileTitle="Book Appointment" backTo="/student/dashboard">
+    <StudentLayout activeTab="book" mobileTitle="Book Appointment">
 
       {/* ── Content ── */}
-      <div className="w-full max-w-165 mx-auto pt-12 px-6 pb-20 box-border md:max-w-262.5 md:mx-0 md:pt-0 md:px-0">
+      <div className="w-full max-w-165 mx-auto pt-4 px-4 pb-20 box-border md:max-w-262.5 md:mx-0 md:pt-0 md:px-0">
 
         <div className="hidden md:flex justify-between items-start mb-8">
           <div>

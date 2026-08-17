@@ -177,9 +177,9 @@ export default function LiveQueuePage() {
 
   const [queueStats, setQueueStats] = useState({ avg_wait_minutes: 0, peak_forecast: 'No Data' })
 
-  const showToast = (msg) => {
-    setToastMsg(msg)
-    setTimeout(() => setToastMsg(null), 4000)
+  const showToast = (msg, type = 'success') => {
+    setToastMsg({ text: typeof msg === 'string' ? msg : JSON.stringify(msg), type })
+    setTimeout(() => setToastMsg(null), 3500)
   }
 
   useEffect(() => {
@@ -230,13 +230,16 @@ export default function LiveQueuePage() {
       }
 
       await fetchQueue()
-      if (confirmLabel === 'Mark as Done') {
-        showToast(`${txName} for ${studentName} is successfully done`)
+      if (confirmLabel === 'Mark as Done' || confirmLabel === 'Release Document') {
+        showToast(`${txName || 'Transaction'} for ${studentName || 'Student'} completed successfully!`)
       } else {
-        showToast(`Step ${stepNum} for ${studentName} is confirmed`)
+        showToast(`Step ${stepNum} (${confirmLabel || 'Confirmed'}) for ${studentName || 'Student'} completed successfully!`)
       }
     }
-    catch (e) { setError(e.message) }
+    catch (e) { 
+      setError(e.message)
+      showToast(e.message || 'Failed to confirm step', 'error')
+    }
     finally { setConfirming(null) }
   }
 
@@ -244,8 +247,10 @@ export default function LiveQueuePage() {
     try {
       await updateReleaseDate(token, appointmentId, dateVal)
       await fetchQueue()
+      showToast('Document release date saved — moved to Document Releases')
     } catch (e) {
       setError(e.message)
+      showToast(e.message || 'Failed to set release date', 'error')
       throw e
     }
   }
@@ -273,18 +278,30 @@ export default function LiveQueuePage() {
     finally { setReminding(null) }
   }
 
+  const getRequiresPresence = (steps) => {
+    const current = steps?.find(s => s.status === 'in_progress')
+    if (current?.location === 'Back Office') return false
+    return current?.requires_presence !== false // default true if missing/undefined
+  }
+
   // ── Derived stats ──
-  const { active, done, serving, waiting, highPrio } = useMemo(() => {
+  const { active, done, serving, waiting, servingCounter, servingProcessing, highPrio } = useMemo(() => {
     const active = queue.filter(q => q.ticket.status !== 'completed')
     const done = queue.filter(q => q.ticket.status === 'completed')
     const serving = queue.filter(q => q.ticket.status === 'in_progress')
     const waiting = queue.filter(q => q.ticket.status === 'pending' || q.ticket.status === 'waiting')
+    const servingCounter = queue.filter(q => q.ticket.status === 'in_progress' && getRequiresPresence(q.steps))
+    const servingProcessing = queue.filter(q => q.ticket.status === 'in_progress' && !getRequiresPresence(q.steps))
     const highPrio = queue.filter(q => {
       const pc = q.ticket.appointments?.priority_class
       return pc === 'alumni' || pc === 'pwd' || pc === 'pregnant'
     })
-    return { active, done, serving, waiting, highPrio }
+    return { active, done, serving, waiting, servingCounter, servingProcessing, highPrio }
   }, [queue])
+
+  const servingSubText = useMemo(() => {
+    return `${servingCounter.length} at the counter`
+  }, [servingCounter.length])
 
   const avgWait = queueStats.avg_wait_minutes || 0
 
@@ -317,12 +334,6 @@ export default function LiveQueuePage() {
       return statusOk && prioOk && txOk && srchOk
     })
   }, [queue, filters, search])
-
-  const getRequiresPresence = (steps) => {
-    const current = steps?.find(s => s.status === 'in_progress')
-    if (current?.location === 'Back Office') return false
-    return current?.requires_presence !== false // default true if missing/undefined
-  }
 
   // ── Split into "At the Counter" (physical line) vs "Processing" (back office) ──
   const { atCounter, processingQueue } = useMemo(() => {
@@ -496,7 +507,7 @@ export default function LiveQueuePage() {
           subColorClass={avgWait > 15 ? 'text-orange' : 'text-text-muted'} 
           loading={loading} delay="0.1s"
         />
-        <MiniStat icon={<Users size={20} />} value={waiting.length} label="Waiting in Queue" sub={`${serving.length} serving now`} subColorClass="text-text-muted" loading={loading} delay="0.2s" />
+        <MiniStat icon={<Users size={20} />} value={waiting.length} label="Waiting in Queue" sub={servingSubText} subColorClass="text-text-muted" loading={loading} delay="0.2s" />
         <MiniStat icon={<CheckSquare size={20} />} value={done.length} label="Total Serviced" sub={done.length >= 80 ? 'High volume — Important' : 'Normal volume'} subColorClass={done.length >= 80 ? 'text-danger' : 'text-text-muted'} loading={loading} delay="0.3s" />
       </div>
 
@@ -691,11 +702,19 @@ export default function LiveQueuePage() {
 
       {/* ── Toast Notification ── */}
       {toastMsg && (
-        <div className="fixed bottom-10 right-8 z-9999 flex items-center gap-3 px-5 py-3.5 rounded-xl shadow-[0_12px_32px_rgba(0,0,0,0.18)] border border-[#005200] bg-[#006600] text-white text-[13.5px] font-bold animate-fade-up">
-          <div className="w-5 h-5 rounded-full bg-white/20 flex items-center justify-center shrink-0">
-            <Check size={13} className="text-white stroke-3" />
-          </div>
-          <span className="text-white">{toastMsg}</span>
+        <div className={`fixed bottom-10 right-8 z-9999 flex items-center gap-3 px-5 py-3.5 rounded-xl shadow-[0_12px_32px_rgba(0,0,0,0.18)] border text-[13.5px] font-bold animate-fade-up ${
+          toastMsg.type === 'error'
+            ? 'bg-danger text-white border-danger-border'
+            : 'bg-[#006600] text-white border-[#005200]'
+        }`}>
+          {toastMsg.type === 'error' ? (
+            <AlertTriangle size={17} className="shrink-0 text-white" />
+          ) : (
+            <div className="w-5 h-5 rounded-full bg-white/20 flex items-center justify-center shrink-0">
+              <Check size={13} className="text-white stroke-3" />
+            </div>
+          )}
+          <span className="text-white">{toastMsg.text}</span>
           <button onClick={() => setToastMsg(null)} className="ml-2.5 bg-transparent border-none text-white/80 hover:text-white cursor-pointer p-0 flex items-center shrink-0 transition-opacity">
             <X size={14} strokeWidth={2.5} />
           </button>

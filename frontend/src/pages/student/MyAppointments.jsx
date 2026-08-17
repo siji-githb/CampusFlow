@@ -7,7 +7,7 @@ import RescheduleModal from '../../components/RescheduleModal'
 import { 
   Inbox, Calendar, Tag, FileText, AlertTriangle, ChevronLeft, ChevronRight, 
   Clock, CheckCircle, Filter, ChevronDown, Trash2, FileCheck, MapPin, 
-  Building2, ShieldCheck, ArrowRight, PlusCircle, Sparkles, CheckCircle2, Zap, Info 
+  Building2, ShieldCheck, ArrowRight, PlusCircle, Sparkles, CheckCircle2, Zap, Info, X 
 } from 'lucide-react'
 
 const CustomDropdown = ({ value, onChange, options, icon }) => {
@@ -92,11 +92,375 @@ export const getEffectiveStatus = (appt) => {
   return appt.status || 'pending';
 };
 
+function AppointmentDetailsContent({ 
+  selectedAppt, 
+  navigate, 
+  setReschedulingAppt, 
+  setConfirmCancelId, 
+  canReschedule, 
+  cancelling, 
+  fmt12h,
+  isMobileModal = false,
+  onCloseMobileModal
+}) {
+  if (!selectedAppt) return null;
+  const selEff = getEffectiveStatus(selectedAppt)
+  const selStatusObj = STATUS[selEff] || STATUS.pending
+  const isSelReady = selEff === 'ready_for_pickup'
+  const isSelCompleted = selEff === 'completed'
+  const isSelCancelled = selEff === 'cancelled'
+
+  return (
+    <div className="flex flex-col flex-1 h-full">
+      {!isMobileModal && (
+        <div className="flex items-start justify-between mb-6 pb-5 border-b border-border">
+          <div>
+            <p className="text-[10px] font-bold text-text-muted tracking-widest uppercase m-0 mb-1.5">TRANSACTION OVERVIEW</p>
+            <h2 className="font-serif text-[22px] font-bold text-text-main m-0 mb-2">{selectedAppt.transaction_types?.name || 'Transaction'}</h2>
+            <span className="text-[11.5px] font-bold py-1.5 px-3 rounded-full inline-flex items-center gap-1.5" style={{ background: selStatusObj.bg, color: selStatusObj.color, border: `1px solid ${selStatusObj.border}` }}>
+              {isSelReady ? <FileCheck size={13} /> : isSelCompleted ? <CheckCircle size={13} /> : null} {selStatusObj.label}
+            </span>
+          </div>
+        </div>
+      )}
+
+      {isMobileModal && (
+        <div className="mb-4">
+          <span className="text-[11.5px] font-bold py-1.5 px-3 rounded-full inline-flex items-center gap-1.5" style={{ background: selStatusObj.bg, color: selStatusObj.color, border: `1px solid ${selStatusObj.border}` }}>
+            {isSelReady ? <FileCheck size={13} /> : isSelCompleted ? <CheckCircle size={13} /> : null} {selStatusObj.label}
+          </span>
+        </div>
+      )}
+
+      {isSelReady ? (
+        <div className="flex flex-col flex-1">
+          <div className="bg-white border border-border rounded-2xl p-5 mb-5 shadow-[0_2px_8px_rgba(0,0,0,0.03)]">
+            <div className="flex items-start gap-3.5">
+              <div className="w-10 h-10 rounded-xl bg-success text-white flex items-center justify-center shrink-0 shadow-sm">
+                <FileCheck size={22} />
+              </div>
+              <div>
+                <h4 className="text-[15px] font-bold text-text-main m-0 mb-1">Document Ready for Collection</h4>
+                <p className="text-[12.5px] text-text-sub m-0 leading-relaxed">
+                  Your requested official document is verified, printed, sealed, and ready for claiming at the Registrar's Office.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-5">
+            <div className="p-4.5 rounded-2xl bg-white border border-border shadow-[0_2px_8px_rgba(0,0,0,0.03)]">
+              <p className="text-[10px] font-bold text-text-muted tracking-widest uppercase m-0 mb-2 flex items-center gap-1.5">
+                <MapPin size={12} className="text-maroon" /> PICKUP LOCATION
+              </p>
+              <p className="text-[13.5px] font-bold text-text-main m-0 mb-0.5">Registrar's Office</p>
+              <p className="text-[12px] text-text-sub m-0">Window 1 / Releasing Counter</p>
+            </div>
+            <div className="p-4.5 rounded-2xl bg-white border border-border shadow-[0_2px_8px_rgba(0,0,0,0.03)]">
+              <p className="text-[10px] font-bold text-text-muted tracking-widest uppercase m-0 mb-2 flex items-center gap-1.5">
+                <Clock size={12} className="text-gold" /> OFFICE HOURS
+              </p>
+              <p className="text-[13.5px] font-bold text-text-main m-0 mb-0.5">Mon – Fri (8:00 AM – 5:00 PM)</p>
+              <p className="text-[12px] text-text-sub m-0">Excluding official holidays</p>
+            </div>
+          </div>
+
+          <div className="p-5 rounded-2xl bg-white border border-border mb-5 shadow-[0_2px_8px_rgba(0,0,0,0.03)]">
+            <p className="text-[10px] font-bold text-text-muted tracking-widest uppercase m-0 mb-3 flex items-center gap-1.5">
+              <ShieldCheck size={12} className="text-success" /> WHAT TO PRESENT UPON CLAIMING
+            </p>
+            <div className="flex flex-col gap-2 text-[13px] text-text-main">
+              <div className="flex items-center gap-2">
+                <div className="w-4 h-4 rounded-full bg-success-light text-success flex items-center justify-center text-[10px] font-bold">✓</div>
+                <span>Digital Claim Stub / Active Queue Number on this app</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-[13px] text-text-sub mb-6 border-t border-border pt-4">
+            <div>
+              <span className="font-semibold text-text-muted text-[11px] uppercase tracking-wider block mb-1">Appointment Schedule</span>
+              <span className="font-bold text-text-main">{selectedAppt.appointment_date} at {fmt12h(selectedAppt.time_slot)}</span>
+            </div>
+            <div>
+              <span className="font-semibold text-text-muted text-[11px] uppercase tracking-wider block mb-1">Recorded Purpose</span>
+              <span className="font-bold text-text-main">{selectedAppt.notes || 'Official Document Request'}</span>
+            </div>
+          </div>
+
+          <div className="mt-auto pt-4">
+            <button 
+              onClick={() => {
+                if (onCloseMobileModal) onCloseMobileModal();
+                navigate('/student/queue?tab=active');
+              }} 
+              className="w-full py-3.5 px-4 text-[14px] font-bold text-white bg-success border-none rounded-xl font-sans flex items-center justify-center gap-2 cursor-pointer hover:bg-success-dark transition-all shadow-sm hover:-translate-y-0.5"
+            >
+              <FileCheck size={18} /> View Digital Claim Stub
+            </button>
+          </div>
+        </div>
+      ) : isSelCompleted ? (
+        <div className="flex flex-col flex-1">
+          <div className="bg-white border border-border rounded-2xl p-5 mb-5 shadow-[0_2px_8px_rgba(0,0,0,0.03)]">
+            <div className="flex items-start gap-3.5">
+              <div className="w-10 h-10 rounded-xl bg-blue-600 text-white flex items-center justify-center shrink-0 shadow-sm">
+                <CheckCircle size={22} />
+              </div>
+              <div>
+                <h4 className="text-[15px] font-bold text-text-main m-0 mb-1">Document Officially Released</h4>
+                <p className="text-[12.5px] text-text-sub m-0 leading-relaxed">
+                  This document was verified, claimed, and released by the Registrar's Office. The transaction is marked complete.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="p-5 rounded-2xl bg-white border border-border mb-5 shadow-[0_2px_8px_rgba(0,0,0,0.03)]">
+            <p className="text-[10px] font-bold text-text-muted tracking-widest uppercase m-0 mb-3.5 flex items-center gap-1.5">
+              <Building2 size={12} className="text-maroon" /> TRANSACTION SUMMARY
+            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-[13px]">
+              <div>
+                <span className="text-[10px] text-text-muted font-bold uppercase tracking-wider block mb-1">DOCUMENT</span>
+                <span className="font-bold text-text-main">{selectedAppt.transaction_types?.name}</span>
+              </div>
+              <div>
+                <span className="text-[10px] text-text-muted font-bold uppercase tracking-wider block mb-1">APPOINTMENT DATE</span>
+                <span className="font-bold text-text-main">{selectedAppt.appointment_date}</span>
+              </div>
+              <div>
+                <span className="text-[10px] text-text-muted font-bold uppercase tracking-wider block mb-1">PRIORITY CLASSIFICATION</span>
+                <span className="font-bold text-text-main capitalize">{selectedAppt.priority_class}</span>
+              </div>
+              <div>
+                <span className="text-[10px] text-text-muted font-bold uppercase tracking-wider block mb-1">STATUS</span>
+                <span className="font-bold text-blue-700">Official Release Completed</span>
+              </div>
+            </div>
+            {selectedAppt.notes && (
+              <div className="mt-4 pt-3.5 border-t border-border text-[12.5px]">
+                <span className="text-[10px] text-text-muted font-bold uppercase tracking-wider block mb-0.5">PURPOSE / REMARKS</span>
+                <span className="text-text-main font-medium">{selectedAppt.notes}</span>
+              </div>
+            )}
+          </div>
+
+          <div className="p-4.5 rounded-2xl bg-white border border-border text-[12.5px] text-text-sub leading-relaxed mb-5 shadow-[0_2px_8px_rgba(0,0,0,0.03)]">
+            <p className="font-bold text-text-main m-0 mb-1 flex items-center gap-1.5"><Sparkles size={14} className="text-gold" /> Need another document copy?</p>
+            Please keep your physical document secure. If you require additional official certifications or records, you can submit a new appointment request anytime.
+          </div>
+
+          <div className="mt-auto pt-4">
+            <button 
+              onClick={() => {
+                if (onCloseMobileModal) onCloseMobileModal();
+                navigate('/student/book');
+              }} 
+              className="w-full py-3.5 px-4 text-[13.5px] font-bold text-maroon bg-maroon-light border border-maroon-border rounded-xl font-sans flex items-center justify-center gap-2 cursor-pointer hover:bg-maroon hover:text-white transition-all shadow-xs"
+            >
+              <PlusCircle size={16} /> Request Another Document
+            </button>
+          </div>
+        </div>
+      ) : isSelCancelled ? (
+        <div className="flex flex-col flex-1">
+          <div className="bg-white border border-border rounded-2xl p-5 mb-5 shadow-[0_2px_8px_rgba(0,0,0,0.03)]">
+            <div className="flex items-start gap-3.5">
+              <div className="w-10 h-10 rounded-xl bg-maroon text-white flex items-center justify-center shrink-0 shadow-sm">
+                <AlertTriangle size={22} />
+              </div>
+              <div>
+                <h4 className="text-[15px] font-bold text-text-main m-0 mb-1">Appointment Cancelled</h4>
+                <p className="text-[12.5px] text-text-sub m-0 leading-relaxed">
+                  This appointment slot was cancelled. You may schedule a new appointment whenever you are ready.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="p-5 rounded-2xl bg-white border border-border mb-5 shadow-[0_2px_8px_rgba(0,0,0,0.03)]">
+            <p className="text-[10px] font-bold text-text-muted tracking-widest uppercase m-0 mb-3 flex items-center gap-1.5">
+              <Building2 size={12} className="text-maroon" /> CANCELLED BOOKING RECORD
+            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-[13px]">
+              <div>
+                <span className="text-[10px] text-text-muted font-bold uppercase tracking-wider block mb-1">Transaction</span>
+                <span className="font-bold text-text-main">{selectedAppt.transaction_types?.name}</span>
+              </div>
+              <div>
+                <span className="text-[10px] text-text-muted font-bold uppercase tracking-wider block mb-1">Original Date</span>
+                <span className="font-bold text-text-main">{selectedAppt.appointment_date} ({fmt12h(selectedAppt.time_slot)})</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-auto pt-4">
+            <button 
+              onClick={() => {
+                if (onCloseMobileModal) onCloseMobileModal();
+                navigate('/student/book');
+              }} 
+              className="w-full py-3.5 px-4 text-[13.5px] font-bold text-white bg-maroon border-none rounded-xl font-sans flex items-center justify-center gap-2 cursor-pointer hover:bg-maroon-dark transition-all shadow-xs"
+            >
+              <PlusCircle size={16} /> Book New Appointment
+            </button>
+          </div>
+        </div>
+      ) : (
+        <div className="flex flex-col flex-1">
+          {isAppointmentToday(selectedAppt.appointment_date) ? (
+            <div className="bg-white border border-border rounded-2xl p-5 mb-5 shadow-[0_2px_8px_rgba(0,0,0,0.03)]">
+              <div className="flex items-start gap-3.5">
+                <div className="w-10 h-10 rounded-xl bg-gold text-white flex items-center justify-center shrink-0 shadow-sm">
+                  <Zap size={22} className="text-white fill-white" />
+                </div>
+                <div className="flex-1">
+                  <h4 className="text-[15px] font-bold text-text-main m-0 mb-1">Appointment is Today!</h4>
+                  <p className="text-[12.5px] text-text-sub m-0 leading-relaxed mb-3">
+                    When you arrive at the Registrar's Office, activate your ticket on the <strong className="text-maroon font-semibold">My Queue</strong> tab to enter the live waiting line.
+                  </p>
+                  <button
+                    onClick={() => {
+                      if (onCloseMobileModal) onCloseMobileModal();
+                      navigate('/student/queue');
+                    }}
+                    className="py-2 px-3.5 text-[12px] font-bold text-white bg-maroon border-none rounded-lg font-sans inline-flex items-center gap-1.5 cursor-pointer hover:bg-maroon-dark transition-colors shadow-2xs"
+                  >
+                    <Zap size={14} className="fill-white" /> Go to Live Queue
+                  </button>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="bg-white border border-border rounded-2xl p-5 mb-5 shadow-[0_2px_8px_rgba(0,0,0,0.03)]">
+              <div className="flex items-start gap-3.5">
+                <div className="w-10 h-10 rounded-xl bg-success text-white flex items-center justify-center shrink-0 shadow-sm">
+                  <Calendar size={22} />
+                </div>
+                <div>
+                  <h4 className="text-[15px] font-bold text-text-main m-0 mb-1">Appointment Confirmed & Reserved</h4>
+                  <p className="text-[12.5px] text-text-sub m-0 leading-relaxed">
+                    Your appointment slot is reserved. Please review the checklist below and bring all required items on your scheduled day.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-5">
+            <div className="p-4.5 rounded-2xl bg-white border border-border shadow-[0_2px_8px_rgba(0,0,0,0.03)]">
+              <p className="text-[10px] font-bold text-text-muted tracking-widest uppercase m-0 mb-2 flex items-center gap-1.5">
+                <Calendar size={12} className="text-gold" /> SCHEDULED DATE & TIME
+              </p>
+              <p className="text-[13.5px] font-bold text-text-main m-0 mb-0.5">{selectedAppt.appointment_date}</p>
+              <p className="text-[12px] text-text-sub m-0">{fmt12h(selectedAppt.time_slot)}</p>
+            </div>
+            <div className="p-4.5 rounded-2xl bg-white border border-border shadow-[0_2px_8px_rgba(0,0,0,0.03)]">
+              <p className="text-[10px] font-bold text-text-muted tracking-widest uppercase m-0 mb-2 flex items-center gap-1.5">
+                <MapPin size={12} className="text-maroon" /> LOCATION & COUNTER
+              </p>
+              <p className="text-[13.5px] font-bold text-text-main m-0 mb-0.5">Registrar's Office</p>
+              <p className="text-[12px] text-text-sub m-0">Service Windows 1 – 4</p>
+            </div>
+          </div>
+
+          <div className="p-5 rounded-2xl bg-white border border-border mb-5 shadow-[0_2px_8px_rgba(0,0,0,0.03)]">
+            <p className="text-[10px] font-bold text-text-muted tracking-widest uppercase m-0 mb-2.5 flex items-center gap-1.5">
+              <Tag size={12} className="text-gold" /> APPOINTMENT DETAILS
+            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-[13px]">
+              <div>
+                <span className="text-[10px] text-text-muted font-bold uppercase tracking-wider block mb-0.5">Priority Lane</span>
+                <span className="font-bold text-text-main capitalize">{selectedAppt.priority_class || 'Regular'}</span>
+              </div>
+              <div>
+                <span className="text-[10px] text-text-muted font-bold uppercase tracking-wider block mb-0.5">Stated Purpose</span>
+                <span className="font-bold text-text-main">{selectedAppt.notes || 'Official Registrar Request'}</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="p-5 rounded-2xl bg-white border border-border mb-5 shadow-[0_2px_8px_rgba(0,0,0,0.03)]">
+            <p className="text-[10px] font-bold text-text-muted tracking-widest uppercase m-0 mb-3 flex items-center gap-1.5">
+              <ShieldCheck size={12} className="text-maroon" /> REQUIRED DOCUMENTS TO BRING
+            </p>
+            <div className="flex flex-col gap-2 text-[13px] text-text-main">
+              {selectedAppt.transaction_types?.required_documents?.length > 0 ? (
+                selectedAppt.transaction_types.required_documents.map((doc, i) => (
+                  <div key={i} className="flex items-center gap-2.5">
+                    <div className="w-4.5 h-4.5 rounded-full bg-success-light border border-success-border text-success flex items-center justify-center text-[10px] font-bold shrink-0">✓</div>
+                    <span>{doc}</span>
+                  </div>
+                ))
+              ) : (
+                <div className="flex items-center gap-2.5">
+                  <div className="w-4.5 h-4.5 rounded-full bg-success-light border border-success-border text-success flex items-center justify-center text-[10px] font-bold shrink-0">✓</div>
+                  <span>Valid Student ID / Official School Registration Form</span>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {selectedAppt.transaction_types?.processing_steps?.length > 0 && (
+            <div className="mb-5">
+              <p className="text-[10px] font-bold text-text-muted tracking-widest uppercase m-0 mb-3 flex items-center gap-1.5">
+                <Clock size={12} className="text-gold" /> SERVICE WORKFLOW AT COUNTER
+              </p>
+              <div className="flex flex-col gap-2">
+                {selectedAppt.transaction_types.processing_steps.map((step, i) => (
+                  <div key={i} className="flex items-center gap-3 text-[13px] font-medium text-text-main p-2.5 rounded-xl bg-white border border-border shadow-[0_2px_8px_rgba(0,0,0,0.03)]">
+                    <div className="w-6 h-6 rounded-full bg-surface border border-border flex items-center justify-center text-[11px] font-bold text-maroon shrink-0 shadow-2xs">
+                      {i + 1}
+                    </div>
+                    <span>{typeof step === 'object' ? step.name : step}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {(selectedAppt.status === 'confirmed' || selectedAppt.status === 'pending') && (
+            <div className="mt-auto pt-4 border-t border-border">
+              <div className="flex gap-3">
+                <button 
+                  onClick={() => {
+                    if (onCloseMobileModal) onCloseMobileModal();
+                    setReschedulingAppt(selectedAppt);
+                  }} 
+                  disabled={cancelling === selectedAppt.id || !canReschedule(selectedAppt.appointment_date, selectedAppt.time_slot)}
+                  className={`flex-1 py-3 px-4 text-[13px] font-bold text-text-main bg-white border-[1.5px] border-border rounded-xl font-sans transition-all ${(!canReschedule(selectedAppt.appointment_date, selectedAppt.time_slot) || cancelling === selectedAppt.id) ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:bg-off-white hover:border-text-sub/40'}`}
+                >
+                  Reschedule
+                </button>
+                <button 
+                  onClick={() => {
+                    if (onCloseMobileModal) onCloseMobileModal();
+                    setConfirmCancelId(selectedAppt.id);
+                  }} 
+                  disabled={cancelling === selectedAppt.id}
+                  className={`flex-1 py-3 px-4 text-[13px] font-bold text-maroon bg-transparent border-[1.5px] border-maroon-border rounded-xl font-sans transition-all ${cancelling === selectedAppt.id ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:bg-maroon-light hover:border-maroon'}`}
+                >
+                  {cancelling === selectedAppt.id ? 'Cancelling...' : 'Cancel Appointment'}
+                </button>
+              </div>
+              <p className="text-[11px] text-text-muted text-center m-0 mt-2.5">
+                * Rescheduling is allowed up to 24 hours prior to appointment time.
+              </p>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function MyAppointments() {
   const { token } = useAuth()
   const navigate = useNavigate()
   const [appointments, setAppointments] = useState([])
   const [selectedApptId, setSelectedApptId] = useState(null)
+  const [isMobileViewingDetails, setIsMobileViewingDetails] = useState(false)
   
   const selectedAppt = useMemo(() => {
     return appointments.find(a => a.id === selectedApptId) || null
@@ -119,7 +483,6 @@ export default function MyAppointments() {
   const [showClearConfirm, setShowClearConfirm] = useState(false)
   const [clearingAll, setClearingAll] = useState(false)
   const [successMsg, setSuccessMsg] = useState('')
-  const [visibleCount, setVisibleCount] = useState(4)
 
   const canReschedule = (apptDateStr, apptTimeStr) => {
     if (!apptDateStr || !apptTimeStr) return false;
@@ -135,13 +498,10 @@ export default function MyAppointments() {
     try { 
       const data = await getMyAppointments(token)
       setAppointments(data || [])
-      if (data && data.length > 0 && !selectedApptId) {
-        setSelectedApptId(data[0].id)
-      }
     }
     catch (e) { setError(e.message) }
     finally { setLoading(false) }
-  }, [token, selectedApptId])
+  }, [token])
   
   useEffect(() => { fetch() }, [fetch])
 
@@ -180,145 +540,150 @@ export default function MyAppointments() {
       const aEnd = a.status === 'completed' || a.status === 'cancelled';
       const bEnd = b.status === 'completed' || b.status === 'cancelled';
       
-      // Separate active/pending from ended appointments
       if (aEnd && !bEnd) return 1;
       if (!aEnd && bEnd) return -1;
 
-      // Prioritize ready_for_pickup at the top of active appointments
       if (aEff === 'ready_for_pickup' && bEff !== 'ready_for_pickup') return -1;
       if (aEff !== 'ready_for_pickup' && bEff === 'ready_for_pickup') return 1;
       
-      // If both are ended, sort descending (newest first)
       if (aEnd && bEnd) {
         const dateCmp = (b.appointment_date || '').localeCompare(a.appointment_date || '');
         if (dateCmp !== 0) return dateCmp;
         return (b.time_slot || '').localeCompare(a.time_slot || '');
       }
       
-      // If both are active, sort ascending (oldest/soonest first)
       const dateCmp = (a.appointment_date || '').localeCompare(b.appointment_date || '');
       if (dateCmp !== 0) return dateCmp;
       return (a.time_slot || '').localeCompare(b.time_slot || '');
-    });
-  }, [appointments, filter]);
+    })
+  }, [appointments, filter])
+
+  const options = [
+    { value: 'all', label: 'All Appointments' },
+    { value: 'ready_for_pickup', label: 'Ready for Pickup' },
+    { value: 'confirmed', label: 'Confirmed' },
+    { value: 'pending', label: 'Pending' },
+    { value: 'completed', label: 'Completed' },
+    { value: 'cancelled', label: 'Cancelled' },
+  ]
+
+  const hasCancelledAppointments = useMemo(() => {
+    return appointments.some(a => a.status === 'cancelled');
+  }, [appointments]);
 
   return (
-    <StudentLayout activeTab="appointments" mobileTitle="My Appointments" backTo="/student/dashboard">
-      <div className="w-full max-w-120 mx-auto py-5 px-4 md:max-w-262.5 md:mx-0 md:py-0 md:px-0">
+    <StudentLayout activeTab="appointments" mobileTitle="My Appointments">
+      <div className="w-full max-w-165 mx-auto pt-4 px-4 pb-20 box-border md:max-w-262.5 md:mx-0 md:pt-0 md:px-0">
+        
+        {/* Desktop Header */}
         <div className="hidden md:flex justify-between items-start mb-8">
           <div>
-            <div className="text-[11px] font-bold text-gold uppercase tracking-[0.06em] mb-2">APPOINTMENTS</div>
+            <div className="text-[11px] font-bold text-gold uppercase tracking-[0.06em] mb-2">MY SCHEDULE</div>
             <h1 className="font-serif text-[26px] font-bold text-maroon m-0 mb-2 flex items-center gap-3">
               <Calendar className="text-maroon" size={24} /> My Appointments
             </h1>
             <p className="text-[12px] text-text-sub m-0 leading-relaxed max-w-162.5">
-              View and manage your scheduled appointments, claim stubs, and collection history.
+              View and manage your scheduled registrar appointments and document claiming details.
             </p>
           </div>
           <div className="text-[13px] text-text-sub font-medium flex items-center gap-2 mt-2">
             <Link to="/student/dashboard" className="text-maroon hover:underline cursor-pointer">Home</Link>
             <span className="text-border-strong">›</span>
-            <span>My Appointments</span>
+            <span>Appointments</span>
           </div>
         </div>
 
-        {error && <div className="py-2.5 px-3.5 rounded-lg bg-maroon-light text-maroon text-[13px] mb-4 font-medium">{error}</div>}
-
-        <div className="md:flex md:gap-8 md:items-start">
-          
-          {/* ── Confirmation Modal for Clear All Cancelled ── */}
-          {showClearConfirm && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 animate-fade-in">
-              <div className="bg-white rounded-2xl p-6 w-full max-w-90 shadow-xl animate-scale-up">
-                <div className="w-12 h-12 rounded-full bg-maroon-light flex items-center justify-center mb-4 text-maroon mx-auto">
-                  <Trash2 size={24} />
-                </div>
-                <h3 className="font-serif text-[20px] font-bold text-text-main m-0 mb-2 text-center">Clear Cancelled?</h3>
-                <p className="text-[13px] text-text-sub m-0 mb-6 text-center leading-relaxed">
-                  Are you sure you want to remove all cancelled appointments from your history? This action cannot be undone.
-                </p>
-                <div className="flex gap-3">
-                  <button
-                    onClick={() => setShowClearConfirm(false)}
-                    disabled={clearingAll}
-                    className="flex-1 py-2.5 px-4 rounded-[10px] bg-white border border-border text-text-main text-[13px] font-bold cursor-pointer hover:bg-off-white transition-colors"
-                  >
-                    Keep Them
-                  </button>
-                  <button
-                    onClick={handleClearCancelled}
-                    disabled={clearingAll}
-                    className="flex-1 py-2.5 px-4 rounded-[10px] bg-maroon border-none text-white text-[13px] font-bold cursor-pointer hover:bg-maroon-dark transition-colors disabled:opacity-50 flex items-center justify-center"
-                  >
-                    {clearingAll ? 'Clearing...' : 'Clear All'}
-                  </button>
-                </div>
-              </div>
+        {/* Action Controls & Notifications (Hidden on mobile when viewing in-page details) */}
+        <div className={`flex-col gap-4 mb-6 ${isMobileViewingDetails ? 'hidden md:flex' : 'flex'}`}>
+          {error && (
+            <div className="p-3.5 rounded-xl bg-red-50 border border-red-200 text-danger text-[13px] font-medium flex items-center gap-2">
+              <AlertTriangle size={16} /> {error}
+            </div>
+          )}
+          {successMsg && (
+            <div className="p-3.5 rounded-xl bg-success-light border border-success-border text-success text-[13px] font-medium flex items-center gap-2">
+              <CheckCircle size={16} /> {successMsg}
             </div>
           )}
 
-          {/* ── Left Column: Appointment Cards ── */}
-          <div className="md:w-105 shrink-0">
-            {successMsg && <div className="py-2.5 px-3.5 rounded-lg bg-success-light text-success border border-success-border text-[13px] mb-4 font-medium animate-fade-in">{successMsg}</div>}
-
-            {/* ── Filter Dropdown & Clear Button ── */}
-            <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
-              <div className="flex items-center gap-3 w-full sm:w-auto flex-1">
-                <CustomDropdown 
-                  value={filter}
-                  onChange={(val) => { setFilter(val); }}
-                  icon={<Filter size={16} className="text-gold" />}
-                  options={[
-                    { value: 'all', label: 'All Appointments' },
-                    { value: 'ready_for_pickup', label: 'Pending Pickup' },
-                    { value: 'confirmed', label: 'Confirmed' },
-                    { value: 'completed', label: 'Completed' },
-                    { value: 'cancelled', label: 'Cancelled' }
-                  ]}
-                />
-                
-                {appointments.some(a => a.status === 'cancelled') && (
-                  <button
-                    onClick={() => setShowClearConfirm(true)}
-                    className="flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl border-[1.5px] border-border bg-white text-text-sub text-[12px] font-bold cursor-pointer hover:border-maroon hover:text-maroon transition-all shadow-[0_2px_8px_rgba(0,0,0,0.04)]"
-                    title="Clear all cancelled appointments"
-                  >
-                    <Trash2 size={16} />
-                    <span className="hidden sm:inline">Clear</span>
-                  </button>
-                )}
-              </div>
-              <div className="text-[12px] font-medium text-text-sub whitespace-nowrap">
+          <div className="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-3">
+            <div className="flex items-center gap-2">
+              <CustomDropdown 
+                value={filter} 
+                onChange={setFilter} 
+                options={options} 
+                icon={<Filter size={16} className="text-gold" />}
+              />
+              <span className="text-[12px] font-semibold text-text-muted ml-2">
                 {filteredAppointments.length} {filteredAppointments.length === 1 ? 'result' : 'results'}
-              </div>
+              </span>
             </div>
 
+            {hasCancelledAppointments && (
+              <button
+                onClick={() => setShowClearConfirm(true)}
+                className="py-2.5 px-4 rounded-xl border border-red-200 bg-red-50/50 text-maroon hover:bg-red-50 text-[12.5px] font-bold flex items-center justify-center gap-2 cursor-pointer transition-colors shadow-2xs self-end sm:self-auto"
+                title="Clear all cancelled appointments"
+              >
+                <Trash2 size={15} /> Clear Cancelled
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* ── MOBILE ONLY: In-Page Details View (No Modal) ── */}
+        {isMobileViewingDetails && selectedAppt && (
+          <div className="md:hidden animate-fade-up">
+            <button
+              onClick={() => setIsMobileViewingDetails(false)}
+              className="flex items-center gap-1.5 text-[13px] font-bold text-maroon hover:text-maroon-dark bg-transparent border-none p-0 mb-4 cursor-pointer font-sans"
+            >
+              <ChevronLeft size={18} /> Back to Appointments
+            </button>
+            <div className="bg-white border border-border rounded-2xl p-5 shadow-sm">
+              <AppointmentDetailsContent 
+                selectedAppt={selectedAppt}
+                navigate={navigate}
+                setReschedulingAppt={setReschedulingAppt}
+                setConfirmCancelId={setConfirmCancelId}
+                canReschedule={canReschedule}
+                cancelling={cancelling}
+                fmt12h={fmt12h}
+                isMobileModal={false}
+              />
+            </div>
+          </div>
+        )}
+
+        {/* Main Content Layout (Desktop side-by-side, or Mobile list when NOT in details view) */}
+        <div className={`flex-col md:flex-row md:gap-8 md:items-start ${isMobileViewingDetails ? 'hidden md:flex' : 'flex'}`}>
+          
+          {/* ── Left Column: Appointments List ── */}
+          <div className="flex-1 w-full md:max-w-125">
             {loading ? (
               <div className="flex flex-col gap-3">
                 {[1, 2, 3].map(i => (
-                  <div key={i} className="bg-white rounded-2xl p-4 shadow-[0_2px_8px_rgba(0,0,0,0.06)] border border-border">
-                    <div className="flex justify-between items-center mb-2.5">
-                      <div className="animate-pulse w-30 h-4.5 rounded bg-border" />
-                      <div className="animate-pulse w-15 h-4.5 rounded-full bg-border" />
+                  <div key={i} className="bg-white rounded-2xl border border-border p-5 shadow-xs">
+                    <div className="animate-pulse flex justify-between items-start mb-3">
+                      <div className="h-4.5 w-40 bg-border rounded" />
+                      <div className="h-5 w-20 bg-border rounded-full" />
                     </div>
-                    <div className="animate-pulse w-40 h-3.5 rounded bg-border mb-1.5" />
-                    <div className="animate-pulse w-25 h-3.5 rounded bg-border mb-4" />
-                    <div className="animate-pulse w-full h-8 rounded-lg bg-border" />
+                    <div className="animate-pulse space-y-2">
+                      <div className="h-3.5 w-48 bg-border/60 rounded" />
+                      <div className="h-3.5 w-32 bg-border/60 rounded" />
+                    </div>
                   </div>
                 ))}
               </div>
             ) : filteredAppointments.length === 0 ? (
               <div className="animate-fade-up text-center py-16 px-8 bg-white rounded-2xl border border-border shadow-sm">
-                <div className="text-gold mb-4 flex justify-center"><Inbox size={48} /></div>
-                <p className="text-[15px] font-semibold text-text-main m-0 mb-1.5">No appointments found</p>
-                <p className="text-[13px] text-text-sub m-0 mb-6">{filter === 'all' ? 'Book your first registrar transaction' : `You have no ${filter === 'ready_for_pickup' ? 'pending pickup' : filter} appointments`}</p>
-                {filter === 'all' && (
-                  <button onClick={() => navigate('/student/book')} className="py-3 px-6 rounded-[10px] border-none bg-maroon text-white text-[14px] font-bold cursor-pointer font-sans shadow-sm transition-transform active:scale-95">Book an Appointment</button>
-                )}
+                <Inbox size={48} className="mx-auto text-gold mb-4" />
+                <h3 className="font-semibold text-text-main m-0 mb-1">No appointments found</h3>
+                <p className="text-[13px] text-text-sub">Try changing your filters or book a new appointment.</p>
               </div>
             ) : (
               <div className="animate-fade-up flex flex-col gap-3">
-                {filteredAppointments.slice(0, visibleCount).map(appt => {
+                {filteredAppointments.map(appt => {
                   const effStatus = getEffectiveStatus(appt)
                   const s = STATUS[effStatus] || STATUS.pending
                   const isReady = effStatus === 'ready_for_pickup'
@@ -327,499 +692,130 @@ export default function MyAppointments() {
                   return (
                     <div 
                       key={appt.id} 
-                      onClick={() => setSelectedApptId(appt.id)}
-                      className={`group bg-white rounded-2xl p-4 shadow-[0_2px_8px_rgba(0,0,0,0.06),0_0_0_1px_rgba(0,0,0,0.04)] transition-all cursor-pointer hover:shadow-[0_4px_12px_rgba(0,0,0,0.08)] ${isSelected ? 'md:ring-2 md:ring-maroon md:shadow-[0_4px_12px_rgba(123,26,42,0.15)]' : ''}`}
+                      onClick={() => {
+                        setSelectedApptId(appt.id)
+                        setIsMobileViewingDetails(true)
+                      }}
+                      className={`group bg-white rounded-2xl p-4.5 shadow-[0_2px_8px_rgba(0,0,0,0.06),0_0_0_1px_rgba(0,0,0,0.04)] transition-all cursor-pointer hover:shadow-[0_4px_12px_rgba(0,0,0,0.08)] ${isSelected ? 'md:ring-2 md:ring-maroon md:shadow-[0_4px_12px_rgba(123,26,42,0.15)]' : ''}`}
                     >
                       <div className="flex justify-between items-start mb-2.5">
-                        <h3 className="font-serif text-[15px] font-semibold text-text-main m-0">{appt.transaction_types?.name || 'Transaction'}</h3>
-                        <span className="text-[11px] font-bold py-1 px-2.5 rounded-full whitespace-nowrap flex items-center gap-1" style={{ background: s.bg, color: s.color, border: `1px solid ${s.border}` }}>
+                        <h3 className="font-serif text-[15.5px] font-bold text-text-main m-0 group-hover:text-maroon transition-colors">{appt.transaction_types?.name || 'Transaction'}</h3>
+                        <span className="text-[11px] font-bold py-1 px-2.5 rounded-full whitespace-nowrap flex items-center gap-1 shrink-0 ml-2" style={{ background: s.bg, color: s.color, border: `1px solid ${s.border}` }}>
                           {isReady ? <FileCheck size={12} /> : isCompleted ? <CheckCircle size={12} /> : null} {s.label}
                         </span>
                       </div>
                       <div className="text-[13px] text-text-sub flex flex-col gap-1.5">
-                        <span className="flex items-center gap-1.5"><Calendar size={13} className="text-gold" /> {appt.appointment_date} at {fmt12h(appt.time_slot)}</span>
-                        <span className="flex items-center gap-1.5"><Tag size={13} className="text-gold" /> Priority: <span className="capitalize ml-1">{appt.priority_class}</span></span>
+                        <span className="flex items-center gap-1.5"><Calendar size={13} className="text-gold shrink-0" /> {appt.appointment_date} at {fmt12h(appt.time_slot)}</span>
+                        <span className="flex items-center gap-1.5"><Tag size={13} className="text-gold shrink-0" /> Priority: <span className="capitalize font-semibold text-text-main ml-0.5">{appt.priority_class}</span></span>
                         {appt.notes && <span className="flex items-start gap-1.5"><FileText size={13} className="text-gold shrink-0 mt-0.5" /> <span className="truncate">{appt.notes}</span></span>}
                       </div>
-                      
-                      {/* MOBILE ONLY Details & Actions */}
-                      <div className="md:hidden">
-                        {isReady ? (
-                          <div className="mt-4 pt-3 border-t border-border">
-                            <div className="bg-success-light/60 border border-success-border rounded-xl p-3 mb-3 text-[12px] text-success">
-                              <p className="font-bold m-0 mb-1 flex items-center gap-1.5"><Building2 size={13} /> Pickup at Registrar's Office</p>
-                              <p className="m-0 text-text-sub text-[11.5px]">Please present your Digital Claim Stub at the window to claim.</p>
-                            </div>
-                            <button 
-                              onClick={(e) => { e.stopPropagation(); navigate('/student/queue?tab=active') }} 
-                              className="w-full min-h-11 text-[13px] font-bold text-white bg-success border-none rounded-[10px] font-sans cursor-pointer hover:bg-success-dark transition-colors flex items-center justify-center gap-2 shadow-xs"
-                            >
-                              <FileCheck size={16} /> View Digital Claim Stub
-                            </button>
-                          </div>
-                        ) : isCompleted ? (
-                          <div className="mt-4 pt-3 border-t border-border">
-                            <div className="bg-blue-50/70 border border-blue-100 rounded-xl p-3 text-[12px] text-blue-800 flex items-center gap-2">
-                              <CheckCircle2 size={15} className="text-blue-600 shrink-0" />
-                              <span>Official document released and claimed.</span>
-                            </div>
-                          </div>
-                        ) : (
-                          <>
-                            {appt.transaction_types?.required_documents?.length > 0 && (
-                              <div className="pt-3 pb-1 border-t border-border mt-3">
-                                <p className="text-[10px] font-bold text-maroon m-0 mb-2 uppercase tracking-[0.04em]">Bring These Documents</p>
-                                <div className="flex flex-wrap gap-1.5">
-                                  {appt.transaction_types.required_documents.map((doc, i) => (
-                                    <span key={i} className="text-[11px] bg-maroon-light text-maroon py-1 px-2.5 rounded-full font-medium">{doc}</span>
-                                  ))}
-                                </div>
-                              </div>
-                            )}
-                            {(appt.status === 'confirmed' || appt.status === 'pending') && (
-                              <div className="flex gap-2 mt-4">
-                                <button 
-                                  onClick={(e) => { e.stopPropagation(); setReschedulingAppt(appt) }} 
-                                  disabled={cancelling === appt.id || !canReschedule(appt.appointment_date, appt.time_slot)}
-                                  className={`flex-1 min-h-11 text-[13px] font-semibold text-text-main bg-white border border-border rounded-[10px] font-sans ${(!canReschedule(appt.appointment_date, appt.time_slot) || cancelling === appt.id) ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:bg-off-white'}`}>
-                                  Reschedule
-                                </button>
-                                <button 
-                                  onClick={(e) => { e.stopPropagation(); setConfirmCancelId(appt.id) }} 
-                                  disabled={cancelling === appt.id}
-                                  className={`flex-1 min-h-11 text-[13px] font-semibold text-maroon bg-transparent border border-maroon-border rounded-[10px] font-sans ${cancelling === appt.id ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:bg-maroon-light'}`}>
-                                  {cancelling === appt.id ? 'Cancelling...' : 'Cancel'}
-                                </button>
-                              </div>
-                            )}
-                          </>
-                        )}
-                      </div>
 
-                      {/* DESKTOP ONLY View Details Indicator */}
-                      <div className="hidden md:flex justify-end mt-3 pt-3 border-t border-border border-dashed">
-                        <span className="text-[12px] font-bold text-maroon flex items-center gap-1 transition-transform group-hover:translate-x-1">
-                          {isSelected ? 'Viewing Details' : 'View Details'} <ChevronRight size={14} />
+                      <div className="flex justify-end items-center mt-3 pt-3 border-t border-border border-dashed text-[12px] font-bold text-maroon">
+                        <span className="flex items-center gap-1 group-hover:translate-x-0.5 transition-transform">
+                          View Details <ChevronRight size={14} />
                         </span>
                       </div>
                     </div>
                   )
                 })}
-                
-                {/* ── Limit Indicator & Load More ── */}
-                {filteredAppointments.length > 0 && (
-                  <div className="flex items-center justify-end gap-4 mt-2">
-                    <span className="text-[11px] font-bold text-text-muted tracking-wide uppercase">
-                      Showing {Math.min(visibleCount, filteredAppointments.length)} out of {filteredAppointments.length}
-                    </span>
-                    {filteredAppointments.length > visibleCount && (
-                      <button 
-                        onClick={() => setVisibleCount(prev => prev + 4)}
-                        className="text-[12px] font-bold text-maroon hover:underline bg-transparent border-none cursor-pointer"
-                      >
-                        Load More
-                      </button>
-                    )}
-                  </div>
-                )}
               </div>
             )}
           </div>
 
-          {/* ── Right Column: Details (Desktop Only) ── */}
-          <div className="hidden md:flex flex-col flex-1 bg-white border border-border rounded-3xl p-8 shadow-sm sticky top-24 min-h-115">
+          {/* ── Right Column: Details (Desktop View) ── */}
+          <div className="hidden md:flex flex-col flex-1 bg-white border border-border rounded-3xl p-8 shadow-sm">
             {selectedAppt ? (
               <div className="animate-fade-up flex flex-col h-full">
-                {(() => {
-                  const selEff = getEffectiveStatus(selectedAppt)
-                  const selStatusObj = STATUS[selEff] || STATUS.pending
-                  const isSelReady = selEff === 'ready_for_pickup'
-                  const isSelCompleted = selEff === 'completed'
-                  const isSelCancelled = selEff === 'cancelled'
-
-                  return (
-                    <>
-                      {/* Top Header */}
-                      <div className="flex items-start justify-between mb-6 pb-5 border-b border-border">
-                        <div>
-                          <p className="text-[10px] font-bold text-text-muted tracking-widest uppercase m-0 mb-1.5">TRANSACTION OVERVIEW</p>
-                          <h2 className="font-serif text-[22px] font-bold text-text-main m-0 mb-2">{selectedAppt.transaction_types?.name || 'Transaction'}</h2>
-                          <span className="text-[11.5px] font-bold py-1.5 px-3 rounded-full inline-flex items-center gap-1.5" style={{ background: selStatusObj.bg, color: selStatusObj.color, border: `1px solid ${selStatusObj.border}` }}>
-                            {isSelReady ? <FileCheck size={13} /> : isSelCompleted ? <CheckCircle size={13} /> : null} {selStatusObj.label}
-                          </span>
-                        </div>
-                      </div>
-
-                      {/* ── CASE 1: READY FOR PICKUP VIEW ── */}
-                      {isSelReady ? (
-                        <div className="flex flex-col flex-1">
-                          {/* Ready Notice Banner */}
-                          <div className="bg-white border border-border rounded-2xl p-5 mb-5 shadow-[0_2px_8px_rgba(0,0,0,0.03)]">
-                            <div className="flex items-start gap-3.5">
-                              <div className="w-10 h-10 rounded-xl bg-success text-white flex items-center justify-center shrink-0 shadow-sm">
-                                <FileCheck size={22} />
-                              </div>
-                              <div>
-                                <h4 className="text-[15px] font-bold text-text-main m-0 mb-1">Document Ready for Collection</h4>
-                                <p className="text-[12.5px] text-text-sub m-0 leading-relaxed">
-                                  Your requested official document is verified, printed, sealed, and ready for claiming at the Registrar's Office.
-                                </p>
-                              </div>
-                            </div>
-                          </div>
-
-                          {/* Pickup Location & Hours */}
-                          <div className="grid grid-cols-2 gap-4 mb-5">
-                            <div className="p-4.5 rounded-2xl bg-white border border-border shadow-[0_2px_8px_rgba(0,0,0,0.03)]">
-                              <p className="text-[10px] font-bold text-text-muted tracking-widest uppercase m-0 mb-2 flex items-center gap-1.5">
-                                <MapPin size={12} className="text-maroon" /> PICKUP LOCATION
-                              </p>
-                              <p className="text-[13.5px] font-bold text-text-main m-0 mb-0.5">Registrar's Office</p>
-                              <p className="text-[12px] text-text-sub m-0">Window 1 / Releasing Counter</p>
-                            </div>
-                            <div className="p-4.5 rounded-2xl bg-white border border-border shadow-[0_2px_8px_rgba(0,0,0,0.03)]">
-                              <p className="text-[10px] font-bold text-text-muted tracking-widest uppercase m-0 mb-2 flex items-center gap-1.5">
-                                <Clock size={12} className="text-gold" /> OFFICE HOURS
-                              </p>
-                              <p className="text-[13.5px] font-bold text-text-main m-0 mb-0.5">Mon – Fri (8:00 AM – 5:00 PM)</p>
-                              <p className="text-[12px] text-text-sub m-0">Excluding official holidays</p>
-                            </div>
-                          </div>
-
-                          {/* Requirements Checklist */}
-                          <div className="p-5 rounded-2xl bg-white border border-border mb-5 shadow-[0_2px_8px_rgba(0,0,0,0.03)]">
-                            <p className="text-[10px] font-bold text-text-muted tracking-widest uppercase m-0 mb-3 flex items-center gap-1.5">
-                              <ShieldCheck size={12} className="text-success" /> WHAT TO PRESENT UPON CLAIMING
-                            </p>
-                            <div className="flex flex-col gap-2 text-[13px] text-text-main">
-                              <div className="flex items-center gap-2">
-                                <div className="w-4 h-4 rounded-full bg-success-light text-success flex items-center justify-center text-[10px] font-bold">✓</div>
-                                <span>Digital Claim Stub / Active Queue Number on this app</span>
-                              </div>
-                            </div>
-                          </div>
-
-                          {/* Request Metadata */}
-                          <div className="grid grid-cols-2 gap-4 text-[13px] text-text-sub mb-6 border-t border-border pt-4">
-                            <div>
-                              <span className="font-semibold text-text-muted text-[11px] uppercase tracking-wider block mb-1">Appointment Schedule</span>
-                              <span className="font-bold text-text-main">{selectedAppt.appointment_date} at {fmt12h(selectedAppt.time_slot)}</span>
-                            </div>
-                            <div>
-                              <span className="font-semibold text-text-muted text-[11px] uppercase tracking-wider block mb-1">Recorded Purpose</span>
-                              <span className="font-bold text-text-main">{selectedAppt.notes || 'Official Document Request'}</span>
-                            </div>
-                          </div>
-
-                          {/* Action Button */}
-                          <div className="mt-auto pt-4">
-                            <button 
-                              onClick={() => navigate('/student/queue?tab=active')} 
-                              className="w-full py-3.5 px-4 text-[14px] font-bold text-white bg-success border-none rounded-xl font-sans flex items-center justify-center gap-2 cursor-pointer hover:bg-success-dark transition-all shadow-sm hover:-translate-y-0.5"
-                            >
-                              <FileCheck size={18} /> View Digital Claim Stub
-                            </button>
-                          </div>
-                        </div>
-                      ) : isSelCompleted ? (
-                        /* ── CASE 2: COMPLETED VIEW ── */
-                        <div className="flex flex-col flex-1">
-                          {/* Completed Hero Card */}
-                          <div className="bg-white border border-border rounded-2xl p-5 mb-5 shadow-[0_2px_8px_rgba(0,0,0,0.03)]">
-                            <div className="flex items-start gap-3.5">
-                              <div className="w-10 h-10 rounded-xl bg-blue-600 text-white flex items-center justify-center shrink-0 shadow-sm">
-                                <CheckCircle size={22} />
-                              </div>
-                              <div>
-                                <h4 className="text-[15px] font-bold text-text-main m-0 mb-1">Document Officially Released</h4>
-                                <p className="text-[12.5px] text-text-sub m-0 leading-relaxed">
-                                  This document was verified, claimed, and released by the Registrar's Office. The transaction is marked complete.
-                                </p>
-                              </div>
-                            </div>
-                          </div>
-
-                          {/* Release Summary Record */}
-                          <div className="p-5 rounded-2xl bg-white border border-border mb-5 shadow-[0_2px_8px_rgba(0,0,0,0.03)]">
-                            <p className="text-[10px] font-bold text-text-muted tracking-widest uppercase m-0 mb-3.5 flex items-center gap-1.5">
-                              <Building2 size={12} className="text-maroon" /> TRANSACTION SUMMARY
-                            </p>
-                            <div className="grid grid-cols-2 gap-4 text-[13px]">
-                              <div>
-                                <span className="text-[10px] text-text-muted font-bold uppercase tracking-wider block mb-1">DOCUMENT</span>
-                                <span className="font-bold text-text-main">{selectedAppt.transaction_types?.name}</span>
-                              </div>
-                              <div>
-                                <span className="text-[10px] text-text-muted font-bold uppercase tracking-wider block mb-1">APPOINTMENT DATE</span>
-                                <span className="font-bold text-text-main">{selectedAppt.appointment_date}</span>
-                              </div>
-                              <div>
-                                <span className="text-[10px] text-text-muted font-bold uppercase tracking-wider block mb-1">PRIORITY CLASSIFICATION</span>
-                                <span className="font-bold text-text-main capitalize">{selectedAppt.priority_class}</span>
-                              </div>
-                              <div>
-                                <span className="text-[10px] text-text-muted font-bold uppercase tracking-wider block mb-1">STATUS</span>
-                                <span className="font-bold text-blue-700">Official Release Completed</span>
-                              </div>
-                            </div>
-                            {selectedAppt.notes && (
-                              <div className="mt-4 pt-3.5 border-t border-border text-[12.5px]">
-                                <span className="text-[10px] text-text-muted font-bold uppercase tracking-wider block mb-0.5">PURPOSE / REMARKS</span>
-                                <span className="text-text-main font-medium">{selectedAppt.notes}</span>
-                              </div>
-                            )}
-                          </div>
-
-                          {/* Helpful Advisory */}
-                          <div className="p-4.5 rounded-2xl bg-white border border-border text-[12.5px] text-text-sub leading-relaxed mb-5 shadow-[0_2px_8px_rgba(0,0,0,0.03)]">
-                            <p className="font-bold text-text-main m-0 mb-1 flex items-center gap-1.5"><Sparkles size={14} className="text-gold" /> Need another document copy?</p>
-                            Please keep your physical document secure. If you require additional official certifications or records, you can submit a new appointment request anytime.
-                          </div>
-
-                          {/* Action Button */}
-                          <div className="mt-auto pt-4">
-                            <button 
-                              onClick={() => navigate('/student/book')} 
-                              className="w-full py-3.5 px-4 text-[13.5px] font-bold text-maroon bg-maroon-light border border-maroon-border rounded-xl font-sans flex items-center justify-center gap-2 cursor-pointer hover:bg-maroon hover:text-white transition-all shadow-xs"
-                            >
-                              <PlusCircle size={16} /> Request Another Document
-                            </button>
-                          </div>
-                        </div>
-                      ) : isSelCancelled ? (
-                        /* ── CASE 3: CANCELLED VIEW ── */
-                        <div className="flex flex-col flex-1">
-                          <div className="bg-white border border-border rounded-2xl p-5 mb-5 shadow-[0_2px_8px_rgba(0,0,0,0.03)]">
-                            <div className="flex items-start gap-3.5">
-                              <div className="w-10 h-10 rounded-xl bg-maroon text-white flex items-center justify-center shrink-0 shadow-sm">
-                                <AlertTriangle size={22} />
-                              </div>
-                              <div>
-                                <h4 className="text-[15px] font-bold text-text-main m-0 mb-1">Appointment Cancelled</h4>
-                                <p className="text-[12.5px] text-text-sub m-0 leading-relaxed">
-                                  This appointment slot was cancelled. You may schedule a new appointment whenever you are ready.
-                                </p>
-                              </div>
-                            </div>
-                          </div>
-
-                          <div className="p-5 rounded-2xl bg-white border border-border mb-5 shadow-[0_2px_8px_rgba(0,0,0,0.03)]">
-                            <p className="text-[10px] font-bold text-text-muted tracking-widest uppercase m-0 mb-3 flex items-center gap-1.5">
-                              <Building2 size={12} className="text-maroon" /> CANCELLED BOOKING RECORD
-                            </p>
-                            <div className="grid grid-cols-2 gap-4 text-[13px]">
-                              <div>
-                                <span className="text-[10px] text-text-muted font-bold uppercase tracking-wider block mb-1">Transaction</span>
-                                <span className="font-bold text-text-main">{selectedAppt.transaction_types?.name}</span>
-                              </div>
-                              <div>
-                                <span className="text-[10px] text-text-muted font-bold uppercase tracking-wider block mb-1">Original Date</span>
-                                <span className="font-bold text-text-main">{selectedAppt.appointment_date} ({fmt12h(selectedAppt.time_slot)})</span>
-                              </div>
-                            </div>
-                          </div>
-
-                          <div className="mt-auto pt-4">
-                            <button 
-                              onClick={() => navigate('/student/book')} 
-                              className="w-full py-3.5 px-4 text-[13.5px] font-bold text-white bg-maroon border-none rounded-xl font-sans flex items-center justify-center gap-2 cursor-pointer hover:bg-maroon-dark transition-all shadow-xs"
-                            >
-                              <PlusCircle size={16} /> Book New Appointment
-                            </button>
-                          </div>
-                        </div>
-                      ) : (
-                        /* ── CASE 4: CONFIRMED / SCHEDULED APPOINTMENT VIEW ── */
-                        <div className="flex flex-col flex-1">
-                          {/* Hero Status Card: Today vs Upcoming */}
-                          {isAppointmentToday(selectedAppt.appointment_date) ? (
-                            <div className="bg-white border border-border rounded-2xl p-5 mb-5 shadow-[0_2px_8px_rgba(0,0,0,0.03)]">
-                              <div className="flex items-start gap-3.5">
-                                <div className="w-10 h-10 rounded-xl bg-gold text-white flex items-center justify-center shrink-0 shadow-sm">
-                                  <Zap size={22} className="text-white fill-white" />
-                                </div>
-                                <div className="flex-1">
-                                  <h4 className="text-[15px] font-bold text-text-main m-0 mb-1">Appointment is Today!</h4>
-                                  <p className="text-[12.5px] text-text-sub m-0 leading-relaxed mb-3">
-                                    When you arrive at the Registrar's Office, activate your ticket on the <strong className="text-maroon font-semibold">My Queue</strong> tab to enter the live waiting line.
-                                  </p>
-                                  <button
-                                    onClick={() => navigate('/student/queue')}
-                                    className="py-2 px-3.5 text-[12px] font-bold text-white bg-maroon border-none rounded-lg font-sans inline-flex items-center gap-1.5 cursor-pointer hover:bg-maroon-dark transition-colors shadow-2xs"
-                                  >
-                                    <Zap size={14} className="fill-white" /> Go to Live Queue
-                                  </button>
-                                </div>
-                              </div>
-                            </div>
-                          ) : (
-                            <div className="bg-white border border-border rounded-2xl p-5 mb-5 shadow-[0_2px_8px_rgba(0,0,0,0.03)]">
-                              <div className="flex items-start gap-3.5">
-                                <div className="w-10 h-10 rounded-xl bg-success text-white flex items-center justify-center shrink-0 shadow-sm">
-                                  <Calendar size={22} />
-                                </div>
-                                <div>
-                                  <h4 className="text-[15px] font-bold text-text-main m-0 mb-1">Appointment Confirmed & Reserved</h4>
-                                  <p className="text-[12.5px] text-text-sub m-0 leading-relaxed">
-                                    Your appointment slot is reserved. Please review the checklist below and bring all required items on your scheduled day.
-                                  </p>
-                                </div>
-                              </div>
-                            </div>
-                          )}
-
-                          {/* Schedule & Campus Location Grid */}
-                          <div className="grid grid-cols-2 gap-4 mb-5">
-                            <div className="p-4.5 rounded-2xl bg-white border border-border shadow-[0_2px_8px_rgba(0,0,0,0.03)]">
-                              <p className="text-[10px] font-bold text-text-muted tracking-widest uppercase m-0 mb-2 flex items-center gap-1.5">
-                                <Calendar size={12} className="text-gold" /> SCHEDULED DATE & TIME
-                              </p>
-                              <p className="text-[13.5px] font-bold text-text-main m-0 mb-0.5">{selectedAppt.appointment_date}</p>
-                              <p className="text-[12px] text-text-sub m-0">{fmt12h(selectedAppt.time_slot)}</p>
-                            </div>
-                            <div className="p-4.5 rounded-2xl bg-white border border-border shadow-[0_2px_8px_rgba(0,0,0,0.03)]">
-                              <p className="text-[10px] font-bold text-text-muted tracking-widest uppercase m-0 mb-2 flex items-center gap-1.5">
-                                <MapPin size={12} className="text-maroon" /> LOCATION & COUNTER
-                              </p>
-                              <p className="text-[13.5px] font-bold text-text-main m-0 mb-0.5">Registrar's Office</p>
-                              <p className="text-[12px] text-text-sub m-0">Service Windows 1 – 4</p>
-                            </div>
-                          </div>
-
-                          {/* Transaction Details & Priority */}
-                          <div className="p-5 rounded-2xl bg-white border border-border mb-5 shadow-[0_2px_8px_rgba(0,0,0,0.03)]">
-                            <p className="text-[10px] font-bold text-text-muted tracking-widest uppercase m-0 mb-2.5 flex items-center gap-1.5">
-                              <Tag size={12} className="text-gold" /> APPOINTMENT DETAILS
-                            </p>
-                            <div className="grid grid-cols-2 gap-4 text-[13px]">
-                              <div>
-                                <span className="text-[10px] text-text-muted font-bold uppercase tracking-wider block mb-0.5">Priority Lane</span>
-                                <span className="font-bold text-text-main capitalize">{selectedAppt.priority_class || 'Regular'}</span>
-                              </div>
-                              <div>
-                                <span className="text-[10px] text-text-muted font-bold uppercase tracking-wider block mb-0.5">Stated Purpose</span>
-                                <span className="font-bold text-text-main">{selectedAppt.notes || 'Official Registrar Request'}</span>
-                              </div>
-                            </div>
-                          </div>
-
-                          {/* Checklist: Required Documents to Bring */}
-                          <div className="p-5 rounded-2xl bg-white border border-border mb-5 shadow-[0_2px_8px_rgba(0,0,0,0.03)]">
-                            <p className="text-[10px] font-bold text-text-muted tracking-widest uppercase m-0 mb-3 flex items-center gap-1.5">
-                              <ShieldCheck size={12} className="text-maroon" /> REQUIRED DOCUMENTS TO BRING
-                            </p>
-                            <div className="flex flex-col gap-2 text-[13px] text-text-main">
-                              {selectedAppt.transaction_types?.required_documents?.length > 0 ? (
-                                selectedAppt.transaction_types.required_documents.map((doc, i) => (
-                                  <div key={i} className="flex items-center gap-2.5">
-                                    <div className="w-4.5 h-4.5 rounded-full bg-success-light border border-success-border text-success flex items-center justify-center text-[10px] font-bold shrink-0">✓</div>
-                                    <span>{doc}</span>
-                                  </div>
-                                ))
-                              ) : (
-                                <div className="flex items-center gap-2.5">
-                                  <div className="w-4.5 h-4.5 rounded-full bg-success-light border border-success-border text-success flex items-center justify-center text-[10px] font-bold shrink-0">✓</div>
-                                  <span>Valid Student ID / Official School Registration Form</span>
-                                </div>
-                              )}
-                            </div>
-                          </div>
-
-                          {/* Processing Steps Pipeline */}
-                          {selectedAppt.transaction_types?.processing_steps?.length > 0 && (
-                            <div className="mb-5">
-                              <p className="text-[10px] font-bold text-text-muted tracking-widest uppercase m-0 mb-3 flex items-center gap-1.5">
-                                <Clock size={12} className="text-gold" /> SERVICE WORKFLOW AT COUNTER
-                              </p>
-                              <div className="flex flex-col gap-2">
-                                {selectedAppt.transaction_types.processing_steps.map((step, i) => (
-                                  <div key={i} className="flex items-center gap-3 text-[13px] font-medium text-text-main p-2.5 rounded-xl bg-white border border-border shadow-[0_2px_8px_rgba(0,0,0,0.03)]">
-                                    <div className="w-6 h-6 rounded-full bg-surface border border-border flex items-center justify-center text-[11px] font-bold text-maroon shrink-0 shadow-2xs">
-                                      {i + 1}
-                                    </div>
-                                    <span>{typeof step === 'object' ? step.name : step}</span>
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          )}
-
-                          {/* Reschedule & Cancel Action Buttons */}
-                          {(selectedAppt.status === 'confirmed' || selectedAppt.status === 'pending') && (
-                            <div className="mt-auto pt-4 border-t border-border">
-                              <div className="flex gap-3">
-                                <button 
-                                  onClick={() => setReschedulingAppt(selectedAppt)} 
-                                  disabled={cancelling === selectedAppt.id || !canReschedule(selectedAppt.appointment_date, selectedAppt.time_slot)}
-                                  className={`flex-1 py-3 px-4 text-[13px] font-bold text-text-main bg-white border-[1.5px] border-border rounded-xl font-sans transition-all ${(!canReschedule(selectedAppt.appointment_date, selectedAppt.time_slot) || cancelling === selectedAppt.id) ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:bg-off-white hover:border-text-sub/40'}`}
-                                >
-                                  Reschedule
-                                </button>
-                                <button 
-                                  onClick={() => setConfirmCancelId(selectedAppt.id)} 
-                                  disabled={cancelling === selectedAppt.id}
-                                  className={`flex-1 py-3 px-4 text-[13px] font-bold text-maroon bg-transparent border-[1.5px] border-maroon-border rounded-xl font-sans transition-all ${cancelling === selectedAppt.id ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:bg-maroon-light hover:border-maroon'}`}
-                                >
-                                  {cancelling === selectedAppt.id ? 'Cancelling...' : 'Cancel Appointment'}
-                                </button>
-                              </div>
-                              <p className="text-[11px] text-text-muted text-center m-0 mt-2.5">
-                                * Rescheduling is allowed up to 24 hours prior to appointment time.
-                              </p>
-                            </div>
-                          )}
-                        </div>
-                      )}
-                    </>
-                  )
-                })()}
+                <AppointmentDetailsContent 
+                  selectedAppt={selectedAppt}
+                  navigate={navigate}
+                  setReschedulingAppt={setReschedulingAppt}
+                  setConfirmCancelId={setConfirmCancelId}
+                  canReschedule={canReschedule}
+                  cancelling={cancelling}
+                  fmt12h={fmt12h}
+                />
               </div>
             ) : (
-              <div className="flex-1 flex flex-col items-center justify-center text-center text-text-muted animate-fade-up">
-                <FileText size={48} className="mb-4 text-border-strong" />
-                <p className="text-[16px] font-bold text-text-main m-0 mb-1.5 font-serif">No appointment selected</p>
-                <p className="text-[13px] m-0">Click an appointment from the list to view its full details.</p>
+              <div className="flex flex-col items-center justify-center flex-1 text-center py-20 text-text-muted">
+                <Inbox size={40} className="mb-3 opacity-40 text-gold" />
+                <p className="font-semibold text-[15px] m-0 text-text-main">No Appointment Selected</p>
+                <p className="text-[13px] text-text-sub mt-1">Select an appointment from the list to view its complete details.</p>
               </div>
             )}
           </div>
         </div>
+
       </div>
 
       {reschedulingAppt && (
-        <RescheduleModal 
+        <RescheduleModal
+          appt={reschedulingAppt}
           token={token}
-          appointment={reschedulingAppt}
           onClose={() => setReschedulingAppt(null)}
           onSuccess={() => {
             setReschedulingAppt(null)
             fetch()
+            setSuccessMsg('Appointment rescheduled successfully!')
+            setTimeout(() => setSuccessMsg(''), 4000)
           }}
         />
       )}
 
       {confirmCancelId && (
-        <div className="fixed inset-0 z-100 flex items-center justify-center">
-          <div className="absolute inset-0 bg-black/50" onClick={() => setConfirmCancelId(null)} />
-          <div className="animate-fade-up relative w-[90%] max-w-[320px] bg-white rounded-[20px] p-6 text-center shadow-[0_10px_40px_rgba(0,0,0,0.2)]">
-            <div className="w-12 h-12 rounded-full bg-maroon-light text-maroon flex items-center justify-center mx-auto mb-4">
+        <div className="fixed inset-0 z-1000 flex items-center justify-center p-4">
+          <div className="fixed inset-0 bg-black/60 transition-opacity" onClick={() => setConfirmCancelId(null)} />
+          <div className="relative w-full max-w-sm bg-white rounded-2xl p-6 text-center shadow-xl border border-border z-10 animate-fade-up">
+            <div className="w-12 h-12 rounded-full bg-red-100 text-maroon flex items-center justify-center mx-auto mb-4">
               <AlertTriangle size={24} />
             </div>
             <h3 className="font-serif text-[18px] font-bold text-text-main m-0 mb-2">Cancel Appointment?</h3>
-            <p className="text-[13px] text-text-sub m-0 mb-6 leading-[1.4]">
-              Are you sure you want to cancel this appointment? This action cannot be undone.
+            <p className="text-[13px] text-text-sub m-0 mb-6 leading-relaxed">
+              Are you sure you want to cancel this appointment slot? This action cannot be undone.
             </p>
             <div className="flex gap-2">
               <button 
-                onClick={() => setConfirmCancelId(null)}
-                className="flex-1 p-2.5 rounded-[10px] border border-border bg-white text-text-main text-[13px] font-semibold cursor-pointer font-sans hover:bg-off-white"
+                onClick={() => setConfirmCancelId(null)} 
+                className="flex-1 py-2.5 px-3 rounded-xl border border-border bg-white text-text-main text-[13px] font-semibold cursor-pointer hover:bg-off-white transition-colors"
               >
                 Keep It
               </button>
               <button 
-                onClick={handleCancelConfirm}
-                className="flex-1 p-2.5 rounded-[10px] border-none bg-maroon text-white text-[13px] font-semibold cursor-pointer font-sans hover:bg-maroon-dark"
+                onClick={handleCancelConfirm} 
+                className="flex-1 py-2.5 px-3 rounded-xl border-none bg-maroon text-white text-[13px] font-semibold cursor-pointer hover:bg-maroon-dark transition-colors shadow-xs"
               >
                 Yes, Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showClearConfirm && (
+        <div className="fixed inset-0 z-1000 flex items-center justify-center p-4">
+          <div className="fixed inset-0 bg-black/60 transition-opacity" onClick={() => setShowClearConfirm(false)} />
+          <div className="relative w-full max-w-sm bg-white rounded-2xl p-6 text-center shadow-xl border border-border z-10 animate-fade-up">
+            <div className="w-12 h-12 rounded-full bg-red-100 text-maroon flex items-center justify-center mx-auto mb-4">
+              <Trash2 size={24} />
+            </div>
+            <h3 className="font-serif text-[18px] font-bold text-text-main m-0 mb-2">Clear Cancelled Appointments?</h3>
+            <p className="text-[13px] text-text-sub m-0 mb-6 leading-relaxed">
+              This will remove all cancelled appointment records from your view permanently.
+            </p>
+            <div className="flex gap-2">
+              <button 
+                onClick={() => setShowClearConfirm(false)} 
+                disabled={clearingAll}
+                className="flex-1 py-2.5 px-3 rounded-xl border border-border bg-white text-text-main text-[13px] font-semibold cursor-pointer hover:bg-off-white transition-colors disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={handleClearCancelled} 
+                disabled={clearingAll}
+                className="flex-1 py-2.5 px-3 rounded-xl border-none bg-maroon text-white text-[13px] font-semibold cursor-pointer hover:bg-maroon-dark transition-colors shadow-xs disabled:opacity-50"
+              >
+                {clearingAll ? 'Clearing...' : 'Yes, Clear All'}
               </button>
             </div>
           </div>

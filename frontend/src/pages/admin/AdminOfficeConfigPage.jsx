@@ -152,12 +152,25 @@ export default function AdminOfficeConfigPage() {
 
       {loading ? (
         <div className="flex flex-col gap-6">
-          {[1,2,3].map(section => (
-            <section key={section}>
-              <div className="w-37.5 h-3.5 rounded mb-3 ml-1 animate-pulse bg-border" />
-              <div className="bg-white rounded-2xl border border-border overflow-hidden">
-                {[1,2,3].map(i => (
-                  <div key={i} className={`h-20 animate-pulse bg-surface ${i < 3 ? 'border-b border-border' : 'border-none'}`} />
+          {[
+            { titleWidth: 'w-40', count: 4 },
+            { titleWidth: 'w-48', count: 2 },
+            { titleWidth: 'w-36', count: 2 }
+          ].map((sec, secIdx) => (
+            <section key={secIdx}>
+              <div className={`h-3.5 ${sec.titleWidth} rounded-md bg-gray-200 animate-pulse mb-3 ml-1`} />
+              <div className="bg-white rounded-2xl border border-border overflow-hidden shadow-[0_2px_8px_rgba(0,0,0,0.03)] divide-y divide-border">
+                {Array.from({ length: sec.count }).map((_, i) => (
+                  <div key={i} className="flex items-center justify-between p-[24px_28px] gap-6 flex-wrap">
+                    <div className="flex-1 min-w-50">
+                      <div className="h-4.5 w-44 rounded-md bg-gray-200 animate-pulse mb-2" />
+                      <div className="h-3.5 w-72 max-w-full rounded bg-gray-100 animate-pulse" />
+                    </div>
+                    <div className="flex gap-3 items-center">
+                      <div className="h-10.5 w-30 rounded-xl bg-gray-100 border border-border/80 animate-pulse" />
+                      <div className="h-10.5 w-20 rounded-xl bg-gray-200 animate-pulse" />
+                    </div>
+                  </div>
                 ))}
               </div>
             </section>

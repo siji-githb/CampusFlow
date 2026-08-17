@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useAuth } from '../../context/useAuth'
 import { getPendingPriorityRequests, approvePriorityRequest, rejectPriorityRequest } from '../../services/priorityService'
-import { Check, X, ShieldCheck, Image as ImageIcon, Clock, Sparkles, ZoomIn, ZoomOut, RotateCcw } from 'lucide-react'
+import { Check, X, ShieldCheck, Image as ImageIcon, Clock, Sparkles, ZoomIn, ZoomOut, RotateCcw, Loader2 } from 'lucide-react'
 
 // Image Preview Modal
 function ImageModal({ url, onClose }) {
@@ -215,7 +215,11 @@ export default function PriorityRequestsPage() {
         <div className="grid gap-4">
           {requests.map(req => {
             const score = req.ocr_confidence_score || 0;
-            const scoreColor = score >= 70 ? 'text-success border-success bg-success-light/30' : 'text-danger border-danger bg-danger-light/30';
+            const scoreColor = score >= 70
+              ? 'text-success border-success bg-success-light/30'
+              : score >= 40
+              ? 'text-amber-700 border-amber-300 bg-amber-50'
+              : 'text-danger border-danger bg-danger-light/30';
             
             return (
               <div key={req.id} className="bg-white rounded-2xl border border-border shadow-sm hover:shadow-md transition-all flex flex-col md:flex-row items-stretch justify-between group overflow-hidden">
@@ -247,7 +251,7 @@ export default function PriorityRequestsPage() {
                   <div className="relative rounded-xl border border-border/60 bg-slate-50/50 p-4">
                     <div className="flex items-center justify-between mb-2">
                       <div className="flex items-center gap-2">
-                        <Sparkles size={14} className={score >= 70 ? 'text-success' : 'text-danger'} />
+                        <Sparkles size={14} className={score >= 70 ? 'text-success' : score >= 40 ? 'text-amber-600' : 'text-danger'} />
                         <span className="text-[11px] font-extrabold text-text-main uppercase tracking-[0.08em]">AI Confidence Score</span>
                       </div>
                       <span className={`px-2.5 py-0.5 rounded-full text-[11px] font-bold border ${scoreColor} shadow-sm`}>
@@ -255,7 +259,15 @@ export default function PriorityRequestsPage() {
                       </span>
                     </div>
                     <p className="text-[13px] text-text-sub m-0 leading-relaxed pl-6">
-                      <strong className="text-text-main font-semibold">Reasoning:</strong> {req.ocr_reasoning || 'No reasoning provided.'}
+                      <strong className="text-text-main font-semibold">Reasoning:</strong>{' '}
+                      {(() => {
+                        const r = req.ocr_reasoning || ''
+                        if (!r) return 'No reasoning provided.'
+                        if (r.includes('NoneType') || r.includes('Automatic scan unavailable')) {
+                          return 'Automated scan unable to detect official government/clinic seals, physician letterheads, or ID numbers — please review manually.'
+                        }
+                        return r
+                      })()}
                     </p>
                   </div>
                 </div>
@@ -281,7 +293,19 @@ export default function PriorityRequestsPage() {
                       />
                       <div className="flex gap-3">
                         <button onClick={() => setRejectingId(null)} disabled={isConfirming === req.id} className="flex-1 py-2.5 rounded-xl border border-border bg-white text-text-main text-[12px] font-bold cursor-pointer hover:bg-slate-50 hover:shadow-md hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-200 disabled:opacity-50">Cancel</button>
-                        <button onClick={() => handleReject(req.id)} disabled={isConfirming === req.id || !rejectReason.trim()} className="flex-1 py-2.5 rounded-xl border-none bg-danger text-white text-[12px] font-bold cursor-pointer hover:bg-danger-dark shadow-sm hover:shadow-md hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-200 disabled:opacity-50">Confirm</button>
+                        <button
+                          onClick={() => handleReject(req.id)}
+                          disabled={isConfirming === req.id || !rejectReason.trim()}
+                          className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl border-none bg-danger text-white text-[12px] font-bold cursor-pointer hover:bg-danger-dark shadow-sm hover:shadow-md hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          {isConfirming === req.id ? (
+                            <>
+                              <Loader2 size={13} className="animate-spin" /> Rejecting
+                            </>
+                          ) : (
+                            'Confirm'
+                          )}
+                        </button>
                       </div>
                     </div>
                   ) : (
@@ -291,7 +315,15 @@ export default function PriorityRequestsPage() {
                         disabled={isConfirming === req.id}
                         className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-success text-white font-bold text-[13px] border-none cursor-pointer hover:bg-success-dark shadow-sm hover:shadow-md hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                       >
-                        <Check size={15} /> Approve Request
+                        {isConfirming === req.id ? (
+                          <>
+                            <Loader2 size={15} className="animate-spin" /> Approving
+                          </>
+                        ) : (
+                          <>
+                            <Check size={15} /> Approve Request
+                          </>
+                        )}
                       </button>
                       <button
                         onClick={() => { setRejectingId(req.id); setRejectReason('') }}

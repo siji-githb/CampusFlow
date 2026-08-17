@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import StudentLayout from '../../components/layout/StudentLayout'
 import { useAuth } from '../../context/useAuth'
-import { Edit2, IdCard, Tag, LogOut, Trash2, X, Camera, Loader2, Eye, EyeOff, ShieldAlert, ShieldCheck, Clock, FileText, CheckCircle, Upload } from 'lucide-react'
+import { Edit2, IdCard, Tag, LogOut, Trash2, X, Camera, Loader2, Eye, EyeOff, ShieldAlert, ShieldCheck, Clock, FileText, CheckCircle, Upload, Sparkles } from 'lucide-react'
 import { updateProfile, changePassword, logoutAllDevices, deleteAccount, updateProfilePicture, removeProfilePicture } from '../../services/authService'
 import { getMyPriorityStatus, submitPriorityRequest } from '../../services/priorityService'
 import { uploadMedia } from '../../services/appointmentService'
@@ -46,6 +46,7 @@ export default function StudentProfile() {
   const [loadingPriority, setLoadingPriority] = useState(true)
   const [priorityForm, setPriorityForm] = useState({ type: 'pwd', file: null })
   const [isSubmittingPriority, setIsSubmittingPriority] = useState(false)
+  const [uploadProgress, setUploadProgress] = useState(0)
   const [priorityMsg, setPriorityMsg] = useState({ type: '', text: '' })
   useEffect(() => {
     let interval;
@@ -76,19 +77,48 @@ export default function StudentProfile() {
     }
     
     setIsSubmittingPriority(true)
+    setUploadProgress(6)
     setPriorityMsg({ type: '', text: '' })
+
+    // Paced progress increments:
+    // Phase 1 (Upload): increments smoothly to ~45%
+    // Phase 2 (AI Vision scan): increments steadily to ~88%
+    let phase = 1
+    const progressTimer = setInterval(() => {
+      setUploadProgress(prev => {
+        if (phase === 1) {
+          if (prev < 44) return prev + 2
+          return prev
+        } else {
+          if (prev < 88) return prev + 1
+          return prev
+        }
+      })
+    }, 180)
+
     try {
       const uploadRes = await uploadMedia(token, priorityForm.file)
+      phase = 2
+      setUploadProgress(50)
+
       await submitPriorityRequest(token, priorityForm.type, uploadRes.url)
-      
+      setUploadProgress(100)
+      clearInterval(progressTimer)
+
+      // Brief delay so student visibly sees 100% completed
+      await new Promise(resolve => setTimeout(resolve, 500))
+
       const newStatus = await getMyPriorityStatus(token)
       setPriorityStatus(newStatus)
       setPriorityMsg({ type: 'success', text: 'Priority request submitted successfully!' })
       setPriorityForm({ type: 'pwd', file: null })
     } catch (err) {
+      clearInterval(progressTimer)
       setPriorityMsg({ type: 'error', text: err.message || 'Failed to submit request.' })
     } finally {
+      clearInterval(progressTimer)
       setIsSubmittingPriority(false)
+      setUploadProgress(0)
     }
   }
 
@@ -404,18 +434,26 @@ export default function StudentProfile() {
                         <label className="block text-[13px] font-semibold text-text-main mb-2">
                           Supporting Document ({priorityForm.type === 'pwd' ? 'PWD ID or Barangay Certificate' : 'Pre-Natal Certificate'})
                         </label>
-                        <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-border rounded-xl bg-off-white hover:bg-gray-50 transition-colors cursor-pointer relative overflow-hidden group">
+                        <label className="flex items-center justify-center w-full h-22 sm:h-24 border-2 border-dashed border-border rounded-xl bg-off-white hover:bg-gray-50 transition-colors cursor-pointer relative overflow-hidden group px-4">
                           {priorityForm.file ? (
-                            <div className="flex flex-col items-center gap-2">
-                              <CheckCircle size={24} className="text-success" />
-                              <span className="text-[13px] font-semibold text-text-main">{priorityForm.file.name}</span>
-                              <span className="text-[11px] text-text-muted">Click to change</span>
+                            <div className="flex items-center gap-3">
+                              <div className="w-8 h-8 rounded-lg bg-success-light flex items-center justify-center text-success shrink-0">
+                                <CheckCircle size={18} />
+                              </div>
+                              <div className="text-left min-w-0">
+                                <p className="text-[13px] font-bold text-text-main truncate m-0 max-w-xs">{priorityForm.file.name}</p>
+                                <span className="text-[11px] text-text-muted font-medium">Click to change file</span>
+                              </div>
                             </div>
                           ) : (
-                            <div className="flex flex-col items-center gap-2">
-                              <Upload size={24} className="text-text-muted group-hover:text-maroon transition-colors" />
-                              <span className="text-[13px] font-semibold text-text-sub">Click to upload document</span>
-                              <span className="text-[11px] text-text-muted">JPEG or PNG, max 5MB</span>
+                            <div className="flex items-center gap-3">
+                              <div className="w-8 h-8 rounded-lg bg-surface flex items-center justify-center text-text-muted group-hover:text-maroon group-hover:bg-maroon-light transition-colors shrink-0">
+                                <Upload size={18} />
+                              </div>
+                              <div className="text-left">
+                                <p className="text-[13px] font-bold text-text-main m-0 leading-tight">Click to upload document</p>
+                                <span className="text-[11px] text-text-muted font-medium">JPEG or PNG, max 5MB</span>
+                              </div>
                             </div>
                           )}
                           <input type="file" accept=".png, .jpg, .jpeg" className="hidden" onChange={(e) => {
@@ -437,9 +475,63 @@ export default function StudentProfile() {
                         </label>
                       </div>
                       
-                      <div className="flex justify-end">
-                        <button type="submit" disabled={isSubmittingPriority || !priorityForm.file} className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-maroon text-white text-[14px] font-semibold hover:bg-maroon-dark transition-colors shadow-sm cursor-pointer disabled:opacity-70 disabled:cursor-not-allowed">
-                          {isSubmittingPriority ? <><Loader2 size={16} className="animate-spin" /> Submitting...</> : 'Submit Request'}
+                      {/* Modern Upload Progress Bar (0 - 100%) */}
+                      {isSubmittingPriority && (
+                        <div className="mt-3 p-4 rounded-2xl bg-linear-to-b from-white to-slate-50/70 border border-maroon-border/40 shadow-[0_4px_20px_rgba(123,26,42,0.06)] animate-fade-up">
+                          <div className="flex items-center justify-between gap-3 mb-2.5">
+                            <div className="flex items-center gap-2.5 min-w-0">
+                              <div className="w-7 h-7 rounded-lg bg-maroon-light flex items-center justify-center text-maroon shrink-0 shadow-2xs border border-maroon-border/30">
+                                {uploadProgress < 85 ? (
+                                  <Loader2 size={14} className="animate-spin" />
+                                ) : (
+                                  <Sparkles size={14} className="animate-pulse" />
+                                )}
+                              </div>
+                              <div className="truncate">
+                                <p className="text-[13px] font-bold text-text-main leading-tight truncate m-0">
+                                  {uploadProgress < 40
+                                    ? 'Uploading document...'
+                                    : uploadProgress < 85
+                                    ? 'Analyzing document with AI...'
+                                    : uploadProgress < 100
+                                    ? 'Finalizing submission...'
+                                    : 'Upload complete!'}
+                                </p>
+                                <p className="text-[11px] text-text-muted font-medium leading-tight truncate m-0 mt-0.5">
+                                  {priorityForm.file?.name}
+                                </p>
+                              </div>
+                            </div>
+                            <span className="px-2.5 py-1 rounded-lg bg-maroon-light text-maroon font-bold font-sans text-[12px] border border-maroon-border/40 shrink-0 shadow-2xs">
+                              {uploadProgress}%
+                            </span>
+                          </div>
+
+                          {/* Progress Track */}
+                          <div className="w-full h-2 bg-slate-100/90 rounded-full overflow-hidden border border-slate-200/60 p-0.5 relative">
+                            <div
+                              className="h-full bg-linear-to-r from-maroon via-maroon to-[#9c2436] rounded-full transition-all duration-300 ease-out relative shadow-2xs"
+                              style={{ width: `${uploadProgress}%` }}
+                            >
+                              <div className="absolute inset-0 bg-white/30 animate-pulse rounded-full" />
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      <div className="flex justify-end mt-4">
+                        <button
+                          type="submit"
+                          disabled={isSubmittingPriority || !priorityForm.file}
+                          className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-maroon text-white text-[14px] font-semibold hover:bg-maroon-dark transition-colors shadow-sm cursor-pointer disabled:opacity-70 disabled:cursor-not-allowed"
+                        >
+                          {isSubmittingPriority ? (
+                            <>
+                              <Loader2 size={16} className="animate-spin" /> Submitting {uploadProgress}%
+                            </>
+                          ) : (
+                            'Submit Request'
+                          )}
                         </button>
                       </div>
                     </form>

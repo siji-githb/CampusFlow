@@ -192,7 +192,7 @@ def get_student_queue(student_id: str):
         
         # 1. Fetch tickets for this student ordered by creation date
         tickets_res = admin.table("queue_tickets") \
-            .select("*, appointments(appointment_date, time_slot, status, transaction_types(name))") \
+            .select("*, appointments(id, appointment_date, time_slot, status, release_date, transaction_types(name))") \
             .eq("student_id", student_id) \
             .in_("status", ["waiting", "in_progress", "completed"]) \
             .order("created_at", desc=True) \
@@ -201,23 +201,77 @@ def get_student_queue(student_id: str):
         if not tickets_res.data:
             return None
 
-        # 2. Pick the active ticket: prioritize waiting or in_progress, or today's completed ticket
-        active_ticket = None
+        # 1b. Selective Stale Cleanup:
+        # ONLY auto-expire if:
+        # - Appointment date is from a past date (appointment_date < today_str)
+        # - Status is still "waiting" (staff never even started/called it)
+        # - Current step is 1 or less (current_step <= 1)
+        # - No release date was assigned
+        #
+        # DO NOT expire if it's already on step 2 or above (current_step >= 2),
+        # has a release_date, or is in active multi-day processing!
+        valid_tickets = []
         for t in tickets_res.data:
+            appt = t.get("appointments") or {}
+            appt_date = appt.get("appointment_date") or ""
+            current_step = t.get("current_step") or 1
+            has_release_date = bool(appt.get("release_date"))
+            
+            is_stale_unstarted = (
+                t["status"] == "waiting"
+                and appt_date != ""
+                and appt_date < today_str
+                and current_step <= 1
+                and not has_release_date
+            )
+            
+            if is_stale_unstarted:
+                try:
+                    admin.table("queue_tickets").update({"status": "no_show"}).eq("id", t["id"]).execute()
+                    if t.get("appointment_id"):
+                        admin.table("appointments").update({"status": "no_show"}).eq("id", t["appointment_id"]).execute()
+                except Exception:
+                    pass
+                continue
+                
+            valid_tickets.append(t)
+
+        if not valid_tickets:
+            return None
+
+        # 2. Pick the active ticket:
+        # Priority 1: Today's active queue ticket (waiting or in_progress for today's appointment)
+        # Priority 2: In-progress multi-day ticket (step 2+, ready for pickup, etc.)
+        # Priority 3: Today's completed ticket
+        active_ticket = None
+        for t in valid_tickets:
             appt = t.get("appointments") or {}
             appt_status = appt.get("status")
             tx_name = (appt.get("transaction_types") or {}).get("name", "")
+            appt_date = appt.get("appointment_date")
             
-            # Skip if appointment was cancelled or deleted
             if appt_status == "cancelled" or "(deleted" in tx_name:
                 continue
                 
-            if t["status"] in ["waiting", "in_progress"]:
+            if t["status"] in ["waiting", "in_progress"] and appt_date == today_str:
                 active_ticket = t
                 break
-            elif t["status"] == "completed" and appt.get("appointment_date") == today_str:
-                active_ticket = t
-                break
+
+        if not active_ticket:
+            for t in valid_tickets:
+                appt = t.get("appointments") or {}
+                appt_status = appt.get("status")
+                tx_name = (appt.get("transaction_types") or {}).get("name", "")
+                
+                if appt_status == "cancelled" or "(deleted" in tx_name:
+                    continue
+                    
+                if t["status"] in ["waiting", "in_progress"]:
+                    active_ticket = t
+                    break
+                elif t["status"] == "completed" and appt.get("appointment_date") == today_str:
+                    active_ticket = t
+                    break
 
         if not active_ticket:
             return None

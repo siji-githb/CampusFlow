@@ -132,9 +132,9 @@ export default function MyQueue() {
   const isReleaseActive = ticket?.status === 'in_progress' && isCurrentStepRelease
 
   return (
-    <StudentLayout activeTab="queue" mobileTitle="My Queue" backTo="/student/dashboard">
+    <StudentLayout activeTab="queue" mobileTitle="My Queue">
 
-      <div className="w-full max-w-140 mx-auto pt-6 px-4 pb-20 md:max-w-225 md:mx-0 md:pt-0 md:px-0">
+      <div className="w-full max-w-140 mx-auto pt-4 px-4 pb-20 md:max-w-225 md:mx-0 md:pt-0 md:px-0">
         <div className="hidden md:flex justify-between items-start mb-8">
           <div>
             <div className="text-[11px] font-bold text-gold uppercase tracking-[0.06em] mb-2">LIVE TRACKING</div>
@@ -164,13 +164,13 @@ export default function MyQueue() {
             onClick={() => setActiveTab('active')}
             className={`flex-1 py-2.5 px-4 rounded-lg border-none text-[14px] font-semibold cursor-pointer transition-all duration-200 font-sans ${activeTab === 'active' ? 'bg-maroon-light text-maroon' : 'bg-transparent text-text-sub hover:bg-off-white'}`}
           >
-            Active Queue
+            Active Queue Ticket
           </button>
           <button 
             onClick={() => setActiveTab('upcoming')}
             className={`flex-1 py-2.5 px-4 rounded-lg border-none text-[14px] font-semibold cursor-pointer transition-all duration-200 font-sans ${activeTab === 'upcoming' ? 'bg-maroon-light text-maroon' : 'bg-transparent text-text-sub hover:bg-off-white'}`}
           >
-            Upcoming
+            Upcoming Tickets
           </button>
         </div>
 
@@ -575,6 +575,7 @@ export default function MyQueue() {
 
                   const isReadyForPickup = appt.release_date || (liveTicketForAppt && (isReleaseActive || (liveTicketForAppt.current_step && liveTicketForAppt.total_steps && liveTicketForAppt.current_step >= liveTicketForAppt.total_steps)));
                   const isActivated = !!liveTicketForAppt && (liveTicketForAppt.status === 'waiting' || liveTicketForAppt.status === 'in_progress');
+                  const isAnotherTicketActiveForToday = ticket && ticket.status !== 'completed' && !isCurrentTicketForThisAppt && ((ticket.appointments?.appointment_date || ticket.appointment_date) === today);
 
                   return (
                     <div key={appt.id} className="bg-white rounded-2xl border border-border p-6 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden group">
@@ -625,21 +626,21 @@ export default function MyQueue() {
                           }}
                           className="w-full py-3.5 px-4 rounded-xl border border-gold-border bg-gold-light text-gold hover:bg-gold hover:text-white text-[14px] font-bold font-sans transition-all flex items-center justify-center gap-2 cursor-pointer shadow-xs hover:-translate-y-0.5"
                         >
-                          <Ticket size={16} /> In Progress • View Active Queue ({liveTicketForAppt.queue_number})
+                          <Ticket size={16} /> In Progress • View Active Queue Ticket ({liveTicketForAppt.queue_number})
                         </button>
                       ) : (
                         <button
                           onClick={() => setActivateConfirmId(appt.id)}
-                          disabled={activating === appt.id || !isToday || (ticket && ticket.status !== 'completed' && !isCurrentTicketForThisAppt)}
-                          title={(ticket && ticket.status !== 'completed' && !isCurrentTicketForThisAppt) ? "You already have an active queue ticket" : ""}
+                          disabled={activating === appt.id || !isToday || isAnotherTicketActiveForToday}
+                          title={isAnotherTicketActiveForToday ? "You already have an active queue ticket for today" : ""}
                           className={`w-full py-3.5 px-4 rounded-xl border text-[14px] font-bold font-sans transition-all flex items-center justify-center gap-2 ${
                             activating === appt.id ? 'bg-surface text-text-muted border-border cursor-wait' :
                             !isToday ? 'bg-surface text-text-sub border-border cursor-not-allowed opacity-70' :
-                            (ticket && ticket.status !== 'completed' && !isCurrentTicketForThisAppt) ? 'bg-surface text-text-sub border-border cursor-not-allowed opacity-70' :
+                            isAnotherTicketActiveForToday ? 'bg-surface text-text-sub border-border cursor-not-allowed opacity-70' :
                             'bg-gold text-white border-gold-dark cursor-pointer hover:bg-gold-light hover:text-gold hover:border-gold-light shadow-sm hover:-translate-y-0.5'
                           }`}
                         >
-                          {activating === appt.id ? 'Activating...' : !isToday ? 'Available on Appointment Date' : (ticket && ticket.status !== 'completed' && !isCurrentTicketForThisAppt) ? 'Another Ticket is Active' : <><Ticket size={16} /> Get Queue Number</>}
+                          {activating === appt.id ? 'Activating...' : !isToday ? 'Available on Appointment Date' : isAnotherTicketActiveForToday ? 'Another Ticket is Active' : <><Ticket size={16} /> Get Queue Number</>}
                         </button>
                       )}
                     </div>

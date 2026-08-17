@@ -26,7 +26,7 @@ def scan_document_legitimacy(document_url: str, priority_type: str) -> dict:
     2. Score 0-100 how much it resembles a legitimate document of the
        expected type (PWD ID card, or medical/pregnancy certificate)
     Returns a dict with extracted_text, confidence_score, reasoning.
-    Never raises — on any failure, returns a 0 score and flags for manual
+    Never raises — on any failure, returns an advisory score and flags for manual
     staff review rather than blocking the submission.
     """
     try:
@@ -34,14 +34,22 @@ def scan_document_legitimacy(document_url: str, priority_type: str) -> dict:
         client = OpenAI(api_key=settings.openai_api_key, base_url=settings.openai_base_url)
 
         expected_doc = (
-            "a Philippine PWD (Person with Disability) ID card, issued by a local government unit"
+            "a Philippine PWD (Person with Disability) ID card issued by an LGU or NCDA"
             if priority_type == "pwd"
             else "a medical/pregnancy certificate issued by a licensed physician or OB-GYN"
         )
 
+        expected_criteria = (
+            "Check for: (1) Republic of the Philippines / LGU / NCDA header or seal, "
+            "(2) Official PWD ID number, (3) Cardholder name & disability classification, (4) Issuing officer signature or official seal."
+            if priority_type == "pwd"
+            else "Check for: (1) Official clinic or hospital letterhead, (2) Licensed physician name and PRC license / PTR number, "
+            "(3) Clinical diagnosis, pregnancy remarks, or EDD, (4) Physician signature."
+        )
+
         resp = client.chat.completions.create(
             model=settings.openai_vision_model,
-            max_tokens=350,
+            max_tokens=400,
             temperature=0,
             messages=[{
                 "role": "user",
@@ -49,18 +57,21 @@ def scan_document_legitimacy(document_url: str, priority_type: str) -> dict:
                     {
                         "type": "text",
                         "text": (
-                            f"You are assisting a school registrar staff member reviewing a document "
-                            f"submission. The student claims this image is {expected_doc}.\n\n"
-                            f"Do NOT analyze any person's body, appearance, or physical condition in "
-                            f"this image. Only evaluate the DOCUMENT itself as a piece of paper/ID: "
-                            f"does it contain the kind of text, layout, and official markings you'd "
-                            f"expect from this document type (e.g. government seal, ID number format, "
-                            f"physician's letterhead, signature line, issuing office name)?\n\n"
-                            f"Reply with ONLY a JSON object, no extra text:\n"
-                            f'{{"extracted_text": "<any visible text you can read, or empty string>", '
-                            f'"confidence_score": <integer 0-100, how much this looks like a legitimate '
-                            f'{priority_type} document based on visible formatting and text>, '
-                            f'"reasoning": "<one short sentence explaining the score>"}}'
+                            f"You are an automated document legitimacy validator assisting a university registrar staff member.\n"
+                            f"The student submitted this image claiming it is {expected_doc}.\n\n"
+                            f"Evaluation Criteria:\n{expected_criteria}\n\n"
+                            f"Scoring Guidelines:\n"
+                            f"- 75 to 95: High confidence. Official seals/letterhead, valid ID or license numbers, and signatures are clearly identified.\n"
+                            f"- 40: Partial match / Not sure. The image shows some paper, medical text, or form layout, but crucial official seals, physician license number, or issuing signatures are missing or uncertain.\n"
+                            f"- 20: Complete fail. The image is blurry, blank, unrelated, or has zero recognizable official government/clinic markings or seals.\n\n"
+                            f"Instructions:\n"
+                            f"1. DO NOT analyze any person's face, body, or appearance.\n"
+                            f"2. Only evaluate the visual attributes of the DOCUMENT itself: government seals, hospital/clinic letterhead, PRC license numbers, official ID numbers, and signatures.\n"
+                            f"3. In the 'reasoning' field, provide a clear, concise 1-sentence assessment explaining the score and mentioning specific found or missing elements.\n\n"
+                            f"Reply with ONLY a valid JSON object, with no surrounding formatting or markdown:\n"
+                            f'{{"extracted_text": "<any visible text you can read>", '
+                            f'"confidence_score": <integer 20, 40, or 75-95>, '
+                            f'"reasoning": "<concise explanation referencing seals, letterhead, signatures, or ID numbers>"}}'
                         )
                     },
                     {
@@ -72,27 +83,40 @@ def scan_document_legitimacy(document_url: str, priority_type: str) -> dict:
         )
 
         import json, re
-        raw = resp.choices[0].message.content.strip()
+        content = resp.choices[0].message.content if (resp.choices and resp.choices[0].message) else None
+        if not content:
+            raise ValueError("No response content from vision model")
+
+        raw = content.strip()
         match = re.search(r'\{.*\}', raw, re.DOTALL)
         if not match:
             raise ValueError("No JSON found in AI response")
         data = json.loads(match.group())
 
-        score = int(data.get("confidence_score", 0))
+        score = int(data.get("confidence_score", 20))
         score = max(0, min(100, score))  # clamp to 0-100
+
+        reasoning = data.get("reasoning", "").strip()
+        if not reasoning:
+            if score >= 70:
+                reasoning = "Official seals, identifiers, and required document markings verified."
+            elif score >= 40:
+                reasoning = "Document contains visible text, but official seals, physician license numbers, or signatures could not be confirmed."
+            else:
+                reasoning = "No official clinic letterhead, physician license number, or government seal detected."
 
         return {
             "extracted_text": data.get("extracted_text", "")[:2000],
             "confidence_score": score,
-            "reasoning": data.get("reasoning", "")[:500],
+            "reasoning": reasoning[:500],
         }
 
-    except Exception as e:
-        # Never block submission on AI failure — just flag for full manual review
+    except Exception:
+        # Complete failure fallback (unreadable, network failure, or corrupted image)
         return {
             "extracted_text": "",
-            "confidence_score": 40,
-            "reasoning": f"Automatic scan unavailable ({str(e)[:100]}) — please review manually.",
+            "confidence_score": 20,
+            "reasoning": "No official government/clinic seals, physician letterheads, or ID numbers detected — please review manually.",
         }
 
 

@@ -19,6 +19,7 @@ import {
   ClipboardList,
   Info
 } from 'lucide-react'
+import CustomDatePicker from './common/CustomDatePicker'
 
 // ── Helper: Clean Document Description (strips JSON config suffix if present) ──
 function getCleanDocDescription(rawDesc) {
@@ -65,6 +66,17 @@ function getStepDescription(step, index, totalSteps) {
   return 'Administrative verification and data processing for this workflow stage.'
 }
 
+// ── Helper: 12-hour time formatter ──────────────────────────────────────────
+function fmt12hTime(t) {
+  if (!t) return ''
+  const parts = t.split(':')
+  if (parts.length < 2) return t
+  const h = parseInt(parts[0], 10)
+  const ampm = h >= 12 ? 'PM' : 'AM'
+  const h12 = h % 12 || 12
+  return `${h12}:${parts[1]} ${ampm}`
+}
+
 // ── Queue Details Modal ───────────────────────────────────────────────────────
 export default function QueueDetailsModal({ ticketData, onClose, onConfirm, confirming, onSetReleaseDate }) {
   const { ticket, steps } = ticketData
@@ -72,6 +84,8 @@ export default function QueueDetailsModal({ ticketData, onClose, onConfirm, conf
   const name    = student ? `${student.last_name}, ${student.first_name}` : 'Unknown'
   const appt    = ticket.appointments
   const txType  = appt?.transaction_types
+  
+  const priority = ticket.priority_class || appt?.priority_class || student?.priority_class || 'regular'
   
   const docDescription = getCleanDocDescription(txType?.description)
   const requiredDocs = txType?.required_documents || []
@@ -106,9 +120,9 @@ export default function QueueDetailsModal({ ticketData, onClose, onConfirm, conf
               <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-gold-light text-gold text-[11px] font-extrabold uppercase tracking-wider border border-gold-border">
                 <Ticket size={13} /> Queue Ticket Details
               </span>
-              {ticket.priority_class && ticket.priority_class !== 'regular' && (
+              {priority && priority !== 'regular' && (
                 <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-maroon-light text-maroon text-[11px] font-extrabold uppercase tracking-wider border border-maroon-border">
-                  <ShieldCheck size={13} /> {ticket.priority_class} Priority
+                  <ShieldCheck size={13} /> {priority} Priority
                 </span>
               )}
             </div>
@@ -141,7 +155,7 @@ export default function QueueDetailsModal({ ticketData, onClose, onConfirm, conf
         {/* Info Cards Grid (Student Info + Requested Document Details) */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-7">
           {/* Student Details Card */}
-          <div className="p-5 sm:p-6 bg-surface/70 rounded-2xl border border-border shadow-xs flex items-start gap-4">
+          <div className="p-5 sm:p-6 bg-white rounded-2xl border border-border shadow-sm flex items-start gap-4">
             <div className="w-12 h-12 rounded-xl bg-maroon-light text-maroon flex items-center justify-center shrink-0 border border-maroon-border">
               <Users size={22} />
             </div>
@@ -149,16 +163,23 @@ export default function QueueDetailsModal({ ticketData, onClose, onConfirm, conf
               <span className="text-[10.5px] text-text-muted uppercase font-extrabold tracking-wider block mb-1">
                 Student Information
               </span>
-              <div className="text-[16px] font-bold text-text-main leading-snug truncate mb-1.5">
+              <div className="text-[16px] font-bold text-text-main leading-snug truncate mb-2">
                 {name}
               </div>
               <div className="flex items-center gap-2 flex-wrap">
-                <span className="text-[12px] text-text-sub font-mono font-bold bg-white px-2.5 py-0.5 rounded-lg border border-border">
+                <span className="text-[12px] text-text-main font-mono font-bold bg-surface px-2.5 py-1 rounded-lg border border-border">
                   ID: {student?.student_id || '—'}
                 </span>
+                <span className={`text-[11.5px] font-bold capitalize px-2.5 py-1 rounded-lg border ${
+                  priority !== 'regular' 
+                    ? 'bg-maroon-light text-maroon border-maroon-border font-extrabold' 
+                    : 'bg-surface text-text-sub border-border'
+                }`}>
+                  Priority: <span className="uppercase">{priority}</span>
+                </span>
                 {student?.email && (
-                  <span className="text-[11.5px] text-text-muted truncate max-w-44">
-                    {student.email}
+                  <span className="text-[12px] text-text-sub truncate max-w-64 font-medium">
+                    Email: <span className="text-text-main">{student.email}</span>
                   </span>
                 )}
               </div>
@@ -166,7 +187,7 @@ export default function QueueDetailsModal({ ticketData, onClose, onConfirm, conf
           </div>
 
           {/* Requested Document Details Card */}
-          <div className="p-5 sm:p-6 bg-surface/70 rounded-2xl border border-border shadow-xs flex items-start gap-4">
+          <div className="p-5 sm:p-6 bg-white rounded-2xl border border-border shadow-sm flex items-start gap-4">
             <div className="w-12 h-12 rounded-xl bg-gold-light text-gold flex items-center justify-center shrink-0 border border-gold-border">
               <FileText size={22} />
             </div>
@@ -174,16 +195,18 @@ export default function QueueDetailsModal({ ticketData, onClose, onConfirm, conf
               <span className="text-[10.5px] text-text-muted uppercase font-extrabold tracking-wider block mb-1">
                 Requested Document
               </span>
-              <div className="text-[16px] font-bold text-text-main leading-snug mb-1">
+              <div className="text-[16px] font-bold text-text-main leading-snug mb-1.5">
                 {txType?.name || 'Standard Service'}
               </div>
-              <div className="text-[12px] text-text-sub flex items-center gap-1.5 font-medium mb-1.5">
-                <Calendar size={13} className="text-text-muted" />
-                {appt?.appointment_date ? new Date(appt.appointment_date).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' }) : 'Walk-in Ticket'}
-                {appt?.time_slot && ` • ${appt.time_slot}`}
+              <div className="text-[12px] text-text-sub flex items-center gap-1.5 font-medium mb-2">
+                <Calendar size={13} className="text-gold shrink-0" />
+                <span>
+                  {appt?.appointment_date ? new Date(appt.appointment_date).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' }) : 'Walk-in Ticket'}
+                  {appt?.time_slot && ` • ${fmt12hTime(appt.time_slot)}`}
+                </span>
               </div>
               {docDescription && (
-                <p className="text-[11.5px] text-text-sub font-normal m-0 line-clamp-2 leading-relaxed bg-white/70 p-2 rounded-lg border border-border/60">
+                <p className="text-[12.5px] text-text-sub font-normal m-0 leading-relaxed">
                   {docDescription}
                 </p>
               )}
@@ -193,19 +216,19 @@ export default function QueueDetailsModal({ ticketData, onClose, onConfirm, conf
 
         {/* Detailed Document Requirements & Student Remarks Banner (If Present) */}
         {(requiredDocs.length > 0 || appt?.notes) && (
-          <div className="mb-7 p-4.5 bg-surface/50 rounded-2xl border border-border/80 flex flex-col gap-3">
+          <div className="mb-7 p-5 bg-white rounded-2xl border border-border shadow-sm flex flex-col gap-4">
             {requiredDocs.length > 0 && (
               <div>
-                <span className="text-[10.5px] font-extrabold text-text-muted uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
-                  <ClipboardList size={13} className="text-gold" /> Required Document Attachments
+                <span className="text-[10.5px] font-extrabold text-text-muted uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                  <ClipboardList size={14} className="text-gold" /> Required Document Attachments
                 </span>
-                <div className="flex flex-wrap gap-1.5">
+                <div className="flex flex-wrap gap-2">
                   {requiredDocs.map((doc, i) => (
                     <span 
                       key={i} 
-                      className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white border border-border text-[11.5px] font-semibold text-text-main shadow-2xs"
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-surface/60 border border-border text-[12px] font-semibold text-text-main shadow-2xs"
                     >
-                      <CheckCircle2 size={12} className="text-success shrink-0" />
+                      <CheckCircle2 size={13} className="text-success shrink-0" />
                       <span>{doc}</span>
                     </span>
                   ))}
@@ -214,11 +237,11 @@ export default function QueueDetailsModal({ ticketData, onClose, onConfirm, conf
             )}
 
             {appt?.notes && (
-              <div className={requiredDocs.length > 0 ? "pt-2.5 border-t border-border/60" : ""}>
-                <span className="text-[10.5px] font-extrabold text-text-muted uppercase tracking-wider mb-1 flex items-center gap-1.5">
-                  <Info size={13} className="text-maroon" /> Student Remarks / Purpose
+              <div className={requiredDocs.length > 0 ? "pt-3.5 border-t border-border" : ""}>
+                <span className="text-[10.5px] font-extrabold text-text-muted uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
+                  <Info size={14} className="text-maroon" /> Student Remarks / Purpose
                 </span>
-                <p className="text-[12.5px] text-text-main font-medium m-0 whitespace-pre-wrap leading-relaxed">
+                <p className="text-[13px] text-text-main font-medium m-0 whitespace-pre-wrap leading-relaxed">
                   {appt.notes}
                 </p>
               </div>
@@ -369,33 +392,38 @@ export default function QueueDetailsModal({ ticketData, onClose, onConfirm, conf
                             <div className="shrink-0">
                               <button
                                 onClick={async () => {
-                                  if (isReleasing) return
+                                  if (isReleasing || isConfirming) return
                                   const finalDate = releaseDate || getTodayStr()
 
                                   if (isRelease) {
                                     if (!documentVerified) {
-                                      alert('Please confirm the document is complete, correct, and ready for release before continuing.')
+                                      showToast('Please confirm the document is complete, correct, and verified.', 'error')
                                       return
                                     }
                                     const apptId = ticket.appointment_id || ticket.appointments?.id
                                     if (!apptId) {
-                                      alert('Error: Appointment ID is missing.')
+                                      showToast('Error: Appointment ID is missing.', 'error')
                                       return
                                     }
                                     setIsReleasing(true)
                                     try {
                                       await onSetReleaseDate(apptId, finalDate)
-                                      showToast('Document moved to Document Releases')
+                                      showToast('Document moved to Document Releases successfully!')
+                                      onClose()
                                     } catch (err) {
                                       showToast(err?.message || 'Failed to set release date. Please try again.', 'error')
+                                    } finally {
                                       setIsReleasing(false)
-                                      return
                                     }
-                                    setIsReleasing(false)
                                   } else {
-                                    await onConfirm(ticket.id, step.step_number, txType?.name, name, confirmLabel, null, '', false)
+                                    try {
+                                      await onConfirm(ticket.id, step.step_number, txType?.name, name, confirmLabel, null, '', false)
+                                      showToast(`Step ${step.step_number} (${confirmLabel}) confirmed!`)
+                                      onClose()
+                                    } catch (err) {
+                                      showToast(err?.message || 'Failed to confirm step.', 'error')
+                                    }
                                   }
-                                  onClose()
                                 }}
                                 disabled={isConfirming || isReleasing || (isRelease && (!releaseDate || !documentVerified))}
                                 className={`px-5 py-2.5 rounded-xl text-[13px] font-extrabold font-sans transition-all shadow-xs inline-flex items-center gap-2 ${
@@ -460,11 +488,13 @@ export default function QueueDetailsModal({ ticketData, onClose, onConfirm, conf
 
                                   {releaseDate !== getTodayStr() && (
                                     <div className="animate-fade-in w-full sm:w-auto">
-                                      <input 
-                                        type="date" 
-                                        value={releaseDate} 
-                                        onChange={e => setReleaseDate(e.target.value)}
-                                        className="w-full sm:w-auto px-4 py-2 rounded-xl border border-border bg-white text-[13.5px] font-medium outline-none text-text-main focus:border-maroon transition-all shadow-xs"
+                                      <CustomDatePicker
+                                        value={releaseDate}
+                                        onChange={setReleaseDate}
+                                        minDate={getTodayStr()}
+                                        placeholder="MM/DD/YYYY"
+                                        position="top"
+                                        className="w-full sm:w-64"
                                       />
                                     </div>
                                   )}
@@ -503,34 +533,28 @@ export default function QueueDetailsModal({ ticketData, onClose, onConfirm, conf
             </h3>
             
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3.5 mb-4">
-              <div className="p-4 bg-surface rounded-2xl border border-border shadow-xs flex flex-col gap-1">
+              <div className="p-4 bg-white rounded-2xl border border-border shadow-sm flex flex-col gap-1">
                 <label className="text-[10px] text-text-muted uppercase font-extrabold tracking-wider">Appointment Date</label>
                 <div className="text-[14px] font-bold text-text-main">
                   {appt?.appointment_date ? new Date(appt.appointment_date).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' }) : 'Walk-in'}
                 </div>
               </div>
 
-              <div className="p-4 bg-surface rounded-2xl border border-border shadow-xs flex flex-col gap-1">
+              <div className="p-4 bg-white rounded-2xl border border-border shadow-sm flex flex-col gap-1">
                 <label className="text-[10px] text-text-muted uppercase font-extrabold tracking-wider">Time Slot</label>
                 <div className="text-[14px] font-bold text-text-main">
-                  {appt?.time_slot ? (() => {
-                    const parts = appt.time_slot.split(':')
-                    if (parts.length < 2) return appt.time_slot
-                    const h = parseInt(parts[0], 10)
-                    const ampm = h >= 12 ? 'PM' : 'AM'
-                    return `${h % 12 || 12}:${parts[1]} ${ampm}`
-                  })() : 'Any time'}
+                  {appt?.time_slot ? fmt12hTime(appt.time_slot) : 'Any time'}
                 </div>
               </div>
 
-              <div className="p-4 bg-surface rounded-2xl border border-border shadow-xs flex flex-col gap-1">
+              <div className="p-4 bg-white rounded-2xl border border-border shadow-sm flex flex-col gap-1">
                 <label className="text-[10px] text-text-muted uppercase font-extrabold tracking-wider">Priority Category</label>
                 <div className="text-[14px] font-bold text-text-main capitalize">
-                  {appt?.priority_class || 'Regular'}
+                  {priority || 'Regular'}
                 </div>
               </div>
 
-              <div className="p-4 bg-surface rounded-2xl border border-border shadow-xs flex flex-col gap-1">
+              <div className="p-4 bg-white rounded-2xl border border-border shadow-sm flex flex-col gap-1">
                 <label className="text-[10px] text-text-muted uppercase font-extrabold tracking-wider">Ticket Issued At</label>
                 <div className="text-[14px] font-bold text-text-main">
                   {ticket.created_at ? new Date(ticket.created_at).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }) : '—'}
@@ -541,7 +565,7 @@ export default function QueueDetailsModal({ ticketData, onClose, onConfirm, conf
             {(appt?.notes || requiredDocs.length > 0) && (
               <div className="space-y-3.5">
                 {appt?.notes && (
-                  <div className="p-4.5 bg-surface rounded-2xl border border-border shadow-xs flex flex-col gap-1.5">
+                  <div className="p-4.5 bg-white rounded-2xl border border-border shadow-sm flex flex-col gap-1.5">
                     <label className="text-[10px] text-text-muted uppercase font-extrabold tracking-wider">Purpose / Remarks</label>
                     <div className="text-[13.5px] font-medium text-text-main whitespace-pre-wrap leading-relaxed">
                       {appt.notes}
@@ -550,13 +574,19 @@ export default function QueueDetailsModal({ ticketData, onClose, onConfirm, conf
                 )}
                 
                 {requiredDocs.length > 0 && (
-                  <div className="p-4.5 bg-surface rounded-2xl border border-border shadow-xs flex flex-col gap-1.5">
+                  <div className="p-4.5 bg-white rounded-2xl border border-border shadow-sm flex flex-col gap-2">
                     <label className="text-[10px] text-text-muted uppercase font-extrabold tracking-wider">Required Documents</label>
-                    <ul className="text-[13px] font-medium text-text-main pl-4 m-0 space-y-1">
+                    <div className="flex flex-wrap gap-2">
                       {requiredDocs.map((doc, idx) => (
-                        <li key={idx}>{doc}</li>
+                        <span 
+                          key={idx} 
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-surface/60 border border-border text-[12px] font-semibold text-text-main shadow-2xs"
+                        >
+                          <CheckCircle2 size={13} className="text-success shrink-0" />
+                          <span>{doc}</span>
+                        </span>
                       ))}
-                    </ul>
+                    </div>
                   </div>
                 )}
               </div>

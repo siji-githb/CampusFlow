@@ -3,6 +3,7 @@ import { useAuth } from '../../context/useAuth'
 import { getDashboardStats, getAllAppointments, updateAppointmentStatus, getOfficeConfig, setDateOverride } from '../../services/adminService'
 import { rescheduleAppointment, getAvailableSlots } from '../../services/appointmentService'
 import { AlertTriangle, Inbox, Check, X as XIcon, ChevronLeft, ChevronRight, ChevronDown, Filter, Calendar, FolderOpen, CheckCircle, Clock, PieChart, Activity, Archive, Info } from 'lucide-react'
+import CustomDatePicker from '../../components/common/CustomDatePicker'
 
 // ── Status Config ──────────────────────────────────────────────────────────────
 const STATUS_CFG = {
@@ -176,8 +177,13 @@ const RescheduleModal = ({ appt, onClose, onConfirm }) => {
           
           <div className="mb-5">
             <label className="block text-[13px] font-semibold text-text-muted mb-2">Select New Date</label>
-            <input type="date" min={today} value={date} onChange={e => { setDate(e.target.value); setTime('') }} 
-              className="w-full p-3 rounded-lg border border-border font-sans text-[15px] outline-none text-text-main" />
+            <CustomDatePicker
+              minDate={today}
+              value={date}
+              onChange={val => { setDate(val); setTime('') }}
+              placeholder="Pick a new date…"
+              className="w-full"
+            />
           </div>
 
           {date && (
