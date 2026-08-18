@@ -29,6 +29,14 @@ export default function MyQueue() {
   const [cancelConfirmId, setCancelConfirmId] = useState(null)
   const [activateConfirmId, setActivateConfirmId] = useState(null)
 
+  useEffect(() => {
+    if (tabParam === 'upcoming') {
+      setActiveTab('upcoming')
+    } else if (tabParam === 'active') {
+      setActiveTab('active')
+    }
+  }, [tabParam])
+
   const getTodayStr = () => {
     const d = new Date();
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;

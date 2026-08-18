@@ -60,6 +60,13 @@ def get_dashboard_stats():
             .lte("appointment_date", today) \
             .execute()
 
+        # All-time completed appointments (system-wide)
+        total_completed_res = admin.table("appointments") \
+            .select("id") \
+            .eq("status", "completed") \
+            .execute()
+        total_completed = len(total_completed_res.data) if total_completed_res.data else 0
+
         return {
             "today": {
                 "total":     total_today,
@@ -72,6 +79,7 @@ def get_dashboard_stats():
             "active_queue":   len(active_queue.data),
             "total_students": len(total_students.data),
             "week_total":     len(week_appts.data),
+            "total_completed": total_completed,
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

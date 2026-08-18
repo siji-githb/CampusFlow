@@ -11,7 +11,7 @@ import AdminOfficeConfigPage from './AdminOfficeConfigPage'
 import AdminAuditLogPage from './AdminAuditLogPage'
 import AdminDocumentsPage from './AdminDocumentsPage'
 import MasterListPage from '../staff/MasterListPage'
-import { Calendar, Ticket, Clock, Bot, Search, Shield, BarChart2, LineChart as LineChartIcon, FolderOpen, Users, Settings, MessageSquare, Bell, LogOut, LayoutDashboard, CheckSquare, ChevronLeft, ChevronRight, ClipboardList, FileText } from 'lucide-react'
+import { Calendar, Ticket, Clock, Bot, Search, Shield, BarChart2, LineChart as LineChartIcon, FolderOpen, Users, Settings, MessageSquare, Bell, LogOut, LayoutDashboard, CheckSquare, CheckCircle, ChevronLeft, ChevronRight, ClipboardList, FileText } from 'lucide-react'
 import {
   getDashboardStats, getReports
 } from '../../services/adminService'
@@ -247,18 +247,18 @@ function OverviewTab() {
     {
       label: 'Appointments Today',
       value: loading || !stats ? null : stats?.today?.total || 0,
-      sub: loading || !stats ? '—' : `${stats?.today?.completed || 0} Completed`,
+      sub: loading || !stats ? '—' : `${stats?.today?.confirmed || 0} Confirmed`,
       subColorClass: 'text-text-muted',
       icon: <Calendar size={20} />,
       colorClass: 'text-maroon',
       bgClass: 'bg-maroon-light',
     },
     {
-      label: 'Active Queue',
-      value: loading || !stats ? null : stats?.active_queue || 0,
-      sub: loading || !stats ? '—' : 'Currently in line',
+      label: 'Total Finished Today',
+      value: loading || !stats ? null : stats?.today?.completed || 0,
+      sub: loading || !stats ? '—' : 'Successfully completed',
       subColorClass: 'text-text-muted',
-      icon: <Ticket size={20} />,
+      icon: <CheckCircle size={20} />,
       colorClass: 'text-gold',
       bgClass: 'bg-gold-light',
     },
@@ -332,7 +332,7 @@ function OverviewTab() {
       </div>
 
       {/* Stat cards */}
-      <div className="grid grid-cols-4 gap-4 mb-7">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-7">
         {CARDS.map((c, i) => (
           <div key={i} className="animate-fade-up bg-white rounded-[14px] px-5 py-4.5 border border-border flex flex-col gap-3 shadow-[0_1px_4px_rgba(0,0,0,0.04)]" style={{ animationDelay: `${i * 0.1}s` }}>
             <div className="flex items-start justify-between">

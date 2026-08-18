@@ -445,7 +445,7 @@ def get_all_appointments(date_str: str = None):
 
     try:
         query = admin.table("appointments") \
-            .select("*, transaction_types(name), users(first_name, last_name, student_id)")
+            .select("*, transaction_types(name, processing_steps, required_documents), users(first_name, last_name, student_id, email, course, profile_image), queue_tickets(id, status, queue_number, current_step, total_steps)")
             
         if date_str:
             query = query.eq("appointment_date", date_str)

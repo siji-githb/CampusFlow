@@ -457,9 +457,10 @@ def confirm_step(queue_ticket_id: str, step_number: int, staff_id: str,
         "confirmed_at": now_iso,
     }
 
-    is_release_step = "Release" in step.get("step_name", "") or step_number == ticket["total_steps"]
+    step_name = step.get("step_name", "")
+    is_release_step = "release" in step_name.lower() or "releasing" in step_name.lower()
 
-    if is_release_step:
+    if is_release_step and released_to:
         if not document_verified:
             raise HTTPException(
                 status_code=400,
@@ -477,7 +478,7 @@ def confirm_step(queue_ticket_id: str, step_number: int, staff_id: str,
     audit_changes = "Step marked completed"
     if is_release_step:
         recipient_note = released_to.strip() if released_to and released_to.strip() else "student (self)"
-        audit_changes = f"Document released to: {recipient_note}. Document verified correct: Yes."
+        audit_changes = f"Document released to: {recipient_note}. Document verified correct: {'Yes' if document_verified else 'N/A'}."
 
     log_audit_action(
         user_id=staff_id,

@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from 'react'
+import React, { useState, useEffect, useMemo, useCallback } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '../../context/useAuth'
 import StudentLayout from '../../components/layout/StudentLayout'
@@ -6,8 +6,9 @@ import { getMyAppointments, cancelAppointment, clearCancelledAppointments } from
 import RescheduleModal from '../../components/RescheduleModal'
 import { 
   Inbox, Calendar, Tag, FileText, AlertTriangle, ChevronLeft, ChevronRight, 
-  Clock, CheckCircle, Filter, ChevronDown, Trash2, FileCheck, MapPin, 
-  Building2, ShieldCheck, ArrowRight, PlusCircle, Sparkles, CheckCircle2, Zap, Info, X 
+  Clock, CheckCircle, CheckCircle2, Filter, ChevronDown, Trash2, FileCheck, MapPin, 
+  Building2, ShieldCheck, ArrowRight, PlusCircle, Sparkles, Zap, Info, X, 
+  CalendarCheck, FolderOpen, ClipboardList, ExternalLink, RefreshCw 
 } from 'lucide-react'
 
 const CustomDropdown = ({ value, onChange, options, icon }) => {
@@ -56,10 +57,10 @@ const CustomDropdown = ({ value, onChange, options, icon }) => {
 
 const STATUS = {
   ready_for_pickup: { label: 'Ready for Pickup', bg: '#F0FDF4', color: '#15803D', border: '#BBF7D0' },
-  confirmed: { label: 'Confirmed', bg: '#F0FDF4', color: '#15803D', border: '#BBF7D0' },
+  confirmed: { label: 'Confirmed', bg: '#EFF6FF', color: '#1D4ED8', border: '#BFDBFE' },
   pending: { label: 'Pending', bg: '#FEFCE8', color: '#854D0E', border: '#FEF08A' },
   cancelled: { label: 'Cancelled', bg: '#F9F0F1', color: '#7B1A2A', border: '#FECACA' },
-  completed: { label: 'Completed', bg: '#EFF6FF', color: '#1D4ED8', border: '#BFDBFE' },
+  completed: { label: 'Completed', bg: '#F0FDF4', color: '#15803D', border: '#BBF7D0' },
   no_show: { label: 'No Show', bg: '#F9FAFB', color: '#6B7280', border: '#E5E7EB' },
 }
 
@@ -204,7 +205,7 @@ function AppointmentDetailsContent({
         <div className="flex flex-col flex-1">
           <div className="bg-white border border-border rounded-2xl p-5 mb-5 shadow-[0_2px_8px_rgba(0,0,0,0.03)]">
             <div className="flex items-start gap-3.5">
-              <div className="w-10 h-10 rounded-xl bg-blue-600 text-white flex items-center justify-center shrink-0 shadow-sm">
+              <div className="w-10 h-10 rounded-xl bg-success text-white flex items-center justify-center shrink-0 shadow-sm">
                 <CheckCircle size={22} />
               </div>
               <div>
@@ -235,7 +236,7 @@ function AppointmentDetailsContent({
               </div>
               <div>
                 <span className="text-[10px] text-text-muted font-bold uppercase tracking-wider block mb-1">STATUS</span>
-                <span className="font-bold text-blue-700">Official Release Completed</span>
+                <span className="font-bold text-success">Official Release Completed</span>
               </div>
             </div>
             {selectedAppt.notes && (
@@ -318,16 +319,16 @@ function AppointmentDetailsContent({
                 <div className="flex-1">
                   <h4 className="text-[15px] font-bold text-text-main m-0 mb-1">Appointment is Today!</h4>
                   <p className="text-[12.5px] text-text-sub m-0 leading-relaxed mb-3">
-                    When you arrive at the Registrar's Office, activate your ticket on the <strong className="text-maroon font-semibold">My Queue</strong> tab to enter the live waiting line.
+                    When you arrive at the Registrar's Office, activate your ticket on the <strong className="text-maroon font-semibold">Upcoming</strong> tab to enter the live waiting line.
                   </p>
                   <button
                     onClick={() => {
                       if (onCloseMobileModal) onCloseMobileModal();
-                      navigate('/student/queue');
+                      navigate('/student/queue?tab=upcoming');
                     }}
                     className="py-2 px-3.5 text-[12px] font-bold text-white bg-maroon border-none rounded-lg font-sans inline-flex items-center gap-1.5 cursor-pointer hover:bg-maroon-dark transition-colors shadow-2xs"
                   >
-                    <Zap size={14} className="fill-white" /> Go to Live Queue
+                    <Zap size={14} className="fill-white" /> Go to Upcoming Tickets
                   </button>
                 </div>
               </div>
@@ -335,7 +336,7 @@ function AppointmentDetailsContent({
           ) : (
             <div className="bg-white border border-border rounded-2xl p-5 mb-5 shadow-[0_2px_8px_rgba(0,0,0,0.03)]">
               <div className="flex items-start gap-3.5">
-                <div className="w-10 h-10 rounded-xl bg-success text-white flex items-center justify-center shrink-0 shadow-sm">
+                <div className="w-10 h-10 rounded-xl bg-blue-600 text-white flex items-center justify-center shrink-0 shadow-sm">
                   <Calendar size={22} />
                 </div>
                 <div>
@@ -478,6 +479,8 @@ export default function MyAppointments() {
   const [cancelling, setCancelling] = useState(null)
   const [error, setError] = useState('')
   const [filter, setFilter] = useState('all')
+  const [currentPage, setCurrentPage] = useState(1)
+  const ITEMS_PER_PAGE = 5
   const [reschedulingAppt, setReschedulingAppt] = useState(null)
   const [confirmCancelId, setConfirmCancelId] = useState(null)
   const [showClearConfirm, setShowClearConfirm] = useState(false)
@@ -498,6 +501,12 @@ export default function MyAppointments() {
     try { 
       const data = await getMyAppointments(token)
       setAppointments(data || [])
+      if (data && data.length > 0) {
+        setSelectedApptId(prev => {
+          if (prev && data.some(a => a.id === prev)) return prev
+          return data[0].id
+        })
+      }
     }
     catch (e) { setError(e.message) }
     finally { setLoading(false) }
@@ -516,11 +525,11 @@ export default function MyAppointments() {
   }
 
   const handleClearCancelled = async () => {
+    setShowClearConfirm(false)
     setClearingAll(true)
     try { 
       await clearCancelledAppointments(token)
       await fetch()
-      setShowClearConfirm(false)
       setSuccessMsg('All cancelled appointments have been cleared.')
     }
     catch (e) { setError(e.message) }
@@ -558,11 +567,23 @@ export default function MyAppointments() {
     })
   }, [appointments, filter])
 
+  const totalPages = Math.ceil(filteredAppointments.length / ITEMS_PER_PAGE) || 1;
+
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(1);
+    }
+  }, [totalPages, currentPage]);
+
+  const paginatedAppointments = useMemo(() => {
+    const start = (currentPage - 1) * ITEMS_PER_PAGE;
+    return filteredAppointments.slice(start, start + ITEMS_PER_PAGE);
+  }, [filteredAppointments, currentPage]);
+
   const options = [
     { value: 'all', label: 'All Appointments' },
     { value: 'ready_for_pickup', label: 'Ready for Pickup' },
     { value: 'confirmed', label: 'Confirmed' },
-    { value: 'pending', label: 'Pending' },
     { value: 'completed', label: 'Completed' },
     { value: 'cancelled', label: 'Cancelled' },
   ]
@@ -610,13 +631,13 @@ export default function MyAppointments() {
             <div className="flex items-center gap-2">
               <CustomDropdown 
                 value={filter} 
-                onChange={setFilter} 
+                onChange={(val) => {
+                  setFilter(val)
+                  setCurrentPage(1)
+                }} 
                 options={options} 
                 icon={<Filter size={16} className="text-gold" />}
               />
-              <span className="text-[12px] font-semibold text-text-muted ml-2">
-                {filteredAppointments.length} {filteredAppointments.length === 1 ? 'result' : 'results'}
-              </span>
             </div>
 
             {hasCancelledAppointments && (
@@ -683,7 +704,7 @@ export default function MyAppointments() {
               </div>
             ) : (
               <div className="animate-fade-up flex flex-col gap-3">
-                {filteredAppointments.map(appt => {
+                {paginatedAppointments.map(appt => {
                   const effStatus = getEffectiveStatus(appt)
                   const s = STATUS[effStatus] || STATUS.pending
                   const isReady = effStatus === 'ready_for_pickup'
@@ -718,6 +739,64 @@ export default function MyAppointments() {
                     </div>
                   )
                 })}
+
+                {/* ── Pagination Controls ── */}
+                {totalPages > 1 && (
+                  <div className="flex items-center justify-between pt-3 mt-1 border-t border-border/80 flex-wrap gap-2">
+                    <span className="text-[12px] font-semibold text-text-muted">
+                      Page <strong className="text-text-main font-bold">{currentPage}</strong> of <strong className="text-text-main font-bold">{totalPages}</strong>
+                    </span>
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                        disabled={currentPage === 1}
+                        className={`px-2.5 py-1.5 rounded-lg border text-[12px] font-semibold flex items-center gap-1 transition-all ${
+                          currentPage === 1 
+                            ? 'bg-white border-border text-text-muted/40 cursor-not-allowed opacity-60' 
+                            : 'bg-white border-border text-text-main hover:bg-slate-50 cursor-pointer shadow-2xs hover:border-maroon/30'
+                        }`}
+                      >
+                        <ChevronLeft size={13} /> Prev
+                      </button>
+
+                      <div className="flex items-center gap-1">
+                        {Array.from({ length: totalPages }, (_, i) => i + 1)
+                          .filter(num => Math.abs(num - currentPage) <= 1 || num === 1 || num === totalPages)
+                          .map((num, idx, arr) => {
+                            const prevNum = arr[idx - 1];
+                            const hasGap = prevNum && num - prevNum > 1;
+                            return (
+                              <React.Fragment key={num}>
+                                {hasGap && <span className="px-0.5 text-text-muted text-[11px]">…</span>}
+                                <button
+                                  onClick={() => setCurrentPage(num)}
+                                  className={`w-7 h-7 rounded-lg text-[12px] font-bold flex items-center justify-center transition-all cursor-pointer ${
+                                    currentPage === num
+                                      ? 'bg-maroon text-white shadow-2xs border border-maroon'
+                                      : 'bg-white text-text-main border border-border hover:bg-slate-50 hover:border-maroon/30'
+                                  }`}
+                                >
+                                  {num}
+                                </button>
+                              </React.Fragment>
+                            );
+                          })}
+                      </div>
+
+                      <button
+                        onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                        disabled={currentPage === totalPages}
+                        className={`px-2.5 py-1.5 rounded-lg border text-[12px] font-semibold flex items-center gap-1 transition-all ${
+                          currentPage === totalPages 
+                            ? 'bg-white border-border text-text-muted/40 cursor-not-allowed opacity-60' 
+                            : 'bg-white border-border text-text-main hover:bg-slate-50 cursor-pointer shadow-2xs hover:border-maroon/30'
+                        }`}
+                      >
+                        Next <ChevronRight size={13} />
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -747,6 +826,38 @@ export default function MyAppointments() {
         </div>
 
       </div>
+
+      {/* ── Mobile Details Modal ── */}
+      {isMobileViewingDetails && selectedAppt && (
+        <div className="fixed inset-0 z-1000 md:hidden flex items-end sm:items-center justify-center p-0 sm:p-4">
+          <div 
+            className="fixed inset-0 bg-black/60 transition-opacity" 
+            onClick={() => setIsMobileViewingDetails(false)} 
+          />
+          <div className="relative w-full max-w-lg bg-white rounded-t-3xl sm:rounded-3xl p-6 shadow-2xl border border-border z-10 animate-fade-up max-h-[90vh] overflow-y-auto flex flex-col">
+            <div className="flex items-center justify-between pb-3 mb-4 border-b border-border">
+              <h3 className="font-serif text-[18px] font-extrabold text-maroon m-0">Appointment Details</h3>
+              <button
+                onClick={() => setIsMobileViewingDetails(false)}
+                className="w-8 h-8 rounded-full border border-border bg-white text-text-muted hover:text-text-main flex items-center justify-center cursor-pointer transition-colors shadow-2xs"
+              >
+                <X size={16} />
+              </button>
+            </div>
+            <AppointmentDetailsContent
+              selectedAppt={selectedAppt}
+              navigate={navigate}
+              setReschedulingAppt={setReschedulingAppt}
+              setConfirmCancelId={setConfirmCancelId}
+              canReschedule={canReschedule}
+              cancelling={cancelling}
+              fmt12h={fmt12h}
+              isMobileModal={true}
+              onCloseMobileModal={() => setIsMobileViewingDetails(false)}
+            />
+          </div>
+        </div>
+      )}
 
       {reschedulingAppt && (
         <RescheduleModal

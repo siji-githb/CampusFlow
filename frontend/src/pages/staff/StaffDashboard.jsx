@@ -270,8 +270,15 @@ export default function StaffDashboard() {
     return () => { clearInterval(t); clearInterval(wt) }
   }, [loadData])
 
-  // Calculate stats
-  const activeInQueue = queue.filter(q => q.ticket.status !== 'completed').length
+  const getRequiresPresence = (steps) => {
+    const current = steps?.find(s => s.status === 'in_progress') || steps?.[0]
+    if (current?.location === 'Back Office') return false
+    return current?.requires_presence !== false // default true
+  }
+
+  // Calculate stats — only count tickets at the counter (exclude back-office processing table)
+  const activeInQueue = queue.filter(q => q.ticket.status !== 'completed' && getRequiresPresence(q.steps)).length
+  const inProcessing = queue.filter(q => q.ticket.status !== 'completed' && !getRequiresPresence(q.steps)).length
   const completedToday = queue.filter(q => q.ticket.status === 'completed').length
   
   let avgWait = 0
@@ -297,10 +304,11 @@ export default function StaffDashboard() {
   const pendingAppts = Math.max(0, (apptStats.today_appointments || 0) - (apptStats.completed_today || 0))
 
   const stats = [
-    { icon: <Users size={20} />, value: activeInQueue.toString(), label: 'Active in Queue', sub: "Waiting students", colorClass: 'text-maroon', bgClass: 'bg-maroon-light', loading: loadingQueue, delay: '0.1s' },
+    { icon: <Users size={20} />, value: activeInQueue.toString(), label: 'Active in Queue', sub: "At the counter", colorClass: 'text-gold', bgClass: 'bg-gold-light', loading: loadingQueue, delay: '0.1s' },
+    { icon: <FolderOpen size={20} />, value: inProcessing.toString(), label: 'In Processing', sub: "Processing table", colorClass: 'text-gold', bgClass: 'bg-gold-light', loading: loadingQueue, delay: '0.15s' },
     { icon: <CheckSquare size={20} />, value: completedToday.toString(), label: 'Completed Today', sub: "Fully serviced", colorClass: 'text-gold', bgClass: 'bg-gold-light', loading: loadingQueue, delay: '0.2s' },
-    { icon: <Clock size={20} />, value: `${avgWait}m`, label: 'Avg. Serving Time', sub: avgWait > 15 ? "High wait times" : "Serving efficiently", subColorClass: avgWait > 15 ? "text-danger" : "text-text-muted", colorClass: 'text-maroon', bgClass: 'bg-maroon-light', loading: loadingQueue, delay: '0.3s' },
-    { icon: <CalendarClock size={20} />, value: pendingAppts.toString(), label: 'Today\'s Appts.', sub: "Scheduled today", colorClass: 'text-gold', bgClass: 'bg-gold-light', loading: loadingQueue, delay: '0.4s' },
+    { icon: <Clock size={20} />, value: `${avgWait}m`, label: 'Avg. Serving Time', sub: avgWait > 15 ? "High wait times" : "Serving efficiently", subColorClass: avgWait > 15 ? "text-danger" : "text-text-muted", colorClass: 'text-gold', bgClass: 'bg-gold-light', loading: loadingQueue, delay: '0.25s' },
+    { icon: <CalendarClock size={20} />, value: pendingAppts.toString(), label: 'Today\'s Appts.', sub: "Scheduled today", colorClass: 'text-gold', bgClass: 'bg-gold-light', loading: loadingQueue, delay: '0.3s' },
   ]
 
   const navGroups = [
@@ -592,7 +600,7 @@ export default function StaffDashboard() {
               </div>
 
               {/* Stats Grid */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-7">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-7">
                 {stats.map((s, i) => <StatCard key={i} {...s} />)}
               </div>
 
@@ -623,11 +631,8 @@ export default function StaffDashboard() {
                     <div className="flex items-center justify-between mb-4">
                       <div>
                         <p className="text-[11px] font-bold text-gold tracking-widest uppercase m-0 mb-1">Pending</p>
-                        <h2 className="font-serif text-[18px] font-bold text-text-main m-0 flex items-center gap-2">
+                        <h2 className="font-serif text-[18px] font-bold text-text-main m-0">
                           Priority Requests
-                          {badgeStats.priorityRequests > 0 && (
-                            <span className="bg-danger text-white text-[10px] font-bold px-2 py-0.5 rounded-full font-sans shadow-sm">New</span>
-                          )}
                         </h2>
                       </div>
                       <button 

@@ -1,18 +1,23 @@
 import { useState, useEffect, useCallback } from 'react'
+import { createPortal } from 'react-dom'
 import { useAuth } from '../../context/useAuth'
 import { getDashboardStats, getAllAppointments, updateAppointmentStatus, getOfficeConfig, setDateOverride } from '../../services/adminService'
 import { rescheduleAppointment, getAvailableSlots } from '../../services/appointmentService'
-import { AlertTriangle, Inbox, Check, X as XIcon, ChevronLeft, ChevronRight, ChevronDown, Filter, Calendar, FolderOpen, CheckCircle, Clock, PieChart, Activity, Archive, Info } from 'lucide-react'
+import { 
+  AlertTriangle, Inbox, Check, X as XIcon, ChevronLeft, ChevronRight, ChevronDown, Filter, Calendar, 
+  FolderOpen, CheckCircle, Clock, PieChart, Activity, Archive, Info, Eye, CheckCircle2,
+  CalendarCheck, ShieldCheck, Users, Mail, FileText, Ticket, ExternalLink, ClipboardList
+} from 'lucide-react'
 import CustomDatePicker from '../../components/common/CustomDatePicker'
 
 // ── Status Config ──────────────────────────────────────────────────────────────
 const STATUS_CFG = {
-  confirmed:  { label: 'Confirmed',  bg: 'bg-info-light',  color: 'text-info',   border: 'border-info-border'  },
-  completed:  { label: 'Completed',  bg: 'bg-success-light', color: 'text-success',  border: 'border-success-border' },
-  cancelled:  { label: 'Cancelled',  bg: 'bg-danger-light',   color: 'text-danger',    border: 'border-danger-border'   },
-  pending:    { label: 'Scheduled',  bg: 'bg-gold-light',  color: 'text-gold',   border: 'border-gold-border'  },
-  no_show:    { label: 'No Show',    bg: 'bg-surface',    color: 'text-text-muted', border: 'border-border'   },
-  in_progress:{ label: 'Initiated',  bg: 'bg-maroon-light',color: 'text-maroon', border: 'border-maroon-border'},
+  confirmed:  { label: 'Confirmed',  bg: 'bg-blue-light',    color: 'text-blue',        border: 'border-blue-border' },
+  completed:  { label: 'Completed',  bg: 'bg-success-light', color: 'text-success',     border: 'border-success-border' },
+  cancelled:  { label: 'Cancelled',  bg: 'bg-danger-light',  color: 'text-danger',      border: 'border-danger-border' },
+  pending:    { label: 'Scheduled',  bg: 'bg-gold-light',    color: 'text-gold',        border: 'border-gold-border' },
+  no_show:    { label: 'No Show',    bg: 'bg-surface',       color: 'text-text-muted',  border: 'border-border' },
+  in_progress:{ label: 'Initiated',  bg: 'bg-maroon-light',  color: 'text-maroon',      border: 'border-maroon-border'},
 }
 
 // ── Mini Calendar ──────────────────────────────────────────────────────────────
@@ -106,8 +111,10 @@ function MiniCalendar({ selectedDate, onSelect, dateOverrides = {} }) {
 // ── Status Badge ───────────────────────────────────────────────────────────────
 const StatusBadge = ({ status }) => {
   const cfg = STATUS_CFG[status] || STATUS_CFG.pending
+  const dotColor = status === 'confirmed' ? 'bg-blue' : status === 'completed' ? 'bg-success' : status === 'cancelled' ? 'bg-danger' : status === 'pending' ? 'bg-gold' : 'bg-maroon'
   return (
-    <span className={`text-[10px] font-bold py-1 px-2.5 rounded-full border tracking-[0.04em] whitespace-nowrap ${cfg.bg} ${cfg.color} ${cfg.border}`}>
+    <span className={`text-[11px] font-bold py-1 px-3 rounded-full border tracking-[0.02em] whitespace-nowrap inline-flex items-center gap-1.5 ${cfg.bg} ${cfg.color} ${cfg.border}`}>
+      <span className={`w-1.5 h-1.5 rounded-full ${dotColor}`} />
       {cfg.label}
     </span>
   )
@@ -133,6 +140,10 @@ const RescheduleModal = ({ appt, onClose, onConfirm }) => {
   const [saving, setSaving] = useState(false)
   const [showConfirm, setShowConfirm] = useState(false)
 
+  const student = appt?.users
+  const studentName = student ? `${student.first_name || ''} ${student.last_name || ''}`.trim() || 'Student' : 'Student'
+  const txName = appt?.transaction_types?.name || appt?.transaction_type?.name || 'Transaction'
+
   const format12Hour = (timeStr) => {
     if (!timeStr) return ''
     const [hStr, mStr] = timeStr.split(':')
@@ -141,14 +152,16 @@ const RescheduleModal = ({ appt, onClose, onConfirm }) => {
     return `${h % 12 || 12}:${mStr} ${h < 12 ? 'AM' : 'PM'}`
   }
 
+  const txTypeId = appt?.transaction_type_id || appt?.transaction_types?.id
+
   useEffect(() => {
-    if (!date) return
+    if (!date || !txTypeId) return
     setLoadingSlots(true)
-    getAvailableSlots(appt.transaction_type_id, date)
+    getAvailableSlots(txTypeId, date)
       .then(res => setSlots(res.slots || []))
       .catch(() => setSlots([]))
       .finally(() => setLoadingSlots(false))
-  }, [date, appt.transaction_type_id])
+  }, [date, txTypeId])
 
   const handleSave = async () => {
     if (!date || !time) return
@@ -166,72 +179,242 @@ const RescheduleModal = ({ appt, onClose, onConfirm }) => {
   const d = new Date()
   const today = new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10)
 
+  const currentFormattedDate = appt?.appointment_date
+    ? new Date(appt.appointment_date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })
+    : '—'
+  const newFormattedDate = date
+    ? new Date(date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })
+    : ''
+
+  const morningSlots = slots.filter(s => {
+    const h = parseInt((s.time_slot || '').split(':')[0], 10)
+    return h < 12
+  })
+  const afternoonSlots = slots.filter(s => {
+    const h = parseInt((s.time_slot || '').split(':')[0], 10)
+    return h >= 12
+  })
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
-      <div className="absolute inset-0 bg-black/50" onClick={onClose} />
+    <div className="fixed inset-0 z-100 flex items-center justify-center p-4 sm:p-6">
+      <div className="fixed inset-0 bg-black/60 transition-opacity animate-fade-in backdrop-blur-xs" onClick={onClose} />
       
       {/* Main Modal */}
-      {!showConfirm && (
-        <div className="animate-fade-up relative w-150 bg-white rounded-2xl p-8 shadow-[0_4px_24px_rgba(0,0,0,0.1)]">
-          <h3 className="font-serif text-[24px] text-maroon m-0 mb-5">Reschedule Appointment</h3>
+      {!showConfirm ? (
+        <div className="animate-fade-up relative w-full max-w-xl bg-white rounded-3xl p-6 sm:p-8 shadow-[0_25px_70px_rgba(0,0,0,0.18)] border border-border z-10 custom-scrollbar max-h-[90vh] overflow-y-auto font-sans">
           
-          <div className="mb-5">
-            <label className="block text-[13px] font-semibold text-text-muted mb-2">Select New Date</label>
+          {/* Header */}
+          <div className="flex items-start justify-between mb-5 pb-4 border-b border-border">
+            <div>
+              <div className="flex items-center gap-2 mb-1.5">
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-maroon-light text-maroon text-[11px] font-extrabold uppercase tracking-wider border border-maroon-border">
+                  <Calendar size={13} /> Reschedule
+                </span>
+                <span className="text-[12px] font-bold text-text-muted">
+                  #{appt?.id ? `APPT-${appt.id.split('-')[0].toUpperCase()}` : ''}
+                </span>
+              </div>
+              <h3 className="font-serif text-[24px] font-bold text-text-main m-0 leading-tight">
+                Reschedule Appointment
+              </h3>
+            </div>
+            <button 
+              onClick={onClose} 
+              className="w-9 h-9 rounded-full bg-surface text-text-muted hover:text-text-main hover:bg-border/80 transition-all flex items-center justify-center border border-border cursor-pointer shadow-xs"
+              title="Close"
+            >
+              <XIcon size={17} />
+            </button>
+          </div>
+
+          {/* Current Appointment Summary Card */}
+          <div className="p-4 rounded-2xl bg-off-white border border-border mb-6 flex items-center justify-between gap-4 flex-wrap">
+            <div className="flex items-center gap-3">
+              <Av name={studentName} size={36} />
+              <div>
+                <div className="text-[14px] font-bold text-text-main leading-tight">{studentName}</div>
+                <div className="text-[12px] text-text-sub font-medium mt-0.5">{txName}</div>
+              </div>
+            </div>
+            <div className="text-right">
+              <span className="text-[10.5px] font-extrabold uppercase tracking-wider text-text-muted block">Current Schedule</span>
+              <span className="text-[12.5px] font-bold text-maroon block mt-0.5">
+                {currentFormattedDate} • {format12Hour(appt?.time_slot)}
+              </span>
+            </div>
+          </div>
+          
+          {/* Date Picker Section */}
+          <div className="mb-6">
+            <label className="block text-[11px] font-extrabold text-text-muted uppercase tracking-[0.08em] mb-2.5">
+              1. Select New Date
+            </label>
             <CustomDatePicker
               minDate={today}
               value={date}
               onChange={val => { setDate(val); setTime('') }}
-              placeholder="Pick a new date…"
+              placeholder="Choose a new date for appointment…"
               className="w-full"
             />
           </div>
 
+          {/* Time Slot Selection */}
           {date && (
-            <div className="mb-7">
-              <label className="block text-[13px] font-semibold text-text-muted mb-2">Select Time Slot</label>
-              {loadingSlots ? <div className="text-[14px] text-text-sub">Loading slots...</div> : (
-                <div className="grid grid-cols-3 gap-2.5 max-h-60 overflow-y-auto pr-1">
-                  {slots.length === 0 ? <div className="text-[14px] text-text-sub">No slots available</div> : slots.map(s => {
-                    const available = s.available
-                    const selected = time === s.time_slot
-                    return (
-                      <button key={s.time_slot} disabled={!available} onClick={() => setTime(s.time_slot)}
-                        className={`p-2.5 rounded-lg border font-sans text-[14px] font-semibold ${selected ? 'border-maroon bg-maroon text-white' : available ? 'border-border bg-white text-text-main cursor-pointer' : 'border-border bg-surface text-text-muted cursor-not-allowed'}`}>
-                        {format12Hour(s.time_slot)}
-                      </button>
-                    )
-                  })}
+            <div className="mb-6">
+              <div className="flex items-center justify-between mb-2.5">
+                <label className="text-[11px] font-extrabold text-text-muted uppercase tracking-[0.08em]">
+                  2. Select Time Slot
+                </label>
+                {slots.length > 0 && (
+                  <span className="text-[11.5px] font-semibold text-text-sub">
+                    {slots.filter(s => s.available).length} available
+                  </span>
+                )}
+              </div>
+
+              {loadingSlots ? (
+                <div className="p-8 text-center bg-surface/50 rounded-2xl border border-border flex items-center justify-center gap-2.5 text-[13px] font-medium text-text-sub">
+                  <div className="w-4 h-4 border-2 border-maroon border-t-transparent rounded-full animate-spin" />
+                  Loading available slots...
+                </div>
+              ) : slots.length === 0 ? (
+                <div className="p-6 text-center bg-surface/40 rounded-2xl border border-border text-[13px] text-text-muted font-medium">
+                  No slots available for this date. Please pick another date.
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {/* Morning Slots */}
+                  {morningSlots.length > 0 && (
+                    <div>
+                      <span className="text-[11px] font-bold text-text-muted uppercase tracking-wider block mb-2">
+                        Morning
+                      </span>
+                      <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+                        {morningSlots.map(s => {
+                          const available = s.available
+                          const selected = time === s.time_slot
+                          return (
+                            <button
+                              key={s.time_slot}
+                              disabled={!available}
+                              onClick={() => setTime(s.time_slot)}
+                              className={`py-2.5 px-3 rounded-xl border text-[13px] font-bold font-sans transition-all duration-150 flex items-center justify-center ${
+                                selected
+                                  ? 'border-maroon bg-maroon text-white shadow-sm scale-102'
+                                  : available
+                                  ? 'border-border bg-white text-text-main hover:border-maroon-border hover:bg-maroon-light hover:text-maroon cursor-pointer shadow-2xs'
+                                  : 'border-border/60 bg-surface/60 text-text-muted/50 cursor-not-allowed line-through'
+                              }`}
+                            >
+                              {format12Hour(s.time_slot)}
+                            </button>
+                          )
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Afternoon Slots */}
+                  {afternoonSlots.length > 0 && (
+                    <div>
+                      <span className="text-[11px] font-bold text-text-muted uppercase tracking-wider block mb-2">
+                        Afternoon
+                      </span>
+                      <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+                        {afternoonSlots.map(s => {
+                          const available = s.available
+                          const selected = time === s.time_slot
+                          return (
+                            <button
+                              key={s.time_slot}
+                              disabled={!available}
+                              onClick={() => setTime(s.time_slot)}
+                              className={`py-2.5 px-3 rounded-xl border text-[13px] font-bold font-sans transition-all duration-150 flex items-center justify-center ${
+                                selected
+                                  ? 'border-maroon bg-maroon text-white shadow-sm scale-102'
+                                  : available
+                                  ? 'border-border bg-white text-text-main hover:border-maroon-border hover:bg-maroon-light hover:text-maroon cursor-pointer shadow-2xs'
+                                  : 'border-border/60 bg-surface/60 text-text-muted/50 cursor-not-allowed line-through'
+                              }`}
+                            >
+                              {format12Hour(s.time_slot)}
+                            </button>
+                          )
+                        })}
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
           )}
 
-          <div className="flex gap-3 justify-end">
-            <button onClick={onClose} className="py-2.5 px-5 rounded-lg border border-border bg-white text-text-main cursor-pointer font-sans font-semibold">Cancel</button>
-            <button onClick={() => setShowConfirm(true)} disabled={!date || !time} className={`py-2.5 px-5 rounded-lg border-none bg-maroon text-white font-sans font-semibold ${(!date || !time) ? 'cursor-not-allowed opacity-70' : 'cursor-pointer'}`}>
-              Next
+          {/* Action Footer */}
+          <div className="pt-4 border-t border-border flex gap-3 justify-end items-center">
+            <button 
+              onClick={onClose} 
+              className="py-2.5 px-5 rounded-xl border border-border bg-white text-text-main text-[13px] font-bold cursor-pointer font-sans hover:bg-surface transition-colors shadow-2xs"
+            >
+              Cancel
+            </button>
+            <button 
+              onClick={() => setShowConfirm(true)} 
+              disabled={!date || !time} 
+              className={`py-2.5 px-6 rounded-xl border-none font-sans text-[13px] font-bold transition-all ${
+                (!date || !time) 
+                  ? 'bg-maroon/40 text-white cursor-not-allowed' 
+                  : 'bg-maroon text-white cursor-pointer hover:bg-maroon-dark shadow-sm active:scale-98'
+              }`}
+            >
+              Continue to Confirm
             </button>
           </div>
         </div>
-      )}
-
-      {/* Confirmation Modal */}
-      {showConfirm && (
-        <div className="animate-fade-up relative w-100 bg-white rounded-2xl p-8 shadow-[0_4px_24px_rgba(0,0,0,0.1)] text-center">
-          <div className="w-12 h-12 rounded-full bg-maroon-light text-maroon flex items-center justify-center mx-auto mb-4">
-            <AlertTriangle size={24} />
+      ) : (
+        /* Confirmation Modal */
+        <div className="animate-fade-up relative w-full max-w-md bg-white rounded-3xl p-7 sm:p-8 shadow-[0_25px_70px_rgba(0,0,0,0.18)] border border-border z-10 font-sans text-center">
+          <div className="w-14 h-14 rounded-2xl bg-maroon-light text-maroon flex items-center justify-center mx-auto mb-4 border border-maroon-border shadow-xs">
+            <CalendarCheck size={26} />
           </div>
-          <h3 className="font-serif text-[20px] text-text-main m-0 mb-3">Confirm Reschedule</h3>
-          <p className="text-[14px] text-text-sub m-0 mb-6 leading-relaxed">
-            You are about to reschedule this appointment to <strong>{new Date(date + "T00:00:00").toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</strong> at <strong>{format12Hour(time)}</strong>. Do you want to proceed?
+          
+          <h3 className="font-serif text-[22px] font-bold text-text-main m-0 mb-1.5">
+            Confirm Reschedule
+          </h3>
+          <p className="text-[13px] text-text-sub m-0 mb-5 leading-relaxed">
+            Please review the updated appointment schedule for <strong>{studentName}</strong>.
           </p>
 
+          {/* Comparison Card */}
+          <div className="p-4 rounded-2xl bg-off-white border border-border text-left mb-6 space-y-3">
+            <div className="flex justify-between items-center text-[12px]">
+              <span className="text-text-muted font-bold uppercase tracking-wider">Previous:</span>
+              <span className="text-text-sub font-semibold line-through">
+                {currentFormattedDate} • {format12Hour(appt?.time_slot)}
+              </span>
+            </div>
+            <div className="h-px bg-border w-full" />
+            <div className="flex justify-between items-center text-[13px]">
+              <span className="text-maroon font-bold uppercase tracking-wider">New Schedule:</span>
+              <span className="text-maroon font-extrabold">
+                {newFormattedDate} • {format12Hour(time)}
+              </span>
+            </div>
+          </div>
+
           <div className="flex gap-3 justify-center">
-            <button onClick={() => setShowConfirm(false)} disabled={saving} className={`py-2.5 px-5 rounded-lg border border-border bg-white text-text-main font-sans font-semibold flex-1 ${saving ? 'cursor-not-allowed opacity-70' : 'cursor-pointer'}`}>
+            <button 
+              onClick={() => setShowConfirm(false)} 
+              disabled={saving} 
+              className={`py-2.5 px-5 rounded-xl border border-border bg-white text-text-main font-sans font-bold text-[13px] flex-1 ${saving ? 'cursor-not-allowed opacity-70' : 'cursor-pointer hover:bg-surface'}`}
+            >
               Back
             </button>
-            <button onClick={handleSave} disabled={saving} className={`py-2.5 px-5 rounded-lg border-none bg-maroon text-white font-sans font-semibold flex-1 ${saving ? 'cursor-not-allowed opacity-70' : 'cursor-pointer'}`}>
-              {saving ? 'Saving...' : 'Confirm'}
+            <button 
+              onClick={handleSave} 
+              disabled={saving} 
+              className={`py-2.5 px-6 rounded-xl border-none bg-maroon text-white font-sans font-bold text-[13px] flex-1 shadow-sm transition-colors ${saving ? 'cursor-not-allowed opacity-70' : 'cursor-pointer hover:bg-maroon-dark'}`}
+            >
+              {saving ? 'Saving...' : 'Confirm Reschedule'}
             </button>
           </div>
         </div>
@@ -334,6 +517,7 @@ export default function AdminAppointmentsPage() {
   const [statusFilter, setStatusFilter] = useState('all')
   const [page, setPage]               = useState(1)
   const [rescheduleTarget, setRescheduleTarget] = useState(null)
+  const [viewDetailsModal, setViewDetailsModal] = useState(null)
   
   const [dateOverrides, setDateOverrides] = useState({})
   const [overrideModal, setOverrideModal] = useState({ isOpen: false, type: null })
@@ -509,13 +693,13 @@ export default function AdminAppointmentsPage() {
       <div className="grid grid-cols-4 gap-4 mb-7">
         {[
           { label: "Today's Total", value: stats?.today?.total ?? 0, icon: <Calendar size={18} />, bg: 'bg-maroon-light', fg: 'text-maroon', sub: 'Scheduled' },
-          { label: 'Active Queue', value: stats?.active_queue ?? 0, icon: <Activity size={18} />, bg: 'bg-gold-light', fg: 'text-gold', sub: 'In progress' },
-          { label: 'Completed', value: stats?.today?.completed ?? 0, icon: <CheckCircle size={18} />, bg: 'bg-success-light', fg: 'text-success', sub: 'Today' },
+          { label: 'Completed Today', value: stats?.today?.completed ?? 0, icon: <CheckCircle2 size={18} />, bg: 'bg-gold-light', fg: 'text-gold', sub: 'Today' },
+          { label: 'Total Completed', value: stats?.total_completed ?? stats?.today?.completed ?? 0, icon: <CheckCircle size={18} />, bg: 'bg-maroon-light', fg: 'text-maroon', sub: 'System-wide' },
           { label: 'Completion Rate', value: (() => {
               const total = stats?.today?.total || 0;
               const comp  = stats?.today?.completed || 0;
               return total > 0 ? `${Math.round((comp / total) * 100)}%` : '0%';
-            })(), icon: <PieChart size={18} />, bg: 'bg-info-light', fg: 'text-info', sub: 'Of total scheduled' },
+            })(), icon: <PieChart size={18} />, bg: 'bg-gold-light', fg: 'text-gold', sub: 'Of total scheduled' },
         ].map((c, i) => (
           <div key={i} className="animate-fade-up rounded-2xl p-[18px_20px] bg-white border border-border shadow-[0_1px_4px_rgba(0,0,0,0.04)] relative overflow-hidden" style={{ animationDelay: `${i * 0.1}s` }}>
             <div className="flex items-start justify-between mb-3">
@@ -621,7 +805,7 @@ export default function AdminAppointmentsPage() {
           {/* Table */}
           <div className="bg-white rounded-2xl border border-border overflow-hidden shadow-sm">
             {/* Header */}
-            <div className="grid grid-cols-[100px_1.5fr_1.5fr_120px_180px] p-[14px_24px] bg-off-white border-b border-border">
+            <div className="grid grid-cols-[100px_1.4fr_1.4fr_120px_175px] p-[14px_24px] bg-off-white border-b border-border">
               {['Time', 'Student', 'Transaction', 'Status', 'Action'].map(h => (
                 <span key={h} className="text-[11px] font-bold text-text-muted uppercase tracking-[0.08em]">{h}</span>
               ))}
@@ -630,7 +814,7 @@ export default function AdminAppointmentsPage() {
             {/* Rows */}
             {apptLoading ? (
               [1, 2, 3, 4, 5].map((n, idx) => (
-                <div key={n} className={`grid grid-cols-[100px_1.5fr_1.5fr_120px_180px] p-[16px_24px] items-center ${idx === 4 ? 'border-none' : 'border-b border-border/60'} bg-white`}>
+                <div key={n} className={`grid grid-cols-[100px_1.4fr_1.4fr_120px_175px] p-[16px_24px] items-center ${idx === 4 ? 'border-none' : 'border-b border-border/60'} bg-white`}>
                   <div className="animate-pulse h-6 w-12.5 rounded bg-border" />
                   <div className="flex items-center gap-2.5">
                     <div className="animate-pulse w-8.5 h-8.5 rounded-full bg-border" />
@@ -654,13 +838,13 @@ export default function AdminAppointmentsPage() {
             ) : (
               paginated.map((appt, idx) => {
                 const student = appt.users
-                const name    = student ? `${student.first_name} ${student.last_name}` : 'Unknown Student'
+                const name    = student ? `${student.first_name || ''} ${student.last_name || ''}`.trim() || 'Unknown Student' : 'Unknown Student'
                 const txName  = appt.transaction_types?.name || appt.transaction_type?.name || 'Transaction'
                 const isLast  = idx === paginated.length - 1
                 const time    = formatTime(appt.time_slot)
 
                 return (
-                  <div key={appt.id} className={`group grid grid-cols-[100px_1.5fr_1.5fr_120px_180px] p-[16px_24px] items-center transition-all duration-200 hover:bg-surface border-l-2 border-l-transparent ${isLast ? 'border-none' : 'border-b border-border'} bg-white`}>
+                  <div key={appt.id} className={`group grid grid-cols-[100px_1.4fr_1.4fr_120px_175px] p-[16px_24px] items-center transition-all duration-200 hover:bg-surface border-l-2 border-l-transparent ${isLast ? 'border-none' : 'border-b border-border'} bg-white`}>
                     {/* Time */}
                     <div>
                       <div className="font-sans text-[13.5px] font-bold text-text-main">{time}</div>
@@ -686,7 +870,7 @@ export default function AdminAppointmentsPage() {
                       {appt.transaction_types?.required_documents?.length > 0 && (
                         <div className="flex flex-wrap gap-1 mt-1">
                           {appt.transaction_types.required_documents.slice(0, 2).map((doc, i) => (
-                            <span key={i} className="text-[9.5px] font-medium text-text-muted bg-off-white px-1.5 py-px rounded-full whitespace-nowrap">{doc}</span>
+                            <span key={i} className="text-[9.5px] font-medium text-text-muted bg-off-white px-1.5 py-px rounded-full whitespace-nowrap">{typeof doc === 'string' ? doc : doc.name}</span>
                           ))}
                           {appt.transaction_types.required_documents.length > 2 && (
                             <span className="text-[9.5px] font-medium text-text-muted">+{appt.transaction_types.required_documents.length - 2} more</span>
@@ -701,28 +885,25 @@ export default function AdminAppointmentsPage() {
                     </div>
 
                     {/* Action */}
-                    <div className="flex gap-1.5 flex-wrap">
+                    <div className="flex gap-2 flex-wrap items-center">
+                      <button 
+                        onClick={() => setViewDetailsModal(appt)} 
+                        className="py-1.5 px-3 rounded-lg border border-border bg-white text-text-main text-[11.5px] font-bold cursor-pointer font-sans hover:border-maroon-border hover:text-maroon hover:bg-surface transition-all shadow-2xs"
+                        title="View Details"
+                      >
+                        View Details
+                      </button>
+
                       {appt.status === 'pending' && (
-                        <button onClick={() => handleStatusChange(appt.id, 'confirmed')} className="py-1.5 px-3 rounded-lg border-none bg-maroon-light text-maroon text-[11px] font-bold cursor-pointer font-sans hover:bg-maroon hover:text-white transition-colors">
+                        <button onClick={() => handleStatusChange(appt.id, 'confirmed')} className="py-1.5 px-2.5 rounded-lg border-none bg-maroon-light text-maroon text-[11px] font-bold cursor-pointer font-sans hover:bg-maroon hover:text-white transition-colors">
                           Confirm
                         </button>
                       )}
 
                       {(appt.status === 'pending' || appt.status === 'confirmed') && (
-                        <button onClick={() => setRescheduleTarget(appt)} className="py-1.5 px-3 rounded-lg border border-border bg-white text-text-main text-[11px] font-bold cursor-pointer font-sans hover:bg-surface transition-colors shadow-sm">
+                        <button onClick={() => setRescheduleTarget(appt)} className="py-1.5 px-2.5 rounded-lg border border-border bg-white text-text-main text-[11px] font-bold cursor-pointer font-sans hover:bg-surface transition-colors shadow-sm">
                           Reschedule
                         </button>
-                      )}
-                      {(appt.status === 'pending' || appt.status === 'confirmed') && (
-                        <button onClick={() => handleStatusChange(appt.id, 'cancelled')} className="py-1.5 px-3 rounded-lg border-none bg-danger-light text-danger text-[11px] font-bold cursor-pointer font-sans hover:bg-danger hover:text-white transition-colors">
-                          Cancel
-                        </button>
-                      )}
-                      {appt.status === 'completed' && (
-                        <div className="w-7 h-7 rounded-full bg-success-light text-success flex items-center justify-center border border-success-border"><Check size={16} strokeWidth={3} /></div>
-                      )}
-                      {appt.status === 'cancelled' && (
-                        <div className="w-7 h-7 rounded-full bg-danger-light text-danger flex items-center justify-center border border-danger-border"><XIcon size={16} strokeWidth={3} /></div>
                       )}
                     </div>
                   </div>
@@ -739,7 +920,7 @@ export default function AdminAppointmentsPage() {
                 <div className="flex gap-1 items-center">
                   <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}
                     className={`py-1.5 px-2.5 rounded-md border border-border bg-white text-[12px] font-semibold font-sans ${page === 1 ? 'cursor-not-allowed text-text-muted' : 'cursor-pointer text-text-main'}`}>
-                    Prev
+                  Prev
                   </button>
                   {Array.from({ length: totalPages }, (_, i) => (
                     <button key={i} onClick={() => setPage(i + 1)} className={`w-7.5 h-7.5 rounded-md text-[12px] font-semibold cursor-pointer font-sans border ${page === i + 1 ? 'border-maroon bg-maroon text-white' : 'border-border bg-white text-text-main'}`}>
@@ -787,6 +968,360 @@ export default function AdminAppointmentsPage() {
           }
         }}
       />
+
+      {/* ── View Details Modal ── */}
+      {viewDetailsModal && createPortal((() => {
+        const student = viewDetailsModal.users || {}
+        const name = student ? `${student.first_name || ''} ${student.last_name || ''}`.trim() || 'Unknown Student' : 'Unknown Student'
+        const studentId = student?.student_id || 'N/A'
+        const email = student?.email || ''
+        const academicInfo = student?.course || ''
+        const purposeText = viewDetailsModal.purpose || viewDetailsModal.notes || ''
+        const mediaUrl = viewDetailsModal.media_url || viewDetailsModal.attachment_url || viewDetailsModal.file_url || null
+
+        const isCompleted = viewDetailsModal.status === 'completed'
+        const isCancelled = viewDetailsModal.status === 'cancelled'
+        const isPending = viewDetailsModal.status === 'pending'
+        const isConfirmed = viewDetailsModal.status === 'confirmed'
+
+        const isPriority = viewDetailsModal.priority_class && viewDetailsModal.priority_class !== 'regular'
+        const pClassLabel = viewDetailsModal.priority_class?.toUpperCase() || 'REGULAR'
+
+        const queueTicket = viewDetailsModal.queue_tickets?.[0] || viewDetailsModal.queue_tickets || null
+        const txType = viewDetailsModal.transaction_types || viewDetailsModal.transaction_type || {}
+        const processingSteps = txType?.processing_steps || []
+        const requiredDocs = txType?.required_documents || []
+
+        const formattedDate = new Date(viewDetailsModal.appointment_date + 'T00:00:00').toLocaleDateString('en-US', {
+          weekday: 'short',
+          month: 'short',
+          day: 'numeric',
+          year: 'numeric'
+        })
+        const timeFormatted = formatTime(viewDetailsModal.time_slot)
+        const refId = `APPT-${viewDetailsModal.id ? viewDetailsModal.id.split('-')[0].toUpperCase() : '000'}`
+
+        return (
+          <div className="fixed inset-0 z-1000 flex items-center justify-center p-4 sm:p-6 md:p-8">
+            <div className="fixed inset-0 bg-black/60 transition-opacity animate-fade-in" onClick={() => setViewDetailsModal(null)} />
+            
+            <div className="animate-fade-up relative w-full max-w-4xl bg-white text-text-main rounded-3xl p-6 sm:p-8 md:p-10 max-h-[90vh] overflow-y-auto shadow-[0_25px_80px_rgba(0,0,0,0.18)] border border-border z-10 custom-scrollbar font-sans">
+              
+              {/* Header */}
+              <div className="flex justify-between items-start mb-6 pb-5 border-b border-border gap-4">
+                <div>
+                  <div className="flex items-center gap-2 mb-2 flex-wrap">
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-gold-light text-gold text-[11px] font-extrabold uppercase tracking-wider border border-gold-border">
+                      <CalendarCheck size={13} /> Appointment Details
+                    </span>
+                    {isPriority && (
+                      <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-maroon-light text-maroon text-[11px] font-extrabold uppercase tracking-wider border border-maroon-border">
+                        <ShieldCheck size={13} /> {pClassLabel} Priority
+                      </span>
+                    )}
+                  </div>
+                  
+                  <div className="flex items-baseline gap-4 flex-wrap">
+                    <h2 className="font-serif text-[28px] sm:text-[34px] font-extrabold text-maroon m-0 leading-none tracking-tight">
+                      {refId}
+                    </h2>
+                    <StatusBadge status={viewDetailsModal.status} />
+                  </div>
+                </div>
+
+                <button 
+                  onClick={() => setViewDetailsModal(null)} 
+                  className="w-10 h-10 rounded-full bg-surface text-text-muted hover:bg-border/80 hover:text-text-main transition-all flex items-center justify-center border border-border cursor-pointer shrink-0 shadow-xs hover:scale-105 active:scale-95"
+                  title="Close"
+                >
+                  <XIcon size={18} />
+                </button>
+              </div>
+
+              {/* Info Cards Grid (Student Info + Requested Document Details) */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-5">
+                {/* Student Details Card */}
+                <div className="p-5 sm:p-6 bg-white rounded-2xl border border-border shadow-sm flex items-start gap-4">
+                  <div className="w-12 h-12 rounded-xl bg-maroon-light text-maroon flex items-center justify-center shrink-0 border border-maroon-border font-bold text-[18px]">
+                    <Users size={22} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <span className="text-[10.5px] text-text-muted uppercase font-extrabold tracking-wider block mb-1">
+                      Student Information
+                    </span>
+                    <div className="text-[16px] font-bold text-text-main leading-snug truncate mb-2">
+                      {name}
+                    </div>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-[12px] text-text-main font-mono font-bold bg-surface px-2.5 py-1 rounded-lg border border-border">
+                        ID: {studentId}
+                      </span>
+                      {isPriority && (
+                        <span className="text-[11.5px] font-bold uppercase px-2.5 py-1 rounded-lg border bg-maroon-light text-maroon border-maroon-border">
+                          {pClassLabel}
+                        </span>
+                      )}
+                      {email && (
+                        <span className="text-[12px] text-text-sub truncate max-w-64 font-medium flex items-center gap-1">
+                          <Mail size={12} className="text-text-muted shrink-0" />
+                          <span className="text-text-main truncate">{email}</span>
+                        </span>
+                      )}
+                      {academicInfo && (
+                        <span className="text-[12px] text-text-muted font-medium">
+                          • {academicInfo}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Requested Document Details Card */}
+                <div className="p-5 sm:p-6 bg-white rounded-2xl border border-border shadow-sm flex items-start gap-4">
+                  <div className="w-12 h-12 rounded-xl bg-gold-light text-gold flex items-center justify-center shrink-0 border border-gold-border">
+                    <FileText size={22} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <span className="text-[10.5px] text-text-muted uppercase font-extrabold tracking-wider block mb-1">
+                      Requested Document
+                    </span>
+                    <div className="text-[16px] font-bold text-text-main leading-snug mb-1.5">
+                      {txType?.name || 'Document Transaction'}
+                    </div>
+                    <div className="text-[12px] text-text-sub flex items-center gap-1.5 font-medium mb-1">
+                      <Calendar size={13} className="text-gold shrink-0" />
+                      <span>
+                        {formattedDate} • {timeFormatted}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Queue & Release Cards Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-5">
+                {/* Live Queue Ticket Status Card */}
+                <div className="p-5 sm:p-6 bg-white rounded-2xl border border-border shadow-sm flex items-start gap-4">
+                  <div className="w-12 h-12 rounded-xl bg-maroon-light text-maroon flex items-center justify-center shrink-0 border border-maroon-border">
+                    <Ticket size={22} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <span className="text-[10.5px] text-text-muted uppercase font-extrabold tracking-wider block mb-1">
+                      Live Queue Status
+                    </span>
+                    {queueTicket ? (
+                      <>
+                        <div className="text-[18px] font-extrabold text-maroon leading-tight">
+                          {queueTicket.queue_number}
+                        </div>
+                        <span className="text-[12px] text-text-sub font-medium mt-1 inline-block capitalize">
+                          Status: <strong className="text-text-main">{queueTicket.status === 'in_progress' ? 'Serving Now' : (queueTicket.status || 'Active').replace(/_/g, ' ')}</strong>
+                          {queueTicket.current_step ? ` (Step ${queueTicket.current_step}/${queueTicket.total_steps || 3})` : ''}
+                        </span>
+                      </>
+                    ) : (
+                      <>
+                        <div className="text-[15px] font-bold text-text-muted leading-tight">
+                          Not Yet Activated
+                        </div>
+                        <span className="text-[12px] text-text-muted font-medium mt-1 inline-block">
+                          Queue ticket activates upon student arrival
+                        </span>
+                      </>
+                    )}
+                  </div>
+                </div>
+
+                {/* Document Release Schedule Card */}
+                <div className="p-5 sm:p-6 bg-white rounded-2xl border border-border shadow-sm flex items-start gap-4">
+                  <div className="w-12 h-12 rounded-xl bg-blue-light text-blue flex items-center justify-center shrink-0 border border-blue-border">
+                    <FolderOpen size={22} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <span className="text-[10.5px] text-text-muted uppercase font-extrabold tracking-wider block mb-1">
+                      Release Schedule
+                    </span>
+                    {viewDetailsModal.release_date ? (
+                      <>
+                        <div className="text-[16px] font-bold text-blue leading-snug">
+                          {new Date(viewDetailsModal.release_date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                        </div>
+                        <span className="text-[12px] text-text-muted font-medium mt-1 inline-block">
+                          Scheduled for student pickup
+                        </span>
+                      </>
+                    ) : isCompleted ? (
+                      <>
+                        <div className="text-[15px] font-bold text-success leading-snug">
+                          Document Released
+                        </div>
+                        <span className="text-[12px] text-text-muted font-medium mt-1 inline-block">
+                          Transaction fully completed
+                        </span>
+                      </>
+                    ) : (
+                      <>
+                        <div className="text-[15px] font-bold text-text-main leading-snug">
+                          To Be Scheduled
+                        </div>
+                        <span className="text-[12px] text-text-muted font-medium mt-1 inline-block">
+                          Set by staff upon document preparation
+                        </span>
+                      </>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Detailed Document Requirements & Student Remarks Banner */}
+              {(requiredDocs.length > 0 || purposeText || mediaUrl) && (
+                <div className="mb-5 p-5 bg-white rounded-2xl border border-border shadow-sm flex flex-col gap-4">
+                  {requiredDocs.length > 0 && (
+                    <div>
+                      <span className="text-[10.5px] font-extrabold text-text-muted uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                        <ClipboardList size={14} className="text-gold" /> Required Document Attachments
+                      </span>
+                      <div className="flex flex-wrap gap-2">
+                        {requiredDocs.map((doc, i) => (
+                          <span 
+                            key={i} 
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-surface/60 border border-border text-[12px] font-semibold text-text-main shadow-2xs"
+                          >
+                            <CheckCircle2 size={13} className="text-success shrink-0" />
+                            <span>{typeof doc === 'string' ? doc : doc.name}</span>
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {purposeText && (
+                    <div className={requiredDocs.length > 0 ? "pt-3.5 border-t border-border" : ""}>
+                      <span className="text-[10.5px] font-extrabold text-text-muted uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
+                        <Info size={14} className="text-maroon" /> Student Remarks / Purpose
+                      </span>
+                      <p className="text-[13px] text-text-main font-medium m-0 whitespace-pre-wrap leading-relaxed">
+                        {purposeText}
+                      </p>
+                    </div>
+                  )}
+
+                  {mediaUrl && (
+                    <div className={(requiredDocs.length > 0 || purposeText) ? "pt-3.5 border-t border-border" : ""}>
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-[10.5px] font-extrabold text-text-muted uppercase tracking-wider flex items-center gap-1.5">
+                          <Info size={14} className="text-maroon" /> Attached Document Media
+                        </span>
+                        <a 
+                          href={mediaUrl} 
+                          target="_blank" 
+                          rel="noreferrer" 
+                          className="text-[11px] font-bold text-maroon hover:underline flex items-center gap-1"
+                        >
+                          Open Full Size <ExternalLink size={11} />
+                        </a>
+                      </div>
+                      <a href={mediaUrl} target="_blank" rel="noreferrer" className="block rounded-xl overflow-hidden border border-border max-h-56 bg-white shadow-2xs hover:opacity-95 transition-opacity">
+                        <img src={mediaUrl} alt="Supporting Attachment" className="w-full h-full object-contain block max-h-56 bg-white" />
+                      </a>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Workflow Processing Steps Roadmap */}
+              {processingSteps && processingSteps.length > 0 && (
+                <div className="mb-5 p-5 bg-white rounded-2xl border border-border shadow-sm">
+                  <h3 className="text-[11px] font-extrabold text-text-muted uppercase tracking-[0.08em] flex items-center gap-1.5 m-0 mb-3">
+                    <Clock size={14} className="text-maroon" /> Workflow Processing Steps
+                  </h3>
+                  <div className="space-y-2.5">
+                    {processingSteps.map((step, idx) => {
+                      const stepNumber = idx + 1
+                      const stepName = typeof step === 'string' ? step : step.name || step.step_name || `Step ${stepNumber}`
+                      const location = typeof step === 'object' ? step.location : null
+                      const estMins = typeof step === 'object' && step.estimated_minutes ? `~${step.estimated_minutes} min` : null
+
+                      return (
+                        <div key={idx} className="flex items-center justify-between p-3 rounded-xl bg-white border border-border hover:border-maroon-border transition-colors shadow-2xs gap-3">
+                          <div className="flex items-center gap-3 min-w-0">
+                            <div className="w-6 h-6 rounded-full bg-maroon text-white flex items-center justify-center text-[11px] font-extrabold shrink-0 shadow-2xs">
+                              {stepNumber}
+                            </div>
+                            <span className="text-[13px] font-bold text-text-main truncate">
+                              {stepName}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-2 shrink-0">
+                            {estMins && (
+                              <span className="text-[11px] font-medium text-text-muted px-2 py-0.5 rounded-md bg-white border border-border">
+                                {estMins}
+                              </span>
+                            )}
+                            {location && (
+                              <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-maroon-light text-maroon border border-maroon-border/40">
+                                {location}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* Modal Footer with Actions */}
+              <div className="pt-4 border-t border-border flex items-center justify-between gap-3 flex-wrap">
+                <div className="flex items-center gap-2 flex-wrap">
+                  {isPending && (
+                    <button 
+                      onClick={async () => {
+                        await handleStatusChange(viewDetailsModal.id, 'confirmed')
+                        setViewDetailsModal(prev => prev ? { ...prev, status: 'confirmed' } : null)
+                      }}
+                      className="px-4 py-2.5 rounded-xl bg-maroon text-white text-[13px] font-bold cursor-pointer hover:bg-maroon-dark transition-colors shadow-sm"
+                    >
+                      Confirm Appointment
+                    </button>
+                  )}
+                  {(isPending || isConfirmed) && (
+                    <button 
+                      onClick={() => {
+                        const target = viewDetailsModal
+                        setViewDetailsModal(null)
+                        setRescheduleTarget(target)
+                      }}
+                      className="px-4 py-2.5 rounded-xl border border-border bg-white text-text-main text-[13px] font-bold cursor-pointer hover:bg-surface transition-colors shadow-sm"
+                    >
+                      Reschedule
+                    </button>
+                  )}
+                  {(isPending || isConfirmed) && (
+                    <button 
+                      onClick={async () => {
+                        await handleStatusChange(viewDetailsModal.id, 'cancelled')
+                        setViewDetailsModal(prev => prev ? { ...prev, status: 'cancelled' } : null)
+                      }}
+                      className="px-4 py-2.5 rounded-xl bg-danger-light text-danger text-[13px] font-bold cursor-pointer hover:bg-danger hover:text-white transition-colors"
+                    >
+                      Cancel Appointment
+                    </button>
+                  )}
+                </div>
+
+                <button 
+                  onClick={() => setViewDetailsModal(null)} 
+                  className="px-6 py-2.5 rounded-xl bg-surface border border-border text-text-main text-[13px] font-bold cursor-pointer hover:bg-border/60 transition-colors ml-auto"
+                >
+                  Close
+                </button>
+              </div>
+
+            </div>
+          </div>
+        )
+      })(), document.body)}
     </div>
   )
 }

@@ -3,7 +3,9 @@ import { getAvailableSlots, rescheduleAppointment } from '../services/appointmen
 import { HelpCircle, CloudSun, Sun, Info, AlertTriangle, Users } from 'lucide-react'
 import { CalendarWidget, SlotBtn } from './CalendarWidget'
 
-export default function RescheduleModal({ token, appointment, onClose, onSuccess }) {
+export default function RescheduleModal({ token, appointment, appt, onClose, onSuccess, onConfirm }) {
+  const currentAppt = appointment || appt || {}
+  const txTypeId = currentAppt.transaction_type_id || currentAppt.transaction_types?.id
   const [selectedDate, setSelectedDate] = useState('')
   const [slotsData, setSlotsData] = useState(null)
   const [selectedSlot, setSelectedSlot] = useState('')
@@ -11,21 +13,27 @@ export default function RescheduleModal({ token, appointment, onClose, onSuccess
   const [error, setError] = useState('')
   const [confirmingReschedule, setConfirmingReschedule] = useState(false)
 
+  const fmtLocal = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+
   const todayDate = new Date()
-  const minDate = todayDate.toISOString().split('T')[0]
-  const maxDateObj = new Date(); maxDateObj.setDate(maxDateObj.getDate() + 30)
-  const maxDate = maxDateObj.toISOString().split('T')[0]
+  const minDateObj = new Date(todayDate)
+  minDateObj.setDate(minDateObj.getDate() + 1) // Reschedule requires at least 1 day in advance (tomorrow)
+  const minDate = fmtLocal(minDateObj)
+
+  const maxDateObj = new Date(todayDate)
+  maxDateObj.setDate(maxDateObj.getDate() + 30)
+  const maxDate = fmtLocal(maxDateObj)
 
   useEffect(() => {
-    if (!selectedDate) return
+    if (!selectedDate || !txTypeId) return
     const fetchSlots = async () => {
       setLoading(true); setError(''); setSlotsData(null); setSelectedSlot('')
-      try { setSlotsData(await getAvailableSlots(appointment.transaction_type_id, selectedDate)) }
+      try { setSlotsData(await getAvailableSlots(txTypeId, selectedDate)) }
       catch (e) { setError(e.message) }
       finally { setLoading(false) }
     }
     fetchSlots()
-  }, [selectedDate, appointment.transaction_type_id])
+  }, [selectedDate, txTypeId])
 
   const morningSlots = useMemo(() => {
     return slotsData?.slots.filter(s => {
@@ -42,6 +50,7 @@ export default function RescheduleModal({ token, appointment, onClose, onSuccess
   }, [slotsData])
 
   const fmt12h = (t) => {
+    if (!t) return ''
     const [hStr, mStr] = t.split(':')
     const h = parseInt(hStr, 10)
     const suffix = h < 12 ? 'AM' : 'PM'
@@ -57,20 +66,29 @@ export default function RescheduleModal({ token, appointment, onClose, onSuccess
   const handleConfirmExecute = async () => {
     setLoading(true); setError('');
     try {
-      await rescheduleAppointment(token, appointment.id, selectedDate, selectedSlot, appointment.notes)
-      onSuccess()
+      if (onConfirm) {
+        await onConfirm(currentAppt.id, selectedDate, selectedSlot)
+      } else {
+        await rescheduleAppointment(token, currentAppt.id, selectedDate, selectedSlot, currentAppt.notes)
+      }
+      if (onSuccess) onSuccess()
     } catch (e) { setError(e.message); setLoading(false); setConfirmingReschedule(false); }
   }
 
   return (
     <div className="fixed inset-0 z-100 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
+      <div className="absolute inset-0 bg-black/60" onClick={onClose} />
       
-      <div className="animate-fade-up relative w-full max-w-140 bg-white rounded-3xl max-h-[90vh] overflow-y-auto shadow-2xl flex flex-col">
+      <div className="animate-fade-up relative w-full max-w-140 bg-white rounded-3xl max-h-[90vh] overflow-y-auto shadow-2xl flex flex-col z-10 border border-border">
         {/* Sticky Header */}
-        <div className="sticky top-0 z-10 bg-white/90 backdrop-blur-md px-8 py-6 border-b border-border flex justify-between items-center">
-          <h2 className="font-serif text-[24px] font-bold m-0 text-maroon">Reschedule Appointment</h2>
-          <button onClick={onClose} className="bg-transparent border-none text-[28px] cursor-pointer text-text-sub hover:text-maroon transition-colors leading-none">×</button>
+        <div className="sticky top-0 z-10 bg-white px-8 py-5 border-b border-border flex justify-between items-center">
+          <h2 className="font-serif text-[22px] font-bold m-0 text-maroon">Reschedule Appointment</h2>
+          <button 
+            onClick={onClose} 
+            className="w-8 h-8 rounded-full border border-border bg-white text-text-muted hover:text-text-main flex items-center justify-center cursor-pointer transition-colors shadow-2xs text-[18px]"
+          >
+            ×
+          </button>
         </div>
 
         <div className="p-8">
@@ -174,7 +192,7 @@ export default function RescheduleModal({ token, appointment, onClose, onSuccess
       {/* Confirmation Inner Modal */}
       {confirmingReschedule && (
         <div className="fixed inset-0 z-110 flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => !loading && setConfirmingReschedule(false)} />
+          <div className="absolute inset-0 bg-black/60" onClick={() => !loading && setConfirmingReschedule(false)} />
           <div className="animate-scale-up relative w-full max-w-85 bg-white rounded-3xl p-8 text-center shadow-[0_10px_40px_rgba(0,0,0,0.2)]">
             <div className="w-16 h-16 rounded-full bg-gold-light text-gold flex items-center justify-center mx-auto mb-5 border-2 border-gold-border">
               <HelpCircle size={28} />

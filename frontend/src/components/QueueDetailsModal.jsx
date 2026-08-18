@@ -37,22 +37,22 @@ function getStepDescription(step, index, totalSteps) {
   const name = (step.step_name || '').toLowerCase()
 
   if (name.includes('receipt') || name.includes('payment') || name.includes('checking of receipt')) {
-    return 'Present and verify the official payment receipt issued by the Cashier\'s Office.'
+    return 'Verify the official payment receipt issued by the Cashier\'s Office.'
   }
   if (name.includes('form issuance') || name.includes('issuance of form')) {
-    return 'Issue the official blank clearance or application request form to the student.'
+    return 'Present the official blank completion form to the student.'
   }
   if (name.includes('form submission') || name.includes('submission of form')) {
-    return 'Receive and review the completed, signed application form together with attached requirements.'
+    return 'Receive and review the submitted completion form with its grades.'
   }
-  if (name.includes('filing') || name.includes('verification') || name.includes('evaluat') || name.includes('checking of records')) {
-    return 'Verify scholastic records, grades, and academic eligibility against official university archives.'
+  if (name.includes('filing') || name.includes('verification') || name.includes('evaluat') || name.includes('checking of records') || name.includes('records')) {
+    return 'Verify student grades and academic records to prepare the document.'
   }
   if (name.includes('preparation') || name.includes('printing') || name.includes('signing') || name.includes('dry seal')) {
-    return 'Process, print, sign, and dry-seal the requested official document..'
+    return 'Process, print, sign, and dry-seal the requested official document.'
   }
   if (name.includes('release') || name.includes('issuance') || name.includes('collection') || name.includes('pickup')) {
-    return 'Hand over the verified document to the student and log the official release timestamp.'
+    return 'Release and hand over the requested document to the student.'
   }
   if (name.includes('assessment') || name.includes('interview')) {
     return 'Evaluate student eligibility and assess document request requirements.'
@@ -61,7 +61,7 @@ function getStepDescription(step, index, totalSteps) {
   if (index === 0) {
     return 'Initial verification of student credentials and request prerequisites.'
   } else if (index === totalSteps - 1) {
-    return 'Final review and official releasing of the processed document.'
+    return 'Release and hand over the requested document to the student.'
   }
   return 'Administrative verification and data processing for this workflow stage.'
 }
@@ -90,7 +90,10 @@ export default function QueueDetailsModal({ ticketData, onClose, onConfirm, conf
   const docDescription = getCleanDocDescription(txType?.description)
   const requiredDocs = txType?.required_documents || []
   
-  const getTodayStr = () => new Date().toISOString().split('T')[0]
+  const getTodayStr = () => {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  }
   const [releaseDate, setReleaseDate] = useState(appt?.release_date || getTodayStr())
   const [toastMsg, setToastMsg] = useState(null)
 
@@ -106,7 +109,7 @@ export default function QueueDetailsModal({ ticketData, onClose, onConfirm, conf
     <div className="fixed inset-0 z-1000 flex items-center justify-center p-4 sm:p-6 md:p-8">
       {/* Backdrop */}
       <div 
-        className="fixed inset-0 bg-black/55 backdrop-blur-[2px] transition-opacity duration-300" 
+        className="fixed inset-0 bg-black/60 transition-opacity duration-300" 
         onClick={onClose} 
       />
 
@@ -269,36 +272,37 @@ export default function QueueDetailsModal({ ticketData, onClose, onConfirm, conf
                 const confirmKey = `${ticket.id}-${step.step_number}`
                 const isConfirming = confirming === confirmKey
                 
-                const isReceiptSub = step.step_name.includes('Checking') || step.step_name.includes('Receipt Submission')
-                const isFormSub = step.step_name.includes('Form Submission')
-                const isFilingVerif = step.step_name.includes('Filing & Verification')
-                const isFormIssuance = step.step_name.includes('Form Issuance')
-                const isPrepDoc = step.step_name.includes('Preparation of Document')
+                const isReceiptSub = step.step_name.includes('Receipt') || step.step_name.includes('Payment')
+                const isFormSub = step.step_name.includes('Form Submission') || step.step_name.includes('Submission of Form')
+                const isFilingVerif = step.step_name.includes('Filing & Verification') || step.step_name.includes('Filing')
+                const isFormIssuance = step.step_name.includes('Form Issuance') || step.step_name.includes('Issuance of Form')
+                const isPrepDoc = step.step_name.includes('Preparation') || step.step_name.includes('Checking of Records') || step.step_name.includes('Records') || step.requires_presence === false
                 const isRelease = step.step_name.includes('Release')
                 
                 let confirmLabel = 'Confirm Step'
-                let instructionText = step.requires_presence !== false ? 'Please verify requirements and confirm this step' : 'Active background step (processing document)'
+                let instructionText = step.requires_presence !== false ? 'Verify requirements and mark step as done' : 'Click when records are verified and document is ready'
                 
-                if (isPrepDoc) {
-                  confirmLabel = 'Document Prepared'
-                  instructionText = 'Click when document printing/processing is completed'
-                } else if (isRelease) {
+                if (isRelease) {
                   confirmLabel = 'Release Document'
                   instructionText = 'Set availability date and move ticket to Document Releases'
+                } else if (isPrepDoc) {
+                  confirmLabel = 'Document Prepared'
+                  instructionText = 'Click when records are verified and document is ready'
                 } else if (isReceiptSub) {
                   confirmLabel = 'Payment Checked'
                   instructionText = 'Click once student official receipt is verified'
                 } else if (isFormSub) {
                   confirmLabel = 'Form Received'
-                  instructionText = 'Click once clearance/completion form is submitted'
+                  instructionText = 'Click once the submitted completion form is received'
                 } else if (isFilingVerif) {
-                  confirmLabel = 'Mark as Verified'
-                  instructionText = 'Click once records are verified and filed'
+                  confirmLabel = 'Document Prepared'
+                  instructionText = 'Click once records are verified and document is prepared'
                 } else if (isFormIssuance) {
                   confirmLabel = 'Form Issued'
-                  instructionText = 'Click once blank form is issued to student'
-                } else if (step.requires_presence !== false) {
-                  instructionText = 'Verify and mark step as done'
+                  instructionText = 'Click once completion form is given to student'
+                } else if (step.requires_presence === false) {
+                  confirmLabel = 'Document Prepared'
+                  instructionText = 'Click when records are verified and document is ready'
                 }
 
                 const stepDesc = getStepDescription(step, idx, filteredArr.length)

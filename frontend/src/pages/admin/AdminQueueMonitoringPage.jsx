@@ -797,15 +797,15 @@ export default function AdminQueueMonitoringPage() {
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3.5">
         
         {/* At Windows */}
-        <div className="bg-white rounded-2xl p-4.5 border border-border shadow-xs flex flex-col justify-between transition-all hover:border-success/40 hover:shadow-sm">
+        <div className="bg-white rounded-2xl p-4.5 border border-border shadow-xs flex flex-col justify-between transition-all hover:border-maroon/40 hover:shadow-sm">
           <div className="flex justify-between items-start mb-2">
             <span className="text-[10px] font-extrabold text-text-muted uppercase tracking-wider">Serving </span>
-            <div className="w-8 h-8 rounded-lg bg-success-light text-success flex items-center justify-center">
+            <div className="w-8 h-8 rounded-lg bg-maroon-light text-maroon flex items-center justify-center">
               <UserCheck size={16} />
             </div>
           </div>
           <div>
-            <div className="font-serif text-[28px] font-extrabold text-success leading-none mb-1">
+            <div className="font-serif text-[28px] font-extrabold text-maroon leading-none mb-1">
               {loading ? <div className="animate-pulse w-10 h-7 bg-border rounded" /> : atWindows.length}
             </div>
             <div className="text-[10.5px] text-text-sub font-medium">Students at counter</div>
@@ -829,15 +829,15 @@ export default function AdminQueueMonitoringPage() {
         </div>
 
         {/* In Document Prep */}
-        <div className="bg-white rounded-2xl p-4.5 border border-border shadow-xs flex flex-col justify-between transition-all hover:border-info/40 hover:shadow-sm">
+        <div className="bg-white rounded-2xl p-4.5 border border-border shadow-xs flex flex-col justify-between transition-all hover:border-maroon/40 hover:shadow-sm">
           <div className="flex justify-between items-start mb-2">
             <span className="text-[10px] font-extrabold text-text-muted uppercase tracking-wider">Preparing Docs</span>
-            <div className="w-8 h-8 rounded-lg bg-info-light text-info flex items-center justify-center">
+            <div className="w-8 h-8 rounded-lg bg-maroon-light text-maroon flex items-center justify-center">
               <FileEdit size={16} />
             </div>
           </div>
           <div>
-            <div className="font-serif text-[28px] font-extrabold text-info leading-none mb-1">
+            <div className="font-serif text-[28px] font-extrabold text-maroon leading-none mb-1">
               {loading ? <div className="animate-pulse w-10 h-7 bg-border rounded" /> : inPreparation.length}
             </div>
             <div className="text-[10.5px] text-text-sub font-medium">Processing documents</div>

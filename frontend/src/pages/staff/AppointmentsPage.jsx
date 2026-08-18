@@ -2,7 +2,12 @@ import { useState, useEffect, useCallback } from 'react'
 import { createPortal } from 'react-dom'
 import { useAuth } from '../../context/useAuth'
 import { getAllAppointments, getAppointmentStats, rescheduleAppointment, getBookingConfig } from '../../services/appointmentService'
-import { Calendar, RefreshCw, BarChart2, Circle, User, Tag, X, FileText, Activity } from 'lucide-react'
+import { 
+  Calendar, RefreshCw, BarChart2, Circle, User, Users, Tag, X, FileText, Activity, 
+  Clock, CheckCircle, CheckCircle2, AlertCircle, Mail, GraduationCap, MapPin, Ticket, 
+  ExternalLink, Paperclip, ChevronRight, CalendarCheck, ShieldCheck, 
+  Sparkles, DollarSign, Layers, ArrowRight, FolderOpen, ClipboardList, Info
+} from 'lucide-react'
 import CustomDatePicker from '../../components/common/CustomDatePicker'
 
 export default function AppointmentsPage() {
@@ -77,48 +82,6 @@ export default function AppointmentsPage() {
 
   // Modals state
   const [viewDetailsModal, setViewDetailsModal] = useState(null)
-  const [rescheduleModal, setRescheduleModal] = useState(null)
-  const [newDate, setNewDate] = useState('')
-  const [newTime, setNewTime] = useState('')
-  const [rescheduling, setRescheduling] = useState(false)
-
-  const handleReschedule = async () => {
-    if (!newDate || !newTime) return
-
-    // Validation
-    const [y, m, d] = newDate.split('-')
-    const dateObj = new Date(parseInt(y, 10), parseInt(m, 10) - 1, parseInt(d, 10))
-    const dayOfWeek = dateObj.getDay()
-    
-    const today = new Date()
-    const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`
-    
-    if (newDate < todayStr) {
-      alert("Cannot reschedule to a past date.")
-      return
-    }
-    if (dayOfWeek === 0 || dayOfWeek === 6) {
-      alert("Cannot reschedule to a weekend.")
-      return
-    }
-    const override = dateOverrides[newDate]
-    if (override && override.is_blocked) {
-      alert(`Cannot reschedule: ${override.reason || 'This date is blocked.'}`)
-      return
-    }
-
-    setRescheduling(true)
-    try {
-      await rescheduleAppointment(token, rescheduleModal.id, newDate, newTime)
-      setRescheduleModal(null)
-      loadAppointments()
-      loadStats()
-    } catch (err) {
-      alert(err.message)
-    } finally {
-      setRescheduling(false)
-    }
-  }
 
   const loadAppointments = useCallback(async (showSkeleton = true) => {
     if (showSkeleton) setLoading(true)
@@ -255,7 +218,7 @@ export default function AppointmentsPage() {
             <div className="overflow-x-auto scrollbar-thin">
               <div className="min-w-160">
                 {/* Column headers */}
-                <div className="grid grid-cols-[100px_1fr_220px_120px_140px] gap-4 px-6 py-3.5 bg-surface border-b border-border">
+                <div className="grid grid-cols-[100px_1fr_220px_120px_120px] gap-4 px-6 py-3.5 bg-surface border-b border-border">
                   {['TIME', 'STUDENT DETAILS', 'TRANSACTION', 'STATUS', 'ACTION'].map(col => (
                     <div key={col} className="text-[10px] font-bold text-text-muted tracking-[0.06em] uppercase">{col}</div>
                   ))}
@@ -265,7 +228,7 @@ export default function AppointmentsPage() {
                 <div className="bg-white flex flex-col">
                   {loading ? (
                     [1, 2, 3].map(i => (
-                      <div key={i} className={`grid grid-cols-[100px_1fr_220px_120px_140px] gap-4 px-6 py-4 items-center ${i < 3 ? 'border-b border-border' : ''}`}>
+                      <div key={i} className={`grid grid-cols-[100px_1fr_220px_120px_120px] gap-4 px-6 py-4 items-center ${i < 3 ? 'border-b border-border' : ''}`}>
                         <div className="animate-pulse w-16 h-4 rounded bg-border" />
                         <div>
                           <div className="animate-pulse w-35 h-4 rounded bg-border mb-2" />
@@ -276,9 +239,8 @@ export default function AppointmentsPage() {
                           <div className="animate-pulse w-16 h-3 rounded bg-border" />
                         </div>
                         <div className="animate-pulse w-20 h-6 rounded-full bg-border" />
-                        <div className="flex gap-2">
-                          <div className="animate-pulse w-16 h-8 rounded-lg bg-border" />
-                          <div className="animate-pulse w-16 h-8 rounded-lg bg-border" />
+                        <div>
+                          <div className="animate-pulse w-24 h-8 rounded-lg bg-border" />
                         </div>
                       </div>
                     ))
@@ -294,7 +256,7 @@ export default function AppointmentsPage() {
                       const sColor = apt.status === 'completed' ? 'text-success bg-success-light border-success-border' : apt.status === 'cancelled' ? 'text-danger bg-danger-light border-danger-border' : apt.status === 'pending' ? 'text-gold bg-gold-light border-gold-border' : 'text-blue bg-blue-light border-blue-border'
 
                       return (
-                        <div key={apt.id} className={`grid grid-cols-[100px_1fr_220px_120px_140px] gap-4 px-6 py-4 items-center transition-colors hover:bg-slate-50 ${idx < currentAppointments.length - 1 ? 'border-b border-border' : ''}`}>
+                        <div key={apt.id} className={`grid grid-cols-[100px_1fr_220px_120px_120px] gap-4 px-6 py-4 items-center transition-colors hover:bg-slate-50 ${idx < currentAppointments.length - 1 ? 'border-b border-border' : ''}`}>
                           <div className="text-[13px] font-bold text-text-main font-serif">
                             {fmt12h(apt.time_slot)}
                           </div>
@@ -313,23 +275,12 @@ export default function AppointmentsPage() {
                               {apt.status}
                             </span>
                           </div>
-                          <div className="flex gap-3 items-center">
+                          <div>
                             <button 
                               onClick={() => setViewDetailsModal(apt)}
-                              className="bg-white border border-border rounded-lg px-3.5 py-1.5 text-[12px] font-bold cursor-pointer font-sans text-text-main hover:border-maroon-border transition-colors shadow-sm">
-                              View
+                              className="bg-white border border-border rounded-lg px-3.5 py-1.5 text-[12px] font-bold cursor-pointer font-sans text-text-main hover:border-maroon-border hover:text-maroon transition-colors shadow-2xs">
+                              View Details
                             </button>
-                            {!['completed', 'cancelled'].includes(apt.status) && (
-                              <button 
-                                onClick={() => {
-                                  setRescheduleModal(apt)
-                                  setNewDate(apt.appointment_date || '')
-                                  setNewTime(apt.time_slot || '')
-                                }}
-                                className="bg-transparent border-none text-maroon text-[12px] font-bold cursor-pointer hover:underline transition-colors p-0">
-                                Reschedule
-                              </button>
-                            )}
                           </div>
                         </div>
                       )
@@ -367,13 +318,18 @@ export default function AppointmentsPage() {
           </div>
         </div>
 
-      {/* Modals */}
+      {/* Redesigned Informative & Clean View Details Modal */}
       {viewDetailsModal && createPortal((() => {
         const student = viewDetailsModal.users
         const name = student ? `${student.first_name} ${student.last_name}` : 'Unknown Student'
         const initials = name.split(' ').slice(0, 2).map(w => w[0]?.toUpperCase()).join('') || '?'
         const studentId = student?.student_id || 'N/A'
-        
+        const email = student?.email || 'No email registered'
+        const program = student?.course || student?.program || ''
+        const yearLevel = student?.year_level ? `${student.year_level} Year` : ''
+        const academicInfo = [program, yearLevel].filter(Boolean).join(' • ')
+        const avatarUrl = student?.profile_image || student?.profile_picture_url || null
+
         // Parse Notes & Media URL
         let parsedNotes = viewDetailsModal.notes || ''
         let mediaUrl = null
@@ -383,149 +339,334 @@ export default function AppointmentsPage() {
           mediaUrl = parts[1] ? parts[1].trim() : null
         }
 
-        const sColor = viewDetailsModal.status === 'completed' ? 'text-success' : viewDetailsModal.status === 'cancelled' ? 'text-danger' : viewDetailsModal.status === 'pending' ? 'text-gold' : 'text-blue'
-        const sBg = viewDetailsModal.status === 'completed' ? 'bg-success-light' : viewDetailsModal.status === 'cancelled' ? 'bg-danger-light' : viewDetailsModal.status === 'pending' ? 'bg-gold-light' : 'bg-blue-light'
-        const sBorder = viewDetailsModal.status === 'completed' ? 'border-success-border' : viewDetailsModal.status === 'cancelled' ? 'border-danger-border' : viewDetailsModal.status === 'pending' ? 'border-gold-border' : 'border-blue-border'
+        // Clean purpose / request note
+        let purposeText = parsedNotes
+        if (purposeText.startsWith('PURPOSE:')) {
+          purposeText = purposeText.replace('PURPOSE:', '').trim()
+        }
+
+        const isCompleted = viewDetailsModal.status === 'completed'
+        const isCancelled = viewDetailsModal.status === 'cancelled'
+        const isPending = viewDetailsModal.status === 'pending'
+
+        const sColor = isCompleted ? 'text-success' : isCancelled ? 'text-danger' : isPending ? 'text-gold' : 'text-blue'
+        const sBg = isCompleted ? 'bg-success-light' : isCancelled ? 'bg-danger-light' : isPending ? 'bg-gold-light' : 'bg-blue-light'
+        const sBorder = isCompleted ? 'border-success-border' : isCancelled ? 'border-danger-border' : isPending ? 'border-gold-border' : 'border-blue-border'
+        const sDot = isCompleted ? 'bg-success' : isCancelled ? 'bg-danger' : isPending ? 'bg-gold' : 'bg-blue'
+
+        const isPriority = viewDetailsModal.priority_class && viewDetailsModal.priority_class !== 'regular'
+        const pClassLabel = viewDetailsModal.priority_class?.toUpperCase() || 'REGULAR'
+
+        const queueTicket = viewDetailsModal.queue_tickets?.[0] || viewDetailsModal.queue_tickets || null
+        const txType = viewDetailsModal.transaction_types
+        const processingSteps = txType?.processing_steps || []
+        const requiredDocs = txType?.required_documents || []
+
+        const formattedDate = new Date(viewDetailsModal.appointment_date).toLocaleDateString('en-US', {
+          weekday: 'short',
+          month: 'short',
+          day: 'numeric',
+          year: 'numeric'
+        })
+        const timeFormatted = fmt12h(viewDetailsModal.time_slot)
+        const refId = `APPT-${viewDetailsModal.id.split('-')[0].toUpperCase()}`
 
         return (
-          <div className="fixed inset-0 z-1000 flex items-center justify-center">
-            <div className="absolute inset-0 bg-black/20 backdrop-blur-sm" onClick={() => setViewDetailsModal(null)} />
-            <div className="animate-fade-up relative bg-white rounded-3xl w-120 max-w-[90%] max-h-[90vh] overflow-y-auto shadow-[0_20px_40px_rgba(0,0,0,0.2)]">
+          <div className="fixed inset-0 z-1000 flex items-center justify-center p-4 sm:p-6 md:p-8">
+            <div className="fixed inset-0 bg-black/60 transition-opacity animate-fade-in" onClick={() => setViewDetailsModal(null)} />
+            
+            <div className="animate-fade-up relative w-full max-w-4xl bg-white text-text-main rounded-3xl p-6 sm:p-8 md:p-10 max-h-[90vh] overflow-y-auto shadow-[0_25px_80px_rgba(0,0,0,0.18)] border border-border z-10 custom-scrollbar font-sans">
               
               {/* Header */}
-              <div className="px-8 py-6 border-b border-border flex justify-between items-start">
+              <div className="flex justify-between items-start mb-6 pb-5 border-b border-border gap-4">
                 <div>
-                  <h2 className="m-0 mb-1.5 text-text-main font-serif text-[22px] font-bold">Appointment Details</h2>
-                  <p className="m-0 text-[13px] text-text-muted">ID: {viewDetailsModal.id.split('-')[0].toUpperCase()}</p>
+                  <div className="flex items-center gap-2 mb-2 flex-wrap">
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-gold-light text-gold text-[11px] font-extrabold uppercase tracking-wider border border-gold-border">
+                      <CalendarCheck size={13} /> Appointment Details
+                    </span>
+                    {isPriority && (
+                      <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-maroon-light text-maroon text-[11px] font-extrabold uppercase tracking-wider border border-maroon-border">
+                        <ShieldCheck size={13} /> {pClassLabel} Priority
+                      </span>
+                    )}
+                  </div>
+                  
+                  <div className="flex items-baseline gap-4 flex-wrap">
+                    <h2 className="font-serif text-[28px] sm:text-[36px] font-extrabold text-maroon m-0 leading-none tracking-tight">
+                      {refId}
+                    </h2>
+                    <span className={`text-[12px] font-extrabold px-3 py-1 rounded-full border ${
+                      isCompleted 
+                        ? 'bg-success-light text-success border-success-border' 
+                        : isCancelled
+                        ? 'bg-danger-light text-danger border-danger-border'
+                        : isPending
+                        ? 'bg-gold-light text-gold border-gold-border'
+                        : 'bg-blue-light text-blue border-blue-border'
+                    }`}>
+                      {isCompleted ? '✓ Completed' : isCancelled ? '✕ Cancelled' : isPending ? 'Waiting for Confirmation' : '● Confirmed'}
+                    </span>
+                  </div>
                 </div>
-                <button onClick={() => setViewDetailsModal(null)} className="bg-surface border-none w-8 h-8 rounded-full cursor-pointer text-text-sub flex items-center justify-center transition-colors hover:bg-border"><X size={16} /></button>
+
+                <button 
+                  onClick={() => setViewDetailsModal(null)} 
+                  className="w-10 h-10 rounded-full bg-surface text-text-muted hover:bg-border/80 hover:text-text-main transition-all flex items-center justify-center border border-border cursor-pointer shrink-0 shadow-xs hover:scale-105 active:scale-95"
+                  title="Close"
+                >
+                  <X size={18} />
+                </button>
               </div>
 
-              <div className="p-8">
-                {/* Student Info Profile */}
-                <div className="flex items-center gap-4 mb-8 p-4 bg-off-white rounded-2xl border border-border">
-                  <div className="w-14 h-14 rounded-full bg-maroon-light text-maroon flex items-center justify-center text-[20px] font-bold border border-maroon-border shrink-0">
-                    {initials}
+              {/* Info Cards Grid (Student Info + Requested Document Details) */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-5">
+                {/* Student Details Card */}
+                <div className="p-5 sm:p-6 bg-white rounded-2xl border border-border shadow-sm flex items-start gap-4">
+                  <div className="w-12 h-12 rounded-xl bg-maroon-light text-maroon flex items-center justify-center shrink-0 border border-maroon-border">
+                    <Users size={22} />
                   </div>
-                  <div>
-                    <h3 className="m-0 mb-1 text-[16px] font-bold text-text-main">{name}</h3>
-                    <p className="m-0 text-[13px] text-text-muted font-mono">{studentId}</p>
-                  </div>
-                </div>
-
-                {/* Grid Details */}
-                <div className="grid grid-cols-2 gap-6 mb-8">
-                  <div>
-                    <p className="text-[11px] font-bold text-text-muted uppercase tracking-[0.06em] m-0 mb-2 flex items-center gap-1.5">
-                      <FileText size={14} className="text-gold" /> Transaction Type
-                    </p>
-                    <p className="text-[14px] font-semibold text-text-main m-0">{viewDetailsModal.transaction_types?.name}</p>
-                  </div>
-                  <div>
-                    <p className="text-[11px] font-bold text-text-muted uppercase tracking-[0.06em] m-0 mb-2 flex items-center gap-1.5">
-                      <Calendar size={14} className="text-gold" /> Schedule
-                    </p>
-                    <p className="text-[14px] font-semibold text-text-main m-0">
-                      {new Date(viewDetailsModal.appointment_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })} at {fmt12h(viewDetailsModal.time_slot)}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-[11px] font-bold text-text-muted uppercase tracking-[0.06em] m-0 mb-2 flex items-center gap-1.5">
-                      <Tag size={14} className="text-gold" /> Priority Class
-                    </p>
-                    <span className="text-[12px] font-semibold text-maroon bg-maroon-light px-3 py-1 rounded-full border border-maroon-border capitalize inline-block">
-                      {viewDetailsModal.priority_class}
+                  <div className="flex-1 min-w-0">
+                    <span className="text-[10.5px] text-text-muted uppercase font-extrabold tracking-wider block mb-1">
+                      Student Information
                     </span>
-                  </div>
-                  <div>
-                    <p className="text-[11px] font-bold text-text-muted uppercase tracking-[0.06em] m-0 mb-2 flex items-center gap-1.5">
-                      <Activity size={14} className="text-gold" /> Status
-                    </p>
-                    <span className={`text-[12px] font-semibold px-3 py-1 rounded-full border capitalize inline-block ${sColor} ${sBg} ${sBorder}`}>
-                      {viewDetailsModal.status}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Required Documents */}
-                {viewDetailsModal.transaction_types?.required_documents?.length > 0 && (
-                  <div className="border-t border-border pt-6 mb-6">
-                    <p className="text-[11px] font-bold text-text-muted uppercase tracking-[0.06em] m-0 mb-3">Required Documents</p>
-                    <div className="flex flex-wrap gap-2">
-                      {viewDetailsModal.transaction_types.required_documents.map((doc, idx) => (
-                        <div key={idx} className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-maroon-light border border-maroon-border text-[11px] font-semibold text-maroon whitespace-nowrap">
-                          <FileText size={10} /> {doc}
-                        </div>
-                      ))}
+                    <div className="text-[16px] font-bold text-text-main leading-snug truncate mb-2">
+                      {name}
+                    </div>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-[12px] text-text-main font-mono font-bold bg-surface px-2.5 py-1 rounded-lg border border-border">
+                        ID: {studentId}
+                      </span>
+                      <span className={`text-[11.5px] font-bold capitalize px-2.5 py-1 rounded-lg border ${
+                        isPriority 
+                          ? 'bg-maroon-light text-maroon border-maroon-border font-extrabold' 
+                          : 'bg-surface text-text-sub border-border'
+                      }`}>
+                        Priority: <span className="uppercase">{pClassLabel}</span>
+                      </span>
+                      {email && (
+                        <span className="text-[12px] text-text-sub truncate max-w-64 font-medium flex items-center gap-1">
+                          <Mail size={12} className="text-text-muted shrink-0" />
+                          <span className="text-text-main truncate">{email}</span>
+                        </span>
+                      )}
+                      {academicInfo && (
+                        <span className="text-[12px] text-text-muted font-medium">
+                          • {academicInfo}
+                        </span>
+                      )}
                     </div>
                   </div>
-                )}
+                </div>
 
-                {/* Processing Steps */}
-                {!['completed', 'cancelled'].includes(viewDetailsModal.status) && (
-                  <div className="border-t border-border pt-6 mb-6">
-                    <p className="text-[11px] font-bold text-text-muted uppercase tracking-[0.06em] m-0 mb-3">Processing Steps</p>
-                    {viewDetailsModal.transaction_types?.processing_steps && viewDetailsModal.transaction_types.processing_steps.length > 0 ? (
-                      <div className="flex flex-wrap gap-2">
-                        {viewDetailsModal.transaction_types.processing_steps.map((step, idx) => renderStep(step, idx))}
-                      </div>
+                {/* Requested Document Details Card */}
+                <div className="p-5 sm:p-6 bg-white rounded-2xl border border-border shadow-sm flex items-start gap-4">
+                  <div className="w-12 h-12 rounded-xl bg-gold-light text-gold flex items-center justify-center shrink-0 border border-gold-border">
+                    <FileText size={22} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <span className="text-[10.5px] text-text-muted uppercase font-extrabold tracking-wider block mb-1">
+                      Requested Document
+                    </span>
+                    <div className="text-[16px] font-bold text-text-main leading-snug mb-1.5">
+                      {txType?.name || 'Document Transaction'}
+                    </div>
+                    <div className="text-[12px] text-text-sub flex items-center gap-1.5 font-medium mb-1">
+                      <Calendar size={13} className="text-gold shrink-0" />
+                      <span>
+                        {formattedDate} • {timeFormatted}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Queue & Release Cards Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-5">
+                {/* Live Queue Ticket Status Card */}
+                <div className="p-5 sm:p-6 bg-white rounded-2xl border border-border shadow-sm flex items-start gap-4">
+                  <div className="w-12 h-12 rounded-xl bg-maroon-light text-maroon flex items-center justify-center shrink-0 border border-maroon-border">
+                    <Ticket size={22} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <span className="text-[10.5px] text-text-muted uppercase font-extrabold tracking-wider block mb-1">
+                      Live Queue Status
+                    </span>
+                    {queueTicket ? (
+                      <>
+                        <div className="text-[18px] font-extrabold text-maroon leading-tight">
+                          {queueTicket.queue_number}
+                        </div>
+                        <span className="text-[12px] text-text-sub font-medium mt-1 inline-block capitalize">
+                          Status: <strong className="text-text-main">{queueTicket.status === 'in_progress' ? 'Serving Now' : (queueTicket.status || 'Active').replace(/_/g, ' ')}</strong>
+                          {queueTicket.current_step ? ` (Step ${queueTicket.current_step}/${queueTicket.total_steps || 3})` : ''}
+                        </span>
+                      </>
                     ) : (
-                      <div className="text-[13px] text-text-muted italic bg-off-white p-4 rounded-xl border border-border">No processing steps configured for this transaction.</div>
+                      <>
+                        <div className="text-[15px] font-bold text-text-muted leading-tight">
+                          Not Yet Activated
+                        </div>
+                        <span className="text-[12px] text-text-muted font-medium mt-1 inline-block">
+                          Queue ticket activates upon student arrival
+                        </span>
+                      </>
                     )}
                   </div>
-                )}
+                </div>
 
-                {/* Notes & Media */}
-                {(parsedNotes || mediaUrl) && (
-                  <div className="border-t border-border pt-6">
-                    <p className="text-[11px] font-bold text-text-muted uppercase tracking-[0.06em] m-0 mb-3">Notes & Attachments</p>
-                    {parsedNotes && (
-                      <div className="p-4 bg-surface rounded-xl text-[13px] text-text-sub leading-relaxed mb-4">
-                        {parsedNotes}
-                      </div>
+                {/* Document Release Schedule Card */}
+                <div className="p-5 sm:p-6 bg-white rounded-2xl border border-border shadow-sm flex items-start gap-4">
+                  <div className="w-12 h-12 rounded-xl bg-blue-light text-blue flex items-center justify-center shrink-0 border border-blue-border">
+                    <FolderOpen size={22} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <span className="text-[10.5px] text-text-muted uppercase font-extrabold tracking-wider block mb-1">
+                      Release Schedule
+                    </span>
+                    {viewDetailsModal.release_date ? (
+                      <>
+                        <div className="text-[16px] font-bold text-blue leading-snug">
+                          {new Date(viewDetailsModal.release_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                        </div>
+                        <span className="text-[12px] text-text-muted font-medium mt-1 inline-block">
+                          Scheduled for student pickup
+                        </span>
+                      </>
+                    ) : isCompleted ? (
+                      <>
+                        <div className="text-[15px] font-bold text-success leading-snug">
+                          Document Released
+                        </div>
+                        <span className="text-[12px] text-text-muted font-medium mt-1 inline-block">
+                          Transaction fully completed
+                        </span>
+                      </>
+                    ) : (
+                      <>
+                        <div className="text-[15px] font-bold text-text-main leading-snug">
+                          To Be Scheduled
+                        </div>
+                        <span className="text-[12px] text-text-muted font-medium mt-1 inline-block">
+                          Set by staff upon document preparation
+                        </span>
+                      </>
                     )}
-                    {mediaUrl && (
-                      <div>
-                        <p className="text-[12px] font-semibold text-text-main m-0 mb-2">Attached Media</p>
-                        <a href={mediaUrl} target="_blank" rel="noreferrer" className="block rounded-xl overflow-hidden border border-border transition-opacity hover:opacity-90">
-                          <img src={mediaUrl} alt="Attachment" className="w-full block" />
+                  </div>
+                </div>
+              </div>
+
+              {/* Detailed Document Requirements & Student Remarks Banner */}
+              {(requiredDocs.length > 0 || purposeText || mediaUrl) && (
+                <div className="mb-5 p-5 bg-white rounded-2xl border border-border shadow-sm flex flex-col gap-4">
+                  {requiredDocs.length > 0 && (
+                    <div>
+                      <span className="text-[10.5px] font-extrabold text-text-muted uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                        <ClipboardList size={14} className="text-gold" /> Required Document Attachments
+                      </span>
+                      <div className="flex flex-wrap gap-2">
+                        {requiredDocs.map((doc, i) => (
+                          <span 
+                            key={i} 
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-surface/60 border border-border text-[12px] font-semibold text-text-main shadow-2xs"
+                          >
+                            <CheckCircle2 size={13} className="text-success shrink-0" />
+                            <span>{typeof doc === 'string' ? doc : doc.name}</span>
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {purposeText && (
+                    <div className={requiredDocs.length > 0 ? "pt-3.5 border-t border-border" : ""}>
+                      <span className="text-[10.5px] font-extrabold text-text-muted uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
+                        <Info size={14} className="text-maroon" /> Student Remarks / Purpose
+                      </span>
+                      <p className="text-[13px] text-text-main font-medium m-0 whitespace-pre-wrap leading-relaxed">
+                        {purposeText}
+                      </p>
+                    </div>
+                  )}
+
+                  {mediaUrl && (
+                    <div className={(requiredDocs.length > 0 || purposeText) ? "pt-3.5 border-t border-border" : ""}>
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-[10.5px] font-extrabold text-text-muted uppercase tracking-wider flex items-center gap-1.5">
+                          <Info size={14} className="text-maroon" /> Attached Document Media
+                        </span>
+                        <a 
+                          href={mediaUrl} 
+                          target="_blank" 
+                          rel="noreferrer" 
+                          className="text-[11px] font-bold text-maroon hover:underline flex items-center gap-1"
+                        >
+                          Open Full Size <ExternalLink size={11} />
                         </a>
                       </div>
-                    )}
+                      <a href={mediaUrl} target="_blank" rel="noreferrer" className="block rounded-xl overflow-hidden border border-border max-h-56 bg-white shadow-2xs hover:opacity-95 transition-opacity">
+                        <img src={mediaUrl} alt="Supporting Attachment" className="w-full h-full object-contain block max-h-56 bg-white" />
+                      </a>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Workflow Processing Steps Roadmap */}
+              {processingSteps && processingSteps.length > 0 && (
+                <div className="mb-5 p-5 bg-white rounded-2xl border border-border shadow-sm">
+                  <h3 className="text-[11px] font-extrabold text-text-muted uppercase tracking-[0.08em] flex items-center gap-1.5 m-0 mb-3">
+                    <Clock size={14} className="text-maroon" /> Workflow Processing Steps
+                  </h3>
+                  <div className="space-y-2.5">
+                    {processingSteps.map((step, idx) => {
+                      const stepNumber = idx + 1
+                      const stepName = typeof step === 'string' ? step : step.name || step.step_name || `Step ${stepNumber}`
+                      const location = typeof step === 'object' ? step.location : null
+                      const estMins = typeof step === 'object' && step.estimated_minutes ? `~${step.estimated_minutes} min` : null
+
+                      return (
+                        <div key={idx} className="flex items-center justify-between p-3 rounded-xl bg-white border border-border hover:border-maroon-border transition-colors shadow-2xs gap-3">
+                          <div className="flex items-center gap-3 min-w-0">
+                            <div className="w-6 h-6 rounded-full bg-maroon text-white flex items-center justify-center text-[11px] font-extrabold shrink-0 shadow-2xs">
+                              {stepNumber}
+                            </div>
+                            <span className="text-[13px] font-bold text-text-main truncate">
+                              {stepName}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-2 shrink-0">
+                            {estMins && (
+                              <span className="text-[11px] font-medium text-text-muted px-2 py-0.5 rounded-md bg-white border border-border">
+                                {estMins}
+                              </span>
+                            )}
+                            {location && (
+                              <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-maroon-light text-maroon border border-maroon-border/40">
+                                {location}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      )
+                    })}
                   </div>
-                )}
+                </div>
+              )}
+
+              {/* Modal Footer */}
+              <div className="pt-4 border-t border-border flex items-center justify-end">
+                <button 
+                  onClick={() => setViewDetailsModal(null)} 
+                  className="px-6 py-2.5 rounded-xl bg-maroon text-white text-[13px] font-bold cursor-pointer hover:bg-maroon-dark transition-colors shadow-sm active:scale-98"
+                >
+                  Close
+                </button>
               </div>
+
             </div>
           </div>
         )
       })(), document.body)}
-
-      {rescheduleModal && createPortal(
-        <div className="fixed inset-0 bg-black/20 backdrop-blur-sm flex items-center justify-center z-1000">
-          <div className="bg-white p-8 rounded-2xl w-100 max-w-[90%] font-sans shadow-xl animate-fade-up">
-            <h2 className="m-0 mb-4 text-maroon font-serif text-[22px] font-bold">Reschedule Appointment</h2>
-            <div className="mb-4">
-              <label className="block text-xs font-semibold text-text-sub mb-1.5">New Date</label>
-              <CustomDatePicker
-                value={newDate}
-                onChange={setNewDate}
-                placeholder="Select new appointment date…"
-                className="w-full"
-              />
-            </div>
-            <div className="mb-6">
-              <label className="block text-xs font-semibold text-text-sub mb-1.5">New Time Slot</label>
-              <input type="time" value={newTime} onChange={e => setNewTime(e.target.value)} className="w-full p-2.5 rounded-lg border border-border text-sm outline-none font-sans focus:border-maroon transition-colors" />
-            </div>
-            <div className="flex gap-3">
-              <button onClick={() => setRescheduleModal(null)} className="flex-1 bg-off-white text-text-main p-2.5 rounded-lg border border-border cursor-pointer font-semibold font-sans hover:bg-border transition-colors">Cancel</button>
-              <button onClick={handleReschedule} disabled={rescheduling} className={`flex-1 p-2.5 rounded-lg border-none font-semibold font-sans transition-colors ${rescheduling ? 'bg-maroon-border text-white cursor-not-allowed' : 'bg-maroon text-white cursor-pointer hover:bg-maroon-dark'}`}>
-                {rescheduling ? 'Saving...' : 'Save Changes'}
-              </button>
-            </div>
-          </div>
-        </div>
-      , document.body)}
 
     </div>
   )

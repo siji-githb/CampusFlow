@@ -4,7 +4,7 @@ import { useAuth } from '../../context/useAuth'
 import { getTodaysQueue, confirmStep, callTicket, remindStudent, getLiveQueueStats } from '../../services/queueService'
 import { updateReleaseDate } from '../../services/adminService'
 import { getTransactionTypes } from '../../services/appointmentService'
-import { Check, CheckCircle2, Circle, Clock, X, Users, CheckSquare, AlertTriangle, Download, Inbox, Play, Ticket, DoorOpen, Cog, ChevronDown, SlidersHorizontal } from 'lucide-react'
+import { Check, CheckCircle2, Circle, Clock, X, Users, CheckSquare, AlertTriangle, Download, Inbox, Play, Ticket, DoorOpen, Cog, ChevronDown, SlidersHorizontal, FolderOpen } from 'lucide-react'
 import QueueDetailsModal from '../../components/QueueDetailsModal'
 
 // ── Status config ──────────────────────────────────────────────────────────────
@@ -289,9 +289,9 @@ export default function LiveQueuePage() {
     const active = queue.filter(q => q.ticket.status !== 'completed')
     const done = queue.filter(q => q.ticket.status === 'completed')
     const serving = queue.filter(q => q.ticket.status === 'in_progress')
-    const waiting = queue.filter(q => q.ticket.status === 'pending' || q.ticket.status === 'waiting')
+    const waiting = queue.filter(q => (q.ticket.status === 'pending' || q.ticket.status === 'waiting') && getRequiresPresence(q.steps))
     const servingCounter = queue.filter(q => q.ticket.status === 'in_progress' && getRequiresPresence(q.steps))
-    const servingProcessing = queue.filter(q => q.ticket.status === 'in_progress' && !getRequiresPresence(q.steps))
+    const servingProcessing = queue.filter(q => q.ticket.status !== 'completed' && !getRequiresPresence(q.steps))
     const highPrio = queue.filter(q => {
       const pc = q.ticket.appointments?.priority_class
       return pc === 'alumni' || pc === 'pwd' || pc === 'pregnant'
@@ -498,7 +498,7 @@ export default function LiveQueuePage() {
       </div>
 
       {/* ── Stats Bar ── */}
-      <div className="flex gap-3.5">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
         <MiniStat 
           icon={<Clock size={20} />} 
           value={`${avgWait}m`} 
@@ -507,8 +507,30 @@ export default function LiveQueuePage() {
           subColorClass={avgWait > 15 ? 'text-orange' : 'text-text-muted'} 
           loading={loading} delay="0.1s"
         />
-        <MiniStat icon={<Users size={20} />} value={waiting.length} label="Waiting in Queue" sub={servingSubText} subColorClass="text-text-muted" loading={loading} delay="0.2s" />
-        <MiniStat icon={<CheckSquare size={20} />} value={done.length} label="Total Serviced" sub={done.length >= 80 ? 'High volume — Important' : 'Normal volume'} subColorClass={done.length >= 80 ? 'text-danger' : 'text-text-muted'} loading={loading} delay="0.3s" />
+        <MiniStat 
+          icon={<Users size={20} />} 
+          value={waiting.length} 
+          label="Waiting in Queue" 
+          sub={`${servingCounter.length} at the counter`} 
+          subColorClass="text-text-muted" 
+          loading={loading} delay="0.2s" 
+        />
+        <MiniStat 
+          icon={<FolderOpen size={20} />} 
+          value={servingProcessing.length} 
+          label="In Processing" 
+          sub="Processing table" 
+          subColorClass="text-text-muted" 
+          loading={loading} delay="0.25s" 
+        />
+        <MiniStat 
+          icon={<CheckSquare size={20} />} 
+          value={done.length} 
+          label="Total Serviced" 
+          sub={done.length >= 80 ? 'High volume — Important' : 'Normal volume'} 
+          subColorClass={done.length >= 80 ? 'text-danger' : 'text-text-muted'} 
+          loading={loading} delay="0.3s" 
+        />
       </div>
 
       <FilterBar
