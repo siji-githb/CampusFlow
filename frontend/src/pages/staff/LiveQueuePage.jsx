@@ -247,7 +247,7 @@ export default function LiveQueuePage() {
     try {
       await updateReleaseDate(token, appointmentId, dateVal)
       await fetchQueue()
-      showToast('Document release date saved — moved to Document Releases')
+      showToast('Document release date saved')
     } catch (e) {
       setError(e.message)
       showToast(e.message || 'Failed to set release date', 'error')
@@ -308,13 +308,6 @@ export default function LiveQueuePage() {
   // ── Filtered & searched queue ──
   const displayed = useMemo(() => {
     return queue.filter(({ ticket, steps }) => {
-      // Hide from Live Queue if it's currently on the Release step AND the release date is already set
-      // (This means it's waiting for pickup in the Document Releases page)
-      const currentStep = steps?.find(s => s.status === 'in_progress')
-      if (currentStep?.step_name?.includes('Release') && ticket.appointments?.release_date) {
-        return false;
-      }
-
       let statusOk = false
       if (filters.status === 'active') {
         statusOk = ['in_progress', 'pending', 'waiting'].includes(ticket.status)

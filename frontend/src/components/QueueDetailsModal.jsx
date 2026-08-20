@@ -79,7 +79,16 @@ function fmt12hTime(t) {
 
 // ── Queue Details Modal ───────────────────────────────────────────────────────
 export default function QueueDetailsModal({ ticketData, onClose, onConfirm, confirming, onSetReleaseDate }) {
-  const { ticket, steps } = ticketData
+  const [localTicket, setLocalTicket] = useState(ticketData.ticket)
+  const [localSteps, setLocalSteps] = useState(ticketData.steps)
+
+  React.useEffect(() => {
+    setLocalTicket(ticketData.ticket)
+    setLocalSteps(ticketData.steps)
+  }, [ticketData])
+
+  const ticket = localTicket
+  const steps = localSteps
   const student = ticket.users
   const name    = student ? `${student.last_name}, ${student.first_name}` : 'Unknown'
   const appt    = ticket.appointments
@@ -260,204 +269,257 @@ export default function QueueDetailsModal({ ticketData, onClose, onConfirm, conf
                 <Clock size={14} className="text-maroon" /> Workflow Processing Steps
               </h3>
               <span className="text-[12px] font-bold text-text-sub">
-                {steps.filter(s => s.status === 'completed').length} of {steps.length} completed
+                {(() => {
+                  const currentStep = steps.find(s => s.status === 'in_progress')
+                  const isReleaseStepActiveOrDone = steps.some(s => (s.step_name.includes('Release') || s.step_name.includes('Claim')) && (s.status === 'in_progress' || s.status === 'completed'))
+                  const isScheduledFuture = Boolean(releaseDate && releaseDate !== getTodayStr())
+                  const shouldShowReleaseStep = isReleaseStepActiveOrDone || (currentStep && currentStep.requires_presence === false && isScheduledFuture)
+                  const displaySteps = shouldShowReleaseStep 
+                    ? steps 
+                    : steps.filter(s => !(s.step_name.includes('Release') || s.step_name.includes('Claim')))
+                  return `${displaySteps.filter(s => s.status === 'completed').length} of ${displaySteps.length} completed`
+                })()}
               </span>
             </div>
             
             <div className="flex flex-col gap-0">
-              {steps.map((step, idx, filteredArr) => {
-                const isLast = idx === filteredArr.length - 1
-                const isCurrent = ticket.status === 'in_progress' && step.status === 'in_progress'
-                const isCompleted = step.status === 'completed'
-                const confirmKey = `${ticket.id}-${step.step_number}`
-                const isConfirming = confirming === confirmKey
+              {(() => {
+                const currentStep = steps.find(s => s.status === 'in_progress')
+                const isReleaseStepActiveOrDone = steps.some(s => (s.step_name.includes('Release') || s.step_name.includes('Claim')) && (s.status === 'in_progress' || s.status === 'completed'))
+                const isScheduledFuture = Boolean(releaseDate && releaseDate !== getTodayStr())
                 
-                const isReceiptSub = step.step_name.includes('Receipt') || step.step_name.includes('Payment')
-                const isFormSub = step.step_name.includes('Form Submission') || step.step_name.includes('Submission of Form')
-                const isFilingVerif = step.step_name.includes('Filing & Verification') || step.step_name.includes('Filing')
-                const isFormIssuance = step.step_name.includes('Form Issuance') || step.step_name.includes('Issuance of Form')
-                const isPrepDoc = step.step_name.includes('Preparation') || step.step_name.includes('Checking of Records') || step.step_name.includes('Records') || step.requires_presence === false
-                const isRelease = step.step_name.includes('Release')
-                
-                let confirmLabel = 'Confirm Step'
-                let instructionText = step.requires_presence !== false ? 'Verify requirements and mark step as done' : 'Click when records are verified and document is ready'
-                
-                if (isRelease) {
-                  confirmLabel = 'Release Document'
-                  instructionText = 'Set availability date and move ticket to Document Releases'
-                } else if (isPrepDoc) {
-                  confirmLabel = 'Document Prepared'
-                  instructionText = 'Click when records are verified and document is ready'
-                } else if (isReceiptSub) {
-                  confirmLabel = 'Payment Checked'
-                  instructionText = 'Click once student official receipt is verified'
-                } else if (isFormSub) {
-                  confirmLabel = 'Form Received'
-                  instructionText = 'Click once the submitted completion form is received'
-                } else if (isFilingVerif) {
-                  confirmLabel = 'Document Prepared'
-                  instructionText = 'Click once records are verified and document is prepared'
-                } else if (isFormIssuance) {
-                  confirmLabel = 'Form Issued'
-                  instructionText = 'Click once completion form is given to student'
-                } else if (step.requires_presence === false) {
-                  confirmLabel = 'Document Prepared'
-                  instructionText = 'Click when records are verified and document is ready'
-                }
+                // Hide Step 3 when ticket is at the counter (Step 1) or when Ready Today is chosen on Step 2
+                const shouldShowReleaseStep = isReleaseStepActiveOrDone || (currentStep && currentStep.requires_presence === false && isScheduledFuture)
+                const displaySteps = shouldShowReleaseStep 
+                  ? steps 
+                  : steps.filter(s => !(s.step_name.includes('Release') || s.step_name.includes('Claim')))
 
-                const stepDesc = getStepDescription(step, idx, filteredArr.length)
-                
-                return (
-                  <div key={step.id} className="flex gap-4 sm:gap-6">
-                    {/* Step Indicator & Spine */}
-                    <div className="flex flex-col items-center">
-                      <div className={`w-10 h-10 rounded-full shrink-0 flex items-center justify-center text-[13.5px] font-extrabold transition-all duration-300 ${
-                        isCompleted 
-                          ? 'bg-success text-white ring-4 ring-success-light shadow-xs' 
-                          : isCurrent 
-                          ? 'bg-maroon text-white ring-4 ring-maroon-light shadow-sm' 
-                          : 'bg-white border-2 border-border text-text-muted'
-                      }`}>
-                        {isCompleted ? <Check size={18} strokeWidth={3} /> : step.step_number}
+                return displaySteps.map((step, idx, filteredArr) => {
+                  const isLast = idx === filteredArr.length - 1
+                  const isCurrent = ticket.status === 'in_progress' && step.status === 'in_progress'
+                  const isCompleted = step.status === 'completed'
+                  const confirmKey = `${ticket.id}-${step.step_number}`
+                  const isConfirming = confirming === confirmKey
+                  
+                  const isRelease = step.step_name.includes('Release') || step.step_name.includes('Claim')
+                  const isReceiptSub = step.step_name.includes('Receipt') || step.step_name.includes('Payment')
+                  const isFormSub = step.step_name.includes('Form Submission') || step.step_name.includes('Submission of Form')
+                  const isFilingVerif = step.step_name.includes('Filing & Verification') || step.step_name.includes('Filing')
+                  const isFormIssuance = step.step_name.includes('Form Issuance') || step.step_name.includes('Issuance of Form')
+                  const isPrepDoc = !isRelease && (step.step_name.includes('Preparation') || step.step_name.includes('Verification') || step.step_name.includes('Checking of Records') || step.step_name.includes('Records') || step.requires_presence === false)
+                  
+                  let confirmLabel = 'Confirm Step'
+                  let instructionText = step.requires_presence !== false ? 'Verify requirements and mark step as done' : 'Click when records are verified and document is ready'
+                  
+                  if (isRelease) {
+                    confirmLabel = 'Release Document'
+                    instructionText = 'Verify the document before releasing'
+                  } else if (isPrepDoc) {
+                    if (releaseDate && releaseDate !== getTodayStr()) {
+                      confirmLabel = 'Set Release Date'
+                      instructionText = 'Set scheduled release date and confirm document preparation'
+                    } else {
+                      confirmLabel = 'Release Document'
+                      instructionText = 'Confirm document verification and send to Document Releases table'
+                    }
+                  } else if (isReceiptSub) {
+                    confirmLabel = 'Payment Checked'
+                    instructionText = 'Click once student official receipt is verified'
+                  } else if (isFormSub) {
+                    confirmLabel = 'Form Received'
+                    instructionText = 'Click once the submitted completion form is received'
+                  } else if (isFilingVerif) {
+                    confirmLabel = 'Document Prepared'
+                    instructionText = 'Click once records are verified and document is prepared'
+                  } else if (isFormIssuance) {
+                    confirmLabel = 'Form Issued'
+                    instructionText = 'Click once completion form is given to student'
+                  }
+
+                  const stepDesc = getStepDescription(step, idx, filteredArr.length)
+                  
+                  return (
+                    <div key={step.id} className="flex gap-4 sm:gap-6">
+                      {/* Step Indicator & Spine */}
+                      <div className="flex flex-col items-center">
+                        <div className={`w-10 h-10 rounded-full shrink-0 flex items-center justify-center text-[13.5px] font-extrabold transition-all duration-300 ${
+                          isCompleted 
+                            ? 'bg-success text-white ring-4 ring-success-light shadow-xs' 
+                            : isCurrent 
+                            ? 'bg-maroon text-white ring-4 ring-maroon-light shadow-sm' 
+                            : 'bg-white border-2 border-border text-text-muted'
+                        }`}>
+                          {isCompleted ? <Check size={18} strokeWidth={3} /> : step.step_number}
+                        </div>
+                        {!isLast && (
+                          <div className={`w-0.5 flex-1 min-h-14 my-2 transition-colors duration-500 ${
+                            isCompleted ? 'bg-success/50' : 'bg-border'
+                          }`} />
+                        )}
                       </div>
-                      {!isLast && (
-                        <div className={`w-0.5 flex-1 min-h-14 my-2 transition-colors duration-500 ${
-                          isCompleted ? 'bg-success/50' : 'bg-border'
-                        }`} />
-                      )}
-                    </div>
 
-                    {/* Step Card Content */}
-                    <div className={`flex-1 ${isLast ? 'pb-0' : 'pb-6'}`}>
-                      <div className={`flex flex-col gap-3 rounded-2xl transition-all duration-300 ${
-                        isCurrent 
-                          ? 'bg-white p-5 sm:p-6 border-2 border-maroon/20 shadow-md ring-4 ring-maroon/5 -mt-1' 
-                          : isCompleted
-                          ? 'bg-surface/50 p-4.5 rounded-2xl border border-border/80'
-                          : 'bg-surface/30 p-4.5 rounded-2xl border border-border/50 opacity-65'
-                      }`}>
-                        
-                        {/* Step Header Row */}
-                        <div className="flex justify-between items-start gap-4 flex-wrap">
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2 flex-wrap mb-1">
-                              <span className={`text-[15.5px] font-bold ${
-                                isCompleted ? 'text-success' : isCurrent ? 'text-text-main' : 'text-text-sub'
-                              }`}>
-                                {step.step_name}
-                              </span>
+                      {/* Step Card Content */}
+                      <div className={`flex-1 ${isLast ? 'pb-0' : 'pb-6'}`}>
+                        <div className={`flex flex-col gap-3 rounded-2xl transition-all duration-300 ${
+                          isCurrent 
+                            ? 'bg-white p-5 sm:p-6 border-2 border-maroon/20 shadow-md ring-4 ring-maroon/5 -mt-1' 
+                            : isCompleted
+                            ? 'bg-surface/50 p-4.5 rounded-2xl border border-border/80'
+                            : 'bg-surface/30 p-4.5 rounded-2xl border border-border/50 opacity-65'
+                        }`}>
+                          
+                          {/* Step Header Row */}
+                          <div className="flex justify-between items-start gap-4 flex-wrap">
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 flex-wrap mb-1">
+                                <span className={`text-[15.5px] font-bold ${
+                                  isCompleted ? 'text-success' : isCurrent ? 'text-text-main' : 'text-text-sub'
+                                }`}>
+                                  {step.step_name}
+                                </span>
+
+                                {isCurrent && (
+                                  <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-maroon-light text-maroon border border-maroon-border">
+                                    Current Action
+                                  </span>
+                                )}
+
+                                {/* Presence Badge */}
+                                {step.requires_presence === false ? (
+                                  <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-gold-light text-gold border border-gold-border">
+                                    <Sparkles size={11} /> Back-Office Processing
+                                  </span>
+                                ) : (
+                                  <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-surface border border-border text-text-muted">
+                                    <Users size={11} /> Student Presence Required
+                                  </span>
+                                )}
+
+                                {step.location && (
+                                  <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-surface border border-border text-text-muted">
+                                    <DoorOpen size={11} /> {step.location}
+                                  </span>
+                                )}
+                              </div>
+
+                              {/* Step Description */}
+                              <p className="text-[12.5px] text-text-sub font-normal m-0 leading-relaxed mt-1">
+                                {stepDesc}
+                              </p>
+                              
+                              {isCompleted && step.confirmed_at && (
+                                <div className="text-[12px] font-medium text-text-muted mt-2 flex items-center gap-1.5">
+                                  <CheckCircle2 size={13} className="text-success" />
+                                  Completed on {new Date(step.confirmed_at).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
+                                </div>
+                              )}
 
                               {isCurrent && (
-                                <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-maroon-light text-maroon border border-maroon-border">
-                                  Current Action
-                                </span>
-                              )}
-
-                              {/* Presence Badge */}
-                              {step.requires_presence === false ? (
-                                <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-gold-light text-gold border border-gold-border">
-                                  <Sparkles size={11} /> Back-Office Processing
-                                </span>
-                              ) : (
-                                <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-surface border border-border text-text-muted">
-                                  <Users size={11} /> Student Presence Required
-                                </span>
-                              )}
-
-                              {step.location && (
-                                <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-surface border border-border text-text-muted">
-                                  <DoorOpen size={11} /> {step.location}
-                                </span>
+                                <div className="text-[12.5px] text-maroon font-semibold mt-2 flex items-center gap-1.5">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-maroon animate-ping inline-block" />
+                                  {instructionText}
+                                </div>
                               )}
                             </div>
-
-                            {/* Step Description */}
-                            <p className="text-[12.5px] text-text-sub font-normal m-0 leading-relaxed mt-1">
-                              {stepDesc}
-                            </p>
                             
-                            {isCompleted && step.confirmed_at && (
-                              <div className="text-[12px] font-medium text-text-muted mt-2 flex items-center gap-1.5">
-                                <CheckCircle2 size={13} className="text-success" />
-                                Completed on {new Date(step.confirmed_at).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
-                              </div>
-                            )}
-
+                            {/* Action Button for Current Step */}
                             {isCurrent && (
-                              <div className="text-[12.5px] text-maroon font-semibold mt-2 flex items-center gap-1.5">
-                                <span className="w-1.5 h-1.5 rounded-full bg-maroon animate-ping inline-block" />
-                                {instructionText}
+                              <div className="shrink-0">
+                                <button
+                                  onClick={async () => {
+                                    if (isReleasing || isConfirming) return
+                                    const finalDate = releaseDate || getTodayStr()
+
+                                    if (isPrepDoc) {
+                                      if (releaseDate === getTodayStr() && !documentVerified) {
+                                        showToast('Please check the confirmation box before releasing the document.', 'error')
+                                        return
+                                      }
+                                      const apptId = ticket.appointment_id || ticket.appointments?.id
+                                      setIsReleasing(true)
+                                      try {
+                                        if (onSetReleaseDate && apptId && finalDate) {
+                                          await onSetReleaseDate(apptId, finalDate)
+                                        }
+                                        await onConfirm(ticket.id, step.step_number, txType?.name, name, confirmLabel, finalDate, '', documentVerified)
+                                        
+                                        if (releaseDate === getTodayStr()) {
+                                          showToast('Document verified and moved to Document Releases table!')
+                                          onClose()
+                                        } else {
+                                          showToast(`Release date scheduled for ${finalDate}! Advanced to Step 3 (Release).`)
+                                          setLocalSteps(prev => (prev || []).map(s => {
+                                            if (s.step_number === step.step_number) return { ...s, status: 'completed', confirmed_at: new Date().toISOString() }
+                                            if (s.step_number === step.step_number + 1) return { ...s, status: 'in_progress' }
+                                            return s
+                                          }))
+                                          setLocalTicket(prev => ({ ...prev, current_step: step.step_number + 1 }))
+                                          setDocumentVerified(false)
+                                        }
+                                      } catch (err) {
+                                        showToast(err?.message || 'Failed to confirm preparation.', 'error')
+                                      } finally {
+                                        setIsReleasing(false)
+                                      }
+                                    } else if (isRelease) {
+                                      if (!documentVerified) {
+                                        showToast('Please check the confirmation box before releasing the document.', 'error')
+                                        return
+                                      }
+                                      setIsReleasing(true)
+                                      try {
+                                        await onConfirm(ticket.id, step.step_number, txType?.name, name, 'Release Document', null, '', true)
+                                        showToast('Document successfully released to student!')
+                                        onClose()
+                                      } catch (err) {
+                                        showToast(err?.message || 'Failed to release document.', 'error')
+                                      } finally {
+                                        setIsReleasing(false)
+                                      }
+                                    } else {
+                                      try {
+                                        await onConfirm(ticket.id, step.step_number, txType?.name, name, confirmLabel, null, '', false)
+                                        showToast(`Step ${step.step_number} (${confirmLabel}) confirmed!`)
+                                        onClose()
+                                      } catch (err) {
+                                        showToast(err?.message || 'Failed to confirm step.', 'error')
+                                      }
+                                    }
+                                  }}
+                                  disabled={
+                                    isConfirming || 
+                                    isReleasing || 
+                                    (isPrepDoc && releaseDate === getTodayStr() && !documentVerified) || 
+                                    (isPrepDoc && releaseDate !== getTodayStr() && !releaseDate) || 
+                                    (isRelease && !documentVerified)
+                                  }
+                                  className={`px-5 py-2.5 rounded-xl text-[13px] font-extrabold font-sans transition-all shadow-xs inline-flex items-center gap-2 ${
+                                    isConfirming || isReleasing || (isPrepDoc && releaseDate === getTodayStr() && !documentVerified) || (isPrepDoc && releaseDate !== getTodayStr() && !releaseDate) || (isRelease && !documentVerified)
+                                      ? 'bg-border text-text-muted cursor-not-allowed shadow-none' 
+                                      : 'bg-maroon hover:bg-maroon-dark text-white cursor-pointer hover:shadow-sm active:scale-98'
+                                  }`}
+                                >
+                                  {isReleasing || isConfirming ? (
+                                    <>
+                                      <Loader2 size={14} className="animate-spin" />
+                                      {isReleasing ? (isPrepDoc ? 'Saving Release Date…' : 'Releasing…') : 'Confirming…'}
+                                    </>
+                                  ) : (
+                                    <>
+                                      <Check size={14} className="stroke-3" />
+                                      {confirmLabel}
+                                    </>
+                                  )}
+                                </button>
                               </div>
                             )}
                           </div>
-                          
-                          {/* Action Button for Current Step */}
-                          {isCurrent && (
-                            <div className="shrink-0">
-                              <button
-                                onClick={async () => {
-                                  if (isReleasing || isConfirming) return
-                                  const finalDate = releaseDate || getTodayStr()
 
-                                  if (isRelease) {
-                                    if (!documentVerified) {
-                                      showToast('Please confirm the document is complete, correct, and verified.', 'error')
-                                      return
-                                    }
-                                    const apptId = ticket.appointment_id || ticket.appointments?.id
-                                    if (!apptId) {
-                                      showToast('Error: Appointment ID is missing.', 'error')
-                                      return
-                                    }
-                                    setIsReleasing(true)
-                                    try {
-                                      await onSetReleaseDate(apptId, finalDate)
-                                      showToast('Document moved to Document Releases successfully!')
-                                      onClose()
-                                    } catch (err) {
-                                      showToast(err?.message || 'Failed to set release date. Please try again.', 'error')
-                                    } finally {
-                                      setIsReleasing(false)
-                                    }
-                                  } else {
-                                    try {
-                                      await onConfirm(ticket.id, step.step_number, txType?.name, name, confirmLabel, null, '', false)
-                                      showToast(`Step ${step.step_number} (${confirmLabel}) confirmed!`)
-                                      onClose()
-                                    } catch (err) {
-                                      showToast(err?.message || 'Failed to confirm step.', 'error')
-                                    }
-                                  }
-                                }}
-                                disabled={isConfirming || isReleasing || (isRelease && (!releaseDate || !documentVerified))}
-                                className={`px-5 py-2.5 rounded-xl text-[13px] font-extrabold font-sans transition-all shadow-xs inline-flex items-center gap-2 ${
-                                  isConfirming || isReleasing || (isRelease && (!releaseDate || !documentVerified)) 
-                                    ? 'bg-border text-text-muted cursor-not-allowed shadow-none' 
-                                    : 'bg-maroon hover:bg-maroon-dark text-white cursor-pointer hover:shadow-sm active:scale-98'
-                                }`}
-                              >
-                                {isReleasing || isConfirming ? (
-                                  <>
-                                    <Loader2 size={14} className="animate-spin" />
-                                    {isReleasing ? 'Processing Release…' : 'Confirming…'}
-                                  </>
-                                ) : (
-                                  <>
-                                    <Check size={14} className="stroke-3" />
-                                    {confirmLabel}
-                                  </>
-                                )}
-                              </button>
-                            </div>
-                          )}
-                        </div>
-
-                        {/* Release Form (when current step is Release) */}
-                        {isCurrent && isRelease && (
-                          <div className="mt-3 pt-4 border-t border-border">
-                            <div className="flex flex-col gap-4">
-                              <div>
-                                <label className="block text-[11px] font-extrabold text-text-muted uppercase tracking-wider mb-2.5">
+                          {/* Release Date Form (when current step is Verification & Preparation) */}
+                          {isCurrent && isPrepDoc && (
+                            <div className="mt-3 pt-4 border-t border-border flex flex-col gap-3">
+                              <div className="flex flex-col gap-3">
+                                <label className="block text-[11px] font-extrabold text-text-muted uppercase tracking-wider mb-0.5">
                                   Select Document Release Date:
                                 </label>
                                 
@@ -504,29 +566,57 @@ export default function QueueDetailsModal({ ticketData, onClose, onConfirm, conf
                                   )}
                                 </div>
                               </div>
-                              
-                              {/* Verification confirmation checkbox */}
+
+                              {/* If Ready Today, show verification confirmation checkbox */}
+                              {releaseDate === getTodayStr() && (
+                                <div className="p-4 rounded-xl bg-surface border border-border flex items-start gap-3.5 animate-fade-in">
+                                  <input 
+                                    type="checkbox" 
+                                    id="verifyReadyTodayDoc" 
+                                    checked={documentVerified}
+                                    onChange={e => setDocumentVerified(e.target.checked)}
+                                    className="mt-0.5 w-5 h-5 accent-maroon rounded cursor-pointer shrink-0"
+                                  />
+                                  <label htmlFor="verifyReadyTodayDoc" className="text-[13.5px] text-text-main font-semibold leading-snug cursor-pointer select-none">
+                                    I confirm that the requested document is verified, signed, and released to the student.
+                                  </label>
+                                </div>
+                              )}
+                            </div>
+                          )}
+
+                          {/* Release Step Verification & Handover Form (when current step is Release) */}
+                          {isCurrent && isRelease && (
+                            <div className="mt-3 pt-4 border-t border-border flex flex-col gap-3">
+                              <div className="p-3.5 rounded-xl bg-success/5 border border-success/20 flex items-center gap-2.5 text-xs text-success-dark font-medium">
+                                <CheckCircle2 size={16} className="text-success shrink-0" />
+                                <span>
+                                  Document is ready for release. Verify the document before releasing.
+                                </span>
+                              </div>
+
+                              {/* Verification confirmation checkbox for Release */}
                               <div className="p-4 rounded-xl bg-surface border border-border flex items-start gap-3.5">
                                 <input 
                                   type="checkbox" 
-                                  id="verifyDoc" 
+                                  id="verifyReleaseDoc" 
                                   checked={documentVerified}
                                   onChange={e => setDocumentVerified(e.target.checked)}
                                   className="mt-0.5 w-5 h-5 accent-maroon rounded cursor-pointer shrink-0"
                                 />
-                                <label htmlFor="verifyDoc" className="text-[13.5px] text-text-main font-semibold leading-snug cursor-pointer select-none">
-                                  I confirm that the requested document is verified, signed, and ready for release to the student.
+                                <label htmlFor="verifyReleaseDoc" className="text-[13.5px] text-text-main font-semibold leading-snug cursor-pointer select-none">
+                                  I confirm that the requested document is verified, signed, and released to the student.
                                 </label>
                               </div>
                             </div>
-                          </div>
-                        )}
+                          )}
 
+                        </div>
                       </div>
                     </div>
-                  </div>
-                )
-              })}
+                  )
+                })
+              })()}
             </div>
           </div>
         ) : (

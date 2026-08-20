@@ -2,7 +2,7 @@ export default function TermsModal({ isOpen, onClose }) {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-100 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in" onClick={onClose}>
+    <div className="fixed inset-0 z-100 flex items-center justify-center p-4 bg-black/60 animate-fade-in" onClick={onClose}>
       <div 
         className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[85vh] flex flex-col overflow-hidden relative"
         onClick={e => e.stopPropagation()}

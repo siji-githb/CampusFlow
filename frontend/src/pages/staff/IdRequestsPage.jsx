@@ -68,7 +68,7 @@ function EmailModal({ req, token, onClose, onSentAndResolve }) {
   }
 
   return (
-    <div className="fixed inset-0 z-200 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+    <div className="fixed inset-0 z-200 flex items-center justify-center p-4 bg-black/60">
       <div className="bg-white rounded-2xl shadow-[0_24px_64px_rgba(0,0,0,0.18)] w-full max-w-212.5 overflow-hidden animate-fade-up">
         
         {/* Header */}

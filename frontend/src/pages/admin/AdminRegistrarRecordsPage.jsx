@@ -541,7 +541,7 @@ export default function AdminRegistrarRecordsPage() {
 
       {/* ── View Record Modal ── */}
       {viewingRecord && (
-        <div className="fixed inset-0 z-9999 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+        <div className="fixed inset-0 z-9999 flex items-center justify-center bg-black/50 p-4">
           <div className="bg-white rounded-3xl w-full max-w-150 shadow-[0_20px_40px_rgba(0,0,0,0.1)] overflow-hidden">
              {/* Header */}
              <div className="p-[24px_32px] bg-maroon-light border-b border-border flex justify-between items-center">

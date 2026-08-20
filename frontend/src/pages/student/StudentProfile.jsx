@@ -278,7 +278,7 @@ export default function StudentProfile() {
 
   return (
     <StudentLayout activeTab="profile" mobileTitle="Profile" backTo="/student/dashboard">
-      <div className="w-full max-w-262.5 mx-auto px-4 py-6 md:px-0 md:py-0 pb-24 md:pb-0">
+      <div className="w-full max-w-5xl mx-auto px-3.5 sm:px-6 md:px-8 py-3 sm:py-6 pb-24 md:pb-12 box-border">
         
         {/* Header */}
         <div className="hidden md:flex justify-between items-center mb-8">
@@ -291,33 +291,33 @@ export default function StudentProfile() {
         </div>
 
         {/* Profile Card */}
-        <div className="bg-white rounded-3xl border border-border p-8 shadow-sm animate-fade-up">
+        <div className="bg-white rounded-2xl sm:rounded-3xl border border-border p-4 sm:p-6 md:p-8 shadow-sm animate-fade-up">
           
-          <div className="flex flex-col md:flex-row items-center md:items-start justify-between pb-6 md:pb-8 mb-6 md:mb-8 border-b border-border gap-5 md:gap-0 w-full">
-            <div className="flex flex-col md:flex-row items-center gap-4 md:gap-6 text-center md:text-left w-full md:w-auto">
-              <div className="w-20 h-20 md:w-24 md:h-24 shrink-0 rounded-full bg-maroon-light border-[3px] border-maroon-border flex items-center justify-center text-maroon text-[28px] md:text-[32px] font-bold overflow-hidden shadow-sm">
+          <div className="flex flex-col md:flex-row items-center md:items-start justify-between pb-5 sm:pb-6 md:pb-8 mb-5 sm:mb-6 md:mb-8 border-b border-border gap-4 md:gap-0 w-full">
+            <div className="flex flex-col sm:flex-row items-center gap-3.5 sm:gap-6 text-center sm:text-left w-full md:w-auto">
+              <div className="w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 shrink-0 rounded-full bg-maroon-light border-[3px] border-maroon-border flex items-center justify-center text-maroon text-2xl sm:text-3xl font-bold overflow-hidden shadow-sm">
                 {user?.profile_image ? (
                   <img src={user.profile_image} alt="Profile" className="w-full h-full object-cover" />
                 ) : (
                   user?.first_name?.[0]?.toUpperCase() || 'S'
                 )}
               </div>
-              <div>
-                <h2 className="font-serif text-[24px] font-bold text-text-main m-0 mb-2">
+              <div className="min-w-0">
+                <h2 className="font-serif text-lg sm:text-2xl font-bold text-text-main m-0 mb-1 sm:mb-2 truncate">
                   {user?.first_name} {user?.last_name}
                 </h2>
-                <div className="flex flex-wrap justify-center md:justify-start items-center gap-2 md:gap-4 text-[13px] md:text-[14px] text-text-sub font-medium">
-                  <span className="flex items-center gap-1.5"><IdCard size={16} className="text-gold" /> ID: {user?.student_id || 'Not set'}</span>
-                  <span className="hidden md:inline-block w-1 h-1 rounded-full bg-border-strong" />
-                  <span className="flex items-center gap-1.5"><Tag size={16} className="text-gold" /> {user?.priority_class ? `${user.priority_class === 'pwd' ? 'PWD' : user.priority_class.charAt(0).toUpperCase() + user.priority_class.slice(1)} Student` : 'Student'}</span>
+                <div className="flex flex-wrap justify-center sm:justify-start items-center gap-2 sm:gap-4 text-xs sm:text-sm text-text-sub font-medium">
+                  <span className="flex items-center gap-1.5"><IdCard size={14} className="text-gold" /> ID: {user?.student_id || 'Not set'}</span>
+                  <span className="hidden sm:inline-block w-1 h-1 rounded-full bg-border-strong" />
+                  <span className="flex items-center gap-1.5"><Tag size={14} className="text-gold" /> {user?.priority_class ? `${user.priority_class === 'pwd' ? 'PWD' : user.priority_class.charAt(0).toUpperCase() + user.priority_class.slice(1)} Student` : 'Student'}</span>
                 </div>
               </div>
             </div>
             <button 
               onClick={handleOpenEditModal}
-              className="flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl border border-border text-[14px] font-semibold text-text-main bg-white hover:bg-off-white hover:border-maroon-border hover:text-maroon transition-colors shadow-sm cursor-pointer w-full md:w-auto"
+              className="flex items-center justify-center gap-1.5 sm:gap-2 px-3.5 py-2 sm:px-5 sm:py-2.5 rounded-xl border border-border text-xs sm:text-sm font-bold text-text-main bg-white hover:bg-off-white hover:border-maroon-border hover:text-maroon transition-colors shadow-2xs cursor-pointer w-full md:w-auto mt-2 md:mt-0"
             >
-              <Edit2 size={16} /> Edit
+              <Edit2 size={14} /> Edit Profile
             </button>
           </div>
 
@@ -644,7 +644,7 @@ export default function StudentProfile() {
 
       {/* Manage Profile Modal */}
       {isEditModalOpen && (
-        <div className="fixed inset-0 z-1000 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm" style={{ animation: 'fadeIn 0.2s ease-out' }}>
+        <div className="fixed inset-0 z-1000 flex items-center justify-center p-4 bg-black/50" style={{ animation: 'fadeIn 0.2s ease-out' }}>
           <style>{`
             @keyframes fadeIn {
               from { opacity: 0; }

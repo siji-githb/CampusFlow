@@ -16,21 +16,21 @@ const CustomDropdown = ({ value, onChange, options, icon }) => {
   const currentLabel = options.find(o => o.value === value)?.label || value
 
   return (
-    <div className="relative inline-block w-full sm:max-w-55 z-20 group">
+    <div className="relative inline-block w-auto min-w-36.25 sm:min-w-45 max-w-50 sm:max-w-55 z-20 group">
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="w-full flex items-center justify-between py-2.5 pl-10 pr-3.5 rounded-xl border-[1.5px] border-border bg-white text-[13.5px] text-text-main font-bold outline-none cursor-pointer font-sans hover:border-maroon/30 transition-all shadow-[0_2px_8px_rgba(0,0,0,0.04)]"
+        className="w-full flex items-center justify-between py-2 px-2.5 pl-8 sm:py-2.5 sm:pl-9 sm:pr-3 rounded-xl border border-border sm:border-[1.5px] bg-white text-xs sm:text-[13.5px] text-text-main font-bold outline-none cursor-pointer font-sans hover:border-maroon/30 transition-all shadow-2xs"
       >
-        <div className="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none">
-          {icon}
+        <div className="absolute inset-y-0 left-0 flex items-center pl-2.5 sm:pl-3 pointer-events-none text-gold">
+          {React.isValidElement(icon) ? React.cloneElement(icon, { size: 14, className: "sm:w-4 sm:h-4 text-gold shrink-0" }) : icon}
         </div>
-        <span className="truncate pr-2">{currentLabel}</span>
-        <ChevronDown size={16} className={`text-text-sub transition-transform duration-200 shrink-0 ${isOpen ? 'rotate-180' : 'group-hover:text-text-main'}`} />
+        <span className="truncate pr-1.5 text-left">{currentLabel}</span>
+        <ChevronDown size={14} className={`text-text-sub transition-transform duration-200 shrink-0 sm:w-4 sm:h-4 ${isOpen ? 'rotate-180' : 'group-hover:text-text-main'}`} />
       </button>
       {isOpen && (
         <>
           <div className="fixed inset-0 z-40" onClick={() => setIsOpen(false)} />
-          <div className="absolute left-0 top-full mt-2 w-[110%] bg-white rounded-xl border border-border shadow-lg p-2 z-50 animate-fade-up max-h-75 overflow-y-auto" style={{ animationDuration: '0.2s' }}>
+          <div className="absolute left-0 top-full mt-1.5 min-w-full w-max max-w-65 bg-white rounded-xl border border-border shadow-lg p-1.5 z-50 animate-fade-up max-h-75 overflow-y-auto" style={{ animationDuration: '0.2s' }}>
             {options.map(o => {
               const isActive = value === o.value;
               return (
@@ -39,11 +39,11 @@ const CustomDropdown = ({ value, onChange, options, icon }) => {
                   onClick={() => { onChange(o.value); setIsOpen(false); }}
                   className={`p-2 rounded-lg cursor-pointer flex items-center justify-between transition-colors ${isActive ? 'bg-maroon/5 text-maroon' : 'text-text-main hover:bg-off-white'}`}
                 >
-                  <div className="flex items-center gap-2.5">
-                    <div className={`w-3 h-3 rounded-full border flex items-center justify-center shrink-0 ${isActive ? 'border-maroon' : 'border-text-muted/40'}`}>
+                  <div className="flex items-center gap-2">
+                    <div className={`w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full border flex items-center justify-center shrink-0 ${isActive ? 'border-maroon' : 'border-text-muted/40'}`}>
                       {isActive && <div className="w-1.5 h-1.5 bg-maroon rounded-full" />}
                     </div>
-                    <span className="text-[13px] font-semibold whitespace-nowrap">{o.label}</span>
+                    <span className="text-xs sm:text-[13px] font-semibold whitespace-nowrap">{o.label}</span>
                   </div>
                 </div>
               )
@@ -56,6 +56,7 @@ const CustomDropdown = ({ value, onChange, options, icon }) => {
 }
 
 const STATUS = {
+  scheduled_release: { label: 'Scheduled for Release', bg: '#FEFCE8', color: '#854D0E', border: '#FEF08A' },
   ready_for_pickup: { label: 'Ready for Pickup', bg: '#F0FDF4', color: '#15803D', border: '#BBF7D0' },
   confirmed: { label: 'Confirmed', bg: '#EFF6FF', color: '#1D4ED8', border: '#BFDBFE' },
   pending: { label: 'Pending', bg: '#FEFCE8', color: '#854D0E', border: '#FEF08A' },
@@ -74,21 +75,38 @@ export const isAppointmentToday = (dateStr) => {
   return dateStr === localToday;
 };
 
+export const isFutureScheduled = (appt) => {
+  if (!appt) return false;
+  if (appt.status === 'completed' || appt.status === 'cancelled') return false;
+  const now = new Date();
+  const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+  const tickets = Array.isArray(appt.queue_tickets) ? appt.queue_tickets : (appt.queue_tickets ? [appt.queue_tickets] : []);
+  const relDate = appt.release_date || tickets[0]?.appointments?.release_date || tickets[0]?.release_date;
+  return Boolean(relDate && relDate > todayStr);
+};
+
 export const isReadyForPickup = (appt) => {
   if (!appt) return false;
   if (appt.status === 'completed' || appt.status === 'cancelled') return false;
-  if (appt.release_date) return true;
+  const now = new Date();
+  const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
   const tickets = Array.isArray(appt.queue_tickets) ? appt.queue_tickets : (appt.queue_tickets ? [appt.queue_tickets] : []);
-  return tickets.some(qt => {
-    if (qt.status === 'completed') return false;
-    return qt.current_step && qt.total_steps && qt.current_step >= qt.total_steps;
-  });
+  const relDate = appt.release_date || tickets[0]?.appointments?.release_date || tickets[0]?.release_date;
+  
+  if (relDate && relDate > todayStr) {
+    return false;
+  }
+  if (relDate && relDate <= todayStr) {
+    return true;
+  }
+  return false;
 };
 
 export const getEffectiveStatus = (appt) => {
   if (!appt) return 'pending';
   if (appt.status === 'cancelled') return 'cancelled';
   if (appt.status === 'completed') return 'completed';
+  if (isFutureScheduled(appt)) return 'scheduled_release';
   if (isReadyForPickup(appt)) return 'ready_for_pickup';
   return appt.status || 'pending';
 };
@@ -108,6 +126,7 @@ function AppointmentDetailsContent({
   const selEff = getEffectiveStatus(selectedAppt)
   const selStatusObj = STATUS[selEff] || STATUS.pending
   const isSelReady = selEff === 'ready_for_pickup'
+  const isSelScheduled = selEff === 'scheduled_release'
   const isSelCompleted = selEff === 'completed'
   const isSelCancelled = selEff === 'cancelled'
 
@@ -119,7 +138,7 @@ function AppointmentDetailsContent({
             <p className="text-[10px] font-bold text-text-muted tracking-widest uppercase m-0 mb-1.5">TRANSACTION OVERVIEW</p>
             <h2 className="font-serif text-[22px] font-bold text-text-main m-0 mb-2">{selectedAppt.transaction_types?.name || 'Transaction'}</h2>
             <span className="text-[11.5px] font-bold py-1.5 px-3 rounded-full inline-flex items-center gap-1.5" style={{ background: selStatusObj.bg, color: selStatusObj.color, border: `1px solid ${selStatusObj.border}` }}>
-              {isSelReady ? <FileCheck size={13} /> : isSelCompleted ? <CheckCircle size={13} /> : null} {selStatusObj.label}
+              {isSelReady ? <FileCheck size={13} /> : isSelScheduled ? <Calendar size={13} /> : isSelCompleted ? <CheckCircle size={13} /> : null} {selStatusObj.label}
             </span>
           </div>
         </div>
@@ -128,12 +147,47 @@ function AppointmentDetailsContent({
       {isMobileModal && (
         <div className="mb-4">
           <span className="text-[11.5px] font-bold py-1.5 px-3 rounded-full inline-flex items-center gap-1.5" style={{ background: selStatusObj.bg, color: selStatusObj.color, border: `1px solid ${selStatusObj.border}` }}>
-            {isSelReady ? <FileCheck size={13} /> : isSelCompleted ? <CheckCircle size={13} /> : null} {selStatusObj.label}
+            {isSelReady ? <FileCheck size={13} /> : isSelScheduled ? <Calendar size={13} /> : isSelCompleted ? <CheckCircle size={13} /> : null} {selStatusObj.label}
           </span>
         </div>
       )}
 
-      {isSelReady ? (
+      {isSelScheduled ? (
+        <div className="flex flex-col flex-1">
+          <div className="bg-gold/8 border border-gold/25 rounded-2xl p-5 mb-5 shadow-[0_2px_8px_rgba(0,0,0,0.03)]">
+            <div className="flex items-start gap-3.5">
+              <div className="w-10 h-10 rounded-xl bg-gold text-white flex items-center justify-center shrink-0 shadow-sm">
+                <Calendar size={22} />
+              </div>
+              <div>
+                <h4 className="text-[15px] font-bold text-text-main m-0 mb-1">Scheduled for Release</h4>
+                <p className="text-[12.5px] text-text-sub m-0 leading-relaxed">
+                  Your document is currently being prepared and processed in the back office. It is scheduled for release on <strong>{new Date(selectedAppt.release_date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</strong>.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-5">
+            <div className="p-4.5 rounded-2xl bg-white border border-border shadow-[0_2px_8px_rgba(0,0,0,0.03)]">
+              <p className="text-[10px] font-bold text-text-muted tracking-widest uppercase m-0 mb-2 flex items-center gap-1.5">
+                <Calendar size={12} className="text-gold" /> CLAIM DATE
+              </p>
+              <p className="text-[13.5px] font-bold text-text-main m-0 mb-0.5">
+                {new Date(selectedAppt.release_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+              </p>
+              <p className="text-[12px] text-text-sub m-0">On or after this date</p>
+            </div>
+            <div className="p-4.5 rounded-2xl bg-white border border-border shadow-[0_2px_8px_rgba(0,0,0,0.03)]">
+              <p className="text-[10px] font-bold text-text-muted tracking-widest uppercase m-0 mb-2 flex items-center gap-1.5">
+                <MapPin size={12} className="text-maroon" /> PICKUP LOCATION
+              </p>
+              <p className="text-[13.5px] font-bold text-text-main m-0 mb-0.5">Registrar's Office</p>
+              <p className="text-[12px] text-text-sub m-0">Window 1 / Releasing Counter</p>
+            </div>
+          </div>
+        </div>
+      ) : isSelReady ? (
         <div className="flex flex-col flex-1">
           <div className="bg-white border border-border rounded-2xl p-5 mb-5 shadow-[0_2px_8px_rgba(0,0,0,0.03)]">
             <div className="flex items-start gap-3.5">
@@ -540,6 +594,7 @@ export default function MyAppointments() {
     return appointments.filter(appt => {
       const effStatus = getEffectiveStatus(appt);
       if (filter === 'all') return true;
+      if (filter === 'scheduled_release') return effStatus === 'scheduled_release';
       if (filter === 'ready_for_pickup') return effStatus === 'ready_for_pickup';
       if (filter === 'confirmed') return effStatus === 'confirmed';
       return appt.status === filter;
@@ -554,6 +609,9 @@ export default function MyAppointments() {
 
       if (aEff === 'ready_for_pickup' && bEff !== 'ready_for_pickup') return -1;
       if (aEff !== 'ready_for_pickup' && bEff === 'ready_for_pickup') return 1;
+
+      if (aEff === 'scheduled_release' && bEff !== 'scheduled_release') return -1;
+      if (aEff !== 'scheduled_release' && bEff === 'scheduled_release') return 1;
       
       if (aEnd && bEnd) {
         const dateCmp = (b.appointment_date || '').localeCompare(a.appointment_date || '');
@@ -582,6 +640,7 @@ export default function MyAppointments() {
 
   const options = [
     { value: 'all', label: 'All Appointments' },
+    { value: 'scheduled_release', label: 'Scheduled for Release' },
     { value: 'ready_for_pickup', label: 'Ready for Pickup' },
     { value: 'confirmed', label: 'Confirmed' },
     { value: 'completed', label: 'Completed' },
@@ -594,7 +653,7 @@ export default function MyAppointments() {
 
   return (
     <StudentLayout activeTab="appointments" mobileTitle="My Appointments">
-      <div className="w-full max-w-165 mx-auto pt-4 px-4 pb-20 box-border md:max-w-262.5 md:mx-0 md:pt-0 md:px-0">
+      <div className="w-full max-w-6xl mx-auto px-3.5 sm:px-6 md:px-8 py-3 sm:py-6 pb-24 md:pb-12 box-border">
         
         {/* Desktop Header */}
         <div className="hidden md:flex justify-between items-start mb-8">
@@ -627,7 +686,7 @@ export default function MyAppointments() {
             </div>
           )}
 
-          <div className="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-3">
+          <div className="flex flex-row items-center justify-between gap-2.5 sm:gap-3 flex-wrap">
             <div className="flex items-center gap-2">
               <CustomDropdown 
                 value={filter} 
@@ -636,17 +695,18 @@ export default function MyAppointments() {
                   setCurrentPage(1)
                 }} 
                 options={options} 
-                icon={<Filter size={16} className="text-gold" />}
+                icon={<Filter size={14} className="text-gold" />}
               />
             </div>
 
             {hasCancelledAppointments && (
               <button
                 onClick={() => setShowClearConfirm(true)}
-                className="py-2.5 px-4 rounded-xl border border-red-200 bg-red-50/50 text-maroon hover:bg-red-50 text-[12.5px] font-bold flex items-center justify-center gap-2 cursor-pointer transition-colors shadow-2xs self-end sm:self-auto"
+                className="py-2 px-3 sm:py-2.5 sm:px-3.5 rounded-xl border border-red-200 bg-red-50/50 text-maroon hover:bg-red-50 text-xs sm:text-[12.5px] font-bold flex items-center justify-center gap-1.5 cursor-pointer transition-colors shadow-2xs shrink-0 ml-auto"
                 title="Clear all cancelled appointments"
               >
-                <Trash2 size={15} /> Clear Cancelled
+                <Trash2 size={13} className="sm:w-3.5 sm:h-3.5 text-danger" /> 
+                <span>Clear Cancelled</span>
               </button>
             )}
           </div>
@@ -826,38 +886,6 @@ export default function MyAppointments() {
         </div>
 
       </div>
-
-      {/* ── Mobile Details Modal ── */}
-      {isMobileViewingDetails && selectedAppt && (
-        <div className="fixed inset-0 z-1000 md:hidden flex items-end sm:items-center justify-center p-0 sm:p-4">
-          <div 
-            className="fixed inset-0 bg-black/60 transition-opacity" 
-            onClick={() => setIsMobileViewingDetails(false)} 
-          />
-          <div className="relative w-full max-w-lg bg-white rounded-t-3xl sm:rounded-3xl p-6 shadow-2xl border border-border z-10 animate-fade-up max-h-[90vh] overflow-y-auto flex flex-col">
-            <div className="flex items-center justify-between pb-3 mb-4 border-b border-border">
-              <h3 className="font-serif text-[18px] font-extrabold text-maroon m-0">Appointment Details</h3>
-              <button
-                onClick={() => setIsMobileViewingDetails(false)}
-                className="w-8 h-8 rounded-full border border-border bg-white text-text-muted hover:text-text-main flex items-center justify-center cursor-pointer transition-colors shadow-2xs"
-              >
-                <X size={16} />
-              </button>
-            </div>
-            <AppointmentDetailsContent
-              selectedAppt={selectedAppt}
-              navigate={navigate}
-              setReschedulingAppt={setReschedulingAppt}
-              setConfirmCancelId={setConfirmCancelId}
-              canReschedule={canReschedule}
-              cancelling={cancelling}
-              fmt12h={fmt12h}
-              isMobileModal={true}
-              onCloseMobileModal={() => setIsMobileViewingDetails(false)}
-            />
-          </div>
-        </div>
-      )}
 
       {reschedulingAppt && (
         <RescheduleModal

@@ -4,8 +4,8 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/useAuth';
 import campusFlowLogo from '../../assets/logo.png';
 import BottomNav from './BottomNav';
-import { LogOut, ClipboardList, Ticket, Home, Calendar, BotMessageSquare, User, Settings, Search, ChevronLeft, Eraser } from 'lucide-react';
 import NotificationDropdown from '../NotificationDropdown';
+import { LogOut, ClipboardList, Ticket, Home, Calendar, BotMessageSquare, User, Settings, Search, ChevronLeft, Eraser, ChevronRight } from 'lucide-react';
 import Navbar from './Navbar';
 import AiChat from '../../pages/student/AiChat';
 import GlobalSearch from '../GlobalSearch';
@@ -106,310 +106,141 @@ const SideNavItem = ({ icon, label, path, active, navigate, collapsed }) => (
 export function ProfileDropdown() {
   const { user, requestLogout } = useAuth();
   const navigate = useNavigate();
-  const isDesktop = useWindowWidth() >= 768;
   const [profileOpen, setProfileOpen] = useState(false);
+  const profileRef = useRef(null);
+  useOutsideClick(profileRef, () => setProfileOpen(false));
+  const isDesktop = useWindowWidth() >= 768;
+
   return (
-    <>
+    <div ref={profileRef} className="relative z-50">
+      <button
+        onClick={() => setProfileOpen(!profileOpen)}
+        className="bg-transparent border-none p-0 cursor-pointer flex items-center outline-none transition-transform hover:scale-105"
+        aria-label="Profile Menu"
+        aria-expanded={profileOpen}
+      >
+        {isDesktop ? (
+          <div className="flex items-center gap-2.5 py-1 px-2 rounded-full hover:bg-slate-100/80 transition-colors">
+            <div className="w-9.5 h-9.5 rounded-full bg-maroon/10 border border-maroon/20 flex items-center justify-center overflow-hidden text-maroon text-[15px] font-bold">
+              {user?.profile_image ? (
+                <img src={user.profile_image} alt="Profile" className="w-full h-full object-cover" />
+              ) : (
+                user?.first_name?.[0]?.toUpperCase() || 'M'
+              )}
+            </div>
+            <div className="flex items-center gap-1.5">
+              <span className="text-[14px] font-semibold text-text-main font-sans">
+                {user?.first_name || 'Student'}
+              </span>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={`text-text-sub transition-transform duration-200 ${profileOpen ? 'rotate-180' : ''}`}>
+                <polyline points="6 9 12 15 18 9"></polyline>
+              </svg>
+            </div>
+          </div>
+        ) : (
+          <div className="w-9.5 h-9.5 rounded-full bg-maroon/10 border border-maroon/20 flex items-center justify-center overflow-hidden text-maroon text-[15px] font-bold shadow-2xs">
+            {user?.profile_image ? (
+              <img src={user.profile_image} alt="Profile" className="w-full h-full object-cover" />
+            ) : (
+              user?.first_name?.[0]?.toUpperCase() || 'S'
+            )}
+          </div>
+        )}
+      </button>
+
+      {/* Hanging Dropdown Menu for BOTH Mobile & Desktop */}
       {profileOpen && (
         <div 
-          onClick={() => setProfileOpen(false)} 
-          style={{ 
-            position: 'fixed', inset: 0, zIndex: 105, 
-            background: isDesktop ? 'transparent' : 'rgba(123, 26, 42, 0.15)', 
-            backdropFilter: isDesktop ? 'none' : 'blur(8px)',
-            transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)'
-          }} 
-        />
-      )}
-      <div style={{ position: 'relative', zIndex: 110 }}>
-        <button
-          onClick={() => setProfileOpen(!profileOpen)}
-          style={{
-            borderRadius: '50%', background: 'none', border: 'none',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            cursor: 'pointer', outline: 'none', padding: 0,
-            transition: 'transform 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
-          }}
-          onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.05)'}
-          onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
-          aria-label="Profile Menu" aria-expanded={profileOpen}
+          className="absolute right-0 top-full mt-2 w-72 sm:w-80 max-w-[calc(100vw-24px)] bg-white rounded-2xl shadow-[0_12px_40px_rgba(0,0,0,0.12),0_0_0_1px_rgba(123,26,42,0.06)] border border-border p-4 z-50 text-left animate-fade-up"
         >
-          {isDesktop ? (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '4px 8px', borderRadius: '24px', transition: 'background 0.2s' }} onMouseEnter={e => e.currentTarget.style.background = M.offWhite} onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
-              <div style={{
-                width: '38px', height: '38px',
-                borderRadius: '50%',
-                background: M.maroonLight,
-                border: `1.5px solid ${M.maroonBorder}`,
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                overflow: 'hidden',
-                color: M.maroon,
-                fontSize: '15px', fontWeight: 700
-              }}>
-                {user?.profile_image ? (
-                  <img src={user.profile_image} alt="Profile" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                ) : (
-                  user?.first_name?.[0]?.toUpperCase() || 'M'
-                )}
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <span style={{ fontSize: '14px', fontWeight: 600, color: M.text, fontFamily: "'Poppins', sans-serif" }}>
-                  {user?.first_name || 'Musharof'}
-                </span>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={M.textSub} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ transition: 'transform 0.3s', transform: profileOpen ? 'rotate(180deg)' : 'none' }}>
-                  <polyline points="6 9 12 15 18 9"></polyline>
-                </svg>
-              </div>
-            </div>
-          ) : (
-            <div style={{
-              width: '38px', height: '38px',
-              borderRadius: '50%',
-              background: M.maroonLight,
-              border: `1.5px solid ${M.maroonBorder}`,
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              overflow: 'hidden',
-              fontSize: '15px', fontWeight: 700,
-              color: M.maroon,
-              boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
-            }}>
+          {/* User Info Header */}
+          <div className="flex items-start gap-3 mb-3">
+            <div className="w-11 h-11 rounded-full bg-maroon/10 border border-maroon/20 flex items-center justify-center overflow-hidden shrink-0 text-maroon text-[16px] font-bold font-serif shadow-2xs">
               {user?.profile_image ? (
-                <img src={user.profile_image} alt="Profile" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                <img src={user.profile_image} alt="Profile" className="w-full h-full object-cover" />
               ) : (
                 user?.first_name?.[0]?.toUpperCase() || 'S'
               )}
             </div>
-          )}
-        </button>
-
-        {profileOpen && (
-          isDesktop ? (
-            <>
-              <div className="profile-dropdown-menu animate-fade-up" style={{
-                position: 'absolute', top: '48px', right: 0,
-                width: '320px', background: M.white, borderRadius: '16px',
-                boxShadow: '0 12px 30px rgba(0,0,0,0.12), 0 0 0 1px rgba(0,0,0,0.04)',
-                padding: '20px', zIndex: 120, textAlign: 'left',
-              }}>
-                <div style={{ display: 'flex', gap: '16px', marginBottom: '20px', alignItems: 'flex-start' }}>
-                  <div style={{
-                    width: '48px', height: '48px', borderRadius: '50%',
-                    background: M.maroonLight, border: `1.5px solid ${M.maroonBorder}`,
-                    display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-                    overflow: 'hidden',
-                    fontSize: '18px', fontWeight: 700, color: M.maroon,
-                  }}>
-                    {user?.profile_image ? (
-                      <img src={user.profile_image} alt="Profile" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                    ) : (
-                      user?.first_name?.[0]?.toUpperCase() || 'S'
-                    )}
-                  </div>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: '16px', fontWeight: 700, color: M.text, lineHeight: 1.2, marginBottom: '2px' }}>
-                      {user?.first_name} {user?.last_name}
-                    </div>
-                    <div style={{ fontSize: '12px', color: M.textSub, wordBreak: 'break-all', marginBottom: '12px' }}>
-                      {user?.email || 'student@crmc.edu.ph'}
-                    </div>
-                    <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-                      <div style={{
-                        fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em',
-                        color: M.maroon, background: M.maroonLight, border: `1px solid ${M.maroonBorder}`,
-                        borderRadius: '6px', padding: '4px 8px',
-                      }}>ID: {user?.student_id || 'Not set'}</div>
-                      <div style={{
-                        fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em',
-                        color: M.gold, background: M.goldLight, border: `1px solid ${M.goldBorder}`,
-                        borderRadius: '6px', padding: '4px 8px',
-                      }}>{user?.priority_class ? user.priority_class.toUpperCase() : 'REGULAR'}</div>
-                    </div>
-                  </div>
-                </div>
-                <div style={{ height: '1px', background: M.border, margin: '16px 0' }} />
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                  <button 
-                    onClick={() => { setProfileOpen(false); navigate('/student/profile'); }}
-                    style={{
-                      display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 12px', borderRadius: '10px', border: 'none',
-                      background: 'transparent', cursor: 'pointer', textAlign: 'left', fontFamily: "'Poppins', sans-serif", fontSize: '14px', fontWeight: 600, color: M.text,
-                      transition: 'background 0.2s'
-                    }}
-                    onMouseEnter={e => e.currentTarget.style.background = M.offWhite}
-                    onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
-                  >
-                    <User size={16} /> Manage Profile
-                  </button>
-                  <button 
-                    onClick={() => { setProfileOpen(false); navigate('/student/settings'); }}
-                    style={{
-                      display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 12px', borderRadius: '10px', border: 'none',
-                      background: 'transparent', cursor: 'pointer', textAlign: 'left', fontFamily: "'Poppins', sans-serif", fontSize: '14px', fontWeight: 600, color: M.text,
-                      transition: 'background 0.2s'
-                    }}
-                    onMouseEnter={e => e.currentTarget.style.background = M.offWhite}
-                    onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
-                  >
-                    <Settings size={16} /> Account Settings
-                  </button>
-                  <button 
-                    onClick={() => { setProfileOpen(false); navigate('/student/appointments'); }}
-                    style={{
-                      display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 12px', borderRadius: '10px', border: 'none',
-                      background: 'transparent', cursor: 'pointer', textAlign: 'left', fontFamily: "'Poppins', sans-serif", fontSize: '14px', fontWeight: 600, color: M.text,
-                      transition: 'background 0.2s'
-                    }}
-                    onMouseEnter={e => e.currentTarget.style.background = M.offWhite}
-                    onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
-                  >
-                    <ClipboardList size={16} /> My Appointments
-                  </button>
-                  <button 
-                    onClick={() => { setProfileOpen(false); navigate('/student/queue'); }}
-                    style={{
-                      display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 12px', borderRadius: '10px', border: 'none',
-                      background: 'transparent', cursor: 'pointer', textAlign: 'left', fontFamily: "'Poppins', sans-serif", fontSize: '14px', fontWeight: 600, color: M.text,
-                      transition: 'background 0.2s'
-                    }}
-                    onMouseEnter={e => e.currentTarget.style.background = M.offWhite}
-                    onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
-                  >
-                    <Ticket size={16} /> Active Queue Ticket
-                  </button>
-                </div>
-                <div style={{ height: '1px', background: M.border, margin: '16px 0 12px' }} />
-                <button
-                  onClick={() => { setProfileOpen(false); requestLogout(); }}
-                  style={{
-                    width: '100%', minHeight: '44px', padding: '10px 12px', borderRadius: '10px',
-                    border: 'none', background: M.redLight, color: M.red,
-                    fontSize: '14px', fontWeight: 600, cursor: 'pointer',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
-                    fontFamily: "'Poppins', sans-serif",
-                    transition: 'all 0.2s',
-                  }}
-                  onMouseEnter={e => e.currentTarget.style.opacity = '0.85'}
-                  onMouseLeave={e => e.currentTarget.style.opacity = '1'}
-                >
-                  <LogOut size={16} /> Log Out
-                </button>
+            <div className="flex-1 min-w-0">
+              <div className="font-serif text-[15px] font-bold text-text-main leading-tight truncate">
+                {user?.first_name} {user?.last_name}
               </div>
-            </>
-          ) : createPortal(
-            <div style={{ position: 'fixed', inset: 0, zIndex: 9999 }}>
-              <div 
-                onClick={() => setProfileOpen(false)} 
-                style={{ 
-                  position: 'absolute', inset: 0, 
-                  background: 'rgba(123, 26, 42, 0.15)', 
-                  backdropFilter: 'blur(8px)',
-                  transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)'
-                }} 
-              />
-              <div 
-                className="profile-dropdown-mobile"
-                style={{
-                  position: 'absolute', bottom: 0, left: 0, right: 0,
-                  width: '100%', background: M.white, borderRadius: '24px 24px 0 0',
-                  boxShadow: '0 -4px 24px rgba(0,0,0,0.15)',
-                  padding: '32px 24px 40px', zIndex: 120, textAlign: 'left',
-                  animation: 'slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards'
-                }}
-              >
-                <div style={{ display: 'flex', gap: '16px', marginBottom: '20px', alignItems: 'flex-start' }}>
-                  <div style={{
-                    width: '48px', height: '48px', borderRadius: '50%',
-                    background: M.maroonLight, border: `1.5px solid ${M.maroonBorder}`,
-                    display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-                    overflow: 'hidden',
-                    fontSize: '18px', fontWeight: 700, color: M.maroon,
-                  }}>
-                    {user?.profile_image ? (
-                      <img src={user.profile_image} alt="Profile" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                    ) : (
-                      user?.first_name?.[0]?.toUpperCase() || 'S'
-                    )}
-                  </div>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: '16px', fontWeight: 700, color: M.text, lineHeight: 1.2, marginBottom: '2px' }}>
-                      {user?.first_name} {user?.last_name}
-                    </div>
-                    <div style={{ fontSize: '12px', color: M.textSub, wordBreak: 'break-all', marginBottom: '12px' }}>
-                      {user?.email || 'student@crmc.edu.ph'}
-                    </div>
-                    <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-                      <div style={{
-                        fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em',
-                        color: M.maroon, background: M.maroonLight, border: `1px solid ${M.maroonBorder}`,
-                        borderRadius: '6px', padding: '4px 8px',
-                      }}>ID: {user?.student_id || 'Not set'}</div>
-                      <div style={{
-                        fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em',
-                        color: M.gold, background: M.goldLight, border: `1px solid ${M.goldBorder}`,
-                        borderRadius: '6px', padding: '4px 8px',
-                      }}>{user?.priority_class ? user.priority_class.toUpperCase() : 'REGULAR'}</div>
-                    </div>
-                  </div>
-                </div>
-                <div style={{ height: '1px', background: M.border, margin: '14px 0' }} />
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                  <button 
-                    onClick={() => { setProfileOpen(false); navigate('/student/profile'); }}
-                    style={{
-                      display: 'flex', alignItems: 'center', gap: '12px', padding: '14px 16px', borderRadius: '12px', border: 'none',
-                      background: M.offWhite, cursor: 'pointer', textAlign: 'left', fontFamily: "'Poppins', sans-serif", fontSize: '14px', fontWeight: 600, color: M.text
-                    }}
-                  >
-                    <User size={16} /> Manage Profile
-                  </button>
-                  <button 
-                    onClick={() => { setProfileOpen(false); navigate('/student/settings'); }}
-                    style={{
-                      display: 'flex', alignItems: 'center', gap: '12px', padding: '14px 16px', borderRadius: '12px', border: 'none',
-                      background: M.offWhite, cursor: 'pointer', textAlign: 'left', fontFamily: "'Poppins', sans-serif", fontSize: '14px', fontWeight: 600, color: M.text
-                    }}
-                  >
-                    <Settings size={16} /> Account Settings
-                  </button>
-                  <button 
-                    onClick={() => { setProfileOpen(false); navigate('/student/appointments'); }}
-                    style={{
-                      display: 'flex', alignItems: 'center', gap: '12px', padding: '14px 16px', borderRadius: '12px', border: 'none',
-                      background: M.offWhite, cursor: 'pointer', textAlign: 'left', fontFamily: "'Poppins', sans-serif", fontSize: '14px', fontWeight: 600, color: M.text
-                    }}
-                  >
-                    <ClipboardList size={16} /> My Appointments
-                  </button>
-                  <button 
-                    onClick={() => { setProfileOpen(false); navigate('/student/queue'); }}
-                    style={{
-                      display: 'flex', alignItems: 'center', gap: '12px', padding: '14px 16px', borderRadius: '12px', border: 'none',
-                      background: M.offWhite, cursor: 'pointer', textAlign: 'left', fontFamily: "'Poppins', sans-serif", fontSize: '14px', fontWeight: 600, color: M.text
-                    }}
-                  >
-                    <Ticket size={16} /> Active Queue Ticket
-                  </button>
-                </div>
-                <button
-                  onClick={() => { setProfileOpen(false); requestLogout(); }}
-                  style={{
-                    width: '100%', minHeight: '52px', padding: '14px', borderRadius: '12px',
-                    border: 'none', background: M.redLight, color: M.red,
-                    fontSize: '15px', fontWeight: 700, cursor: 'pointer',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
-                    fontFamily: "'Poppins', sans-serif", marginTop: '12px'
-                  }}
-                >
-                  <LogOut size={16} /> Log Out
-                </button>
+              <div className="text-[11.5px] text-text-sub truncate mb-1.5">
+                {user?.email || 'student@crmc.edu.ph'}
               </div>
-            </div>,
-            document.body
-          )
-        )}
-      </div>
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <span className="text-[9.5px] font-extrabold text-maroon bg-maroon/8 border border-maroon/20 px-1.5 py-0.5 rounded-md uppercase tracking-wider">
+                  ID: {user?.student_id || 'Not set'}
+                </span>
+                <span className="text-[9.5px] font-extrabold text-gold bg-gold/10 border border-gold/30 px-1.5 py-0.5 rounded-md uppercase tracking-wider">
+                  {user?.priority_class ? user.priority_class.toUpperCase() : 'REGULAR'}
+                </span>
+              </div>
+            </div>
+          </div>
 
-    </>
+          <div className="h-px bg-border my-2.5" />
+
+          {/* Navigation Links */}
+          <div className="flex flex-col gap-0.5">
+            <button 
+              onClick={() => { setProfileOpen(false); navigate('/student/profile'); }}
+              className="flex items-center justify-between px-2.5 py-2 rounded-xl text-[13px] font-semibold text-text-main hover:text-maroon hover:bg-maroon/5 transition-all cursor-pointer border-none bg-transparent w-full text-left group"
+            >
+              <div className="flex items-center gap-2.5">
+                <User size={15} className="text-maroon shrink-0" />
+                <span>Manage Profile</span>
+              </div>
+              <ChevronRight size={14} className="text-text-muted group-hover:text-maroon group-hover:translate-x-0.5 transition-all" />
+            </button>
+
+            <button 
+              onClick={() => { setProfileOpen(false); navigate('/student/settings'); }}
+              className="flex items-center justify-between px-2.5 py-2 rounded-xl text-[13px] font-semibold text-text-main hover:text-gold-dark hover:bg-gold/10 transition-all cursor-pointer border-none bg-transparent w-full text-left group"
+            >
+              <div className="flex items-center gap-2.5">
+                <Settings size={15} className="text-gold shrink-0" />
+                <span>Account Settings</span>
+              </div>
+              <ChevronRight size={14} className="text-text-muted group-hover:text-gold group-hover:translate-x-0.5 transition-all" />
+            </button>
+
+            <button 
+              onClick={() => { setProfileOpen(false); navigate('/student/appointments'); }}
+              className="flex items-center justify-between px-2.5 py-2 rounded-xl text-[13px] font-semibold text-text-main hover:text-blue-700 hover:bg-blue-50 transition-all cursor-pointer border-none bg-transparent w-full text-left group"
+            >
+              <div className="flex items-center gap-2.5">
+                <ClipboardList size={15} className="text-blue-600 shrink-0" />
+                <span>My Appointments</span>
+              </div>
+              <ChevronRight size={14} className="text-text-muted group-hover:text-blue-600 group-hover:translate-x-0.5 transition-all" />
+            </button>
+
+            <button 
+              onClick={() => { setProfileOpen(false); navigate('/student/queue'); }}
+              className="flex items-center justify-between px-2.5 py-2 rounded-xl text-[13px] font-semibold text-text-main hover:text-amber-700 hover:bg-amber-50 transition-all cursor-pointer border-none bg-transparent w-full text-left group"
+            >
+              <div className="flex items-center gap-2.5">
+                <Ticket size={15} className="text-amber-600 shrink-0" />
+                <span>Active Queue Ticket</span>
+              </div>
+              <ChevronRight size={14} className="text-text-muted group-hover:text-amber-600 group-hover:translate-x-0.5 transition-all" />
+            </button>
+          </div>
+
+          <div className="h-px bg-border my-2" />
+
+          {/* Log Out */}
+          <button
+            onClick={() => { setProfileOpen(false); requestLogout(); }}
+            className="w-full py-2.5 px-3 rounded-xl border border-red-200 bg-red-50/80 hover:bg-red-100 text-danger text-[13px] font-bold flex items-center justify-center gap-2 cursor-pointer transition-all active:scale-[0.98]"
+          >
+            <LogOut size={15} className="text-danger" /> Log Out
+          </button>
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -663,7 +494,7 @@ export default function StudentLayout({ children, activeTab, mobileTitle, backTo
       <div className={`flex-1 flex flex-col min-h-screen transition-all w-full ml-0 ${mlClass}`} style={{ transition: 'margin-left 0.3s cubic-bezier(0.16, 1, 0.3, 1)' }}>
 
         {/* Mobile Header (Hidden on Desktop) */}
-        <header className="md:hidden flex justify-between items-center px-4 py-3 sticky top-0 z-40 bg-off-white/90 backdrop-blur-md border-b border-border shadow-[0_2px_8px_rgba(0,0,0,0.02)]">
+        <header className="md:hidden flex justify-between items-center px-4 py-3 sticky top-0 z-40 bg-off-white border-b border-border shadow-[0_2px_8px_rgba(0,0,0,0.02)]">
           <div className="flex items-center gap-2.5">
             {backTo ? (
               <button onClick={() => navigate(backTo)} className="bg-transparent border-none text-text-main cursor-pointer flex items-center justify-center p-1 -ml-1">
@@ -679,13 +510,11 @@ export default function StudentLayout({ children, activeTab, mobileTitle, backTo
               )}
             </div>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2.5 sm:gap-3">
             {location.pathname === '/student/dashboard' && (
-              <>
-                <GlobalSearch isMobile={true} onAiPrompt={handleAiPrompt} />
-                <NotificationDropdown isMobile={true} mobileRoute="/student/notifications" />
-              </>
+              <GlobalSearch isMobile={true} onAiPrompt={handleAiPrompt} />
             )}
+            <NotificationDropdown isMobile={true} mobileRoute="/student/notifications" />
             <ProfileDropdown />
           </div>
         </header>

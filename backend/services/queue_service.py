@@ -533,30 +533,52 @@ def confirm_step(queue_ticket_id: str, step_number: int, staff_id: str,
             .execute()
 
         next_step_data = next_step_res.data[0] if next_step_res.data else {}
-        next_requires_presence = next_step_data.get("requires_presence", True)
         next_step_name = next_step_data.get("step_name", f"Step {next_step}")
 
-        if "Release" in next_step_name or "Issuance" in next_step_name:
-            from services.admin_service import get_window_assignments
-            assignments = get_window_assignments()
-            window_num = assignments.get("assignments", {}).get(staff_id)
-            window_label = f"Window {window_num}" if window_num else "Counter"
-            
-            notif_title = "Document Ready for Release"
-            notif_message = f"Your {tx_name} (Ticket {ticket['queue_number']}) is ready for release. Please proceed to {window_label} to claim your document."
-        elif not next_requires_presence:
-            notif_title = f"Step {step_number} Completed • In Processing"
-            notif_message = f"Step {step_number} ({current_step_name}) has been confirmed. Your {tx_name} is now being processed in the back office — we'll notify you once ready for pickup."
-        else:
-            notif_title = f"Step {step_number} Completed"
-            notif_message = f"Step {step_number} ({current_step_name}) is confirmed. Please wait for your ticket to be called for {next_step_name}."
-
-        create_system_notification(
-            user_id=ticket["student_id"],
-            title=notif_title,
-            message=notif_message,
-            type="info"
+        # Determine if the next step is back-office processing (does not require student presence)
+        is_back_office_next = (
+            "Preparation" in next_step_name
+            or "Filing" in next_step_name
+            or "Verification" in next_step_name
+            or "Records" in next_step_name
+            or next_step_data.get("location") == "Back Office"
+            or next_step_data.get("requires_presence") is False
         )
+        is_release_next = "Release" in next_step_name or "Claim" in next_step_name or "Issuance" in next_step_name
+
+        if is_release_next:
+            # Check if this appointment has a future scheduled release date
+            appt_rel_res = admin.table("appointments").select("release_date").eq("id", ticket["appointment_id"]).single().execute()
+            rel_date_val = (appt_rel_res.data or {}).get("release_date")
+            today_str = str(date.today())
+
+            if rel_date_val and rel_date_val > today_str:
+                # Document is scheduled for a future date.
+                # set_release_date already sends "Document Release Date Scheduled", so do not send a conflicting "ready for release" notif.
+                notif_title = None
+                notif_message = None
+            else:
+                from services.admin_service import get_window_assignments
+                assignments = get_window_assignments()
+                window_num = assignments.get("assignments", {}).get(staff_id)
+                window_label = f"Window {window_num}" if window_num else "Window 1"
+
+                notif_title = "Document Ready for Release"
+                notif_message = f"Your {tx_name} (Ticket {ticket['queue_number']}) is ready for release. Please proceed to {window_label} to claim your document."
+        elif is_back_office_next:
+            notif_title = f"{current_step_name} Confirmed"
+            notif_message = f"{current_step_name} is confirmed. Your document is now being processed in the back office."
+        else:
+            notif_title = f"{current_step_name} Confirmed"
+            notif_message = f"{current_step_name} is confirmed. Please wait for your ticket to be called for {next_step_name}."
+
+        if notif_title and notif_message:
+            create_system_notification(
+                user_id=ticket["student_id"],
+                title=notif_title,
+                message=notif_message,
+                type="info"
+            )
         return {"message": f"Step {step_number} confirmed. Moved to step {next_step}.", "status": "in_progress"}
 
 
@@ -565,16 +587,31 @@ def get_todays_queue(date_filter: str = None):
     admin = get_admin()
     today = date_filter or str(date.today())
     try:
-        # Use an inner join to filter by today's appointment date and fetch steps all at once
-        tickets_res = admin.table("queue_tickets") \
+        # 1. Fetch tickets for today's appointment date
+        today_res = admin.table("queue_tickets") \
             .select("*, appointments!inner(id, appointment_date, time_slot, priority_class, release_date, notes, transaction_types(name, description, processing_steps, required_documents)), users(first_name, last_name, student_id, email), transaction_steps(*)") \
             .eq("appointments.appointment_date", today) \
             .in_("status", ["waiting", "in_progress", "completed", "no_show", "cancelled"]) \
             .order("created_at") \
             .execute()
 
+        # 2. Fetch all ongoing active/in-progress tickets (so tickets sitting in processing table are never wiped out)
+        active_res = admin.table("queue_tickets") \
+            .select("*, appointments!inner(id, appointment_date, time_slot, priority_class, release_date, notes, transaction_types(name, description, processing_steps, required_documents)), users(first_name, last_name, student_id, email), transaction_steps(*)") \
+            .in_("status", ["waiting", "in_progress"]) \
+            .order("created_at") \
+            .execute()
+
+        # Deduplicate tickets by id while preserving order
+        seen_ids = set()
+        all_raw_tickets = []
+        for t in (today_res.data or []) + (active_res.data or []):
+            if t.get("id") and t["id"] not in seen_ids:
+                seen_ids.add(t["id"])
+                all_raw_tickets.append(t)
+
         result = []
-        for ticket in tickets_res.data:
+        for ticket in all_raw_tickets:
             tx_type = (ticket.get("appointments") or {}).get("transaction_types") or {}
             tx_name = tx_type.get("name", "")
             if "(deleted" in tx_name:
@@ -599,14 +636,6 @@ def get_todays_queue(date_filter: str = None):
                 else:
                     step["requires_presence"] = True
                     step["description"] = ""
-
-            # Filter out tickets that are in Release step and already have a release date set
-            # (These should only show up in DocumentReleasesPage "Uncollected")
-            active_step = next((s for s in steps if s["status"] == "in_progress"), None)
-            if active_step and "Release" in active_step.get("step_name", ""):
-                appt_data = ticket.get("appointments") or {}
-                if appt_data.get("release_date"):
-                    continue
 
             result.append({"ticket": ticket, "steps": steps})
 
@@ -828,28 +857,34 @@ def get_uncollected_documents(threshold_days: int = 0):
     today_date = datetime.now(timezone.utc).date()
     for row in (res.data or []):
         ticket = row.get("queue_tickets") or {}
+        if not ticket:
+            continue
+            
         student = ticket.get("users") or {}
         appt = ticket.get("appointments") or {}
         release_date_str = appt.get("release_date")
         
-        # Only show in Document Releases if the release date has been set
-        if not release_date_str:
-            continue
-            
         raw_tx_name = (appt.get("transaction_types") or {}).get("name", "Unknown")
         if "(deleted" in raw_tx_name:
             continue
         tx_name = raw_tx_name
 
         # Calculate waiting time relative to assigned release_date
-        try:
-            if "T" in str(release_date_str):
-                rel_date = datetime.fromisoformat(str(release_date_str).replace("Z", "+00:00")).date()
-            else:
-                rel_date = date.fromisoformat(str(release_date_str))
-            days_waiting = (today_date - rel_date).days
-        except Exception:
-            days_waiting = 0
+        days_waiting = 0
+        if release_date_str:
+            try:
+                if "T" in str(release_date_str):
+                    rel_date = datetime.fromisoformat(str(release_date_str).replace("Z", "+00:00")).date()
+                else:
+                    rel_date = date.fromisoformat(str(release_date_str))
+                
+                # If release date is in the future, it has not reached release date yet
+                if rel_date > today_date:
+                    continue
+
+                days_waiting = (today_date - rel_date).days
+            except Exception:
+                days_waiting = 0
 
         results.append({
             "queue_ticket_id": ticket.get("id"),
@@ -914,9 +949,10 @@ def get_collected_documents(limit: int = 50):
 
 def get_my_documents_to_claim(student_id: str):
     """
-    Returns tickets for a specific student that are currently sitting at a Release step (ready for pickup).
+    Returns tickets for a specific student that are currently sitting at a Release step (ready for pickup today).
     """
     admin = get_admin()
+    today_date = date.today()
     try:
         res = admin.table("transaction_steps") \
             .select("*, queue_tickets!inner(id, queue_number, student_id, status, appointments(transaction_types(name), release_date))") \
@@ -937,6 +973,18 @@ def get_my_documents_to_claim(student_id: str):
             continue
         tx_name = raw_tx_name
         release_date = (ticket.get("appointments") or {}).get("release_date")
+
+        # If release date is scheduled for the future, it is NOT ready for pickup yet
+        if release_date:
+            try:
+                if "T" in str(release_date):
+                    rel_d = datetime.fromisoformat(str(release_date).replace("Z", "+00:00")).date()
+                else:
+                    rel_d = date.fromisoformat(str(release_date))
+                if rel_d > today_date:
+                    continue
+            except Exception:
+                pass
 
         results.append({
             "queue_ticket_id": ticket.get("id"),

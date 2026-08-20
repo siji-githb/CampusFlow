@@ -390,7 +390,7 @@ export default function StaffProfilePage({ setActiveNav }) {
 
       {/* Manage Profile Modal */}
       {isEditModalOpen && (
-        <div className="fixed inset-0 z-1000 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm" style={{ animation: 'fadeIn 0.2s ease-out' }}>
+        <div className="fixed inset-0 z-1000 flex items-center justify-center p-4 bg-black/50" style={{ animation: 'fadeIn 0.2s ease-out' }}>
           <style>{`
             @keyframes fadeIn {
               from { opacity: 0; }

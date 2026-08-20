@@ -337,7 +337,7 @@ export default function StaffDashboard() {
 
       {/* Mobile Backdrop */}
       {mobileMenuOpen && (
-        <div onClick={() => setMobileMenuOpen(false)} className="fixed inset-0 bg-black/40 backdrop-blur-sm z-45 md:hidden" />
+        <div onClick={() => setMobileMenuOpen(false)} className="fixed inset-0 bg-black/50 z-45 md:hidden" />
       )}
 
       {/* ── Fixed Left Sidebar ── */}
@@ -535,7 +535,7 @@ export default function StaffDashboard() {
 
           {/* ──── WINDOW GATE OVERLAY ──── */}
           {!myWindow && (
-            <div className="absolute inset-0 z-30 bg-surface/85 backdrop-blur-md flex items-start justify-center pt-10 md:pt-16 p-4 sm:p-7 overflow-y-auto">
+            <div className="absolute inset-0 z-30 bg-surface/95 flex items-start justify-center pt-10 md:pt-16 p-4 sm:p-7 overflow-y-auto">
               {isLoadingWindow ? (
                 <div className="w-12 h-12 border-4 border-maroon border-t-transparent rounded-full animate-spin my-auto"></div>
               ) : (

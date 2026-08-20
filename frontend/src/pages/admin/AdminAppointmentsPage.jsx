@@ -197,7 +197,7 @@ const RescheduleModal = ({ appt, onClose, onConfirm }) => {
 
   return (
     <div className="fixed inset-0 z-100 flex items-center justify-center p-4 sm:p-6">
-      <div className="fixed inset-0 bg-black/60 transition-opacity animate-fade-in backdrop-blur-xs" onClick={onClose} />
+      <div className="fixed inset-0 bg-black/60 transition-opacity animate-fade-in" onClick={onClose} />
       
       {/* Main Modal */}
       {!showConfirm ? (

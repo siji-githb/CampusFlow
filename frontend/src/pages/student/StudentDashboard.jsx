@@ -64,16 +64,27 @@ export default function StudentDashboard() {
         const currentStep = steps.find(s => s.status === 'in_progress');
         const isRelease = currentStep?.step_name?.toLowerCase().includes('release');
         const isPrep = currentStep?.step_name?.toLowerCase().includes('preparation');
+        const releaseDateVal = qData.ticket?.appointments?.release_date;
+        const isFutureScheduled = Boolean(releaseDateVal && releaseDateVal > today);
+        const isReleaseActive = qData.ticket.status === 'in_progress' && isRelease && !isFutureScheduled;
         const isCounterActive = qData.ticket.status === 'in_progress' && !isPrep && !isRelease && currentStep?.requires_presence !== false;
 
         setLiveTicket({
           id: qData.ticket.appointment_id,
           queue_number: qData.ticket.queue_number,
           status: qData.ticket.status,
-          isRelease: !!isRelease,
+          isRelease: !!isReleaseActive,
+          isFutureScheduled: !!isFutureScheduled,
+          releaseDate: releaseDateVal,
           isPrep: !!isPrep,
           isCounterActive: !!isCounterActive,
-          current_step: isRelease ? 'Ready for Pickup' : isPrep ? 'Processing Document' : (currentStep?.step_name || 'Serving'),
+          current_step: isReleaseActive 
+            ? 'Ready for Pickup' 
+            : isFutureScheduled 
+            ? `Scheduled (${new Date(releaseDateVal).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })})` 
+            : isPrep 
+            ? 'Processing Document' 
+            : (currentStep?.step_name || 'Serving'),
           transaction_type: qData.ticket.appointments?.transaction_types?.name || 'Registrar'
         });
       } else {
@@ -219,6 +230,10 @@ export default function StudentDashboard() {
                     liveTicket.isRelease ? (
                       <span className="flex items-center gap-1.5 text-[10px] font-bold text-success bg-success/10 px-2.5 py-0.5 rounded-full border border-success/20">
                         <span className="w-1.5 h-1.5 rounded-full bg-success inline-block animate-pulse" /> READY FOR PICKUP
+                      </span>
+                    ) : liveTicket.isFutureScheduled ? (
+                      <span className="flex items-center gap-1.5 text-[10px] font-bold text-gold-dark bg-gold/10 px-2.5 py-0.5 rounded-full border border-gold/20">
+                        <span className="w-1.5 h-1.5 rounded-full bg-gold inline-block" /> SCHEDULED ({new Date(liveTicket.releaseDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })})
                       </span>
                     ) : liveTicket.isPrep ? (
                       <span className="flex items-center gap-1.5 text-[10px] font-bold text-gold-dark bg-gold/10 px-2.5 py-0.5 rounded-full border border-gold/20">

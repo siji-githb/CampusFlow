@@ -36,14 +36,14 @@ function ImageModal({ url, onClose }) {
   };
 
   return (
-    <div className="fixed inset-0 z-200 flex items-center justify-center bg-black/90 backdrop-blur-sm cursor-pointer overflow-hidden" 
+    <div className="fixed inset-0 z-200 flex items-center justify-center bg-black/90 cursor-pointer overflow-hidden" 
          onClick={onClose}
          onMouseMove={handleMouseMove}
          onMouseUp={handleMouseUp}
          onMouseLeave={handleMouseUp}>
       
       {/* Controls */}
-      <div className="absolute top-6 flex items-center gap-4 z-50 bg-black/50 p-2 rounded-xl backdrop-blur-md" onClick={e => e.stopPropagation()}>
+      <div className="absolute top-6 flex items-center gap-4 z-50 bg-black/80 p-2 rounded-xl" onClick={e => e.stopPropagation()}>
         <button onClick={handleZoomOut} className="w-10 h-10 flex items-center justify-center rounded-lg bg-white/10 text-white hover:bg-white/20 transition-colors border-none cursor-pointer"><ZoomOut size={20} /></button>
         <span className="text-white text-sm font-bold w-12 text-center">{Math.round(scale * 100)}%</span>
         <button onClick={handleZoomIn} className="w-10 h-10 flex items-center justify-center rounded-lg bg-white/10 text-white hover:bg-white/20 transition-colors border-none cursor-pointer"><ZoomIn size={20} /></button>

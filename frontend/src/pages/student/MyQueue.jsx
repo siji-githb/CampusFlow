@@ -137,12 +137,14 @@ export default function MyQueue() {
   const currentStep = steps.find(s => s.status === 'in_progress')
   const currentRequiresPresence = currentStep?.requires_presence !== false // default true if missing/undefined
   const isCurrentStepRelease = currentStep?.step_name?.toLowerCase().includes('release')
-  const isReleaseActive = ticket?.status === 'in_progress' && isCurrentStepRelease
+  const releaseDateVal = ticket?.appointments?.release_date
+  const isFutureScheduled = Boolean(releaseDateVal && releaseDateVal > today)
+  const isReleaseActive = ticket?.status === 'in_progress' && isCurrentStepRelease && !isFutureScheduled
 
   return (
     <StudentLayout activeTab="queue" mobileTitle="My Queue">
 
-      <div className="w-full max-w-140 mx-auto pt-4 px-4 pb-20 md:max-w-225 md:mx-0 md:pt-0 md:px-0">
+      <div className="w-full max-w-5xl mx-auto px-3.5 sm:px-6 md:px-8 py-3 sm:py-6 pb-24 md:pb-12 box-border">
         <div className="hidden md:flex justify-between items-start mb-8">
           <div>
             <div className="text-[11px] font-bold text-gold uppercase tracking-[0.06em] mb-2">LIVE TRACKING</div>
@@ -161,22 +163,22 @@ export default function MyQueue() {
         </div>
 
         {error && (
-          <div className="py-2.5 px-3.5 rounded-lg bg-danger-light text-danger text-[13px] mb-4">
+          <div className="py-2.5 px-3.5 rounded-xl bg-danger-light text-danger text-xs sm:text-sm mb-4 border border-danger-border font-medium">
             {error}
           </div>
         )}
 
         {/* Navigation Tabs */}
-        <div className="flex gap-2 mb-6 bg-white p-1.5 rounded-xl border border-border">
+        <div className="flex gap-2 mb-6 bg-white p-1 sm:p-1.5 rounded-2xl border border-border shadow-2xs">
           <button 
             onClick={() => setActiveTab('active')}
-            className={`flex-1 py-2.5 px-4 rounded-lg border-none text-[14px] font-semibold cursor-pointer transition-all duration-200 font-sans ${activeTab === 'active' ? 'bg-maroon-light text-maroon' : 'bg-transparent text-text-sub hover:bg-off-white'}`}
+            className={`flex-1 py-2 sm:py-2.5 px-3 sm:px-4 rounded-xl border-none text-xs sm:text-sm font-bold cursor-pointer transition-all duration-200 font-sans ${activeTab === 'active' ? 'bg-maroon-light text-maroon shadow-2xs' : 'bg-transparent text-text-sub hover:bg-off-white'}`}
           >
             Active Queue Ticket
           </button>
           <button 
             onClick={() => setActiveTab('upcoming')}
-            className={`flex-1 py-2.5 px-4 rounded-lg border-none text-[14px] font-semibold cursor-pointer transition-all duration-200 font-sans ${activeTab === 'upcoming' ? 'bg-maroon-light text-maroon' : 'bg-transparent text-text-sub hover:bg-off-white'}`}
+            className={`flex-1 py-2 sm:py-2.5 px-3 sm:px-4 rounded-xl border-none text-xs sm:text-sm font-bold cursor-pointer transition-all duration-200 font-sans ${activeTab === 'upcoming' ? 'bg-maroon-light text-maroon shadow-2xs' : 'bg-transparent text-text-sub hover:bg-off-white'}`}
           >
             Upcoming Tickets
           </button>
@@ -240,37 +242,49 @@ export default function MyQueue() {
             ) : (
             <div className="animate-fade-up">
               {/* Queue ticket card (White Theme) */}
-              <div className="bg-white rounded-2xl p-6 sm:p-7 mb-4 shadow-sm border border-border relative overflow-hidden">
-                <div className="flex justify-between items-start mb-4">
-                  <div>
-                    <p className="text-[11px] text-text-muted m-0 mb-1.5 uppercase tracking-widest font-bold">Queue Number</p>
-                    <div className="font-serif text-[48px] md:text-[52px] font-extrabold text-maroon leading-none tracking-tight">
+              <div className="bg-white rounded-2xl sm:rounded-3xl p-4 sm:p-6 md:p-7 mb-4 shadow-sm border border-border relative overflow-hidden">
+                <div className="flex justify-between items-start mb-3 gap-2">
+                  <div className="min-w-0">
+                    <p className="text-[10px] sm:text-[11px] text-text-muted m-0 mb-1 uppercase tracking-widest font-extrabold">Queue Number</p>
+                    <div className="font-serif text-[32px] sm:text-[44px] md:text-[50px] font-extrabold text-maroon whitespace-nowrap leading-none tracking-tight">
                       {ticket.queue_number}
                     </div>
                   </div>
-                  <div className={`px-3.5 py-1.5 rounded-full text-[11px] font-extrabold tracking-wider uppercase flex items-center gap-1.5 ${
+                  <div className={`px-2.5 sm:px-3.5 py-1 sm:py-1.5 rounded-full text-[10px] sm:text-[11px] font-extrabold tracking-wider uppercase flex items-center gap-1 sm:gap-1.5 shrink-0 whitespace-nowrap ${
                     isReleaseActive
                       ? 'bg-success/10 text-success border border-success/20'
+                      : isFutureScheduled
+                      ? 'bg-gold/10 text-gold-dark border border-gold/25'
                       : ticket.status === 'in_progress' 
                       ? 'bg-gold/10 text-gold-dark border border-gold/25' 
                       : 'bg-surface text-text-sub border border-border'
                   }`}>
-                    <span className={`w-2 h-2 rounded-full ${
+                    <span className={`w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full shrink-0 ${
                       isReleaseActive
                         ? 'bg-success animate-pulse'
+                        : isFutureScheduled
+                        ? 'bg-gold'
                         : ticket.status === 'in_progress' 
                         ? 'bg-gold animate-pulse' 
                         : 'bg-text-muted'
                     }`} />
-                    {isReleaseActive ? 'Ready for Pickup' : ticket.status === 'in_progress' ? 'Serving Now' : 'In Line (Waiting)'}
+                    <span>
+                      {isReleaseActive 
+                        ? 'Ready for Pickup' 
+                        : isFutureScheduled 
+                        ? `Scheduled (${new Date(releaseDateVal).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })})` 
+                        : ticket.status === 'in_progress' 
+                        ? 'Serving Now' 
+                        : 'In Line (Waiting)'}
+                    </span>
                   </div>
                 </div>
                 
-                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end mt-4 pt-4 border-t border-border/70 gap-3 sm:gap-0">
-                  <div className="flex flex-col gap-1">
-                    <p className="text-[15px] sm:text-[16px] font-bold text-text-main m-0">{ticket.appointments?.transaction_types?.name}</p>
-                    <p className="text-[12.5px] text-text-sub m-0 font-medium flex items-center gap-1.5">
-                      <Calendar size={13} className="text-text-muted" />
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end mt-3.5 sm:mt-4 pt-3.5 sm:pt-4 border-t border-border/70 gap-2.5 sm:gap-0">
+                  <div className="flex flex-col gap-0.5 sm:gap-1 min-w-0">
+                    <p className="text-[14px] sm:text-[16px] font-bold text-text-main m-0 truncate">{ticket.appointments?.transaction_types?.name}</p>
+                    <p className="text-xs sm:text-[12.5px] text-text-sub m-0 font-medium flex items-center gap-1.5 flex-wrap">
+                      <Calendar size={12} className="text-gold shrink-0" />
                       <span>{ticket.appointments?.appointment_date}</span>
                       <span className="text-border-strong mx-0.5">|</span>
                       <span>{fmt12h(ticket.appointments?.time_slot)}</span>
@@ -279,7 +293,7 @@ export default function MyQueue() {
                   {(ticket.status === 'waiting' || ticket.status === 'pending') && (
                     <button 
                       onClick={() => setCancelConfirmId(ticket.appointment_id)} 
-                      className="bg-danger/8 hover:bg-danger text-danger hover:text-white text-[12px] font-semibold py-1.5 px-4 rounded-full transition-colors border border-danger/20 hover:border-danger cursor-pointer self-start sm:self-auto shrink-0"
+                      className="bg-danger/8 hover:bg-danger text-danger hover:text-white text-xs sm:text-[12px] font-bold py-1.5 px-3.5 sm:px-4 rounded-full transition-colors border border-danger/20 hover:border-danger cursor-pointer self-start sm:self-auto shrink-0"
                     >
                       Cancel Queue
                     </button>
@@ -287,9 +301,9 @@ export default function MyQueue() {
                 </div>
 
                 {ticket.status === 'in_progress' && !currentRequiresPresence && (
-                  <div className="mt-3.5 pt-3 border-t border-border/70">
-                    <p className="text-[12px] text-text-sub m-0 flex items-center gap-2 font-medium">
-                      <Cog size={14} className="text-gold animate-spin" style={{ animationDuration: '3s' }} /> No need to wait in line — we'll notify you when it's your turn.
+                  <div className="mt-3 pt-2.5 border-t border-border/70">
+                    <p className="text-xs sm:text-[12px] text-text-sub m-0 flex items-center gap-2 font-medium">
+                      <Cog size={13} className="text-gold animate-spin shrink-0" style={{ animationDuration: '3s' }} /> No need to wait in line — we'll notify you when it's your turn.
                     </p>
                   </div>
                 )}
@@ -297,35 +311,35 @@ export default function MyQueue() {
 
               {/* Release Date Card (if set) */}
               {ticket.appointments?.release_date && (
-                <div className="bg-white rounded-2xl border border-border p-6 shadow-sm mb-4 flex items-center justify-between">
+                <div className="bg-white rounded-2xl sm:rounded-3xl border border-border p-4 sm:p-6 shadow-sm mb-4 flex items-center justify-between gap-3">
                   <div>
-                    <p className="text-[11px] font-bold text-text-muted uppercase tracking-[0.06em] mb-1">Document Release Date</p>
-                    <p className="text-[16px] font-bold text-text-main m-0">
+                    <p className="text-[10px] sm:text-[11px] font-extrabold text-text-muted uppercase tracking-[0.06em] mb-1">Document Release Date</p>
+                    <p className="text-sm sm:text-base font-bold text-text-main m-0">
                       {new Date(ticket.appointments.release_date).toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' })}
                     </p>
                   </div>
-                  <div className="w-10 h-10 rounded-full bg-gold/10 flex items-center justify-center text-gold">
-                    <Calendar size={18} strokeWidth={2.5} />
+                  <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-gold/10 flex items-center justify-center text-gold shrink-0">
+                    <Calendar size={16} strokeWidth={2.5} />
                   </div>
                 </div>
               )}
 
               {/* ── Live Monitoring Panel ── */}
-              <div className="bg-white rounded-2xl border border-border shadow-sm overflow-hidden">
+              <div className="bg-white rounded-2xl sm:rounded-3xl border border-border shadow-sm overflow-hidden">
                 
                 {/* Live Header */}
-                <div className="px-6 py-4 border-b border-border bg-linear-to-r from-off-white to-white flex items-center justify-between">
-                  <div className="flex items-center gap-3">
+                <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-border bg-linear-to-r from-off-white to-white flex items-center justify-between">
+                  <div className="flex items-center gap-2 sm:gap-3">
                     <div className="relative">
                       <div className={`w-2.5 h-2.5 rounded-full ${ticket.status === 'in_progress' ? 'bg-success' : 'bg-gold'}`} />
                       <div className={`absolute inset-0 w-2.5 h-2.5 rounded-full animate-ping opacity-60 ${ticket.status === 'in_progress' ? 'bg-success' : 'bg-gold'}`} />
                     </div>
-                    <span className="text-[13px] font-bold text-text-main uppercase tracking-[0.06em]">
+                    <span className="text-xs sm:text-[13px] font-bold text-text-main uppercase tracking-[0.06em]">
                       {ticket.status === 'in_progress' ? 'Live Serving' : 'Waiting in Queue'}
                     </span>
                   </div>
-                  <span className="text-[11px] font-medium text-text-muted">
-                    Auto-updating every 15s
+                  <span className="text-[10px] sm:text-[11px] font-medium text-text-muted">
+                    Auto-updating 15s
                   </span>
                 </div>
 
@@ -339,10 +353,10 @@ export default function MyQueue() {
                     ? Math.round(((completedCount + (inProgressCount * 0.5)) / totalSteps) * 100) 
                     : 0;
                   return (
-                    <div className="px-6 py-4 border-b border-border/60">
-                      <div className="flex items-center justify-between mb-2.5">
-                        <span className="text-[12px] font-bold text-text-sub">Overall Progress</span>
-                        <span className="text-[12px] font-extrabold text-maroon tabular-nums">{progressPercent}%</span>
+                    <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-border/60">
+                      <div className="flex items-center justify-between mb-1.5 sm:mb-2">
+                        <span className="text-xs font-bold text-text-sub">Overall Progress</span>
+                        <span className="text-xs sm:text-[12px] font-extrabold text-maroon tabular-nums">{progressPercent}%</span>
                       </div>
                       <div className="w-full h-2 bg-border/60 rounded-full overflow-hidden">
                         <div 
@@ -353,17 +367,17 @@ export default function MyQueue() {
                           }}
                         />
                       </div>
-                      <div className="flex justify-between mt-2">
-                        <span className="text-[11px] text-text-muted font-medium">
+                      <div className="flex justify-between items-center mt-2 flex-wrap gap-1">
+                        <span className="text-[10px] sm:text-[11px] text-text-muted font-medium">
                           {isWaiting ? 'Waiting for staff to call your number' : `${completedCount} of ${totalSteps} steps completed`}
                         </span>
                         {isWaiting ? (
-                          <span className="text-[11px] text-gold font-bold flex items-center gap-1">
-                            <Clock size={11} className="text-gold" /> Waiting in Line
+                          <span className="text-[10px] sm:text-[11px] text-gold font-bold flex items-center gap-1">
+                            <Clock size={11} className="text-gold shrink-0" /> Waiting in Line
                           </span>
                         ) : inProgressCount > 0 && (
-                          <span className="text-[11px] text-gold font-bold flex items-center gap-1">
-                            <Hourglass size={10} className="animate-pulse" /> Step {steps.find(s => s.status === 'in_progress')?.step_number} active
+                          <span className="text-[10px] sm:text-[11px] text-gold font-bold flex items-center gap-1">
+                            <Hourglass size={10} className="animate-pulse shrink-0" /> Step {steps.find(s => s.status === 'in_progress')?.step_number} active
                           </span>
                         )}
                       </div>
@@ -372,7 +386,7 @@ export default function MyQueue() {
                 })()}
 
                 {/* Step Timeline */}
-                <div className="px-6 py-5">
+                <div className="px-3 sm:px-5 md:px-6 py-4 sm:py-5">
                   <div className="flex flex-col">
                     {steps.map((step, idx) => {
                       const isLast = idx === steps.length - 1
@@ -384,149 +398,164 @@ export default function MyQueue() {
                       const releaseWindow = step.location && !step.location.toLowerCase().includes('release') ? step.location : 'Window 1'
 
                       return (
-                        <div key={step.id} className="flex gap-4">
+                        <div key={step.id} className="flex gap-2.5 sm:gap-3.5 md:gap-4">
                           {/* Timeline Column */}
-                          <div className="flex flex-col items-center">
-                            <div className={`relative w-8 h-8 rounded-full shrink-0 flex items-center justify-center text-[12px] font-bold transition-all duration-500 ${
-                              step.status === 'completed' || (isActiveStep && isRelease) 
+                          <div className="flex flex-col items-center shrink-0">
+                            <div className={`relative w-7 h-7 sm:w-8 sm:h-8 rounded-full shrink-0 flex items-center justify-center text-xs font-bold transition-all duration-500 ${
+                              step.status === 'completed' || (isActiveStep && isReleaseActive) 
                                 ? 'bg-success text-white shadow-[0_0_0_3px_rgba(21,128,61,0.15)]' : 
                               isActiveStep 
                                 ? 'bg-maroon text-white shadow-[0_0_0_3px_rgba(123,26,42,0.15)]' : 
                                 'bg-surface border-[1.5px] border-border text-text-muted'
                             }`}>
-                              {step.status === 'completed' || (isActiveStep && isRelease) ? '✓' : step.step_number}
-                              {isActiveStep && !isRelease && (
+                              {step.status === 'completed' || (isActiveStep && isReleaseActive) ? '✓' : step.step_number}
+                              {isActiveStep && !isReleaseActive && (
                                 <div className="absolute inset-0 rounded-full border-2 border-maroon/30 animate-ping" />
                               )}
                             </div>
                             {!isLast && (
                               <div className={`w-0.5 flex-1 min-h-5 my-1 transition-colors duration-500 ${
-                                step.status === 'completed' || (isActiveStep && isRelease) ? 'bg-success/40' : 'bg-border/60'
+                                step.status === 'completed' || (isActiveStep && isReleaseActive) ? 'bg-success/40' : 'bg-border/60'
                               }`} />
                             )}
                           </div>
 
                           {/* Step Content */}
-                          <div className={`flex-1 ${isLast ? 'pb-0' : 'pb-5'}`}>
-                            <div className={`rounded-xl transition-all duration-300 ${
+                          <div className={`flex-1 min-w-0 ${isLast ? 'pb-0' : 'pb-5'}`}>
+                            <div className={`rounded-2xl transition-all duration-300 ${
                               isActiveStep 
-                                ? 'bg-linear-to-r from-maroon/3 to-gold/3 p-4 border border-maroon/10 -mt-1' 
-                                : 'py-1'
+                                ? 'bg-linear-to-r from-maroon/3 to-gold/3 p-3 sm:p-4 border border-maroon/10 -mt-1' 
+                                : 'py-0.5'
                             }`}>
                               {/* Step Header */}
                               <div className="flex justify-between items-center gap-2 mb-0.5">
-                                <span className={`text-[14px] font-bold leading-tight ${
-                                  step.status === 'completed' || (isActiveStep && isRelease) ? 'text-success' : 
+                                <span className={`text-xs sm:text-sm font-bold leading-tight truncate ${
+                                  step.status === 'completed' || (isActiveStep && isReleaseActive) ? 'text-success' : 
                                   isActiveStep ? 'text-text-main' : 'text-text-sub'
                                 }`}>
                                   {step.step_name}
                                 </span>
-                                <span className={`shrink-0 text-[10px] font-bold py-1 px-2.5 rounded-full uppercase tracking-wider ${
-                                  step.status === 'completed' || (isActiveStep && isRelease)
+                                <span className={`shrink-0 text-[9px] sm:text-[10px] font-bold py-0.5 sm:py-1 px-2 sm:px-2.5 rounded-full uppercase tracking-wider whitespace-nowrap ${
+                                  step.status === 'completed' || (isActiveStep && isReleaseActive)
                                     ? 'bg-success/10 text-success border border-success/20' :
+                                  isActiveStep && isFutureScheduled && isRelease
+                                    ? 'bg-gold/10 text-gold-dark border border-gold/25' :
                                   isActiveStep
                                     ? 'bg-maroon/10 text-maroon border border-maroon/20' :
                                     'bg-surface text-text-muted border border-border'
                                 }`}>
                                   {isActiveStep ? (
-                                    isRelease ? 'Ready for Pickup' : (isPrep || !stepRequiresPresence ? 'Processing' : 'In Progress')
+                                    isReleaseActive ? 'Ready for Pickup' : isFutureScheduled && isRelease ? `Scheduled (${new Date(releaseDateVal).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })})` : (isPrep || !stepRequiresPresence ? 'Processing' : 'In Progress')
                                   ) : step.status === 'completed' ? 'Done' : (isTicketWaiting && idx === 0 ? 'Waiting in Line' : 'Queued')}
                                 </span>
                               </div>
 
                               {/* Completed timestamp */}
                               {step.status === 'completed' && step.confirmed_at && (
-                                <p className="text-[11px] text-success/70 m-0 mt-0.5 font-medium">
+                                <p className="text-[10.5px] sm:text-[11px] text-success/70 m-0 mt-0.5 font-medium">
                                   ✓ Confirmed at {new Date(step.confirmed_at).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
                                 </p>
                               )}
 
                               {/* Waiting in line message for step 1 when ticket is waiting to be called */}
                               {isTicketWaiting && idx === 0 && (
-                                <div className="mt-3 p-3.5 bg-surface border border-border/80 rounded-xl">
-                                  <p className="text-[12px] text-text-sub m-0 flex items-center gap-2 font-medium">
-                                    <Hourglass size={13} className="text-gold animate-pulse" /> Please wait in line. We will notify you when your number is called to a window.
+                                <div className="mt-2.5 p-3 bg-surface border border-border/80 rounded-xl">
+                                  <p className="text-xs text-text-sub m-0 flex items-center gap-2 font-medium">
+                                    <Hourglass size={13} className="text-gold animate-pulse shrink-0" /> Please wait in line. We will notify you when your number is called to a window.
                                   </p>
                                 </div>
                               )}
 
                               {/* Active step contextual cards (only when ticket is called/in_progress) */}
                               {isActiveStep && isRelease && (
-                                <div className="mt-3.5 flex flex-col gap-3">
-                                  <div className="p-3.5 bg-success/[0.07] border border-success/20 rounded-xl">
-                                    <p className="text-[13px] text-success font-bold m-0 flex items-center gap-2">
-                                      <FileCheck size={15} /> Your document is now ready for pick up at {releaseWindow}
-                                    </p>
-                                    <p className="text-[11.5px] text-text-sub m-0 mt-1.5 ml-5.75 leading-relaxed">
-                                      Please proceed to {releaseWindow} and present your queue ticket to claim your document.
-                                    </p>
-                                  </div>
-
-                                  {/* Official Digital Claim Stub (White Theme) */}
-                                  <div className="bg-white rounded-2xl p-6 shadow-md border-2 border-dashed border-maroon/25 relative overflow-hidden text-left">
-                                    {/* Subtle decorative background gradient */}
-                                    <div className="absolute top-0 right-0 w-40 h-40 bg-gold/5 rounded-full blur-3xl pointer-events-none" />
-                                    <div className="absolute bottom-0 left-0 w-32 h-32 bg-maroon/5 rounded-full blur-2xl pointer-events-none" />
-                                    
-                                    {/* Stub Header */}
-                                    <div className="relative z-10 flex justify-between items-start mb-4 pb-4 border-b border-dashed border-border">
-                                      <div>
-                                        <p className="text-[11px] text-gold-dark m-0 mb-1.5 uppercase tracking-[0.14em] font-bold flex items-center gap-1.5">
-                                          <Ticket size={13} className="text-gold" /> Official Claim Stub
+                                <div className="mt-3 flex flex-col gap-2.5 sm:gap-3">
+                                  {isFutureScheduled ? (
+                                    <div className="p-3.5 sm:p-4 bg-gold/8 border border-gold/25 rounded-xl">
+                                      <p className="text-xs sm:text-[13px] text-gold-dark font-bold m-0 flex items-center gap-2">
+                                        <Calendar size={14} className="shrink-0 text-gold" /> Scheduled for Release on {new Date(releaseDateVal).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+                                      </p>
+                                      <p className="text-[11px] sm:text-[12px] text-text-sub m-0 mt-1.5 leading-relaxed">
+                                        Your document is currently being prepared and processed. Please visit the Registrar's Office on or after your scheduled release date to claim it.
+                                      </p>
+                                    </div>
+                                  ) : (
+                                    <>
+                                      <div className="p-3 sm:p-3.5 bg-success/[0.07] border border-success/20 rounded-xl">
+                                        <p className="text-xs sm:text-[13px] text-success font-bold m-0 flex items-center gap-2">
+                                          <FileCheck size={14} className="shrink-0" /> Your document is now ready for pick up at {releaseWindow}
                                         </p>
-                                        <div className="font-serif text-[42px] font-extrabold text-maroon leading-none drop-shadow-sm tracking-tight">
-                                          {ticket.queue_number}
+                                        <p className="text-[11px] sm:text-[11.5px] text-text-sub m-0 mt-1 ml-5 leading-relaxed">
+                                          Please proceed to {releaseWindow} and present your queue ticket to claim your document.
+                                        </p>
+                                      </div>
+
+                                      {/* Official Digital Claim Stub (White Theme) */}
+                                      <div className="bg-white rounded-2xl p-3.5 sm:p-5 md:p-6 shadow-md border-2 border-dashed border-maroon/25 relative overflow-hidden text-left">
+                                        {/* Subtle decorative background gradient */}
+                                        <div className="absolute top-0 right-0 w-36 h-36 bg-gold/5 rounded-full blur-3xl pointer-events-none" />
+                                        <div className="absolute bottom-0 left-0 w-28 h-28 bg-maroon/5 rounded-full blur-2xl pointer-events-none" />
+                                        
+                                        {/* Stub Header */}
+                                        <div className="relative z-10 flex flex-row items-center justify-between gap-2 mb-3 pb-3 border-b border-dashed border-border flex-wrap sm:flex-nowrap">
+                                          <div className="min-w-0 flex-1">
+                                            <p className="text-[10px] sm:text-[11px] text-gold-dark m-0 mb-1 uppercase tracking-[0.12em] font-bold flex items-center gap-1.5">
+                                              <Ticket size={12} className="text-gold shrink-0" /> Official Claim Stub
+                                            </p>
+                                            <div className="font-serif text-[28px] sm:text-[38px] md:text-[42px] font-extrabold text-maroon whitespace-nowrap leading-none tracking-tight">
+                                              {ticket.queue_number}
+                                            </div>
+                                          </div>
+                                          <div className="bg-success/10 text-success border border-success/20 px-2.5 py-1 rounded-full shadow-2xs shrink-0 self-start sm:self-center">
+                                            <span className="text-[9.5px] sm:text-[10.5px] font-extrabold uppercase tracking-wider whitespace-nowrap">Ready for Pickup</span>
+                                          </div>
+                                        </div>
+                                        
+                                        {/* Document & Window info */}
+                                        <div className="relative z-10 bg-off-white/80 p-3 sm:p-4 rounded-xl border border-border">
+                                          <p className="text-[13.5px] sm:text-[15px] font-bold text-text-main m-0 mb-1 leading-snug truncate">
+                                            {ticket.appointments?.transaction_types?.name || 'Document'}
+                                          </p>
+                                          <p className="text-xs sm:text-[12.5px] text-text-sub m-0 font-medium">
+                                            Pickup Location: <span className="text-maroon font-bold">{releaseWindow}</span>
+                                          </p>
+                                        </div>
+                                        
+                                        {/* Instruction */}
+                                        <div className="relative z-10 mt-2.5 sm:mt-3 p-2.5 sm:p-3.5 bg-gold/8 border border-gold/20 rounded-xl flex gap-2 items-start">
+                                          <span className="shrink-0 w-4 h-4 sm:w-4.5 sm:h-4.5 rounded-full bg-gold/20 flex items-center justify-center text-gold font-bold text-[10px] sm:text-[11px] border border-gold/30 mt-0.5">!</span>
+                                          <p className="text-xs sm:text-[12px] text-text-main m-0 leading-relaxed font-medium">
+                                            <strong className="text-maroon">Instruction:</strong> Present this digital claim stub at <strong className="text-text-main">{releaseWindow}</strong> to claim your document.
+                                          </p>
                                         </div>
                                       </div>
-                                      <div className="bg-success/10 text-success border border-success/20 px-3 py-1.5 rounded-full shadow-xs">
-                                        <span className="text-[10.5px] font-extrabold uppercase tracking-wider">Ready for Pickup</span>
-                                      </div>
-                                    </div>
-                                    
-                                    {/* Document & Window info */}
-                                    <div className="relative z-10 bg-off-white/80 p-4 rounded-xl border border-border">
-                                      <p className="text-[15px] font-bold text-text-main m-0 mb-1 leading-snug">
-                                        {ticket.appointments?.transaction_types?.name || 'Document'}
-                                      </p>
-                                      <p className="text-[12.5px] text-text-sub m-0 font-medium">
-                                        Pickup Location: <span className="text-maroon font-bold">{releaseWindow}</span>
-                                      </p>
-                                    </div>
-                                    
-                                    {/* Instruction */}
-                                    <div className="relative z-10 mt-3 p-3.5 bg-gold/8 border border-gold/20 rounded-xl flex gap-2.5 items-start">
-                                      <span className="shrink-0 w-4.5 h-4.5 rounded-full bg-gold/20 flex items-center justify-center text-gold font-bold text-[11px] border border-gold/30 mt-0.5">!</span>
-                                      <p className="text-[12px] text-text-main m-0 leading-relaxed font-medium">
-                                        <strong className="text-maroon">Instruction:</strong> Present this digital claim stub at <strong className="text-text-main">{releaseWindow}</strong> to claim your document.
-                                      </p>
-                                    </div>
-                                  </div>
+                                    </>
+                                  )}
                                 </div>
                               )}
                               {isActiveStep && isPrep && (
-                                <div className="mt-3 p-3.5 bg-gold/6 border border-gold/15 rounded-xl">
-                                  <p className="text-[13px] text-gold font-bold m-0 flex items-center gap-2">
-                                    <Cog size={14} className="text-gold animate-spin" style={{ animationDuration: '4s' }} /> Your requested document is now being prepared
+                                <div className="mt-2.5 p-3 bg-gold/6 border border-gold/15 rounded-xl">
+                                  <p className="text-xs sm:text-[13px] text-gold font-bold m-0 flex items-center gap-2">
+                                    <Cog size={13} className="text-gold animate-spin shrink-0" style={{ animationDuration: '4s' }} /> Your requested document is now being prepared
                                   </p>
-                                  <p className="text-[11.5px] text-text-sub m-0 mt-1.5 ml-5.5 leading-relaxed">
+                                  <p className="text-[11px] sm:text-[11.5px] text-text-sub m-0 mt-1 ml-5 leading-relaxed">
                                     No need to wait in line — we will notify you once it's ready.
                                   </p>
                                 </div>
                               )}
                               {isActiveStep && !isRelease && !isPrep && stepRequiresPresence && (
-                                <div className="mt-3 p-3.5 bg-gold/6 border border-gold/15 rounded-xl">
-                                  <p className="text-[13px] text-gold font-bold m-0 flex items-center gap-2">
-                                    <Hourglass size={14} className="animate-pulse" /> Please proceed to {step.location && !step.location.toLowerCase().includes('checking') ? step.location : 'the counter'}
+                                <div className="mt-2.5 p-3 bg-gold/6 border border-gold/15 rounded-xl">
+                                  <p className="text-xs sm:text-[13px] text-gold font-bold m-0 flex items-center gap-2">
+                                    <Hourglass size={13} className="animate-pulse shrink-0" /> Please proceed to {step.location && !step.location.toLowerCase().includes('checking') ? step.location : 'the counter'}
                                   </p>
-                                  <p className="text-[11.5px] text-text-sub m-0 mt-1.5 ml-5.5 leading-relaxed">
+                                  <p className="text-[11px] sm:text-[11.5px] text-text-sub m-0 mt-1 ml-5 leading-relaxed">
                                     Present your queue ticket and receipt of payment to the registrar window.
                                   </p>
                                 </div>
                               )}
                               {isActiveStep && !isRelease && !isPrep && !stepRequiresPresence && (
-                                <div className="mt-3 p-3.5 bg-surface border border-border rounded-xl">
-                                  <p className="text-[12px] text-text-sub m-0 flex items-center gap-2 font-medium">
-                                    <Cog size={13} className="text-text-muted animate-spin" style={{ animationDuration: '3s' }} /> Being processed — no need to wait in line
+                                <div className="mt-2.5 p-3 bg-surface border border-border rounded-xl">
+                                  <p className="text-xs text-text-sub m-0 flex items-center gap-2 font-medium">
+                                    <Cog size={13} className="text-text-muted animate-spin shrink-0" style={{ animationDuration: '3s' }} /> Being processed — no need to wait in line
                                   </p>
                                 </div>
                               )}
@@ -581,14 +610,17 @@ export default function MyQueue() {
                   const isCurrentTicketForThisAppt = ticket && (ticket.appointment_id === appt.id || ticket.appointments?.id === appt.id);
                   const liveTicketForAppt = activeTicket || (isCurrentTicketForThisAppt ? ticket : null);
 
-                  const isReadyForPickup = appt.release_date || (liveTicketForAppt && (isReleaseActive || (liveTicketForAppt.current_step && liveTicketForAppt.total_steps && liveTicketForAppt.current_step >= liveTicketForAppt.total_steps)));
-                  const isActivated = !!liveTicketForAppt && (liveTicketForAppt.status === 'waiting' || liveTicketForAppt.status === 'in_progress');
+                  const relDate = appt.release_date || liveTicketForAppt?.appointments?.release_date || liveTicketForAppt?.release_date;
+                  const isFutureApptScheduled = Boolean(relDate && relDate > today);
+                  const isReadyToday = Boolean(relDate && relDate <= today);
+                  const isReadyForPickup = !isFutureApptScheduled && (isReadyToday || (liveTicketForAppt && isReleaseActive));
+                  const isActivated = !isReadyForPickup && !isFutureApptScheduled && !!liveTicketForAppt && (liveTicketForAppt.status === 'waiting' || liveTicketForAppt.status === 'in_progress');
                   const isAnotherTicketActiveForToday = ticket && ticket.status !== 'completed' && !isCurrentTicketForThisAppt && ((ticket.appointments?.appointment_date || ticket.appointment_date) === today);
 
                   return (
                     <div key={appt.id} className="bg-white rounded-2xl border border-border p-6 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden group">
                       <div className={`absolute top-0 left-0 w-1.5 h-full transition-colors ${
-                        isReadyForPickup ? 'bg-success' : isActivated ? 'bg-gold' : 'bg-border group-hover:bg-maroon'
+                        isReadyForPickup ? 'bg-success' : (isFutureApptScheduled || isActivated) ? 'bg-gold' : 'bg-border group-hover:bg-maroon'
                       }`} />
                       
                       <div className="flex flex-col sm:flex-row justify-between items-start gap-3 sm:gap-0 mb-4 pl-1">
@@ -603,6 +635,10 @@ export default function MyQueue() {
                         {isReadyForPickup ? (
                           <span className="shrink-0 text-[11px] font-extrabold py-1 px-3 rounded-full bg-success-light text-success border border-success-border uppercase tracking-wider self-start flex items-center gap-1.5">
                             <FileCheck size={13} /> Ready for Pickup
+                          </span>
+                        ) : isFutureApptScheduled ? (
+                          <span className="shrink-0 text-[11px] font-extrabold py-1 px-3 rounded-full bg-gold-light text-gold border border-gold-border uppercase tracking-wider self-start flex items-center gap-1.5">
+                            <Calendar size={13} /> Scheduled ({new Date(relDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })})
                           </span>
                         ) : isActivated ? (
                           <span className="shrink-0 text-[11px] font-extrabold py-1 px-3 rounded-full bg-gold-light text-gold border border-gold-border uppercase tracking-wider self-start flex items-center gap-1.5">
@@ -625,6 +661,16 @@ export default function MyQueue() {
                           className="w-full py-3.5 px-4 rounded-xl border border-success-border bg-success-light text-success hover:bg-success hover:text-white text-[14px] font-bold font-sans transition-all flex items-center justify-center gap-2 cursor-pointer shadow-xs hover:-translate-y-0.5"
                         >
                           <FileCheck size={16} /> Ready for Pickup • View Claim Stub
+                        </button>
+                      ) : isFutureApptScheduled && liveTicketForAppt ? (
+                        <button
+                          onClick={() => {
+                            setActiveTab('active');
+                            window.scrollTo({ top: 0, behavior: 'smooth' });
+                          }}
+                          className="w-full py-3.5 px-4 rounded-xl border border-gold-border bg-gold-light text-gold hover:bg-gold hover:text-white text-[14px] font-bold font-sans transition-all flex items-center justify-center gap-2 cursor-pointer shadow-xs hover:-translate-y-0.5"
+                        >
+                          <Calendar size={16} /> Scheduled for Release • View Queue Ticket ({liveTicketForAppt.queue_number})
                         </button>
                       ) : isActivated ? (
                         <button

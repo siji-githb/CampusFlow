@@ -657,6 +657,8 @@ def set_release_date(appointment_id: str, release_date: str, actor_id: str = Non
             raise HTTPException(status_code=404, detail="Appointment not found")
             
         old_date = res.data[0].get("release_date")
+        if old_date == release_date:
+            return {"message": "Release date unchanged"}
         
         admin.table("appointments").update({"release_date": release_date}).eq("id", appointment_id).execute()
         
