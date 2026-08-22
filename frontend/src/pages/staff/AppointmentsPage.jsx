@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { createPortal } from 'react-dom'
 import { useAuth } from '../../context/useAuth'
+import { useStaffEvent } from '../../context/WebSocketContext'
 import { getAllAppointments, getAppointmentStats, rescheduleAppointment, getBookingConfig } from '../../services/appointmentService'
 import { 
   Calendar, RefreshCw, BarChart2, Circle, User, Users, Tag, X, FileText, Activity, 
@@ -105,9 +106,14 @@ export default function AppointmentsPage() {
     }
   }, [selectedDate, token])
 
+  // Real-time WebSocket event listener for instant 0ms updates
+  useStaffEvent(['APPOINTMENTS_UPDATED', 'QUEUE_UPDATED'], () => {
+    loadAppointments(false)
+  })
+
   useEffect(() => {
     loadAppointments(true)
-    const t = setInterval(() => loadAppointments(false), 15000)
+    const t = setInterval(() => loadAppointments(false), 60000)
     return () => clearInterval(t)
   }, [loadAppointments])
 
@@ -126,29 +132,29 @@ export default function AppointmentsPage() {
       {/* ── Header ── */}
       <div className="mb-6">
         <p className="text-[11px] font-bold text-gold tracking-widest uppercase m-0 mb-1.5">Scheduling</p>
-        <h1 className="font-serif text-[26px] font-bold text-text-main m-0 flex items-center gap-2">
-          <Calendar size={24} className="text-maroon" /> Appointment Calendar
+        <h1 className="font-serif text-[22px] sm:text-[26px] font-bold text-text-main m-0 flex items-center gap-2">
+          <Calendar size={24} className="text-maroon shrink-0" /> Appointment Calendar
         </h1>
-        <p className="text-[12px] text-text-sub mt-2 mb-0">
+        <p className="text-[12px] sm:text-[13px] text-text-sub mt-1.5 sm:mt-2 mb-0">
           Monitor automated student transactions and scheduled appointments.
         </p>
       </div>
 
       {/* ── Stats Row ── */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-5 mb-8">
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 sm:gap-5 mb-6 sm:mb-8">
         {stats.map((s, i) => (
-          <div key={i} className="animate-fade-up bg-white rounded-[14px] px-5 py-4.5 border border-border shadow-[0_1px_4px_rgba(0,0,0,0.04)] flex flex-col gap-3 flex-1" style={{ animationDelay: s.delay }}>
-            <div className="flex items-start justify-between">
-              <div className="text-xs font-semibold text-text-muted uppercase tracking-[0.06em] mt-1.5">{s.label}</div>
-              <div className={`w-9 h-9 rounded-[10px] flex items-center justify-center shrink-0 ${s.bgClass} ${s.colorClass}`}>
+          <div key={i} className={`animate-fade-up bg-white rounded-xl sm:rounded-[14px] p-3.5 sm:px-5 sm:py-4.5 border border-border shadow-[0_1px_4px_rgba(0,0,0,0.04)] flex flex-col justify-between gap-2.5 sm:gap-3 ${i === 2 ? 'col-span-2 sm:col-span-1' : ''}`} style={{ animationDelay: s.delay }}>
+            <div className="flex items-start justify-between gap-2">
+              <div className="text-[10.5px] sm:text-xs font-semibold text-text-muted uppercase tracking-[0.06em] mt-0.5 sm:mt-1.5 leading-tight">{s.label}</div>
+              <div className={`w-8 h-8 sm:w-9 sm:h-9 rounded-lg sm:rounded-[10px] flex items-center justify-center shrink-0 ${s.bgClass} ${s.colorClass}`}>
                 {s.icon}
               </div>
             </div>
             <div>
-              <div className="font-serif text-[28px] font-extrabold text-text-main leading-none m-0 min-h-7">
-                {!statsData ? <div className="animate-pulse w-15 h-7 rounded-md bg-border" /> : s.value}
+              <div className="font-serif text-[22px] sm:text-[28px] font-extrabold text-text-main leading-none m-0 min-h-6 sm:min-h-7">
+                {!statsData ? <div className="animate-pulse w-15 h-6 sm:h-7 rounded-md bg-border" /> : s.value}
               </div>
-              {s.sub && <div className="text-[11px] font-semibold text-text-muted mt-1.5">{s.sub}</div>}
+              {s.sub && <div className="text-[10.5px] sm:text-[11px] font-semibold text-text-muted mt-1 sm:mt-1.5 truncate">{s.sub}</div>}
             </div>
           </div>
         ))}

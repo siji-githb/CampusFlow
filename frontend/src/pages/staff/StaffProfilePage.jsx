@@ -1,6 +1,6 @@
 import { useState, useRef } from 'react'
 import { useAuth } from '../../context/useAuth'
-import { Edit2, IdCard, Tag, LogOut, Trash2, X, Camera, Loader2, Eye, EyeOff } from 'lucide-react'
+import { Edit2, IdCard, Tag, LogOut, Trash2, X, Camera, Loader2, Eye, EyeOff, ChevronLeft } from 'lucide-react'
 import { updateProfile, changePassword, logoutAllDevices, deleteAccount, updateProfilePicture, removeProfilePicture } from '../../services/authService'
 
 export default function StaffProfilePage({ setActiveNav }) {
@@ -197,9 +197,19 @@ export default function StaffProfilePage({ setActiveNav }) {
 
   return (
     <>
-      <div className="w-full max-w-262.5 mx-auto px-4 py-6 md:px-0 md:py-0 pb-24 md:pb-0">
+      <div className="w-full max-w-262.5 mx-auto px-1 sm:px-4 py-2 sm:py-6 md:px-0 md:py-0 pb-20 md:pb-0">
         
-        {/* Header */}
+        {/* Mobile Header with Back Button */}
+        <div className="flex md:hidden items-center justify-between mb-4">
+          <button 
+            onClick={() => setActiveNav('overview')} 
+            className="flex items-center gap-1 text-maroon font-serif font-bold text-[18px] bg-transparent border-none p-0 cursor-pointer hover:opacity-80 transition-opacity"
+          >
+            <ChevronLeft size={22} strokeWidth={2.5} /> Profile
+          </button>
+        </div>
+
+        {/* Desktop Header */}
         <div className="hidden md:flex justify-between items-center mb-8">
           <h1 className="font-serif text-[28px] font-bold text-maroon m-0">Profile</h1>
           <div className="text-[13px] text-text-sub font-medium flex items-center gap-2">
@@ -210,10 +220,10 @@ export default function StaffProfilePage({ setActiveNav }) {
         </div>
 
         {/* Profile Card */}
-        <div className="bg-white rounded-3xl border border-border p-8 shadow-sm animate-fade-up">
+        <div className="bg-white rounded-2xl sm:rounded-3xl border border-border p-5 sm:p-6 md:p-8 shadow-sm animate-fade-up">
           
-          <div className="flex flex-col md:flex-row items-center md:items-start justify-between pb-6 md:pb-8 mb-6 md:mb-8 border-b border-border gap-5 md:gap-0 w-full">
-            <div className="flex flex-col md:flex-row items-center gap-4 md:gap-6 text-center md:text-left w-full md:w-auto">
+          <div className="flex flex-col md:flex-row items-center md:items-start justify-between pb-5 sm:pb-6 md:pb-8 mb-5 sm:mb-6 md:mb-8 border-b border-border/70 gap-4 md:gap-0 w-full">
+            <div className="flex flex-col md:flex-row items-center gap-3.5 md:gap-6 text-center md:text-left w-full md:w-auto">
               <div className="w-20 h-20 md:w-24 md:h-24 shrink-0 rounded-full bg-maroon-light border-[3px] border-maroon-border flex items-center justify-center text-maroon text-[28px] md:text-[32px] font-bold overflow-hidden shadow-sm">
                 {user?.profile_image ? (
                   <img src={user.profile_image} alt="Profile" className="w-full h-full object-cover" />
@@ -221,37 +231,37 @@ export default function StaffProfilePage({ setActiveNav }) {
                   user?.first_name?.[0]?.toUpperCase() || 'S'
                 )}
               </div>
-              <div>
-                <h2 className="font-serif text-[24px] font-bold text-text-main m-0 mb-2">
+              <div className="min-w-0">
+                <h2 className="font-serif text-[20px] md:text-[24px] font-bold text-text-main m-0 mb-1.5 md:mb-2 truncate">
                   {user?.first_name} {user?.last_name}
                 </h2>
-                <div className="flex flex-wrap justify-center md:justify-start items-center gap-2 md:gap-4 text-[13px] md:text-[14px] text-text-sub font-medium">
-                  <span className="flex items-center gap-1.5"><IdCard size={16} className="text-gold" /> ID: {user?.staff_id || user?.id?.substring(0,8) || 'STAFF'}</span>
+                <div className="flex flex-wrap justify-center md:justify-start items-center gap-2 md:gap-4 text-[12px] md:text-[14px] text-text-sub font-medium">
+                  <span className="flex items-center gap-1.5"><IdCard size={15} className="text-gold shrink-0" /> ID: {user?.staff_id || user?.id?.substring(0,8) || 'STAFF'}</span>
                   <span className="hidden md:inline-block w-1 h-1 rounded-full bg-border-strong" />
-                  <span className="flex items-center gap-1.5"><Tag size={16} className="text-gold" /> {user?.role === 'admin' ? 'ADMIN' : 'STAFF'}</span>
+                  <span className="flex items-center gap-1.5"><Tag size={15} className="text-gold shrink-0" /> {user?.role === 'admin' ? 'Administrator' : 'Staff Member'}</span>
                 </div>
               </div>
             </div>
             <button 
               onClick={handleOpenEditModal}
-              className="flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl border border-border text-[14px] font-semibold text-text-main bg-white hover:bg-off-white hover:border-maroon-border hover:text-maroon transition-colors shadow-sm cursor-pointer w-full md:w-auto"
+              className="flex items-center justify-center gap-2 px-5 py-2.5 rounded-full md:rounded-xl border border-border text-[13px] md:text-[14px] font-bold text-text-main bg-white hover:bg-off-white hover:border-maroon-border hover:text-maroon transition-all shadow-2xs cursor-pointer w-full md:w-auto mt-1 md:mt-0"
             >
-              <Edit2 size={16} /> Edit
+              <Edit2 size={14} /> Edit Profile
             </button>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 md:gap-8 text-left">
-            <div className="flex flex-col gap-1.5 md:gap-2">
-              <span className="text-[12px] font-bold text-text-muted uppercase tracking-widest">First Name</span>
-              <span className="text-[15px] font-semibold text-text-main">{user?.first_name || '-'}</span>
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6 md:gap-8 text-left w-full">
+            <div className="flex flex-col gap-1 md:gap-2">
+              <span className="text-[10.5px] md:text-[12px] font-bold text-text-muted uppercase tracking-widest">First Name</span>
+              <span className="text-[15px] font-bold md:font-semibold text-text-main">{user?.first_name || '-'}</span>
             </div>
-            <div className="flex flex-col gap-1.5 md:gap-2">
-              <span className="text-[12px] font-bold text-text-muted uppercase tracking-widest">Last Name</span>
-              <span className="text-[15px] font-semibold text-text-main">{user?.last_name || '-'}</span>
+            <div className="flex flex-col gap-1 md:gap-2">
+              <span className="text-[10.5px] md:text-[12px] font-bold text-text-muted uppercase tracking-widest">Last Name</span>
+              <span className="text-[15px] font-bold md:font-semibold text-text-main">{user?.last_name || '-'}</span>
             </div>
-            <div className="flex flex-col gap-1.5 md:gap-2 sm:col-span-2 md:col-span-2">
-              <span className="text-[12px] font-bold text-text-muted uppercase tracking-widest">Email Address</span>
-              <span className="text-[15px] font-semibold text-text-main flex items-center gap-2">
+            <div className="flex flex-col gap-1 md:gap-2 sm:col-span-2 md:col-span-2">
+              <span className="text-[10.5px] md:text-[12px] font-bold text-text-muted uppercase tracking-widest">Email Address</span>
+              <span className="text-[15px] font-bold md:font-semibold text-text-main break-all">
                 {user?.email || 'staff@crmc.edu.ph'}
               </span>
             </div>
@@ -268,19 +278,19 @@ export default function StaffProfilePage({ setActiveNav }) {
         <div className="flex flex-col gap-6">
           
           {/* Security Card */}
-          <div className="bg-white rounded-3xl border border-border p-8 shadow-sm animate-fade-up" style={{ animationDelay: '0.1s' }}>
-            <h3 className="font-serif text-[18px] md:text-[20px] font-bold text-text-main m-0 mb-5 md:mb-6">Security</h3>
+          <div className="bg-white rounded-2xl sm:rounded-3xl border border-border p-5 sm:p-8 shadow-sm animate-fade-up" style={{ animationDelay: '0.1s' }}>
+            <h3 className="font-serif text-[18px] md:text-[20px] font-bold text-text-main m-0 mb-4 sm:mb-6">Security</h3>
             
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 md:gap-0">
               <div>
-                <h4 className="text-[16px] font-bold text-text-main m-0 mb-1">Change Password</h4>
-                <p className="text-[13px] text-text-sub m-0">Receive real-time notifications after changing.</p>
+                <h4 className="text-[15px] sm:text-[16px] font-bold text-text-main m-0 mb-1">Change Password</h4>
+                <p className="text-[12.5px] sm:text-[13px] text-text-sub m-0">Receive real-time notifications after changing.</p>
               </div>
               <button 
                 onClick={() => setIsChangingPassword(!isChangingPassword)}
-                className="flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl border border-border text-[14px] font-semibold text-text-main bg-white hover:bg-off-white hover:border-maroon-border hover:text-maroon transition-colors shadow-sm cursor-pointer w-full md:w-auto"
+                className="flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl border border-border text-[13px] sm:text-[14px] font-semibold text-text-main bg-white hover:bg-off-white hover:border-maroon-border hover:text-maroon transition-colors shadow-sm cursor-pointer w-full md:w-auto"
               >
-                <Edit2 size={16} /> {isChangingPassword ? 'Cancel' : 'Change Password'}
+                <Edit2 size={15} /> {isChangingPassword ? 'Cancel' : 'Change Password'}
               </button>
             </div>
 
@@ -294,11 +304,11 @@ export default function StaffProfilePage({ setActiveNav }) {
                 )}
 
                 <div>
-                  <label className="block text-[13px] font-semibold text-text-main mb-1.5">Current Password</label>
+                  <label className="block text-[12.5px] sm:text-[13px] font-semibold text-text-main mb-1.5">Current Password</label>
                   <div className="relative">
                     <input type={showCurrentPassword ? "text" : "password"} placeholder="Enter current password" 
                       value={passwordData.current_password} onChange={(e) => setPasswordData({...passwordData, current_password: e.target.value})}
-                      className="w-full px-4 py-2.5 pr-10 rounded-xl border border-border bg-white text-[14px] text-text-main focus:outline-none focus:border-maroon focus:ring-1 focus:ring-maroon transition-colors" />
+                      className="w-full px-3.5 sm:px-4 py-2.5 pr-10 rounded-xl border border-border bg-white text-[13px] sm:text-[14px] text-text-main focus:outline-none focus:border-maroon focus:ring-1 focus:ring-maroon transition-colors" />
                     <button type="button" onClick={() => setShowCurrentPassword(!showCurrentPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-text-sub hover:text-text-main transition-colors cursor-pointer">
                       {showCurrentPassword ? <Eye size={16} /> : <EyeOff size={16} />}
                     </button>
@@ -306,22 +316,22 @@ export default function StaffProfilePage({ setActiveNav }) {
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-[13px] font-semibold text-text-main mb-1.5">New Password</label>
+                    <label className="block text-[12.5px] sm:text-[13px] font-semibold text-text-main mb-1.5">New Password</label>
                     <div className="relative">
                       <input type={showNewPassword ? "text" : "password"} placeholder="Enter new password" 
                         value={passwordData.new_password} onChange={(e) => setPasswordData({...passwordData, new_password: e.target.value})}
-                        className="w-full px-4 py-2.5 pr-10 rounded-xl border border-border bg-white text-[14px] text-text-main focus:outline-none focus:border-maroon focus:ring-1 focus:ring-maroon transition-colors" />
+                        className="w-full px-3.5 sm:px-4 py-2.5 pr-10 rounded-xl border border-border bg-white text-[13px] sm:text-[14px] text-text-main focus:outline-none focus:border-maroon focus:ring-1 focus:ring-maroon transition-colors" />
                       <button type="button" onClick={() => setShowNewPassword(!showNewPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-text-sub hover:text-text-main transition-colors cursor-pointer">
                         {showNewPassword ? <Eye size={16} /> : <EyeOff size={16} />}
                       </button>
                     </div>
                   </div>
                   <div>
-                    <label className="block text-[13px] font-semibold text-text-main mb-1.5">Confirm New Password</label>
+                    <label className="block text-[12.5px] sm:text-[13px] font-semibold text-text-main mb-1.5">Confirm New Password</label>
                     <div className="relative">
                       <input type={showConfirmPassword ? "text" : "password"} placeholder="Confirm new password" 
                         value={passwordData.confirm_password} onChange={(e) => setPasswordData({...passwordData, confirm_password: e.target.value})}
-                        className="w-full px-4 py-2.5 pr-10 rounded-xl border border-border bg-white text-[14px] text-text-main focus:outline-none focus:border-maroon focus:ring-1 focus:ring-maroon transition-colors" />
+                        className="w-full px-3.5 sm:px-4 py-2.5 pr-10 rounded-xl border border-border bg-white text-[13px] sm:text-[14px] text-text-main focus:outline-none focus:border-maroon focus:ring-1 focus:ring-maroon transition-colors" />
                       <button type="button" onClick={() => setShowConfirmPassword(!showConfirmPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-text-sub hover:text-text-main transition-colors cursor-pointer">
                         {showConfirmPassword ? <Eye size={16} /> : <EyeOff size={16} />}
                       </button>
@@ -329,7 +339,7 @@ export default function StaffProfilePage({ setActiveNav }) {
                   </div>
                 </div>
                 <div className="flex justify-end mt-2">
-                  <button onClick={handleChangePassword} disabled={isSavingPassword} className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-maroon text-white text-[14px] font-semibold hover:bg-maroon-dark transition-colors shadow-sm cursor-pointer disabled:opacity-70 disabled:cursor-not-allowed">
+                  <button onClick={handleChangePassword} disabled={isSavingPassword} className="flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl bg-maroon text-white text-[13.5px] sm:text-[14px] font-semibold hover:bg-maroon-dark transition-colors shadow-sm cursor-pointer disabled:opacity-70 disabled:cursor-not-allowed w-full sm:w-auto">
                     {isSavingPassword ? <><Loader2 size={16} className="animate-spin" /> Saving</> : 'Save Password'}
                   </button>
                 </div>
@@ -338,15 +348,15 @@ export default function StaffProfilePage({ setActiveNav }) {
           </div>
 
           {/* Danger Zone Card */}
-          <div className="bg-white rounded-3xl border border-border p-8 shadow-sm animate-fade-up" style={{ animationDelay: '0.2s' }}>
-            <h3 className="font-serif text-[18px] md:text-[20px] font-bold text-text-main m-0 mb-5 md:mb-6">Danger Zone</h3>
+          <div className="bg-white rounded-2xl sm:rounded-3xl border border-border p-5 sm:p-8 shadow-sm animate-fade-up" style={{ animationDelay: '0.2s' }}>
+            <h3 className="font-serif text-[18px] md:text-[20px] font-bold text-text-main m-0 mb-4 sm:mb-6">Danger Zone</h3>
             
-            <div className="flex flex-col md:flex-row md:items-center justify-between pb-6 mb-6 border-b border-border gap-4 md:gap-0">
+            <div className="flex flex-col md:flex-row md:items-center justify-between pb-5 sm:pb-6 mb-5 sm:mb-6 border-b border-border gap-4 md:gap-0">
               <div>
-                <h4 className="text-[16px] font-bold text-text-main m-0 mb-1">Logout all devices</h4>
-                <p className="text-[13px] text-text-sub m-0">Sign out from every active session.</p>
+                <h4 className="text-[15px] sm:text-[16px] font-bold text-text-main m-0 mb-1">Logout all devices</h4>
+                <p className="text-[12.5px] sm:text-[13px] text-text-sub m-0">Sign out from every active session.</p>
               </div>
-              <button onClick={handleLogoutAll} disabled={isLoggingOutAll} className="flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl border border-border text-[14px] font-semibold text-text-main bg-white hover:bg-off-white hover:border-maroon-border hover:text-maroon transition-colors shadow-sm cursor-pointer disabled:opacity-70 disabled:cursor-not-allowed w-full md:w-auto">
+              <button onClick={handleLogoutAll} disabled={isLoggingOutAll} className="flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl border border-border text-[13px] sm:text-[14px] font-semibold text-text-main bg-white hover:bg-off-white hover:border-maroon-border hover:text-maroon transition-colors shadow-sm cursor-pointer disabled:opacity-70 disabled:cursor-not-allowed w-full md:w-auto">
                 {isLoggingOutAll ? <Loader2 size={16} className="animate-spin" /> : <LogOut size={16} />} 
                 {isLoggingOutAll ? 'Logging out...' : 'Logout'}
               </button>

@@ -138,7 +138,7 @@ export function ProfileDropdown() {
             </div>
           </div>
         ) : (
-          <div className="w-9.5 h-9.5 rounded-full bg-maroon/10 border border-maroon/20 flex items-center justify-center overflow-hidden text-maroon text-[15px] font-bold shadow-2xs">
+          <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-maroon/10 border border-maroon/20 flex items-center justify-center overflow-hidden text-maroon text-[13px] sm:text-[14px] font-bold shadow-2xs shrink-0">
             {user?.profile_image ? (
               <img src={user.profile_image} alt="Profile" className="w-full h-full object-cover" />
             ) : (
@@ -186,10 +186,10 @@ export function ProfileDropdown() {
           <div className="flex flex-col gap-0.5">
             <button 
               onClick={() => { setProfileOpen(false); navigate('/student/profile'); }}
-              className="flex items-center justify-between px-2.5 py-2 rounded-xl text-[13px] font-semibold text-text-main hover:text-maroon hover:bg-maroon/5 transition-all cursor-pointer border-none bg-transparent w-full text-left group"
+              className="flex items-center justify-between px-2.5 py-2 rounded-xl text-[13px] font-semibold text-text-main hover:bg-off-white hover:text-maroon transition-all cursor-pointer border-none bg-transparent w-full text-left group"
             >
               <div className="flex items-center gap-2.5">
-                <User size={15} className="text-maroon shrink-0" />
+                <User size={15} className="text-text-main shrink-0 group-hover:text-maroon transition-colors" />
                 <span>Manage Profile</span>
               </div>
               <ChevronRight size={14} className="text-text-muted group-hover:text-maroon group-hover:translate-x-0.5 transition-all" />
@@ -197,35 +197,35 @@ export function ProfileDropdown() {
 
             <button 
               onClick={() => { setProfileOpen(false); navigate('/student/settings'); }}
-              className="flex items-center justify-between px-2.5 py-2 rounded-xl text-[13px] font-semibold text-text-main hover:text-gold-dark hover:bg-gold/10 transition-all cursor-pointer border-none bg-transparent w-full text-left group"
+              className="flex items-center justify-between px-2.5 py-2 rounded-xl text-[13px] font-semibold text-text-main hover:bg-off-white hover:text-maroon transition-all cursor-pointer border-none bg-transparent w-full text-left group"
             >
               <div className="flex items-center gap-2.5">
-                <Settings size={15} className="text-gold shrink-0" />
+                <Settings size={15} className="text-text-main shrink-0 group-hover:text-maroon transition-colors" />
                 <span>Account Settings</span>
               </div>
-              <ChevronRight size={14} className="text-text-muted group-hover:text-gold group-hover:translate-x-0.5 transition-all" />
+              <ChevronRight size={14} className="text-text-muted group-hover:text-maroon group-hover:translate-x-0.5 transition-all" />
             </button>
 
             <button 
               onClick={() => { setProfileOpen(false); navigate('/student/appointments'); }}
-              className="flex items-center justify-between px-2.5 py-2 rounded-xl text-[13px] font-semibold text-text-main hover:text-blue-700 hover:bg-blue-50 transition-all cursor-pointer border-none bg-transparent w-full text-left group"
+              className="flex items-center justify-between px-2.5 py-2 rounded-xl text-[13px] font-semibold text-text-main hover:bg-off-white hover:text-maroon transition-all cursor-pointer border-none bg-transparent w-full text-left group"
             >
               <div className="flex items-center gap-2.5">
-                <ClipboardList size={15} className="text-blue-600 shrink-0" />
+                <ClipboardList size={15} className="text-text-main shrink-0 group-hover:text-maroon transition-colors" />
                 <span>My Appointments</span>
               </div>
-              <ChevronRight size={14} className="text-text-muted group-hover:text-blue-600 group-hover:translate-x-0.5 transition-all" />
+              <ChevronRight size={14} className="text-text-muted group-hover:text-maroon group-hover:translate-x-0.5 transition-all" />
             </button>
 
             <button 
               onClick={() => { setProfileOpen(false); navigate('/student/queue'); }}
-              className="flex items-center justify-between px-2.5 py-2 rounded-xl text-[13px] font-semibold text-text-main hover:text-amber-700 hover:bg-amber-50 transition-all cursor-pointer border-none bg-transparent w-full text-left group"
+              className="flex items-center justify-between px-2.5 py-2 rounded-xl text-[13px] font-semibold text-text-main hover:bg-off-white hover:text-maroon transition-all cursor-pointer border-none bg-transparent w-full text-left group"
             >
               <div className="flex items-center gap-2.5">
-                <Ticket size={15} className="text-amber-600 shrink-0" />
+                <Ticket size={15} className="text-text-main shrink-0 group-hover:text-maroon transition-colors" />
                 <span>Active Queue Ticket</span>
               </div>
-              <ChevronRight size={14} className="text-text-muted group-hover:text-amber-600 group-hover:translate-x-0.5 transition-all" />
+              <ChevronRight size={14} className="text-text-muted group-hover:text-maroon group-hover:translate-x-0.5 transition-all" />
             </button>
           </div>
 
@@ -494,27 +494,31 @@ export default function StudentLayout({ children, activeTab, mobileTitle, backTo
       <div className={`flex-1 flex flex-col min-h-screen transition-all w-full ml-0 ${mlClass}`} style={{ transition: 'margin-left 0.3s cubic-bezier(0.16, 1, 0.3, 1)' }}>
 
         {/* Mobile Header (Hidden on Desktop) */}
-        <header className="md:hidden flex justify-between items-center px-4 py-3 sticky top-0 z-40 bg-off-white border-b border-border shadow-[0_2px_8px_rgba(0,0,0,0.02)]">
-          <div className="flex items-center gap-2.5">
+        <header className="md:hidden flex justify-between items-center px-3 sm:px-4 py-2 sm:py-2.5 sticky top-0 z-40 bg-off-white border-b border-border shadow-[0_2px_8px_rgba(0,0,0,0.02)] gap-1.5 sm:gap-2">
+          <div className="flex items-center gap-1.5 sm:gap-2 min-w-0 shrink">
             {backTo ? (
-              <button onClick={() => navigate(backTo)} className="bg-transparent border-none text-text-main cursor-pointer flex items-center justify-center p-1 -ml-1">
-                <ChevronLeft size={24} strokeWidth={2.5} />
+              <button onClick={() => navigate(backTo)} className="bg-transparent border-none text-text-main cursor-pointer flex items-center justify-center p-1 -ml-1 shrink-0">
+                <ChevronLeft size={22} strokeWidth={2.5} />
               </button>
             ) : (
-              <img src={campusFlowLogo} alt="CampusFlow Logo" className="w-8 h-8 rounded-full bg-white object-contain border border-slate-200 shadow-sm" />
+              <img src={campusFlowLogo} alt="CampusFlow Logo" className="w-7.5 h-7.5 sm:w-8 sm:h-8 rounded-full bg-white object-contain border border-slate-200 shadow-sm shrink-0" />
             )}
-            <div>
-              <div className="font-serif text-[13.5px] font-bold text-maroon">{mobileTitle || 'CampusFlow'}</div>
+            <div className="min-w-0">
+              <div className="font-serif text-[12.5px] sm:text-[14px] font-bold text-maroon leading-tight truncate">
+                {mobileTitle || 'CampusFlow'}
+              </div>
               {!mobileTitle && (
-                <div className="text-[8.5px] text-text-muted tracking-[0.06em] uppercase font-bold mt-0.5">Student Portal</div>
+                <div className="text-[7.5px] sm:text-[8.5px] text-text-muted tracking-[0.06em] uppercase font-bold mt-0.5 whitespace-nowrap">
+                  Student Portal
+                </div>
               )}
             </div>
           </div>
-          <div className="flex items-center gap-2.5 sm:gap-3">
+          <div className="flex items-center gap-1.5 sm:gap-2 shrink-0 justify-end">
             {location.pathname === '/student/dashboard' && (
               <GlobalSearch isMobile={true} onAiPrompt={handleAiPrompt} />
             )}
-            <NotificationDropdown isMobile={true} mobileRoute="/student/notifications" />
+            <NotificationDropdown isMobile={true} />
             <ProfileDropdown />
           </div>
         </header>

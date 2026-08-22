@@ -4,6 +4,7 @@ from models.appointment_models import AppointmentCreate
 from datetime import date, datetime, timedelta
 from services.admin_service import log_audit_action
 from services.notification_service import create_system_notification
+from services.websocket_manager import manager
 from deps import get_supabase_admin as get_admin
 
 settings = get_settings()
@@ -292,6 +293,9 @@ def create_appointment(student_id: str, priority_class: str, data: AppointmentCr
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+    manager.broadcast_staff_event("APPOINTMENTS_UPDATED")
+    manager.broadcast_staff_event("QUEUE_UPDATED")
 
     return {
         "message": "Appointment booked successfully",
@@ -604,6 +608,9 @@ def reschedule_appointment(appointment_id: str, new_date: str, new_time: str, ac
                 type="info"
             )
         
+        manager.broadcast_staff_event("APPOINTMENTS_UPDATED")
+        manager.broadcast_staff_event("QUEUE_UPDATED")
+
         return {"success": True}
     except HTTPException:
         raise
@@ -642,6 +649,9 @@ def update_appointment_status(appointment_id: str, status: str, actor_id: str = 
                 severity=severity
             )
             
+        manager.broadcast_staff_event("APPOINTMENTS_UPDATED")
+        manager.broadcast_staff_event("QUEUE_UPDATED")
+
         return {"success": True, "status": status}
     except HTTPException:
         raise
@@ -702,6 +712,9 @@ def set_release_date(appointment_id: str, release_date: str, actor_id: str = Non
                 severity="Info"
             )
             
+        manager.broadcast_staff_event("RELEASES_UPDATED")
+        manager.broadcast_staff_event("QUEUE_UPDATED")
+
         return {"success": True, "release_date": release_date}
     except HTTPException:
         raise

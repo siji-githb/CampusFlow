@@ -117,7 +117,7 @@ export default function AdminOfficeConfigPage() {
   }
 
   return (
-    <div>
+    <div className="animate-fade-up font-sans w-full pb-10">
       {/* Toast Notification */}
       {toast && (
         <div className={`fixed bottom-10 right-8 z-9999 flex items-center gap-3 px-5 py-3.5 rounded-xl shadow-[0_12px_32px_rgba(0,0,0,0.18)] border text-[13.5px] font-bold animate-fade-up ${
@@ -140,13 +140,13 @@ export default function AdminOfficeConfigPage() {
       )}
 
       {/* Header */}
-      <div className="mb-8">
-        <div className="text-[11px] font-bold text-gold uppercase tracking-[0.06em] mb-2">SYSTEM CONFIGURATION</div>
-        <h1 className="font-serif text-[26px] font-bold text-maroon m-0 mb-2 flex items-center gap-3">
-          <Settings className="text-maroon" size={24} /> Office Configuration
+      <div className="mb-6">
+        <p className="text-[11px] font-bold text-gold tracking-widest uppercase m-0 mb-1.5">System Configuration</p>
+        <h1 className="font-serif text-[22px] sm:text-[26px] font-bold text-text-main m-0 mb-2 flex items-center gap-2.5 sm:gap-3">
+          <Settings size={26} className="text-maroon shrink-0" /> Office Configuration
         </h1>
-        <p className="text-[12px] text-text-sub m-0 leading-relaxed max-w-162.5">
-          Manage operational hours, daily request caps, and appointment rules.
+        <p className="text-[12px] sm:text-[13px] text-text-sub mt-1.5 sm:mt-2 mb-0 leading-relaxed max-w-2xl">
+          Manage operational hours, daily request caps, holiday dates, and appointment rules.
         </p>
       </div>
 

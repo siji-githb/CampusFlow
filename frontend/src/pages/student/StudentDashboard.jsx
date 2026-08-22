@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/useAuth';
+import { useStaffEvent } from '../../context/WebSocketContext';
 import campusFlowLogo from '../../assets/logo.png';
 import StudentLayout, { useWindowWidth, ProfileDropdown } from '../../components/layout/StudentLayout';
 import { getMyAppointments, cancelAppointment } from '../../services/appointmentService';
@@ -22,8 +23,17 @@ const STATUS_STYLES = {
 
 
 
+const formatShortDate = (dateStr) => {
+  if (!dateStr) return '';
+  const parts = String(dateStr).split('-');
+  if (parts.length === 3) {
+    return new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2])).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  }
+  return new Date(dateStr).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+};
+
 // ── Main Page Component ──
-export default function StudentDashboard() {
+export default function StudentDashboard({ embedded = false }) {
   const { user, token } = useAuth();
   const navigate = useNavigate();
 
@@ -32,6 +42,7 @@ export default function StudentDashboard() {
   const [liveTicket, setLiveTicket] = useState(null);
   const [activeCounterTickets, setActiveCounterTickets] = useState([]);
   const [documentsToClaim, setDocumentsToClaim] = useState([]);
+  const [activeTab, setActiveTab] = useState('upcoming');
 
   const fetchDashboardData = useCallback(async () => {
     try {
@@ -62,29 +73,40 @@ export default function StudentDashboard() {
       if (qData?.ticket && (qData.ticket.status === 'pending' || qData.ticket.status === 'waiting' || qData.ticket.status === 'in_progress')) {
         const steps = qData.steps || [];
         const currentStep = steps.find(s => s.status === 'in_progress');
-        const isRelease = currentStep?.step_name?.toLowerCase().includes('release');
-        const isPrep = currentStep?.step_name?.toLowerCase().includes('preparation');
+        const currentStepNameLower = (currentStep?.step_name || '').toLowerCase();
+        const isRelease = currentStepNameLower.includes('release') || currentStepNameLower.includes('claim') || currentStepNameLower.includes('pickup');
+        const isDocPrepared = currentStepNameLower.includes('document prepared') || currentStepNameLower.includes('document ready');
+        const isPrep = !isDocPrepared && !isRelease && (currentStepNameLower.includes('preparation') || currentStepNameLower.includes('verification') || currentStepNameLower.includes('records') || currentStep?.requires_presence === false);
         const releaseDateVal = qData.ticket?.appointments?.release_date;
         const isFutureScheduled = Boolean(releaseDateVal && releaseDateVal > today);
         const isReleaseActive = qData.ticket.status === 'in_progress' && isRelease && !isFutureScheduled;
-        const isCounterActive = qData.ticket.status === 'in_progress' && !isPrep && !isRelease && currentStep?.requires_presence !== false;
+        const isCounterActive = qData.ticket.status === 'in_progress' && !isPrep && !isDocPrepared && !isRelease && currentStep?.requires_presence !== false;
+
+        let stepLabel = 'Serving';
+        if (isReleaseActive) {
+          stepLabel = 'Ready for Pickup';
+        } else if (isFutureScheduled && isRelease) {
+          stepLabel = `Scheduled (${formatShortDate(releaseDateVal)})`;
+        } else if (isDocPrepared) {
+          stepLabel = 'Finalizing Document';
+        } else if (isPrep) {
+          stepLabel = 'Processing Document';
+        } else if (currentStep?.step_name) {
+          stepLabel = currentStep.step_name;
+        }
 
         setLiveTicket({
           id: qData.ticket.appointment_id,
           queue_number: qData.ticket.queue_number,
           status: qData.ticket.status,
           isRelease: !!isReleaseActive,
+          isReleaseActive: !!isReleaseActive,
           isFutureScheduled: !!isFutureScheduled,
           releaseDate: releaseDateVal,
+          isDocPrepared: !!isDocPrepared,
           isPrep: !!isPrep,
           isCounterActive: !!isCounterActive,
-          current_step: isReleaseActive 
-            ? 'Ready for Pickup' 
-            : isFutureScheduled 
-            ? `Scheduled (${new Date(releaseDateVal).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })})` 
-            : isPrep 
-            ? 'Processing Document' 
-            : (currentStep?.step_name || 'Serving'),
+          current_step: stepLabel,
           transaction_type: qData.ticket.appointments?.transaction_types?.name || 'Registrar'
         });
       } else {
@@ -125,10 +147,15 @@ export default function StudentDashboard() {
     }
   }, [token]);
 
+  // Real-time WebSocket event listener for instant 0ms updates
+  useStaffEvent(['QUEUE_UPDATED', 'WINDOW_UPDATED', 'RELEASES_UPDATED', 'APPOINTMENTS_UPDATED'], () => {
+    fetchDashboardData();
+  });
+
   useEffect(() => {
     if (token) {
       fetchDashboardData();
-      const interval = setInterval(fetchDashboardData, 20000); // refresh every 20s
+      const interval = setInterval(fetchDashboardData, 60000); // fallback refresh every 60s
       return () => clearInterval(interval);
     }
   }, [token, fetchDashboardData]);
@@ -140,34 +167,107 @@ export default function StudentDashboard() {
     return 'Good evening';
   };
 
-  return (
-    <StudentLayout activeTab="home">
-      <div className="flex-1 w-full pb-22 md:pb-0 px-4 md:px-0">
-        
-        {/* ── Documents to Claim Alert ── */}
-        {documentsToClaim.length > 0 && (
-          <div 
-            onClick={() => navigate('/student/queue')}
-            className="animate-fade-up bg-green-50 hover:bg-green-100 border border-green-200 rounded-2xl p-4 mb-6 cursor-pointer transition-all flex items-center justify-between shadow-sm"
-          >
-            <div className="flex items-center gap-4">
-              <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center text-green-600 shrink-0">
-                <Bell size={20} className="animate-pulse" />
-              </div>
+  if (loading && !liveTicket && appointments.length === 0) {
+    const skeleton = (
+      <div className="flex-1 w-full pb-22 md:pb-0 px-4 md:px-0 animate-pulse">
+        {/* Hero Skeleton */}
+        <div className="relative rounded-2xl md:rounded-3xl p-5 md:p-8 mb-6 border border-border bg-white overflow-hidden">
+          <div className="h-4 w-28 bg-border/70 rounded mb-3" />
+          <div className="h-8 md:h-10 w-64 bg-border/80 rounded-lg mb-3" />
+          <div className="h-4 w-full max-w-xl bg-border/50 rounded mb-1.5" />
+          <div className="h-4 w-3/4 max-w-md bg-border/40 rounded" />
+        </div>
+
+        {/* 2-Card Action Row Skeleton */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 mb-6">
+          <div className="bg-white rounded-2xl p-5 md:p-6 border border-border flex items-center gap-4">
+            <div className="w-12 h-12 rounded-[14px] bg-border/60 shrink-0" />
+            <div className="flex-1">
+              <div className="h-4.5 w-36 bg-border/70 rounded mb-2" />
+              <div className="h-3.5 w-52 bg-border/40 rounded" />
+            </div>
+            <div className="w-8 h-8 rounded-full bg-border/40 shrink-0" />
+          </div>
+          <div className="bg-white rounded-2xl p-5 md:p-6 border border-border flex items-center gap-4">
+            <div className="w-12 h-12 rounded-[14px] bg-border/60 shrink-0" />
+            <div className="flex-1">
+              <div className="h-3 w-24 bg-border/50 rounded mb-2" />
+              <div className="h-5 w-32 bg-border/70 rounded mb-1" />
+              <div className="h-3 w-40 bg-border/40 rounded" />
+            </div>
+          </div>
+        </div>
+
+        {/* Main Grid Skeleton */}
+        <div className="grid grid-cols-1 lg:grid-cols-[1.5fr_1fr] gap-6 items-start">
+          <div className="bg-white rounded-[20px] p-5 lg:p-7 border border-border">
+            <div className="flex justify-between items-center mb-6">
               <div>
-                <h4 className="text-[15px] font-bold text-green-800 m-0">Ready for Pickup!</h4>
-                <p className="text-[13px] text-green-700 m-0">You have {documentsToClaim.length} document{documentsToClaim.length > 1 ? 's' : ''} ready to be claimed at the Registrar's Office.</p>
+                <div className="h-3 w-24 bg-border/60 rounded mb-1.5" />
+                <div className="h-5 w-44 bg-border/80 rounded" />
+              </div>
+              <div className="h-7 w-20 bg-border/50 rounded-lg" />
+            </div>
+            <div className="flex flex-col gap-3">
+              {[1, 2, 3].map(i => (
+                <div key={i} className="p-4 rounded-2xl border border-border bg-off-white flex justify-between items-center">
+                  <div className="flex items-center gap-4">
+                    <div className="w-11 h-11 rounded-xl bg-border/60 shrink-0" />
+                    <div>
+                      <div className="h-4 w-36 bg-border/70 rounded mb-2" />
+                      <div className="h-3 w-48 bg-border/40 rounded" />
+                    </div>
+                  </div>
+                  <div className="h-6 w-20 rounded-full bg-border/50" />
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="flex flex-col gap-6">
+            <div className="bg-white rounded-[20px] p-5 lg:p-6 border border-border">
+              <div className="h-3 w-28 bg-border/60 rounded mb-2" />
+              <div className="h-5 w-40 bg-border/80 rounded mb-4" />
+              <div className="p-4 rounded-2xl bg-off-white border border-border flex flex-col gap-2">
+                <div className="h-4 w-28 bg-border/70 rounded mb-1" />
+                <div className="h-8 w-20 bg-border/80 rounded-lg mb-1" />
+                <div className="h-3 w-36 bg-border/40 rounded" />
               </div>
             </div>
-            <ChevronRight size={20} className="text-green-600 shrink-0" />
           </div>
-        )}
+        </div>
+      </div>
+    );
+    if (embedded) return skeleton;
+    return <StudentLayout activeTab="home">{skeleton}</StudentLayout>;
+  }
 
-        {/* ── Unified Hero greeting card ── */}
+  const content = (
+    <div className="flex-1 w-full pb-22 md:pb-0 px-4 md:px-0">
+      {/* ── Documents to Claim Alert ── */}
+      {documentsToClaim.length > 0 && (
         <div 
-          className="animate-fade-up bg-white rounded-3xl pt-6 px-5 pb-8 md:py-10 md:px-12 mb-8 relative overflow-hidden shadow-[0_16px_50px_rgba(0,0,0,0.04),0_0_0_1px_rgba(123,26,42,0.08)]"
-          style={{ animationDelay: '0.1s' }}
+          onClick={() => navigate('/student/queue')}
+          className="animate-fade-up bg-green-50 hover:bg-green-100 border border-green-200 rounded-2xl p-4 mb-6 cursor-pointer transition-all flex items-center justify-between shadow-sm"
         >
+          <div className="flex items-center gap-4">
+            <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center text-green-600 shrink-0">
+              <Bell size={20} className="animate-pulse" />
+            </div>
+            <div>
+              <h4 className="text-[15px] font-bold text-green-800 m-0">Ready for Pickup!</h4>
+              <p className="text-[13px] text-green-700 m-0">You have {documentsToClaim.length} document{documentsToClaim.length > 1 ? 's' : ''} ready to be claimed at the Registrar's Office.</p>
+            </div>
+          </div>
+          <ChevronRight size={20} className="text-green-600 shrink-0" />
+        </div>
+      )}
+
+      {/* ── Unified Hero greeting card ── */}
+      <div 
+        className="animate-fade-up bg-white rounded-3xl pt-6 px-5 pb-8 md:py-10 md:px-12 mb-8 relative overflow-hidden shadow-[0_16px_50px_rgba(0,0,0,0.04),0_0_0_1px_rgba(123,26,42,0.08)]"
+        style={{ animationDelay: '0.1s' }}
+      >
           {/* Blurred abstract glows (light theme) */}
           <div className="absolute right-[-10%] top-[-30%] w-50 h-50 md:w-75 md:h-75 rounded-full pointer-events-none animate-float-bubble blur-2xl md:blur-2xl" style={{ background: `radial-gradient(circle, rgba(184,144,10,0.08) 0%, transparent 70%)` }} />
           <div className="absolute right-[15%] bottom-[-45%] w-37.5 h-37.5 md:w-62.5 md:h-62.5 rounded-full pointer-events-none animate-float-bubble-alt blur-[20px] md:blur-[30px]" style={{ background: `radial-gradient(circle, rgba(123,26,42,0.06) 0%, transparent 70%)` }} />
@@ -227,21 +327,25 @@ export default function StudentDashboard() {
                 <div className="flex items-center justify-between mb-1.5">
                   <span className="text-[10px] font-bold text-text-muted tracking-widest uppercase">My Queue Status</span>
                   {liveTicket && (
-                    liveTicket.isRelease ? (
+                    liveTicket.isReleaseActive ? (
                       <span className="flex items-center gap-1.5 text-[10px] font-bold text-success bg-success/10 px-2.5 py-0.5 rounded-full border border-success/20">
                         <span className="w-1.5 h-1.5 rounded-full bg-success inline-block animate-pulse" /> READY FOR PICKUP
                       </span>
                     ) : liveTicket.isFutureScheduled ? (
                       <span className="flex items-center gap-1.5 text-[10px] font-bold text-gold-dark bg-gold/10 px-2.5 py-0.5 rounded-full border border-gold/20">
-                        <span className="w-1.5 h-1.5 rounded-full bg-gold inline-block" /> SCHEDULED ({new Date(liveTicket.releaseDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })})
+                        <span className="w-1.5 h-1.5 rounded-full bg-gold inline-block" /> SCHEDULED ({formatShortDate(liveTicket.releaseDate)})
+                      </span>
+                    ) : liveTicket.isDocPrepared ? (
+                      <span className="flex items-center gap-1.5 text-[10px] font-bold text-gold-dark bg-gold/10 px-2.5 py-0.5 rounded-full border border-gold/20">
+                        <span className="w-1.5 h-1.5 rounded-full bg-gold inline-block animate-pulse" /> FINALIZING
                       </span>
                     ) : liveTicket.isPrep ? (
                       <span className="flex items-center gap-1.5 text-[10px] font-bold text-gold-dark bg-gold/10 px-2.5 py-0.5 rounded-full border border-gold/20">
                         <span className="w-1.5 h-1.5 rounded-full bg-gold inline-block animate-pulse" /> PROCESSING
                       </span>
                     ) : (
-                      <span className="flex items-center gap-1.5 text-[10px] font-bold text-gold bg-gold/10 px-2.5 py-0.5 rounded-full border border-gold/20">
-                        <span className="w-1.5 h-1.5 rounded-full bg-gold inline-block animate-pulse-live" /> LIVE
+                      <span className="flex items-center gap-1.5 text-[10px] font-bold text-maroon bg-maroon/10 px-2.5 py-0.5 rounded-full border border-maroon/20">
+                        <span className="w-1.5 h-1.5 rounded-full bg-maroon inline-block animate-pulse" /> SERVING
                       </span>
                     )
                   )}
@@ -438,8 +542,10 @@ export default function StudentDashboard() {
             )}
           </div>
         </div>
-
       </div>
-    </StudentLayout>
   );
+
+  if (embedded) return content;
+  return <StudentLayout activeTab="home">{content}</StudentLayout>;
 }
+

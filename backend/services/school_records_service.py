@@ -12,16 +12,56 @@ settings = get_settings()
 # Keys are normalized: uppercase, no parenthetical suffixes (e.g. "(2)"), no extra whitespace.
 SHEET_COURSE_MAP = {
     "BSIT": "Bachelor of Science in Information Technology",
+    "BS IT": "Bachelor of Science in Information Technology",
+    "BACHELOR OF SCIENCE IN INFORMATION TECHNOLOGY": "Bachelor of Science in Information Technology",
+    
     "BSHM": "Bachelor of Science in Hospitality Management",
+    "BS HM": "Bachelor of Science in Hospitality Management",
+    "HOSPITALITY MANAGEMENT": "Bachelor of Science in Hospitality Management",
+    "BACHELOR OF SCIENCE IN HOSPITALITY MANAGEMENT": "Bachelor of Science in Hospitality Management",
+    
     "BSCRIM": "Bachelor of Science in Criminology",
+    "BS CRIM": "Bachelor of Science in Criminology",
+    "CRIMINOLOGY": "Bachelor of Science in Criminology",
+    "BACHELOR OF SCIENCE IN CRIMINOLOGY": "Bachelor of Science in Criminology",
+    
     "BEED": "Bachelor of Elementary Education",
+    "BE ED": "Bachelor of Elementary Education",
+    "ELEMENTARY EDUCATION": "Bachelor of Elementary Education",
+    "BACHELOR OF ELEMENTARY EDUCATION": "Bachelor of Elementary Education",
+    
     "BSTM": "Bachelor of Science in Tourism Management",
     "BS-TM": "Bachelor of Science in Tourism Management",
+    "BS TM": "Bachelor of Science in Tourism Management",
+    "TOURISM MANAGEMENT": "Bachelor of Science in Tourism Management",
+    "BACHELOR OF SCIENCE IN TOURISM MANAGEMENT": "Bachelor of Science in Tourism Management",
+    
     "BSBA": "Bachelor of Science in Business Administration",
-    "BSBA-FM": "Bachelor of Science in Business Administration",
-    "BSBAFM": "Bachelor of Science in Business Administration",
+    "BS BA": "Bachelor of Science in Business Administration",
+    "BUSINESS ADMINISTRATION": "Bachelor of Science in Business Administration",
+    "BACHELOR OF SCIENCE IN BUSINESS ADMINISTRATION": "Bachelor of Science in Business Administration",
+    
+    # Financial Management aliases
+    "BSBA-FM": "Bachelor of Science in Financial Management",
+    "BSBAFM": "Bachelor of Science in Financial Management",
+    "BSBA FM": "Bachelor of Science in Financial Management",
+    "BSFM": "Bachelor of Science in Financial Management",
+    "BS-FM": "Bachelor of Science in Financial Management",
+    "BS FM": "Bachelor of Science in Financial Management",
+    "FINANCIAL MANAGEMENT": "Bachelor of Science in Financial Management",
+    "BS FINANCIAL MANAGEMENT": "Bachelor of Science in Financial Management",
+    "BACHELOR OF SCIENCE IN FINANCIAL MANAGEMENT": "Bachelor of Science in Financial Management",
+    
     "BSA": "Bachelor of Science in Accountancy",
-    # BSEd majors — each sheet is a major under Secondary Education, not its own course
+    "BS A": "Bachelor of Science in Accountancy",
+    "ACCOUNTANCY": "Bachelor of Science in Accountancy",
+    "BACHELOR OF SCIENCE IN ACCOUNTANCY": "Bachelor of Science in Accountancy",
+    
+    # BSEd majors & general tab names
+    "BSED": "Bachelor of Secondary Education",
+    "BS ED": "Bachelor of Secondary Education",
+    "SECONDARY EDUCATION": "Bachelor of Secondary Education",
+    "BACHELOR OF SECONDARY EDUCATION": "Bachelor of Secondary Education",
     "ENGLISH": "Bachelor of Secondary Education",
     "FILIPINO": "Bachelor of Secondary Education",
     "MATH": "Bachelor of Secondary Education",

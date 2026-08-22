@@ -22,7 +22,7 @@ export default function LogoutScreen({ isConfirming, onConfirm, onCancel }) {
   return (
     <div className="fixed inset-0 z-9999 bg-black/50 flex items-center justify-center p-4 transition-opacity duration-300 ease-out">
       <div 
-        className={`bg-white rounded-3xl w-full max-w-[420px] shadow-2xl border border-border relative overflow-hidden transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] ${
+        className={`bg-white rounded-3xl w-full max-w-105 shadow-2xl border border-border relative overflow-hidden transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] ${
           mounted ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-95 translate-y-4'
         }`}
       >
@@ -77,7 +77,7 @@ export default function LogoutScreen({ isConfirming, onConfirm, onCancel }) {
             <h2 className="text-text-main text-[17px] font-serif font-bold tracking-tight m-0 mb-1 leading-tight">
               CampusFlow
             </h2>
-            <div className="text-text-muted text-[11px] tracking-[0.2em] uppercase font-bold m-0 leading-tight w-[100px] text-center">
+            <div className="text-text-muted text-[11px] tracking-[0.2em] uppercase font-bold m-0 leading-tight w-25 text-center">
               <span>Logging out{dots}</span>
             </div>
           </div>

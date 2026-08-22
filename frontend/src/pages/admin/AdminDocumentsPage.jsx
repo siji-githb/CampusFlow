@@ -211,19 +211,18 @@ export default function AdminDocumentsPage() {
         </div>
       )}
 
-      <div className="max-w-6xl mx-auto h-full overflow-y-auto pb-10 pr-2 custom-scrollbar">
-        <div className="mb-8">
-          <div className="text-[11px] font-bold text-gold uppercase tracking-[0.06em] mb-2">SYSTEM CONFIGURATION</div>
-          <h1 className="font-serif text-[26px] font-bold text-maroon m-0 mb-2 flex items-center gap-3">
-            <FileText className="text-maroon" size={24} />
-            Documents & Transactions
+      <div className="animate-fade-up font-sans w-full pb-10">
+        <div className="mb-6">
+          <p className="text-[11px] font-bold text-gold tracking-widest uppercase m-0 mb-1.5">System Configuration</p>
+          <h1 className="font-serif text-[22px] sm:text-[26px] font-bold text-text-main m-0 mb-2 flex items-center gap-2.5 sm:gap-3">
+            <FileText size={26} className="text-maroon shrink-0" /> Documents &amp; Transactions
           </h1>
-          <p className="text-[12px] text-text-sub m-0 leading-relaxed max-w-162.5">
-            Configure available document requests, requirements, and processing steps.
+          <p className="text-[12px] sm:text-[13px] text-text-sub mt-1.5 sm:mt-2 mb-0 leading-relaxed max-w-2xl">
+            Configure available document requests, requirement checklists, and processing steps.
           </p>
         </div>
 
-        <div className="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
+        <div className="animate-fade-up flex flex-col sm:flex-row justify-between items-center mb-6 gap-4" style={{ animationDelay: '0.1s' }}>
           <div className="relative w-full sm:w-87.5">
             <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-text-muted" />
             <input 
@@ -522,7 +521,7 @@ export default function AdminDocumentsPage() {
                       <div className="mb-5 bg-off-white p-4 rounded-xl border border-border/60">
                         <span className="text-[12px] font-semibold text-text-sub mb-3 block">Select a standard step to add:</span>
                         <div className="flex flex-wrap gap-2 mb-3">
-                          {["Checking of Payment Receipt", "Preparation of Document", "Release", "Other"].map(step => (
+                          {["Checking of Payment Receipt", "Preparation of Document", "Document Prepared", "Release", "Other"].map(step => (
                             <button
                               key={step}
                               type="button"

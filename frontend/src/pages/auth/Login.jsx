@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useNavigate, Link, useLocation } from 'react-router-dom'
 import { useAuth } from '../../context/useAuth'
 import { loginUser } from '../../services/authService'
-import { Eye, EyeOff, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Eye, EyeOff, ChevronLeft, ChevronRight, Mail, Lock } from 'lucide-react'
 import campusFlowLogo from '../../assets/logo.png'
 import loginImage from '../../assets/login.png'
 
@@ -133,20 +133,24 @@ export default function Login() {
             <form onSubmit={handleSubmit}>
               <div className="mb-5">
                 <label className="block text-[12.5px] font-bold text-slate-700 mb-2">Email Address</label>
-                <input 
-                  type="email" 
-                  name="email" 
-                  value={form.email} 
-                  onChange={handleChange} 
-                  required 
-                  placeholder="your@gmail.com" 
-                  className="w-full rounded-xl border border-slate-200 bg-slate-50/50 text-slate-800 outline-none box-border font-sans transition-all duration-200 focus:bg-white focus:border-maroon focus:ring-[3px] focus:ring-maroon/10 py-3 px-4 text-sm shadow-sm placeholder:text-slate-400 font-medium" 
-                />
+                <div className="relative flex items-center">
+                  <Mail size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                  <input 
+                    type="email" 
+                    name="email" 
+                    value={form.email} 
+                    onChange={handleChange} 
+                    required 
+                    placeholder="your@gmail.com" 
+                    className="w-full rounded-xl border border-slate-200 bg-slate-50/50 text-slate-800 outline-none box-border font-sans transition-all duration-200 focus:bg-white focus:border-maroon focus:ring-[3px] focus:ring-maroon/10 py-3 pl-10.5 pr-4 text-sm shadow-sm placeholder:text-slate-400 font-medium" 
+                  />
+                </div>
               </div>
               
               <div className="mb-8">
                 <label className="block text-xs font-bold text-slate-700 mb-2">Password</label>
-                <div className="relative">
+                <div className="relative flex items-center">
+                  <Lock size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
                   <input 
                     type={showPassword ? "text" : "password"} 
                     name="password" 
@@ -154,7 +158,7 @@ export default function Login() {
                     onChange={handleChange} 
                     required 
                     placeholder="Enter your password" 
-                    className="w-full rounded-xl border border-slate-200 bg-slate-50/50 text-slate-800 outline-none box-border font-sans transition-all duration-200 focus:bg-white focus:border-maroon focus:ring-[3px] focus:ring-maroon/10 py-3 px-4 text-[14.5px] shadow-sm placeholder:text-slate-400 pr-12 font-medium" 
+                    className="w-full rounded-xl border border-slate-200 bg-slate-50/50 text-slate-800 outline-none box-border font-sans transition-all duration-200 focus:bg-white focus:border-maroon focus:ring-[3px] focus:ring-maroon/10 py-3 pl-10.5 pr-12 text-[14.5px] shadow-sm placeholder:text-slate-400 font-medium" 
                   />
                   <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-4 top-1/2 -translate-y-1/2 bg-transparent border-none p-0 text-slate-400 hover:text-slate-600 cursor-pointer flex transition-colors">
                     {showPassword ? <Eye size={18} /> : <EyeOff size={18} />}

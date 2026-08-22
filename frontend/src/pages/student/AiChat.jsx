@@ -12,7 +12,7 @@ const SUGGESTED = [
 ]
 
 const MicIcon = () => (
-  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"></path>
     <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
     <line x1="12" y1="19" x2="12" y2="22"></line>
@@ -20,7 +20,7 @@ const MicIcon = () => (
 )
 
 const SendIcon = () => (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <line x1="22" y1="2" x2="11" y2="13"></line>
     <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
   </svg>
@@ -87,8 +87,9 @@ export default function AiChat({ asWidget, headless, onClose, initialQuery }) {
 
   useEffect(() => {
     if (textareaRef.current) {
-      textareaRef.current.style.height = 'auto';
-      textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 120)}px`;
+      textareaRef.current.style.height = '36px';
+      const scrollHeight = textareaRef.current.scrollHeight;
+      textareaRef.current.style.height = `${Math.min(Math.max(scrollHeight, 36), 148)}px`;
     }
   }, [input]);
 
@@ -245,75 +246,81 @@ export default function AiChat({ asWidget, headless, onClose, initialQuery }) {
           <div ref={bottomRef} />
         </div>
       </div>      {/* Input area */}
-      <div className="bg-white p-4 pt-3 pb-5 shrink-0 shadow-[0_-4px_24px_rgba(0,0,0,0.02)] z-10 relative">
-        <div className={`mx-auto ${asWidget ? 'w-full px-4' : 'max-w-170'} py-4 flex flex-col gap-5`}>
-          {error && <p className="text-[12px] text-red-500 mb-2 px-2 flex items-center gap-1"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg> {error}</p>}
+      <div className="bg-white px-3 sm:px-4 py-2.5 sm:py-3 shrink-0 shadow-[0_-2px_12px_rgba(0,0,0,0.02)] border-t border-border/60 z-10 relative">
+        <div className={`mx-auto ${asWidget ? 'w-full px-1' : 'max-w-170'}`}>
+          {error && <p className="text-[12px] text-red-500 mb-1.5 px-2 flex items-center gap-1"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg> {error}</p>}
 
-          <div className={`flex items-end gap-1.5 bg-[#F3F4F6] p-1.5 rounded-3xl border transition-all ${
-            isListening ? 'border-maroon/40 shadow-[0_0_0_3px_rgba(123,26,42,0.1)]' : 'border-transparent focus-within:border-maroon/30 focus-within:bg-white focus-within:shadow-[0_4px_16px_rgba(0,0,0,0.04)]'
-          }`}>
-            <textarea
-              ref={textareaRef}
-              value={input}
-              onChange={e => setInput(e.target.value)}
-              onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend() } }}
-              placeholder={isListening ? 'Listening...' : 'Ask Aether anything...'}
-              rows={1}
-              style={{ height: 'auto' }}
-              className="flex-1 bg-transparent border-none outline-none resize-none px-3 py-2 text-[14px] text-text-main placeholder-text-muted min-h-11 max-h-30 box-border leading-relaxed overflow-y-auto"
-            />
+          <div className="flex items-end gap-2">
+            {/* Separate Text Box */}
+            <div className={`flex-1 flex items-center bg-[#F3F4F6] px-3.5 py-1.5 rounded-2xl border transition-all ${
+              isListening ? 'border-maroon/40 shadow-[0_0_0_3px_rgba(123,26,42,0.1)]' : 'border-slate-200/80 focus-within:border-maroon/40 focus-within:bg-white focus-within:ring-2 focus-within:ring-maroon/5 focus-within:shadow-xs'
+            }`}>
+              <textarea
+                ref={textareaRef}
+                value={input}
+                onChange={e => setInput(e.target.value)}
+                onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend() } }}
+                placeholder={isListening ? 'Listening...' : 'Ask Aether anything...'}
+                rows={1}
+                style={{ height: '36px' }}
+                className="w-full bg-transparent border-none outline-none resize-none py-1.5 px-0 text-[13.5px] text-text-main placeholder-text-muted/70 leading-5 overflow-y-auto box-border"
+              />
+            </div>
 
-            {/* Mic button */}
-            {voiceSupported && (
+            {/* Outside Action Icons */}
+            <div className="flex items-center gap-1.5 shrink-0 pb-0.5">
+              {/* Mic button */}
+              {voiceSupported && (
+                <button
+                  onClick={isListening ? stopListening : startListening}
+                  title={isListening ? 'Stop listening' : 'Tap to speak'}
+                  className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 transition-all border cursor-pointer ${
+                    isListening ? 'bg-maroon text-white animate-pulse-ring border-maroon' : 'bg-white border-slate-200 text-text-sub hover:bg-slate-50 hover:text-text-main hover:border-slate-300 shadow-2xs'
+                  }`}
+                >
+                  <MicIcon />
+                </button>
+              )}
+
+              {/* Send button */}
               <button
-                onClick={isListening ? stopListening : startListening}
-                title={isListening ? 'Stop listening' : 'Tap to speak'}
-                className={`w-10.5 h-10.5 rounded-full bg-transparent hover:bg-black/5 text-text-sub flex items-center justify-center shrink-0 transition-colors border-none cursor-pointer ${
-                  isListening ? 'bg-maroon text-white animate-pulse-ring' : 'bg-transparent text-text-sub hover:bg-black/5 hover:text-text-main'
+                onClick={() => handleSend()}
+                disabled={!input.trim() || loading}
+                className={`w-9 h-9 rounded-full border-none shrink-0 flex items-center justify-center transition-all duration-200 cursor-pointer ${
+                  !input.trim() || loading ? 'bg-slate-200 text-slate-400 cursor-not-allowed' : 'bg-maroon text-white shadow-xs hover:bg-maroon-dark hover:scale-105 active:scale-95'
                 }`}
               >
-                <MicIcon />
+                <SendIcon />
               </button>
-            )}
-
-            {/* Send button */}
-            <button
-              onClick={() => handleSend()}
-              disabled={!input.trim() || loading}
-              className={`w-10.5 h-10.5 rounded-full border-none shrink-0 flex items-center justify-center transition-all duration-200 ${
-                !input.trim() || loading ? 'bg-black/5 text-text-sub/50 cursor-not-allowed' : 'bg-maroon text-white cursor-pointer shadow-md hover:bg-maroon-dark hover:-translate-y-0.5'
-              }`}
-            >
-              <SendIcon />
-            </button>
+            </div>
           </div>
 
           {/* Status bar */}
-          <div className="flex items-center justify-between mt-2 h-4 px-2">
+          <div className="flex items-center justify-between mt-1.5 px-2">
             <div className="flex items-center gap-4 flex-1 justify-center">
             {isListening ? (
-              <span className="text-[11px] text-maroon flex items-center gap-1.5 font-medium">
+              <span className="text-[10.5px] text-maroon flex items-center gap-1.5 font-medium">
                 <span className="w-1.5 h-1.5 rounded-full bg-maroon animate-pulse"></span>
                 Listening...
               </span>
             ) : isSpeaking ? (
-              <span className="text-[11px] text-maroon flex items-center gap-1.5 font-medium">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>
+              <span className="text-[10.5px] text-maroon flex items-center gap-1.5 font-medium">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>
                 Speaking...
                 <button onClick={() => { window.speechSynthesis?.cancel(); setIsSpeaking(false) }}
-                  className="ml-1 px-1.5 py-0.5 rounded-sm text-[10px] bg-maroon-light text-maroon hover:bg-maroon hover:text-white transition-colors border-none cursor-pointer">
+                  className="ml-1 px-1.5 py-0.2 rounded text-[9.5px] bg-maroon-light text-maroon hover:bg-maroon hover:text-white transition-colors border-none cursor-pointer">
                   Stop
                 </button>
               </span>
             ) : (
-              <p className="text-[11px] text-text-sub m-0">
+              <p className="text-[10.5px] text-text-muted m-0 text-center">
                 Enter to send · Shift+Enter for new line{voiceSupported ? ' · Mic for voice' : ''}
               </p>
             )}
             </div>
 
             {input.length > 800 && (
-              <div className={`text-[11px] font-medium transition-colors ${input.length > 1000 ? 'text-red-500' : 'text-gold'}`}>
+              <div className={`text-[10.5px] font-medium transition-colors ${input.length > 1000 ? 'text-red-500' : 'text-gold'}`}>
                 {input.length} / 1000
               </div>
             )}

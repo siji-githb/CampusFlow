@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { createPortal } from 'react-dom'
 import { useAuth } from '../../context/useAuth'
+import { useStaffEvent } from '../../context/WebSocketContext'
 import {
   getTodaysQueue,
   getLiveQueueStats,
@@ -347,9 +348,14 @@ export default function AdminQueueMonitoringPage() {
     }
   }, [token])
 
+  // Real-time WebSocket event listener for instant 0ms updates
+  useStaffEvent(['QUEUE_UPDATED', 'WINDOW_UPDATED', 'RELEASES_UPDATED'], () => {
+    fetchAllData(false)
+  })
+
   useEffect(() => {
     fetchAllData()
-    const interval = setInterval(() => fetchAllData(false), 10000)
+    const interval = setInterval(() => fetchAllData(false), 60000)
     return () => clearInterval(interval)
   }, [fetchAllData])
 
@@ -719,7 +725,7 @@ export default function AdminQueueMonitoringPage() {
   }
 
   return (
-    <div className="animate-fade-up font-sans flex flex-col gap-6 max-w-400 mx-auto pb-12">
+    <div className="animate-fade-up font-sans flex flex-col gap-6 w-full pb-10">
       
       {/* ── Toast Notification ── */}
       {toastMsg && (
@@ -745,17 +751,17 @@ export default function AdminQueueMonitoringPage() {
       {/* ── Page Header ── */}
       <div className="flex items-end justify-between mb-2 flex-wrap gap-4">
         <div>
-          <div className="text-[11px] font-bold text-gold uppercase tracking-[0.06em] mb-2 flex items-center gap-2">
-            <span>QUEUE &amp; RELEASES</span>
+          <div className="flex items-center gap-2 mb-1.5">
+            <p className="text-[11px] font-bold text-gold tracking-widest uppercase m-0">Queue &amp; Releases</p>
             <span className="text-border-strong">•</span>
             <span className="flex items-center gap-1.5 text-[10px] font-bold text-success bg-success/10 px-2 py-0.5 rounded-full border border-success/20">
-              <span className="w-1.5 h-1.5 rounded-full bg-success animate-pulse" /> LIVE (10s)
+              <span className="w-1.5 h-1.5 rounded-full bg-success animate-pulse" /> LIVE
             </span>
           </div>
-          <h1 className="font-serif text-[26px] font-bold text-maroon m-0 mb-2 flex items-center gap-3">
-            <Activity className="text-maroon" size={24} /> Queue &amp; Document Monitoring
+          <h1 className="font-serif text-[22px] sm:text-[26px] font-bold text-text-main m-0 mb-2 flex items-center gap-2.5 sm:gap-3">
+            <Activity className="text-maroon shrink-0" size={26} /> Queue &amp; Document Monitoring
           </h1>
-          <p className="text-[12px] text-text-sub m-0 leading-relaxed max-w-162.5">
+          <p className="text-[12px] sm:text-[13px] text-text-sub mt-1.5 sm:mt-2 mb-0 leading-relaxed max-w-2xl">
             Real-time monitoring for counter windows, document processing, and student pickups.
           </p>
         </div>
@@ -797,7 +803,7 @@ export default function AdminQueueMonitoringPage() {
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3.5">
         
         {/* At Windows */}
-        <div className="bg-white rounded-2xl p-4.5 border border-border shadow-xs flex flex-col justify-between transition-all hover:border-maroon/40 hover:shadow-sm">
+        <div className="animate-fade-up bg-white rounded-2xl p-4.5 border border-border shadow-xs flex flex-col justify-between transition-all hover:border-maroon/40 hover:shadow-sm" style={{ animationDelay: '0.1s' }}>
           <div className="flex justify-between items-start mb-2">
             <span className="text-[10px] font-extrabold text-text-muted uppercase tracking-wider">Serving </span>
             <div className="w-8 h-8 rounded-lg bg-maroon-light text-maroon flex items-center justify-center">
@@ -813,7 +819,7 @@ export default function AdminQueueMonitoringPage() {
         </div>
 
         {/* Waiting in Line */}
-        <div className="bg-white rounded-2xl p-4.5 border border-border shadow-xs flex flex-col justify-between transition-all hover:border-gold/40 hover:shadow-sm">
+        <div className="animate-fade-up bg-white rounded-2xl p-4.5 border border-border shadow-xs flex flex-col justify-between transition-all hover:border-gold/40 hover:shadow-sm" style={{ animationDelay: '0.15s' }}>
           <div className="flex justify-between items-start mb-2">
             <span className="text-[10px] font-extrabold text-text-muted uppercase tracking-wider">Waiting in Line</span>
             <div className="w-8 h-8 rounded-lg bg-gold-light text-gold flex items-center justify-center">
@@ -829,7 +835,7 @@ export default function AdminQueueMonitoringPage() {
         </div>
 
         {/* In Document Prep */}
-        <div className="bg-white rounded-2xl p-4.5 border border-border shadow-xs flex flex-col justify-between transition-all hover:border-maroon/40 hover:shadow-sm">
+        <div className="animate-fade-up bg-white rounded-2xl p-4.5 border border-border shadow-xs flex flex-col justify-between transition-all hover:border-maroon/40 hover:shadow-sm" style={{ animationDelay: '0.2s' }}>
           <div className="flex justify-between items-start mb-2">
             <span className="text-[10px] font-extrabold text-text-muted uppercase tracking-wider">Preparing Docs</span>
             <div className="w-8 h-8 rounded-lg bg-maroon-light text-maroon flex items-center justify-center">
@@ -845,7 +851,7 @@ export default function AdminQueueMonitoringPage() {
         </div>
 
         {/* Ready for Pickup */}
-        <div className="bg-white rounded-2xl p-4.5 border border-border shadow-xs flex flex-col justify-between transition-all hover:border-gold/40 hover:shadow-sm">
+        <div className="animate-fade-up bg-white rounded-2xl p-4.5 border border-border shadow-xs flex flex-col justify-between transition-all hover:border-gold/40 hover:shadow-sm" style={{ animationDelay: '0.25s' }}>
           <div className="flex justify-between items-start mb-2">
             <span className="text-[10px] font-extrabold text-text-muted uppercase tracking-wider">Ready for Pickup</span>
             <div className="w-8 h-8 rounded-lg bg-gold-light text-gold flex items-center justify-center">
@@ -866,7 +872,7 @@ export default function AdminQueueMonitoringPage() {
         </div>
 
         {/* Finished Today */}
-        <div className="bg-white rounded-2xl p-4.5 border border-border shadow-xs flex flex-col justify-between transition-all hover:border-maroon/40 hover:shadow-sm">
+        <div className="animate-fade-up bg-white rounded-2xl p-4.5 border border-border shadow-xs flex flex-col justify-between transition-all hover:border-maroon/40 hover:shadow-sm" style={{ animationDelay: '0.3s' }}>
           <div className="flex justify-between items-start mb-2">
             <span className="text-[10px] font-extrabold text-text-muted uppercase tracking-wider">Finished Today</span>
             <div className="w-8 h-8 rounded-lg bg-maroon-light text-maroon flex items-center justify-center">
@@ -887,7 +893,7 @@ export default function AdminQueueMonitoringPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         
         {/* Donut 1: Overall Queue Status */}
-        <div className="bg-white rounded-2xl p-6 border border-border shadow-xs flex flex-col justify-between">
+        <div className="animate-fade-up bg-white rounded-2xl p-6 border border-border shadow-xs flex flex-col justify-between" style={{ animationDelay: '0.35s' }}>
           <div>
             <div className="flex items-center justify-between mb-4">
               <div>
@@ -917,7 +923,7 @@ export default function AdminQueueMonitoringPage() {
         </div>
 
         {/* Donut 2: Most Requested Documents */}
-        <div className="bg-white rounded-2xl p-6 border border-border shadow-xs flex flex-col justify-between">
+        <div className="animate-fade-up bg-white rounded-2xl p-6 border border-border shadow-xs flex flex-col justify-between" style={{ animationDelay: '0.4s' }}>
           <div>
             <div className="flex items-center justify-between mb-4">
               <div>
@@ -947,7 +953,7 @@ export default function AdminQueueMonitoringPage() {
         </div>
 
         {/* Quick Summary & Alerts */}
-        <div className="bg-white rounded-2xl p-6 border border-border shadow-xs flex flex-col justify-between relative overflow-hidden">
+        <div className="animate-fade-up bg-white rounded-2xl p-6 border border-border shadow-xs flex flex-col justify-between relative overflow-hidden" style={{ animationDelay: '0.45s' }}>
           <div>
             <div className="flex items-center gap-2 mb-3">
               <Sparkles size={18} className="text-gold" />
@@ -1021,7 +1027,7 @@ export default function AdminQueueMonitoringPage() {
       </div>
 
       {/* ── Live Monitoring Table ── */}
-      <div className="bg-white rounded-2xl border border-border shadow-xs overflow-hidden">
+      <div className="animate-fade-up bg-white rounded-2xl border border-border shadow-xs overflow-hidden" style={{ animationDelay: '0.5s' }}>
         
         {/* Table Filter Tabs and Controls */}
         <div className="border-b border-border bg-white">

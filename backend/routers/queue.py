@@ -23,8 +23,8 @@ def uncollected_documents(user=Depends(require_staff_or_admin)):
 
 
 @router.get("/collected")
-def collected_documents(user=Depends(require_staff_or_admin)):
-    return get_collected_documents(limit=50)
+def collected_documents(limit: int = 500, user=Depends(require_staff_or_admin)):
+    return get_collected_documents(limit=limit)
 
 
 @router.post("/activate/{appointment_id}")

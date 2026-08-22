@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useAuth } from '../../context/useAuth'
+import { useStaffEvent } from '../../context/WebSocketContext'
 import { getMessages, markMessageRead, replyToMessage } from '../../services/messagesService'
 import { Bot, MessageSquare, Send, Check } from 'lucide-react'
 
@@ -126,9 +127,14 @@ export default function MessagesPage() {
     finally { setLoading(false) }
   }, [token])
 
+  // Real-time WebSocket event listener for instant 0ms updates
+  useStaffEvent('MESSAGES_UPDATED', () => {
+    load()
+  })
+
   useEffect(() => { 
     load() 
-    const t = setInterval(load, 15000)
+    const t = setInterval(load, 60000)
     return () => clearInterval(t)
   }, [load])
 
@@ -192,10 +198,10 @@ export default function MessagesPage() {
       {/* ── Page Header ── */}
       <div className="mb-6 shrink-0 animate-fade-up">
         <p className="text-[11px] font-bold text-gold tracking-widest uppercase m-0 mb-1.5">Communication</p>
-        <h1 className="font-serif text-[26px] font-bold text-text-main m-0 flex items-center gap-2">
-          <MessageSquare size={24} className="text-maroon" /> AI Escalations
+        <h1 className="font-serif text-[22px] sm:text-[26px] font-bold text-text-main m-0 flex items-center gap-2">
+          <MessageSquare size={24} className="text-maroon shrink-0" /> AI Escalations
         </h1>
-        <p className="text-[12px] text-text-sub mt-2 mb-0">
+        <p className="text-[12px] sm:text-[13px] text-text-sub mt-1.5 sm:mt-2 mb-0">
           Handle escalated student queries and reply directly to students.
         </p>
       </div>

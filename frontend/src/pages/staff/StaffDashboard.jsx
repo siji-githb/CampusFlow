@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/useAuth'
+import { useStaffEvent } from '../../context/WebSocketContext'
 import campusFlowLogo from '../../assets/logo.png'
 import LiveQueuePage from './LiveQueuePage'
 import MessagesPage from './MessagesPage'
@@ -46,35 +47,35 @@ function CompactQueuePreview({ queue, loading }) {
 
   return (
     <div className="flex flex-col">
-      <div className="flex flex-col gap-3.5">
+      <div className="flex flex-col gap-2.5 sm:gap-3.5">
         {active.map(({ ticket }) => {
           const name = ticket.users ? `${ticket.users.last_name}, ${ticket.users.first_name}` : 'Unknown'
           const isServing = ticket.status === 'in_progress'
           const priorityClass = ticket.appointments?.priority_class
 
           return (
-            <div key={ticket.id} className={`flex items-center gap-4 px-5 py-4 rounded-xl border ${isServing ? 'border-success-border bg-success-light' : 'border-border bg-off-white'}`}>
-              <span className="font-serif text-[18px] font-extrabold text-maroon min-w-16">{ticket.queue_number}</span>
+            <div key={ticket.id} className={`flex items-center gap-2.5 sm:gap-4 px-3.5 sm:px-5 py-3 sm:py-4 rounded-xl border ${isServing ? 'border-success-border bg-success-light' : 'border-border bg-off-white'}`}>
+              <span className="font-serif text-[16px] sm:text-[18px] font-extrabold text-maroon min-w-12 sm:min-w-16">{ticket.queue_number}</span>
               <div className="flex-1 min-w-0 flex flex-col justify-center">
-                <div className="flex items-center gap-2 mb-1">
-                  <span className="text-[14px] font-bold text-text-main truncate">{name}</span>
+                <div className="flex items-center gap-1.5 sm:gap-2 mb-0.5 sm:mb-1">
+                  <span className="text-[13px] sm:text-[14px] font-bold text-text-main truncate">{name}</span>
                   {priorityClass && priorityClass !== 'regular' && (
-                    <span className="shrink-0 text-[10px] font-bold px-2 py-0.5 rounded-full bg-danger-light text-danger border border-danger-border tracking-wider uppercase">
+                    <span className="shrink-0 text-[9px] sm:text-[10px] font-bold px-1.5 sm:px-2 py-0.5 rounded-full bg-danger-light text-danger border border-danger-border tracking-wider uppercase">
                       {priorityClass}
                     </span>
                   )}
                 </div>
-                <div className="text-[12px] text-text-sub font-medium">{ticket.appointments?.transaction_types?.name || 'Transaction'}</div>
+                <div className="text-[11px] sm:text-[12px] text-text-sub font-medium truncate">{ticket.appointments?.transaction_types?.name || 'Transaction'}</div>
               </div>
-              <span className={`text-[11px] font-bold px-2.5 py-1 rounded-full whitespace-nowrap border shrink-0 flex items-center gap-1.5 ${isServing ? 'bg-success-light text-success border-success-border' : 'bg-gold-light text-gold border-gold-border'}`}>
-                {isServing ? <><span className="w-1.5 h-1.5 rounded-full bg-success"></span> Serving</> : <><Clock size={12} className="opacity-80" /> Waiting</>}
+              <span className={`text-[10px] sm:text-[11px] font-bold px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-full whitespace-nowrap border shrink-0 flex items-center gap-1 sm:gap-1.5 ${isServing ? 'bg-success-light text-success border-success-border' : 'bg-gold-light text-gold border-gold-border'}`}>
+                {isServing ? <><span className="w-1.5 h-1.5 rounded-full bg-success"></span> Serving</> : <><Clock size={11} className="opacity-80" /> Waiting</>}
               </span>
             </div>
           )
         })}
       </div>
-      <div className="mt-4 text-right">
-        <span className="text-[11px] font-bold text-text-muted tracking-wide">
+      <div className="mt-3 sm:mt-4 text-right">
+        <span className="text-[10px] sm:text-[11px] font-bold text-text-muted tracking-wide">
           Showing {active.length} out of {activeAll.length} tickets at the counter
         </span>
       </div>
@@ -109,19 +110,19 @@ const SideItem = ({ icon, label, active, onClick, badge, disabled }) => (
 )
 
 // ── Stat Card ──────────────────────────────────────────────────────────────────
-const StatCard = ({ icon, value, label, sub, subColorClass = "text-text-muted", colorClass, bgClass, loading, delay }) => (
-  <div className="animate-fade-up bg-white rounded-[14px] px-5 py-4.5 border border-border flex flex-col gap-3 shadow-[0_1px_4px_rgba(0,0,0,0.04)]" style={{ animationDelay: delay || '0s' }}>
-    <div className="flex items-start justify-between">
-      <div className="text-xs font-semibold text-text-muted uppercase tracking-[0.06em] mt-1.5">{label}</div>
-      <div className={`w-9 h-9 rounded-[10px] flex items-center justify-center shrink-0 ${bgClass} ${colorClass}`}>
+const StatCard = ({ icon, value, label, sub, subColorClass = "text-text-muted", colorClass, bgClass, loading, delay, className = "" }) => (
+  <div className={`animate-fade-up bg-white rounded-xl sm:rounded-[14px] p-3.5 sm:px-5 sm:py-4.5 border border-border flex flex-col justify-between gap-2.5 sm:gap-3 shadow-[0_1px_4px_rgba(0,0,0,0.04)] ${className}`} style={{ animationDelay: delay || '0s' }}>
+    <div className="flex items-start justify-between gap-2">
+      <div className="text-[10.5px] sm:text-xs font-semibold text-text-muted uppercase tracking-[0.06em] mt-0.5 sm:mt-1.5 leading-tight">{label}</div>
+      <div className={`w-8 h-8 sm:w-9 sm:h-9 rounded-lg sm:rounded-[10px] flex items-center justify-center shrink-0 ${bgClass} ${colorClass}`}>
         {icon}
       </div>
     </div>
     <div>
-      <div className="font-serif text-[28px] font-extrabold leading-none m-0 min-h-7 text-text-main">
-        {loading ? <div className="animate-pulse w-15 h-7 rounded-md bg-border" /> : value}
+      <div className="font-serif text-[22px] sm:text-[28px] font-extrabold leading-none m-0 min-h-6 sm:min-h-7 text-text-main">
+        {loading ? <div className="animate-pulse w-15 h-6 sm:h-7 rounded-md bg-border" /> : value}
       </div>
-      {sub && <div className={`text-[11px] font-semibold mt-1.5 ${subColorClass}`}>{sub}</div>}
+      {sub && <div className={`text-[10.5px] sm:text-[11px] font-semibold mt-1 sm:mt-1.5 truncate ${subColorClass}`}>{sub}</div>}
     </div>
   </div>
 )
@@ -176,10 +177,20 @@ function CompactMessagesPreview() {
 // ── Main StaffDashboard ────────────────────────────────────────────────────────
 export default function StaffDashboard() {
   const { user, requestLogout, token } = useAuth()
-  const navigate = useNavigate()
   const [activeNav, setActiveNav] = useState('overview')
+  const [visitedTabs, setVisitedTabs] = useState(new Set(['overview']))
   const [profileOpen, setProfileOpen] = useState(false)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+
+  const handleNavChange = useCallback((tabId) => {
+    setActiveNav(tabId)
+    setVisitedTabs(prev => {
+      if (prev.has(tabId)) return prev
+      const next = new Set(prev)
+      next.add(tabId)
+      return next
+    })
+  }, [])
 
 
 
@@ -223,22 +234,6 @@ export default function StaffDashboard() {
     finally { setClaimingWindow(null) }
   }
 
-  const handleReleaseWindow = async () => {
-    const prevWindow = myWindow;
-    try {
-      setIsLoadingWindow(true)
-      setMyWindow(null)
-      await releaseWindow(token)
-      await loadWindowData()
-    } catch (e) { 
-      console.error(e)
-      setMyWindow(prevWindow)
-      setWindowError(e.message) 
-    } finally {
-      setIsLoadingWindow(false)
-    }
-  }
-
   const loadData = useCallback(async () => {
     if (!token) return
     try {
@@ -262,11 +257,20 @@ export default function StaffDashboard() {
     finally { setLoadingQueue(false) }
   }, [token])
 
+  // Real-time WebSocket event listener for instant 0ms updates
+  useStaffEvent(
+    ['QUEUE_UPDATED', 'WINDOW_UPDATED', 'APPOINTMENTS_UPDATED', 'PRIORITY_REQUESTS_UPDATED', 'ID_REQUESTS_UPDATED', 'RELEASES_UPDATED', 'MESSAGES_UPDATED'],
+    () => {
+      loadData()
+      loadWindowData()
+    }
+  )
+
   useEffect(() => {
     loadData()
     loadWindowData()
-    const t = setInterval(loadData, 15000)
-    const wt = setInterval(loadWindowData, 12000)
+    const t = setInterval(loadData, 60000)
+    const wt = setInterval(loadWindowData, 60000)
     return () => { clearInterval(t); clearInterval(wt) }
   }, [loadData])
 
@@ -372,7 +376,7 @@ export default function StaffDashboard() {
                     active={activeNav === item.id}
                     onClick={() => {
                       if (myWindow) {
-                        setActiveNav(item.id)
+                        handleNavChange(item.id)
                         setMobileMenuOpen(false)
                       }
                     }}
@@ -396,51 +400,36 @@ export default function StaffDashboard() {
       <div className="ml-0 md:ml-60 flex-1 flex flex-col min-h-screen min-w-0">
 
         {/* Top Bar */}
-        <header className="bg-white border-b border-border px-4 sm:px-7 h-15 flex items-center justify-between sticky top-0 z-40 shadow-[0_1px_4px_rgba(0,0,0,0.04)] gap-2">
-          <div className="flex items-center gap-2 flex-1 min-w-0">
+        <header className="bg-white border-b border-border px-3 sm:px-7 h-14 sm:h-15 flex items-center justify-between sticky top-0 z-40 shadow-[0_1px_4px_rgba(0,0,0,0.04)] gap-1.5 sm:gap-2">
+          <div className="flex items-center gap-1.5 sm:gap-2 flex-1 min-w-0">
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="md:hidden flex items-center justify-center p-2 text-text-main hover:bg-slate-100 rounded-lg border-none bg-transparent cursor-pointer shrink-0"
+              className="md:hidden flex items-center justify-center p-1.5 text-text-main hover:bg-slate-100 rounded-lg border-none bg-transparent cursor-pointer shrink-0"
               title="Toggle Menu"
             >
               <Menu size={20} />
             </button>
-            <StaffGlobalSearch setActiveNav={setActiveNav} />
+            <StaffGlobalSearch setActiveNav={handleNavChange} />
           </div>
 
           {/* Window Badge + Avatar */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
 
-            {/* Active Window Badge */}
+            {/* Active Window Badge (Display Indicator Only) */}
             {myWindow ? (
-              <div className="flex items-center gap-1.5 bg-white border border-border rounded-lg shadow-sm px-1.5 py-1.5 transition-all hover:shadow">
-                <div className="flex items-center gap-2 pl-2 pr-1">
-                  <div className="relative flex items-center justify-center">
-                    <span className="absolute inline-flex h-2 w-2 rounded-full bg-success opacity-40 animate-ping" style={{ animationDuration: '2s' }}></span>
-                    <span className="relative inline-flex rounded-full h-2 w-2 bg-success"></span>
-                  </div>
-                  <Monitor size={15} className="text-text-sub" strokeWidth={2.5} />
-                  <span className="text-[13px] font-bold text-text-main font-sans tracking-wide">
-                    Window {myWindow}
-                  </span>
+              <div className="flex items-center gap-1.5 bg-white border border-border rounded-lg shadow-xs px-2.5 py-1.5 transition-all">
+                <div className="relative flex items-center justify-center">
+                  <span className="absolute inline-flex h-2 w-2 rounded-full bg-success opacity-40 animate-ping" style={{ animationDuration: '2s' }}></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-success"></span>
                 </div>
-                <div className="w-px h-4 bg-border mx-0.5"></div>
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.preventDefault()
-                    e.stopPropagation()
-                    handleReleaseWindow()
-                  }}
-                  title="Release window"
-                  className="flex items-center justify-center w-6 h-6 rounded-md border-none bg-transparent cursor-pointer text-text-muted hover:bg-danger-light hover:text-danger transition-colors outline-none"
-                >
-                  <MonitorX size={14} strokeWidth={2.5} />
-                </button>
+                <Monitor size={14} className="text-text-sub hidden sm:inline-block" strokeWidth={2.5} />
+                <span className="text-[12px] sm:text-[13px] font-bold text-text-main font-sans tracking-wide whitespace-nowrap">
+                  Window {myWindow}
+                </span>
               </div>
             ) : (
-              <div className="text-xs text-text-muted font-semibold font-sans">
-                No window assigned
+              <div className="text-[11px] sm:text-xs text-text-muted font-semibold font-sans whitespace-nowrap">
+                No window
               </div>
             )}
 
@@ -449,15 +438,15 @@ export default function StaffDashboard() {
             {/* Avatar dropdown */}
             <div className="relative">
               {profileOpen && <div onClick={() => setProfileOpen(false)} className="fixed inset-0 z-105" />}
-              <button onClick={() => setProfileOpen(!profileOpen)} className="flex items-center gap-2.5 p-1 pr-2 rounded-full border-none bg-transparent cursor-pointer outline-none hover:bg-slate-50 transition-colors">
-                <div className="w-9.5 h-9.5 rounded-full bg-maroon-mid border-[1.5px] border-maroon-border flex items-center justify-center text-[15px] font-bold text-maroon overflow-hidden">
+              <button onClick={() => setProfileOpen(!profileOpen)} className="flex items-center gap-1.5 sm:gap-2.5 p-0.5 sm:p-1 pr-1 sm:pr-2 rounded-full border-none bg-transparent cursor-pointer outline-none hover:bg-slate-50 transition-colors">
+                <div className="w-8 h-8 sm:w-9.5 sm:h-9.5 rounded-full bg-maroon-mid border-[1.5px] border-maroon-border flex items-center justify-center text-[13px] sm:text-[15px] font-bold text-maroon overflow-hidden">
                   {user?.profile_image ? (
                     <img src={user.profile_image} alt="Profile" className="w-full h-full object-cover" />
                   ) : (
                     user?.first_name?.[0]?.toUpperCase() || 'S'
                   )}
                 </div>
-                <div className="flex items-center gap-1.5 mr-1">
+                <div className="hidden sm:flex items-center gap-1.5 mr-1">
                   <span className="text-[14px] font-bold text-text-main font-sans">
                     {user?.first_name || 'Staff'}
                   </span>
@@ -497,11 +486,11 @@ export default function StaffDashboard() {
                   <div className="h-px bg-border my-2" />
 
                   <div className="flex flex-col gap-1 py-2">
-                    <button onClick={() => { setProfileOpen(false); setActiveNav('profile'); }} className="flex items-center gap-3 w-full px-3 py-2.5 rounded-lg border-none bg-transparent hover:bg-slate-50 cursor-pointer text-left transition-colors">
+                    <button onClick={() => { setProfileOpen(false); handleNavChange('profile'); }} className="flex items-center gap-3 w-full px-3 py-2.5 rounded-lg border-none bg-transparent hover:bg-slate-50 cursor-pointer text-left transition-colors">
                       <User size={16} className="text-text-main" />
                       <span className="text-[13px] font-semibold text-text-main">Manage Profile</span>
                     </button>
-                    <button onClick={() => { setProfileOpen(false); setActiveNav('settings'); }} className="flex items-center gap-3 w-full px-3 py-2.5 rounded-lg border-none bg-transparent hover:bg-slate-50 cursor-pointer text-left transition-colors">
+                    <button onClick={() => { setProfileOpen(false); handleNavChange('settings'); }} className="flex items-center gap-3 w-full px-3 py-2.5 rounded-lg border-none bg-transparent hover:bg-slate-50 cursor-pointer text-left transition-colors">
                       <Settings size={16} className="text-text-main" />
                       <span className="text-[13px] font-semibold text-text-main">Account Settings</span>
                     </button>
@@ -531,7 +520,7 @@ export default function StaffDashboard() {
         </header>
 
         {/* ── Page Content ── */}
-        <main className="p-4 sm:p-7 flex-1 relative">
+        <main className="p-3.5 sm:p-7 flex-1 relative">
 
           {/* ──── WINDOW GATE OVERLAY ──── */}
           {!myWindow && (
@@ -587,9 +576,9 @@ export default function StaffDashboard() {
           )}
 
           {/* ──── OVERVIEW VIEW ──── */}
-          {activeNav === 'overview' && (
-            <>
-              <div className="mb-6">
+          {visitedTabs.has('overview') && (
+            <div className={activeNav === 'overview' ? 'block' : 'hidden'}>
+              <div className="mb-5 sm:mb-6">
                 <p className="text-[11px] font-bold text-gold tracking-widest uppercase m-0 mb-1.5">Today's Summary</p>
                 <h1 className="font-serif text-[22px] sm:text-[26px] font-bold text-text-main m-0 flex items-center gap-2">
                   <BarChart2 size={24} className="text-maroon shrink-0" /> Daily Overview
@@ -600,23 +589,29 @@ export default function StaffDashboard() {
               </div>
 
               {/* Stats Grid */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-7">
-                {stats.map((s, i) => <StatCard key={i} {...s} />)}
+              <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2.5 sm:gap-4 mb-5 sm:mb-7">
+                {stats.map((s, i) => (
+                  <StatCard 
+                    key={i} 
+                    {...s} 
+                    className={i === stats.length - 1 ? 'col-span-2 sm:col-span-1 md:col-span-1' : ''} 
+                  />
+                ))}
               </div>
 
               {/* Two-column: Queue preview + AI Escalations */}
-              <div className="grid grid-cols-1 lg:grid-cols-[5fr_3fr] gap-6">
+              <div className="grid grid-cols-1 lg:grid-cols-[5fr_3fr] gap-4 sm:gap-6">
 
                 {/* Live Queue Preview */}
-                <div className="animate-fade-up bg-white rounded-2xl p-6 border border-border shadow-[0_1px_4px_rgba(0,0,0,0.04)]" style={{ animationDelay: '0.5s' }}>
-                  <div className="flex items-center justify-between mb-5">
+                <div className="animate-fade-up bg-white rounded-xl sm:rounded-2xl p-4 sm:p-6 border border-border shadow-[0_1px_4px_rgba(0,0,0,0.04)]" style={{ animationDelay: '0.5s' }}>
+                  <div className="flex items-center justify-between mb-4 sm:mb-5">
                     <div>
                       <p className="text-[11px] font-bold text-gold tracking-widest uppercase m-0 mb-1">Real-Time</p>
-                      <h2 className="font-serif text-[18px] font-bold text-text-main m-0">Live Queue Management</h2>
+                      <h2 className="font-serif text-[16px] sm:text-[18px] font-bold text-text-main m-0">Live Queue Management</h2>
                     </div>
                     <button 
-                      onClick={() => setActiveNav('queue')} 
-                      className="group px-3.5 py-1.5 rounded-xl border border-maroon-border bg-maroon-light text-maroon hover:bg-maroon hover:text-white hover:border-maroon text-xs font-semibold cursor-pointer font-sans transition-all duration-200 shadow-2xs hover:shadow-xs flex items-center gap-1 shrink-0"
+                      onClick={() => handleNavChange('queue')} 
+                      className="group px-3 py-1.5 sm:px-3.5 sm:py-1.5 rounded-xl border border-maroon-border bg-maroon-light text-maroon hover:bg-maroon hover:text-white hover:border-maroon text-[11px] sm:text-xs font-semibold cursor-pointer font-sans transition-all duration-200 shadow-2xs hover:shadow-xs flex items-center gap-1 shrink-0"
                     >
                       View All
                       <ChevronRight size={13} className="transition-transform duration-200 group-hover:translate-x-0.5" />
@@ -625,26 +620,32 @@ export default function StaffDashboard() {
                   <CompactQueuePreview queue={queue} loading={loadingQueue} />
                 </div>
 
-                <div className="flex flex-col gap-5">
+                <div className="flex flex-col gap-4 sm:gap-5">
                   {/* Priority Request Panel */}
-                  <div className="animate-fade-up flex-1 bg-white rounded-2xl p-6 border border-border shadow-[0_1px_4px_rgba(0,0,0,0.04)] flex flex-col" style={{ animationDelay: '0.6s' }}>
-                    <div className="flex items-center justify-between mb-4">
+                  <div className="animate-fade-up flex-1 bg-white rounded-xl sm:rounded-2xl p-4 sm:p-6 border border-border shadow-[0_1px_4px_rgba(0,0,0,0.04)] flex flex-col" style={{ animationDelay: '0.6s' }}>
+                    <div className="flex items-center justify-between mb-3.5 sm:mb-4">
                       <div>
                         <p className="text-[11px] font-bold text-gold tracking-widest uppercase m-0 mb-1">Pending</p>
-                        <h2 className="font-serif text-[18px] font-bold text-text-main m-0">
+                        <h2 className="font-serif text-[16px] sm:text-[18px] font-bold text-text-main m-0">
                           Priority Requests
                         </h2>
                       </div>
                       <button 
-                        onClick={() => setActiveNav('priority-requests')} 
-                        className="group px-3.5 py-1.5 rounded-xl border border-maroon-border bg-maroon-light text-maroon hover:bg-maroon hover:text-white hover:border-maroon text-xs font-semibold cursor-pointer font-sans transition-all duration-200 shadow-2xs hover:shadow-xs flex items-center gap-1 shrink-0"
+                        onClick={() => handleNavChange('priority-requests')} 
+                        className="group px-3 py-1.5 sm:px-3.5 sm:py-1.5 rounded-xl border border-maroon-border bg-maroon-light text-maroon hover:bg-maroon hover:text-white hover:border-maroon text-[11px] sm:text-xs font-semibold cursor-pointer font-sans transition-all duration-200 shadow-2xs hover:shadow-xs flex items-center gap-1 shrink-0"
                       >
                         View All
                         <ChevronRight size={13} className="transition-transform duration-200 group-hover:translate-x-0.5" />
                       </button>
                     </div>
                     <div className="flex-1 overflow-auto">
-                      {priorityData.length === 0 ? (
+                      {loadingQueue ? (
+                        <div className="flex flex-col gap-2">
+                          {[1, 2, 3].map(i => (
+                            <div key={i} className="h-16 rounded-xl animate-pulse bg-border/60" />
+                          ))}
+                        </div>
+                      ) : priorityData.length === 0 ? (
                         <div className="flex flex-col items-center justify-center py-6 text-text-muted">
                           <div className="w-12 h-12 rounded-xl bg-surface flex items-center justify-center mb-3 border border-border">
                             <AlertCircle size={20} className="text-text-muted/60" />
@@ -654,7 +655,7 @@ export default function StaffDashboard() {
                       ) : (
                         <div className="flex flex-col gap-2">
                           {priorityData.slice(0, 5).map(req => (
-                            <div key={req.id} className="bg-white rounded-xl border border-maroon-border px-3.5 py-3 shadow-sm cursor-pointer hover:bg-maroon-light/20 transition-colors" onClick={() => setActiveNav('priority-requests')}>
+                            <div key={req.id} className="bg-white rounded-xl border border-maroon-border px-3.5 py-3 shadow-sm cursor-pointer hover:bg-maroon-light/20 transition-colors" onClick={() => handleNavChange('priority-requests')}>
                               <div className="flex items-center justify-between mb-1">
                                 <span className="text-[13px] font-bold text-text-main">{req.users?.first_name} {req.users?.last_name}</span>
                                 <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-danger-light text-danger border border-danger-border">{req.priority_type?.toUpperCase()}</span>
@@ -668,47 +669,63 @@ export default function StaffDashboard() {
                   </div>
                 </div>
               </div>
-            </>
+            </div>
           )}
 
           {/* ──── QUEUE VIEW ──── */}
-          {activeNav === 'queue' && (
-            <LiveQueuePage />
+          {visitedTabs.has('queue') && (
+            <div className={activeNav === 'queue' ? 'block' : 'hidden'}>
+              <LiveQueuePage onNavigate={handleNavChange} />
+            </div>
           )}
 
           {/* ──── MESSAGES VIEW ──── */}
-          {activeNav === 'messages' && (
-            <MessagesPage />
+          {visitedTabs.has('messages') && (
+            <div className={activeNav === 'messages' ? 'block' : 'hidden'}>
+              <MessagesPage />
+            </div>
           )}
 
           {/* ──── APPOINTMENTS VIEW ──── */}
-          {activeNav === 'appointments' && (
-            <AppointmentsPage />
+          {visitedTabs.has('appointments') && (
+            <div className={activeNav === 'appointments' ? 'block' : 'hidden'}>
+              <AppointmentsPage />
+            </div>
           )}
 
           {/* ──── DOCUMENT RELEASES VIEW ──── */}
-          {activeNav === 'document-releases' && (
-            <DocumentReleasesPage />
+          {visitedTabs.has('document-releases') && (
+            <div className={activeNav === 'document-releases' ? 'block' : 'hidden'}>
+              <DocumentReleasesPage />
+            </div>
           )}
 
           {/* ──── MASTER LIST VIEW ──── */}
-          {activeNav === 'records' && (
-            <MasterListPage />
+          {visitedTabs.has('records') && (
+            <div className={activeNav === 'records' ? 'block' : 'hidden'}>
+              <MasterListPage />
+            </div>
           )}
 
           {/* ──── PRIORITY REQUESTS VIEW ──── */}
-          {activeNav === 'priority-requests' && (
-            <PriorityRequestsPage />
+          {visitedTabs.has('priority-requests') && (
+            <div className={activeNav === 'priority-requests' ? 'block' : 'hidden'}>
+              <PriorityRequestsPage />
+            </div>
           )}
 
           {/* ──── ID REQUESTS VIEW ──── */}
-          {activeNav === 'id-requests' && (
-            <IdRequestsPage />
+          {visitedTabs.has('id-requests') && (
+            <div className={activeNav === 'id-requests' ? 'block' : 'hidden'}>
+              <IdRequestsPage />
+            </div>
           )}
 
           {/* ──── PROFILE / SETTINGS VIEW ──── */}
-          {(activeNav === 'profile' || activeNav === 'settings') && (
-            <StaffProfilePage setActiveNav={setActiveNav} />
+          {(visitedTabs.has('profile') || visitedTabs.has('settings')) && (
+            <div className={(activeNav === 'profile' || activeNav === 'settings') ? 'block' : 'hidden'}>
+              <StaffProfilePage setActiveNav={handleNavChange} />
+            </div>
           )}
         </main>
       </div>

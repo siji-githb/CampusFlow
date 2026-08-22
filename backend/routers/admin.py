@@ -169,6 +169,7 @@ def send_id_email(request: Request, request_id: str, data: SendEmailBody, user=D
 def update_id_request(request_id: str, data: dict, user=Depends(require_staff_or_admin)):
     """Update status of an ID request."""
     from deps import get_supabase_admin
+    from services.websocket_manager import manager
     admin = get_supabase_admin()
     
     update_data = {"status": data.get("status")}
@@ -178,6 +179,7 @@ def update_id_request(request_id: str, data: dict, user=Depends(require_staff_or
     res = admin.table("id_requests").update(update_data).eq("id", request_id).execute()
     if not res.data:
         raise HTTPException(status_code=404, detail="ID Request not found")
+    manager.broadcast_staff_event("ID_REQUESTS_UPDATED")
     return {"message": "Request updated", "data": res.data[0]}
 
 
@@ -186,11 +188,13 @@ def delete_id_request(request_id: str, user=Depends(require_staff_or_admin)):
     """Delete an ID request (used for clearing history)."""
     from deps import get_supabase_admin
     from fastapi import HTTPException
+    from services.websocket_manager import manager
     admin = get_supabase_admin()
     
     res = admin.table("id_requests").delete().eq("id", request_id).execute()
     if not res.data:
         raise HTTPException(status_code=404, detail="ID Request not found")
+    manager.broadcast_staff_event("ID_REQUESTS_UPDATED")
     return {"message": "Request deleted successfully"}
 
 

@@ -2,6 +2,7 @@ import logging
 from fastapi import HTTPException
 from config import get_settings
 from datetime import date, timedelta
+from services.websocket_manager import manager
 from deps import get_supabase_admin as get_admin
 
 settings = get_settings()
@@ -603,6 +604,7 @@ def claim_window(user_id: str, window_num: int):
             assignments[user_id] = window_num
             _save_assignments(admin, assignments)
             
+        manager.broadcast_staff_event("WINDOW_UPDATED")
         return {"message": f"Window {window_num} claimed successfully.", "window": window_num}
     except HTTPException:
         raise
@@ -619,6 +621,7 @@ def release_window(user_id: str):
             if user_id in assignments:
                 del assignments[user_id]
                 _save_assignments(admin, assignments)
+        manager.broadcast_staff_event("WINDOW_UPDATED")
         return {"message": "Window released."}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

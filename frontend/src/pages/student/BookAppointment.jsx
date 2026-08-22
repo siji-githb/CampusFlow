@@ -171,7 +171,7 @@ function Stepper({ step }) {
 }
 
 // ── Main Component ──
-export default function BookAppointment() {
+export default function BookAppointment({ embedded = false }) {
   const { token } = useAuth()
   const navigate  = useNavigate()
 
@@ -324,8 +324,8 @@ export default function BookAppointment() {
   }
 
   // ── Success Screen ──
-  if (success) return (
-    <StudentLayout activeTab="book" mobileTitle="Appointment Booked" backTo="/student/dashboard">
+  if (success) {
+    const successView = (
       <div className="flex-1 flex flex-col items-center justify-center p-3 sm:p-6 text-center">
         <div className="bg-white rounded-2xl sm:rounded-3xl border border-border p-5 sm:p-8 md:p-10 max-w-md w-full text-center shadow-lg animate-fade-up">
           <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-success-light border-2 border-success-border flex items-center justify-center mx-auto mb-4 sm:mb-6 text-success shadow-2xs">
@@ -358,14 +358,43 @@ export default function BookAppointment() {
           </div>
         </div>
       </div>
-    </StudentLayout>
-  )
+    );
+    if (embedded) return successView;
+    return <StudentLayout activeTab="book" mobileTitle="Appointment Booked" backTo="/student/dashboard">{successView}</StudentLayout>;
+  }
 
-  return (
-    <StudentLayout activeTab="book" mobileTitle="Book Appointment">
+  if (types.length === 0 && !error) {
+    const skeleton = (
+      <div className="flex-1 w-full pb-22 md:pb-0 px-4 md:px-0 animate-pulse">
+        <div className="hidden md:flex justify-between items-start mb-8">
+          <div>
+            <div className="h-3 w-24 bg-border/60 rounded mb-2" />
+            <div className="h-7 w-48 bg-border/80 rounded mb-2" />
+            <div className="h-3.5 w-64 bg-border/40 rounded" />
+          </div>
+          <div className="h-4 w-28 bg-border/40 rounded" />
+        </div>
+        <div className="md:flex md:gap-8 items-start">
+          <div className="w-full md:w-64 lg:w-72 shrink-0 mb-6 md:mb-0">
+            <div className="bg-white rounded-2xl border border-border p-6 h-64" />
+          </div>
+          <div className="flex-1 bg-white rounded-3xl border border-border p-6 md:p-8">
+            <div className="h-5 w-44 bg-border/70 rounded mb-6" />
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {[1, 2, 3, 4, 5, 6].map(i => (
+                <div key={i} className="p-4 rounded-2xl border border-border bg-off-white h-24" />
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+    if (embedded) return skeleton;
+    return <StudentLayout activeTab="book" mobileTitle="Book Appointment">{skeleton}</StudentLayout>;
+  }
 
-      {/* ── Content Container ── */}
-      <div className="w-full max-w-6xl mx-auto px-3.5 sm:px-6 md:px-8 py-3 sm:py-6 pb-24 md:pb-12 box-border">
+  const content = (
+    <div className="flex-1 w-full pb-22 md:pb-0 px-4 md:px-0">
 
         {/* Desktop Header */}
         <div className="hidden md:flex justify-between items-start mb-8">
@@ -877,6 +906,8 @@ export default function BookAppointment() {
           </div>
         </div>
       </div>
-    </StudentLayout>
-  )
-}
+  );
+
+  if (embedded) return content;
+  return <StudentLayout activeTab="book" mobileTitle="Book Appointment">{content}</StudentLayout>;
+}

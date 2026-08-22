@@ -9,13 +9,7 @@ import Login from '../pages/auth/Login'
 import Register from '../pages/auth/Register'
 import ForgotPassword from '../pages/auth/ForgotPassword'
 import ResetPassword from '../pages/auth/ResetPassword'
-import StudentDashboard from '../pages/student/StudentDashboard'
-import BookAppointment from '../pages/student/BookAppointment'
-import MyAppointments from '../pages/student/MyAppointments'
-import MyQueue from '../pages/student/MyQueue'
-import AiChat from '../pages/student/AiChat'
-import StudentNotifications from '../pages/student/StudentNotifications'
-import StudentProfile from '../pages/student/StudentProfile'
+import StudentPortalShell from '../pages/student/StudentPortalShell'
 import StaffDashboard from '../pages/staff/StaffDashboard'
 import AdminDashboard from '../pages/admin/AdminDashboard'
 
@@ -30,28 +24,12 @@ export default function AppRouter() {
         <Route path="/forgot-password" element={<PublicRoute><ForgotPassword /></PublicRoute>} />
         <Route path="/reset-password" element={<PublicRoute><ResetPassword /></PublicRoute>} />
 
-        {/* Student */}
-        <Route path="/student/dashboard" element={
-          <ProtectedRoute allowedRoles={['student']}><StudentDashboard /></ProtectedRoute>
+        {/* Student Portal Shell (Instant 0ms cached navigation with visitedTabs) */}
+        <Route path="/student" element={
+          <Navigate to="/student/dashboard" replace />
         } />
-        <Route path="/student/book" element={
-          <ProtectedRoute allowedRoles={['student']}><BookAppointment /></ProtectedRoute>
-        } />
-        <Route path="/student/appointments" element={
-          <ProtectedRoute allowedRoles={['student']}><MyAppointments /></ProtectedRoute>
-        } />
-        <Route path="/student/queue" element={
-          <ProtectedRoute allowedRoles={['student']}><MyQueue /></ProtectedRoute>
-        } />
-
-        <Route path="/student/notifications" element={
-          <ProtectedRoute allowedRoles={['student']}><StudentNotifications /></ProtectedRoute>
-        } />
-        <Route path="/student/profile" element={
-          <ProtectedRoute allowedRoles={['student']}><StudentProfile /></ProtectedRoute>
-        } />
-        <Route path="/student/settings" element={
-          <ProtectedRoute allowedRoles={['student']}><StudentProfile /></ProtectedRoute>
+        <Route path="/student/*" element={
+          <ProtectedRoute allowedRoles={['student']}><StudentPortalShell /></ProtectedRoute>
         } />
 
         {/* Staff */}

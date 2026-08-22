@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Search, LayoutDashboard, BarChart2, Ticket, Calendar, FolderOpen, ClipboardList, Users, Shield, Settings, ChevronRight } from 'lucide-react';
+import { Search, LayoutDashboard, BarChart2, Ticket, Calendar, FolderOpen, ClipboardList, Users, Shield, Settings, FileText, ChevronRight } from 'lucide-react';
 
 const SEARCH_ITEMS = [
   { id: 'overview', label: 'Dashboard Overview', icon: LayoutDashboard, desc: 'View high-level summary and statistics' },
@@ -9,6 +9,7 @@ const SEARCH_ITEMS = [
   { id: 'records', label: 'Registrar Records', icon: FolderOpen, desc: 'Access academic and institutional records' },
   { id: 'student_records', label: 'Master List', icon: ClipboardList, desc: 'Manage student data and documents' },
   { id: 'users', label: 'User Management', icon: Users, desc: 'Manage staff roles and access' },
+  { id: 'documents', label: 'Documents & Transactions', icon: FileText, desc: 'Configure available document requests and processing steps' },
   { id: 'config', label: 'Office Configuration', icon: Settings, desc: 'Configure office settings and parameters' },
   { id: 'audit', label: 'Audit Log', icon: Shield, desc: 'View system activity and audit trails' },
 ];
@@ -63,14 +64,14 @@ export default function AdminGlobalSearch({ setActiveNav }) {
   };
 
   return (
-    <div ref={containerRef} className="relative w-full max-w-64 hidden md:block">
+    <div ref={containerRef} className="relative w-25 xs:w-32 sm:w-44 md:w-64 focus-within:w-36 xs:focus-within:w-44 sm:focus-within:w-56 md:focus-within:w-64 transition-all duration-200 shrink">
       <Search 
-        size={15} 
-        className="absolute top-1/2 -translate-y-1/2 pointer-events-none left-3.5 text-text-muted" 
+        size={13} 
+        className="absolute top-1/2 -translate-y-1/2 pointer-events-none left-2.5 sm:left-3 text-slate-400 shrink-0" 
       />
       <input 
         type="text" 
-        placeholder="Search admin pages..." 
+        placeholder="Search..." 
         value={query}
         onChange={(e) => {
           setQuery(e.target.value);
@@ -80,11 +81,11 @@ export default function AdminGlobalSearch({ setActiveNav }) {
           if (query.trim() !== '') setIsOpen(true);
         }}
         onKeyDown={handleKeyDown}
-        className="w-full bg-surface border border-border text-text-main text-[13px] font-sans rounded-full py-1.5 pl-9 pr-4 focus:outline-none focus:bg-white focus:border-maroon/30 focus:ring-4 focus:ring-maroon/5 transition-all shadow-[inset_0_2px_4px_rgba(0,0,0,0.02)]"
+        className="w-full bg-white border border-slate-200 text-slate-700 placeholder:text-slate-400 text-[11.5px] sm:text-[13px] font-sans rounded-full py-1.5 pl-7 sm:pl-9 pr-2.5 sm:pr-4 focus:outline-none focus:bg-white focus:border-maroon/30 focus:ring-2 sm:focus:ring-4 focus:ring-maroon/5 transition-all shadow-2xs truncate"
       />
 
       {isOpen && displayItems.length > 0 && (
-        <div className="absolute right-0 top-full mt-2 w-72 bg-white rounded-2xl shadow-[0_12px_40px_rgba(0,0,0,0.12),0_0_0_1px_rgba(0,0,0,0.04)] overflow-hidden z-50 flex flex-col py-2 transition-all origin-top border border-border">
+        <div className="absolute right-0 top-full mt-2 w-64 sm:w-72 max-w-[calc(100vw-32px)] bg-white rounded-2xl shadow-[0_12px_40px_rgba(0,0,0,0.12),0_0_0_1px_rgba(0,0,0,0.04)] overflow-hidden z-50 flex flex-col py-2 transition-all origin-top border border-slate-100">
           {displayItems.map((item, index) => {
             const Icon = item.icon;
             const isActive = index === activeIndex;

@@ -1,8 +1,38 @@
 import { useState, useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import { getStudentRecords, uploadStudentRecords, addStudentRecord, deleteStudentRecord, editStudentRecord, bulkDeleteStudentRecords } from '../../services/adminService'
-import { FileSpreadsheet, Edit, Trash2, ClipboardList, Search, ChevronDown } from 'lucide-react'
+import { FileSpreadsheet, Edit, Trash2, ClipboardList, Search, ChevronDown, Check, AlertTriangle, X } from 'lucide-react'
 import { useAuth } from '../../context/useAuth'
+
+const COURSES = [
+  'Bachelor of Science in Information Technology',
+  'Bachelor of Science in Business Administration',
+  'Bachelor of Science in Financial Management',
+  'Bachelor of Elementary Education',
+  'Bachelor of Secondary Education',
+  'Bachelor of Science in Criminology',
+  'Bachelor of Science in Hospitality Management',
+  'Bachelor of Science in Tourism Management',
+  'Bachelor of Science in Accountancy'
+]
+
+const COURSE_FILTER_OPTIONS = [
+  { v: 'All', l: 'All Courses' },
+  { v: 'Bachelor of Science in Information Technology', l: 'BS Information Technology' },
+  { v: 'Bachelor of Science in Business Administration', l: 'BS Business Administration' },
+  { v: 'Bachelor of Science in Financial Management', l: 'BS Financial Management' },
+  { v: 'Bachelor of Elementary Education', l: 'B Elementary Education' },
+  { v: 'Bachelor of Secondary Education', l: 'B Secondary Education' },
+  { v: 'Bachelor of Science in Criminology', l: 'BS Criminology' },
+  { v: 'Bachelor of Science in Hospitality Management', l: 'BS Hospitality Management' },
+  { v: 'Bachelor of Science in Tourism Management', l: 'BS Tourism Management' },
+  { v: 'Bachelor of Science in Accountancy', l: 'BS Accountancy' }
+]
+
+const PRIORITY_OPTIONS = [
+  { value: 'regular', label: 'Regular' },
+  { value: 'alumni', label: 'Alumni' }
+]
 
 export default function MasterListPage() {
   const { token } = useAuth()
@@ -10,9 +40,13 @@ export default function MasterListPage() {
   const [loading, setLoading] = useState(true)
   const [uploading, setUploading] = useState(false)
   const [uploadProgress, setUploadProgress] = useState(0)
-  const [error, setError] = useState('')
-  const [success, setSuccess] = useState('')
+  const [toastMsg, setToastMsg] = useState(null)
   const fileInputRef = useRef()
+  const showToast = (msg, type = 'success') => {
+    setToastMsg({ text: typeof msg === 'string' ? msg : JSON.stringify(msg), type })
+    if (window._masterListToastTimer) clearTimeout(window._masterListToastTimer)
+    window._masterListToastTimer = setTimeout(() => setToastMsg(null), 3500)
+  }
 
   const [form, setForm] = useState({ student_id: '', first_name: '', last_name: '', course: '', priority_class: 'regular' })
   const [uploadPriority, setUploadPriority] = useState('regular')
@@ -69,16 +103,15 @@ export default function MasterListPage() {
 
   const handleBulkDelete = async () => {
     setIsBulkDeleting(true)
-    setError(''); setSuccess('')
     try {
       const ids = Array.from(selectedRecords)
       await bulkDeleteStudentRecords(token, ids)
-      setSuccess(`Successfully deleted ${ids.length} records`)
+      showToast(`Successfully deleted ${ids.length} records`)
       setSelectedRecords(new Set())
       setShowBulkDeleteModal(false)
       fetchRecords()
     } catch (err) {
-      setError(err.message)
+      showToast(err.message, 'error')
     } finally {
       setIsBulkDeleting(false)
     }
@@ -90,7 +123,7 @@ export default function MasterListPage() {
       const res = await getStudentRecords(token)
       setRecords(res.records || [])
     } catch (e) {
-      setError(e.message)
+      showToast(e.message, 'error')
     } finally {
       setLoading(false)
     }
@@ -101,7 +134,6 @@ export default function MasterListPage() {
   const handleFileUpload = async (e) => {
     const file = e.target.files[0]
     if (!file) return
-    setError(''); setSuccess('')
     setUploading(true)
     setUploadProgress(0)
 
@@ -122,14 +154,14 @@ export default function MasterListPage() {
       setUploadProgress(100)
       
       setTimeout(() => {
-        setSuccess(res.message)
+        showToast(res.message || 'Excel file imported successfully!')
         fetchRecords()
         setUploading(false)
         setUploadProgress(0)
       }, 500)
     } catch (err) {
       clearInterval(progressInterval)
-      setError(err.message)
+      showToast(err.message, 'error')
       setUploading(false)
       setUploadProgress(0)
     } finally {
@@ -139,17 +171,17 @@ export default function MasterListPage() {
 
   const handleManualAdd = async (e) => {
     e.preventDefault()
-    setError(''); setSuccess('')
     if (!form.course) {
-      setError('Please select a course.')
+      showToast('Please select a course.', 'error')
+      return
     }
     try {
       await addStudentRecord(token, form)
-      setSuccess('Student added successfully to Master List')
+      showToast('Student added successfully to Master List!')
       setForm({ student_id: '', first_name: '', last_name: '', course: '', priority_class: 'regular' })
       fetchRecords()
     } catch (err) {
-      setError(err.message)
+      showToast(err.message, 'error')
     }
   }
 
@@ -161,14 +193,13 @@ export default function MasterListPage() {
     if (!recordToDelete) return
     const studentId = recordToDelete.student_id
     setIsDeleting(studentId)
-    setError(''); setSuccess('')
     try {
       await deleteStudentRecord(token, studentId)
-      setSuccess('Record deleted successfully')
+      showToast('Record deleted successfully!')
       setRecordToDelete(null)
       fetchRecords()
     } catch (err) {
-      setError(err.message)
+      showToast(err.message, 'error')
     } finally {
       setIsDeleting(null)
     }
@@ -181,31 +212,51 @@ export default function MasterListPage() {
 
   const handleEditSubmit = async (e) => {
     e.preventDefault()
-    setError(''); setSuccess('')
     if (!editForm.course) {
-      setError('Please select a course.')
+      showToast('Please select a course.', 'error')
       return
     }
     try {
       await editStudentRecord(token, editingRecord, editForm)
-      setSuccess('Record updated successfully')
+      showToast('Record updated successfully!')
       setEditingRecord(null)
       fetchRecords()
     } catch (err) {
-      setError(err.message)
+      showToast(err.message, 'error')
     }
   }
 
   return (
-    <div className="animate-fade-up font-sans">
+    <div className="animate-fade-up font-sans w-full pb-10">
+      
+      {/* ── Toast Notification via Root Portal ── */}
+      {toastMsg && createPortal((
+        <div className={`fixed bottom-10 right-8 z-99999 flex items-center gap-3 px-5 py-3.5 rounded-xl shadow-[0_12px_32px_rgba(0,0,0,0.25)] border text-[13.5px] font-bold animate-fade-up ${
+          toastMsg.type === 'error' 
+            ? 'bg-red-600 text-white border-red-700' 
+            : 'bg-[#006600] text-white border-[#005200]'
+        }`}>
+          {toastMsg.type === 'error' ? (
+            <AlertTriangle size={17} className="shrink-0 text-white" />
+          ) : (
+            <div className="w-5 h-5 rounded-full bg-white/20 flex items-center justify-center shrink-0">
+              <Check size={13} className="text-white stroke-3" />
+            </div>
+          )}
+          <span className="text-white">{toastMsg.text}</span>
+          <button onClick={() => setToastMsg(null)} className="ml-2.5 bg-transparent border-none text-white/80 hover:text-white cursor-pointer p-0 flex items-center shrink-0 transition-opacity">
+            <X size={14} strokeWidth={2.5} />
+          </button>
+        </div>
+      ), document.body)}
       
       <div className="mb-6">
-        <p className="text-[11px] font-bold text-gold tracking-widest uppercase m-0 mb-1.5">User Management</p>
-        <h1 className="font-serif text-[26px] font-bold text-maroon m-0 flex items-center gap-2">
-          <ClipboardList size={24} className="text-maroon" /> Master List
+        <p className="text-[11px] font-bold text-gold tracking-widest uppercase m-0 mb-1.5">Directory Management</p>
+        <h1 className="font-serif text-[22px] sm:text-[26px] font-bold text-text-main m-0 mb-2 flex items-center gap-2.5 sm:gap-3">
+          <ClipboardList size={26} className="text-maroon shrink-0" /> Student Master List
         </h1>
-        <p className="text-[12px] text-text-sub mt-2 mb-0">
-          Manage the official school directory. Bulk import students via Excel or add them manually.
+        <p className="text-[12px] sm:text-[13px] text-text-sub mt-1.5 sm:mt-2 mb-0 leading-relaxed max-w-2xl">
+          Manage the official school directory. Bulk import student records via Excel or add them manually.
         </p>
       </div>
 
@@ -238,16 +289,7 @@ export default function MasterListPage() {
                   <>
                     <div className="fixed inset-0 z-40" onClick={() => setOpenDropdown(null)} />
                     <div className="absolute left-0 right-0 top-full mt-2 bg-white rounded-xl border border-border shadow-[0_4px_20px_rgba(0,0,0,0.08)] p-2 z-50 animate-fade-up max-h-50 overflow-y-auto" style={{ animationDuration: '0.2s' }}>
-                      {[
-                        'Bachelor of Science in Information Technology',
-                        'Bachelor of Science in Business Administration',
-                        'Bachelor of Elementary Education',
-                        'Bachelor of Secondary Education',
-                        'Bachelor of Science in Criminology',
-                        'Bachelor of Science in Hospitality Management',
-                        'Bachelor of Science in Tourism Management',
-                        'Bachelor of Science in Accountancy'
-                      ].map(c => {
+                      {COURSES.map(c => {
                         const isActive = editForm.course === c
                         return (
                           <div
@@ -271,14 +313,12 @@ export default function MasterListPage() {
               <div>
                 <label className="text-[11px] font-semibold text-text-sub mb-2 block tracking-wide uppercase">Priority Class</label>
                 <div className="flex items-center gap-4 py-1">
-                  <label className={`flex items-center gap-2.5 px-4 py-2 rounded-xl text-[13px] font-semibold cursor-pointer select-none transition-all duration-300 ease-out border ${editForm.priority_class === 'regular' ? 'text-maroon bg-maroon/5 border-maroon/20 shadow-[0_2px_8px_rgba(123,26,42,0.04)] scale-[1.02]' : 'text-text-sub bg-transparent border-transparent hover:bg-off-white hover:text-text-main'}`}>
-                    <input type="radio" name="editPriority" value="regular" checked={editForm.priority_class === 'regular'} onChange={e => setEditForm({ ...editForm, priority_class: e.target.value })} className="accent-maroon w-4 h-4 cursor-pointer transition-transform duration-200 ease-out active:scale-90" />
-                    <span className="transition-colors duration-300">Regular</span>
-                  </label>
-                  <label className={`flex items-center gap-2.5 px-4 py-2 rounded-xl text-[13px] font-semibold cursor-pointer select-none transition-all duration-300 ease-out border ${editForm.priority_class === 'alumni' ? 'text-maroon bg-maroon/5 border-maroon/20 shadow-[0_2px_8px_rgba(123,26,42,0.04)] scale-[1.02]' : 'text-text-sub bg-transparent border-transparent hover:bg-off-white hover:text-text-main'}`}>
-                    <input type="radio" name="editPriority" value="alumni" checked={editForm.priority_class === 'alumni'} onChange={e => setEditForm({ ...editForm, priority_class: e.target.value })} className="accent-maroon w-4 h-4 cursor-pointer transition-transform duration-200 ease-out active:scale-90" />
-                    <span className="transition-colors duration-300">Alumni</span>
-                  </label>
+                  {PRIORITY_OPTIONS.map(opt => (
+                    <label key={opt.value} className={`flex items-center gap-2.5 px-4 py-2 rounded-xl text-[13px] font-semibold cursor-pointer select-none transition-all duration-300 ease-out border ${editForm.priority_class === opt.value ? 'text-maroon bg-maroon/5 border-maroon/20 shadow-[0_2px_8px_rgba(123,26,42,0.04)] scale-[1.02]' : 'text-text-sub bg-transparent border-transparent hover:bg-off-white hover:text-text-main'}`}>
+                      <input type="radio" name="editPriority" value={opt.value} checked={editForm.priority_class === opt.value} onChange={e => setEditForm({ ...editForm, priority_class: e.target.value })} className="accent-maroon w-4 h-4 cursor-pointer transition-transform duration-200 ease-out active:scale-90" />
+                      <span className="transition-colors duration-300">{opt.label}</span>
+                    </label>
+                  ))}
                 </div>
               </div>
               <div className="flex gap-2 mt-3">
@@ -332,9 +372,6 @@ export default function MasterListPage() {
         </div>
       ), document.body)}
 
-      {error && <div className="px-4 py-3 bg-danger-light text-danger rounded-lg mb-4 text-sm animate-fade-up">{error}</div>}
-      {success && <div className="px-4 py-3 bg-success-light text-success rounded-lg mb-4 text-sm animate-fade-up">{success}</div>}
-
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6 animate-fade-up relative z-20">
 
         {/* Upload Excel */}
@@ -345,14 +382,15 @@ export default function MasterListPage() {
           <div className="mb-5">
             <label className="text-[11px] font-semibold text-text-sub mb-2 block tracking-wide uppercase">Priority for this import</label>
             <div className="flex flex-wrap items-center gap-3 sm:gap-4 py-1">
-              <label className={`flex items-center gap-2.5 px-4 py-2 rounded-xl text-[13px] font-semibold cursor-pointer select-none transition-all duration-300 ease-out border ${uploadPriority === 'regular' ? 'text-maroon bg-maroon/5 border-maroon/20 shadow-[0_2px_8px_rgba(123,26,42,0.04)] scale-[1.02]' : 'text-text-sub bg-transparent border-transparent hover:bg-off-white hover:text-text-main'}`}>
-                <input type="radio" name="uploadPriority" value="regular" checked={uploadPriority === 'regular'} onChange={e => setUploadPriority(e.target.value)} className="accent-maroon w-4 h-4 cursor-pointer transition-transform duration-200 ease-out active:scale-90" />
-                <span className="transition-colors duration-300">Regular Student</span>
-              </label>
-              <label className={`flex items-center gap-2.5 px-4 py-2 rounded-xl text-[13px] font-semibold cursor-pointer select-none transition-all duration-300 ease-out border ${uploadPriority === 'alumni' ? 'text-maroon bg-maroon/5 border-maroon/20 shadow-[0_2px_8px_rgba(123,26,42,0.04)] scale-[1.02]' : 'text-text-sub bg-transparent border-transparent hover:bg-off-white hover:text-text-main'}`}>
-                <input type="radio" name="uploadPriority" value="alumni" checked={uploadPriority === 'alumni'} onChange={e => setUploadPriority(e.target.value)} className="accent-maroon w-4 h-4 cursor-pointer transition-transform duration-200 ease-out active:scale-90" />
-                <span className="transition-colors duration-300">Alumni</span>
-              </label>
+              {[
+                { value: 'regular', label: 'Regular Student' },
+                { value: 'alumni', label: 'Alumni' }
+              ].map(opt => (
+                <label key={opt.value} className={`flex items-center gap-2.5 px-4 py-2 rounded-xl text-[13px] font-semibold cursor-pointer select-none transition-all duration-300 ease-out border ${uploadPriority === opt.value ? 'text-maroon bg-maroon/5 border-maroon/20 shadow-[0_2px_8px_rgba(123,26,42,0.04)] scale-[1.02]' : 'text-text-sub bg-transparent border-transparent hover:bg-off-white hover:text-text-main'}`}>
+                  <input type="radio" name="uploadPriority" value={opt.value} checked={uploadPriority === opt.value} onChange={e => setUploadPriority(e.target.value)} className="accent-maroon w-4 h-4 cursor-pointer transition-transform duration-200 ease-out active:scale-90" />
+                  <span className="transition-colors duration-300">{opt.label}</span>
+                </label>
+              ))}
             </div>
           </div>
 
@@ -373,7 +411,7 @@ export default function MasterListPage() {
           <h3 className="text-base font-semibold text-text-main m-0 mb-4 font-serif">Manually Add Student</h3>
           <form onSubmit={handleManualAdd} className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="sm:col-span-2">
-              <input type="text" placeholder="Student ID (e.g. 2020-20049 or 202020049)" pattern="^[0-9-]{8,15}$" title="Format: 8 to 15 numbers or hyphens" required value={form.student_id} onChange={e => setForm({ ...form, student_id: e.target.value })} className="px-3.5 py-2.5 rounded-lg border border-border text-[13px] outline-none bg-white text-text-main w-full transition-colors focus:border-maroon" />
+              <input type="text" placeholder="Student ID (e.g. 2020-20049 or 202020049)" pattern="[-0-9]{8,15}" title="Format: 8 to 15 numbers or hyphens" required value={form.student_id} onChange={e => setForm({ ...form, student_id: e.target.value })} className="px-3.5 py-2.5 rounded-lg border border-border text-[13px] outline-none bg-white text-text-main w-full transition-colors focus:border-maroon" />
             </div>
             <div>
               <input type="text" placeholder="First Name" required value={form.first_name} onChange={e => setForm({ ...form, first_name: e.target.value })} className="px-3.5 py-2.5 rounded-lg border border-border text-[13px] outline-none bg-white text-text-main w-full transition-colors focus:border-maroon" />
@@ -395,16 +433,7 @@ export default function MasterListPage() {
                 <>
                   <div className="fixed inset-0 z-40" onClick={() => setOpenDropdown(null)} />
                   <div className="absolute left-0 right-0 top-full mt-2 bg-white rounded-xl border border-border shadow-lg p-2 z-50 animate-fade-up max-h-62.5 overflow-y-auto" style={{ animationDuration: '0.2s' }}>
-                    {[
-                      'Bachelor of Science in Information Technology',
-                      'Bachelor of Science in Business Administration',
-                      'Bachelor of Elementary Education',
-                      'Bachelor of Secondary Education',
-                      'Bachelor of Science in Criminology',
-                      'Bachelor of Science in Hospitality Management',
-                      'Bachelor of Science in Tourism Management',
-                      'Bachelor of Science in Accountancy'
-                    ].map(c => {
+                    {COURSES.map(c => {
                       const isActive = form.course === c
                       return (
                         <div
@@ -428,14 +457,15 @@ export default function MasterListPage() {
             <div className="sm:col-span-2">
               <label className="text-[11px] font-semibold text-text-sub mb-2 block tracking-wide uppercase">Student Priority</label>
               <div className="flex flex-wrap items-center gap-3 sm:gap-4 py-1">
-                <label className={`flex items-center gap-2.5 px-4 py-2 rounded-xl text-[13px] font-semibold cursor-pointer select-none transition-all duration-300 ease-out border ${form.priority_class === 'regular' ? 'text-maroon bg-maroon/5 border-maroon/20 shadow-[0_2px_8px_rgba(123,26,42,0.04)] scale-[1.02]' : 'text-text-sub bg-transparent border-transparent hover:bg-off-white hover:text-text-main'}`}>
-                  <input type="radio" name="manualPriority" value="regular" checked={form.priority_class === 'regular'} onChange={e => setForm({ ...form, priority_class: e.target.value })} className="accent-maroon w-4 h-4 cursor-pointer transition-transform duration-200 ease-out active:scale-90" />
-                  <span className="transition-colors duration-300">Regular Student</span>
-                </label>
-                <label className={`flex items-center gap-2.5 px-4 py-2 rounded-xl text-[13px] font-semibold cursor-pointer select-none transition-all duration-300 ease-out border ${form.priority_class === 'alumni' ? 'text-maroon bg-maroon/5 border-maroon/20 shadow-[0_2px_8px_rgba(123,26,42,0.04)] scale-[1.02]' : 'text-text-sub bg-transparent border-transparent hover:bg-off-white hover:text-text-main'}`}>
-                  <input type="radio" name="manualPriority" value="alumni" checked={form.priority_class === 'alumni'} onChange={e => setForm({ ...form, priority_class: e.target.value })} className="accent-maroon w-4 h-4 cursor-pointer transition-transform duration-200 ease-out active:scale-90" />
-                  <span className="transition-colors duration-300">Alumni</span>
-                </label>
+                {[
+                  { value: 'regular', label: 'Regular Student' },
+                  { value: 'alumni', label: 'Alumni' }
+                ].map(opt => (
+                  <label key={opt.value} className={`flex items-center gap-2.5 px-4 py-2 rounded-xl text-[13px] font-semibold cursor-pointer select-none transition-all duration-300 ease-out border ${form.priority_class === opt.value ? 'text-maroon bg-maroon/5 border-maroon/20 shadow-[0_2px_8px_rgba(123,26,42,0.04)] scale-[1.02]' : 'text-text-sub bg-transparent border-transparent hover:bg-off-white hover:text-text-main'}`}>
+                    <input type="radio" name="manualPriority" value={opt.value} checked={form.priority_class === opt.value} onChange={e => setForm({ ...form, priority_class: e.target.value })} className="accent-maroon w-4 h-4 cursor-pointer transition-transform duration-200 ease-out active:scale-90" />
+                    <span className="transition-colors duration-300">{opt.label}</span>
+                  </label>
+                ))}
               </div>
             </div>
             <div className="sm:col-span-2 mt-3">
@@ -480,17 +510,7 @@ export default function MasterListPage() {
                 <>
                   <div className="fixed inset-0 z-40" onClick={() => setOpenDropdown(null)} />
                   <div className="absolute right-0 sm:left-0 top-full mt-2 bg-white rounded-xl border border-border shadow-lg p-2 z-50 min-w-65 animate-fade-up max-h-75 overflow-y-auto" style={{ animationDuration: '0.2s' }}>
-                    {[
-                      { v: 'All', l: 'All Courses' },
-                      { v: 'Bachelor of Science in Information Technology', l: 'BS Information Technology' },
-                      { v: 'Bachelor of Science in Business Administration', l: 'BS Business Administration' },
-                      { v: 'Bachelor of Elementary Education', l: 'B Elementary Education' },
-                      { v: 'Bachelor of Secondary Education', l: 'B Secondary Education' },
-                      { v: 'Bachelor of Science in Criminology', l: 'BS Criminology' },
-                      { v: 'Bachelor of Science in Hospitality Management', l: 'BS Hospitality Management' },
-                      { v: 'Bachelor of Science in Tourism Management', l: 'BS Tourism Management' },
-                      { v: 'Bachelor of Science in Accountancy', l: 'BS Accountancy' }
-                    ].map(c => {
+                    {COURSE_FILTER_OPTIONS.map(c => {
                       const isActive = courseFilter === c.v
                       return (
                         <div
@@ -571,13 +591,15 @@ export default function MasterListPage() {
                       )}
                     </td>
                     <td className="px-6 py-3 text-text-muted text-xs">{new Date(record.created_at).toLocaleDateString()}</td>
-                    <td className="px-6 py-3 text-right flex gap-2 justify-end">
-                      <button className="bg-transparent border-none cursor-pointer px-2 py-1 rounded text-xs font-semibold text-blue transition-colors hover:bg-blue-light flex items-center gap-1" onClick={() => startEdit(record)}>
-                        <Edit size={14} /> Edit
-                      </button>
-                      <button className="bg-transparent border-none cursor-pointer px-2 py-1 rounded text-xs font-semibold text-danger transition-colors hover:bg-danger-light flex items-center gap-1" onClick={() => promptDelete(record)} disabled={isDeleting === record.student_id}>
-                        <Trash2 size={14} /> {isDeleting === record.student_id ? '...' : 'Delete'}
-                      </button>
+                    <td className="px-6 py-3 text-right whitespace-nowrap">
+                      <div className="flex gap-2 justify-end items-center">
+                        <button type="button" className="bg-transparent border-none cursor-pointer px-2.5 py-1.5 rounded-lg text-xs font-bold text-blue hover:bg-blue-light transition-colors flex items-center gap-1.5" onClick={() => startEdit(record)}>
+                          <Edit size={14} /> Edit
+                        </button>
+                        <button type="button" className="bg-transparent border-none cursor-pointer px-2.5 py-1.5 rounded-lg text-xs font-bold text-danger hover:bg-danger-light transition-colors flex items-center gap-1.5" onClick={() => promptDelete(record)} disabled={isDeleting === record.student_id}>
+                          <Trash2 size={14} /> {isDeleting === record.student_id ? '...' : 'Delete'}
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))

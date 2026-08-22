@@ -6,6 +6,7 @@ from supabase import Client
 import os
 import uuid
 from deps import get_supabase_anon, get_supabase_admin
+from services.websocket_manager import manager
 
 settings = get_settings()
 
@@ -276,6 +277,7 @@ async def request_student_id(data) -> dict:
         # Notify staff about this new ID request
         student_name = f"{data.first_name} {data.last_name}"
         notify_staff_id_request(student_name)
+        manager.broadcast_staff_event("ID_REQUESTS_UPDATED")
     except HTTPException:
         raise
     except Exception as e:

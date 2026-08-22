@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '../../context/useAuth'
+import { useStaffEvent } from '../../context/WebSocketContext'
 import StudentLayout from '../../components/layout/StudentLayout'
 import { getMyAppointments, cancelAppointment, clearCancelledAppointments } from '../../services/appointmentService'
 import RescheduleModal from '../../components/RescheduleModal'
@@ -77,20 +78,24 @@ export const isAppointmentToday = (dateStr) => {
 
 export const isFutureScheduled = (appt) => {
   if (!appt) return false;
-  if (appt.status === 'completed' || appt.status === 'cancelled') return false;
+  const tickets = Array.isArray(appt.queue_tickets) ? appt.queue_tickets : (appt.queue_tickets ? [appt.queue_tickets] : []);
+  const isTicketCompleted = tickets.some(t => t.status === 'completed');
+  if (appt.status === 'completed' || appt.status === 'cancelled' || isTicketCompleted) return false;
+  
   const now = new Date();
   const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
-  const tickets = Array.isArray(appt.queue_tickets) ? appt.queue_tickets : (appt.queue_tickets ? [appt.queue_tickets] : []);
   const relDate = appt.release_date || tickets[0]?.appointments?.release_date || tickets[0]?.release_date;
   return Boolean(relDate && relDate > todayStr);
 };
 
 export const isReadyForPickup = (appt) => {
   if (!appt) return false;
-  if (appt.status === 'completed' || appt.status === 'cancelled') return false;
+  const tickets = Array.isArray(appt.queue_tickets) ? appt.queue_tickets : (appt.queue_tickets ? [appt.queue_tickets] : []);
+  const isTicketCompleted = tickets.some(t => t.status === 'completed');
+  if (appt.status === 'completed' || appt.status === 'cancelled' || isTicketCompleted) return false;
+  
   const now = new Date();
   const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
-  const tickets = Array.isArray(appt.queue_tickets) ? appt.queue_tickets : (appt.queue_tickets ? [appt.queue_tickets] : []);
   const relDate = appt.release_date || tickets[0]?.appointments?.release_date || tickets[0]?.release_date;
   
   if (relDate && relDate > todayStr) {
@@ -510,7 +515,7 @@ function AppointmentDetailsContent({
   );
 }
 
-export default function MyAppointments() {
+export default function MyAppointments({ embedded = false }) {
   const { token } = useAuth()
   const navigate = useNavigate()
   const [appointments, setAppointments] = useState([])
@@ -529,17 +534,19 @@ export default function MyAppointments() {
     const h12 = h % 12 || 12
     return `${h12}:${mStr} ${suffix}`
   }
+
   const [loading, setLoading] = useState(true)
+  const [error, setError]     = useState('')
+  const [successMsg, setSuccessMsg] = useState('')
+  const [filter, setFilter]   = useState('all')
   const [cancelling, setCancelling] = useState(null)
-  const [error, setError] = useState('')
-  const [filter, setFilter] = useState('all')
+  const [rescheduling, setRescheduling] = useState(null)
+  const [clearingAll, setClearingAll] = useState(false)
+  const [showClearConfirm, setShowClearConfirm] = useState(false)
   const [currentPage, setCurrentPage] = useState(1)
   const ITEMS_PER_PAGE = 5
   const [reschedulingAppt, setReschedulingAppt] = useState(null)
   const [confirmCancelId, setConfirmCancelId] = useState(null)
-  const [showClearConfirm, setShowClearConfirm] = useState(false)
-  const [clearingAll, setClearingAll] = useState(false)
-  const [successMsg, setSuccessMsg] = useState('')
 
   const canReschedule = (apptDateStr, apptTimeStr) => {
     if (!apptDateStr || !apptTimeStr) return false;
@@ -566,7 +573,16 @@ export default function MyAppointments() {
     finally { setLoading(false) }
   }, [token])
   
-  useEffect(() => { fetch() }, [fetch])
+  // Real-time WebSocket event listener for instant 0ms updates
+  useStaffEvent(['APPOINTMENTS_UPDATED', 'QUEUE_UPDATED'], () => {
+    fetch()
+  })
+
+  useEffect(() => { 
+    fetch() 
+    const interval = setInterval(fetch, 60000)
+    return () => clearInterval(interval)
+  }, [fetch])
 
   const handleCancelConfirm = async () => {
     if (!confirmCancelId) return
@@ -639,10 +655,11 @@ export default function MyAppointments() {
   }, [filteredAppointments, currentPage]);
 
   const options = [
-    { value: 'all', label: 'All Appointments' },
-    { value: 'scheduled_release', label: 'Scheduled for Release' },
+    { value: 'all', label: 'All Statuses' },
+    { value: 'scheduled_release', label: 'Scheduled Claiming' },
     { value: 'ready_for_pickup', label: 'Ready for Pickup' },
     { value: 'confirmed', label: 'Confirmed' },
+    { value: 'pending', label: 'Pending' },
     { value: 'completed', label: 'Completed' },
     { value: 'cancelled', label: 'Cancelled' },
   ]
@@ -651,9 +668,52 @@ export default function MyAppointments() {
     return appointments.some(a => a.status === 'cancelled');
   }, [appointments]);
 
-  return (
-    <StudentLayout activeTab="appointments" mobileTitle="My Appointments">
-      <div className="w-full max-w-6xl mx-auto px-3.5 sm:px-6 md:px-8 py-3 sm:py-6 pb-24 md:pb-12 box-border">
+  if (loading && appointments.length === 0) {
+    const skeleton = (
+      <div className="flex-1 w-full pb-22 md:pb-0 px-4 md:px-0 animate-pulse">
+        {/* Header Skeleton */}
+        <div className="hidden md:flex justify-between items-start mb-8">
+          <div>
+            <div className="h-3 w-24 bg-border/60 rounded mb-2" />
+            <div className="h-7 w-48 bg-border/80 rounded mb-2" />
+            <div className="h-3.5 w-72 bg-border/40 rounded" />
+          </div>
+          <div className="h-4 w-28 bg-border/40 rounded" />
+        </div>
+
+        {/* Filter Bar Skeleton */}
+        <div className="flex items-center justify-between gap-3 mb-6">
+          <div className="h-10 w-44 bg-white rounded-xl border border-border" />
+          <div className="h-10 w-32 bg-white rounded-xl border border-border" />
+        </div>
+
+        {/* Appointments List Skeleton */}
+        <div className="flex flex-col gap-3.5">
+          {[1, 2, 3, 4].map(i => (
+            <div key={i} className="bg-white rounded-2xl p-5 border border-border shadow-2xs">
+              <div className="flex justify-between items-start mb-3">
+                <div className="h-5 w-48 bg-border/70 rounded" />
+                <div className="h-6 w-24 bg-border/50 rounded-full" />
+              </div>
+              <div className="flex flex-col gap-2 mb-4">
+                <div className="h-3.5 w-60 bg-border/40 rounded" />
+                <div className="h-3.5 w-40 bg-border/40 rounded" />
+              </div>
+              <div className="pt-3 border-t border-border border-dashed flex justify-end">
+                <div className="h-4 w-24 bg-border/50 rounded" />
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+    if (embedded) return skeleton;
+    return <StudentLayout activeTab="appointments" mobileTitle="My Appointments">{skeleton}</StudentLayout>;
+  }
+
+  const content = (
+    <>
+      <div className="flex-1 w-full pb-22 md:pb-0 px-4 md:px-0">
         
         {/* Desktop Header */}
         <div className="hidden md:flex justify-between items-start mb-8">
@@ -960,6 +1020,9 @@ export default function MyAppointments() {
           </div>
         </div>
       )}
-    </StudentLayout>
-  )
+    </>
+  );
+
+  if (embedded) return content;
+  return <StudentLayout activeTab="appointments" mobileTitle="My Appointments">{content}</StudentLayout>;
 }

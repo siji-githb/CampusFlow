@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useAuth } from '../../context/useAuth'
+import { useStaffEvent } from '../../context/WebSocketContext'
 import { getPendingPriorityRequests, approvePriorityRequest, rejectPriorityRequest } from '../../services/priorityService'
 import { Check, X, ShieldCheck, Image as ImageIcon, Clock, Sparkles, ZoomIn, ZoomOut, RotateCcw, Loader2 } from 'lucide-react'
 
@@ -96,9 +97,14 @@ export default function PriorityRequestsPage() {
     }
   }, [token])
 
+  // Real-time WebSocket event listener for instant 0ms updates
+  useStaffEvent('PRIORITY_REQUESTS_UPDATED', () => {
+    loadRequests(false)
+  })
+
   useEffect(() => {
     loadRequests()
-    const t = setInterval(() => loadRequests(false), 15000)
+    const t = setInterval(() => loadRequests(false), 60000)
     return () => clearInterval(t)
   }, [loadRequests])
 
@@ -132,17 +138,29 @@ export default function PriorityRequestsPage() {
     }
   }
 
-  if (loading) {
-    return (
-      <div className="animate-fade-in max-w-5xl">
-        {/* Header Skeleton */}
-        <div className="mb-6 animate-pulse">
-          <div className="h-3 w-20 bg-border/60 rounded mb-2" />
-          <div className="h-7 w-56 bg-border/70 rounded-lg mb-2" />
-          <div className="h-3.5 w-96 max-w-full bg-border/40 rounded" />
-        </div>
+  return (
+    <div className="animate-fade-up max-w-5xl">
+      {previewUrl && <ImageModal url={previewUrl} onClose={() => setPreviewUrl(null)} />}
 
-        {/* Request Cards Skeleton */}
+      {/* ── Page Header (Always visible) ── */}
+      <div className="animate-fade-up mb-6">
+        <p className="text-[11px] font-bold text-gold tracking-widest uppercase m-0 mb-1.5">Verification</p>
+        <h1 className="font-serif text-[22px] sm:text-[26px] font-bold text-text-main m-0 flex items-center gap-2">
+          <ShieldCheck size={24} className="text-maroon shrink-0" /> Priority Requests
+        </h1>
+        <p className="text-[12px] sm:text-[13px] text-text-sub mt-1.5 sm:mt-2 mb-0">
+          Review documents submitted by students for PWD or Pregnancy priority status.
+        </p>
+      </div>
+
+      {error && (
+        <div className="animate-fade-up py-3 px-4 rounded-xl bg-danger-light border border-danger-border text-danger text-[13px] mb-6">
+          {error}
+        </div>
+      )}
+
+      {loading ? (
+        /* Request Cards Skeleton */
         <div className="grid gap-4">
           {[1, 2, 3].map(i => (
             <div key={i} className="bg-white rounded-2xl border border-border shadow-sm p-6 flex flex-col md:flex-row items-stretch justify-between gap-6 animate-pulse">
@@ -183,32 +201,8 @@ export default function PriorityRequestsPage() {
             </div>
           ))}
         </div>
-      </div>
-    )
-  }
-
-  return (
-    <div className="animate-fade-in max-w-5xl">
-      {previewUrl && <ImageModal url={previewUrl} onClose={() => setPreviewUrl(null)} />}
-
-      <div className="mb-6">
-        <p className="text-[11px] font-bold text-gold tracking-widest uppercase m-0 mb-1.5">Verification</p>
-        <h1 className="font-serif text-[26px] font-bold text-text-main m-0 flex items-center gap-2">
-          <ShieldCheck size={24} className="text-maroon" /> Priority Requests
-        </h1>
-        <p className="text-[12px] text-text-sub mt-2 mb-0">
-          Review documents submitted by students for PWD or Pregnancy priority status.
-        </p>
-      </div>
-
-      {error && (
-        <div className="py-3 px-4 rounded-xl bg-danger-light border border-danger-border text-danger text-[13px] mb-6">
-          {error}
-        </div>
-      )}
-
-      {requests.length === 0 ? (
-        <div className="bg-white rounded-2xl border border-border p-10 text-center text-text-muted text-[14px] mb-8 shadow-sm">
+      ) : requests.length === 0 ? (
+        <div className="animate-fade-up bg-white rounded-2xl border border-border p-10 text-center text-text-muted text-[14px] mb-8 shadow-sm">
           No pending priority requests.
         </div>
       ) : (
@@ -222,7 +216,7 @@ export default function PriorityRequestsPage() {
               : 'text-danger border-danger bg-danger-light/30';
             
             return (
-              <div key={req.id} className="bg-white rounded-2xl border border-border shadow-sm hover:shadow-md transition-all flex flex-col md:flex-row items-stretch justify-between group overflow-hidden">
+              <div key={req.id} className="animate-fade-up bg-white rounded-2xl border border-border shadow-sm hover:shadow-md transition-all flex flex-col md:flex-row items-stretch justify-between group overflow-hidden">
                 
                 {/* Main Content Area */}
                 <div className="flex-1 p-6 flex flex-col justify-between">

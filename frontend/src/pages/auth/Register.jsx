@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { registerUser, verifyStudent, requestStudentId } from '../../services/authService'
-import { Eye, EyeOff, ChevronLeft, ChevronRight, AlertTriangle } from 'lucide-react'
+import { Eye, EyeOff, ChevronLeft, ChevronRight, AlertTriangle, IdCard, User, Mail, Lock, GraduationCap } from 'lucide-react'
 import campusFlowLogo from '../../assets/logo.png'
 import loginImage from '../../assets/login.png'
 import TermsModal from '../../components/TermsModal'
@@ -71,7 +71,7 @@ export default function Register() {
     finally { setLoading(false) }
   }
 
-  const inpClass = "w-full rounded-xl border border-slate-200 bg-slate-50/50 text-slate-800 outline-none box-border font-sans transition-all duration-200 focus:bg-white focus:border-maroon focus:ring-[3px] focus:ring-maroon/10 py-[12px] px-[16px] text-[14.5px] shadow-sm placeholder:text-slate-400 font-medium"
+  const inpClass = "w-full rounded-xl border border-slate-200 bg-slate-50/50 text-slate-800 outline-none box-border font-sans transition-all duration-200 focus:bg-white focus:border-maroon focus:ring-[3px] focus:ring-maroon/10 py-[12px] pl-[42px] pr-[16px] text-[14.5px] shadow-sm placeholder:text-slate-400 font-medium"
   const lblClass = "block text-[12.5px] font-bold text-slate-700 mb-2"
   const btnClass = "w-full py-3.5 px-6 rounded-xl border-none text-[14.5px] font-bold font-sans shadow-[0_4px_12px_rgba(123,26,42,0.15)] transition-all duration-200 flex items-center justify-center gap-2 bg-maroon text-white cursor-pointer hover:bg-maroon-dark hover:shadow-[0_6px_16px_rgba(123,26,42,0.25)] hover:-translate-y-[1px] disabled:bg-slate-200 disabled:text-slate-400 disabled:cursor-not-allowed disabled:shadow-none disabled:hover:bg-slate-200 disabled:hover:translate-y-0"
 
@@ -169,17 +169,20 @@ export default function Register() {
               <form onSubmit={handleVerify}>
                 <div className="mb-8">
                   <label className={lblClass}>Student ID</label>
-                  <input 
-                    type="text" 
-                    name="student_id" 
-                    value={form.student_id} 
-                    onChange={handleChange} 
-                    required 
-                    placeholder="2024-00001 or 202400001" 
-                    pattern="^[0-9-]{8,15}$" 
-                    title="Format: 8 to 15 numbers or hyphens" 
-                    className={inpClass} 
-                  />
+                  <div className="relative flex items-center">
+                    <IdCard size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                    <input 
+                      type="text" 
+                      name="student_id" 
+                      value={form.student_id} 
+                      onChange={handleChange} 
+                      required 
+                      placeholder="2024-00001 or 202400001" 
+                      pattern="[-0-9]{8,15}" 
+                      title="Format: 8 to 15 numbers or hyphens" 
+                      className={inpClass} 
+                    />
+                  </div>
                   <p className="text-[12px] text-slate-500 mt-3">We need to verify your ID against the school records before creating an account.</p>
                 </div>
 
@@ -213,19 +216,31 @@ export default function Register() {
 
                 <div className="mb-4">
                   <label className={lblClass}>First Name</label>
-                  <input type="text" name="first_name" value={form.first_name} onChange={handleChange} required placeholder="Juan" className={inpClass} />
+                  <div className="relative flex items-center">
+                    <User size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                    <input type="text" name="first_name" value={form.first_name} onChange={handleChange} required placeholder="Juan" className={inpClass} />
+                  </div>
                 </div>
                 <div className="mb-4">
                   <label className={lblClass}>Last Name</label>
-                  <input type="text" name="last_name" value={form.last_name} onChange={handleChange} required placeholder="Dela Cruz" className={inpClass} />
+                  <div className="relative flex items-center">
+                    <User size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                    <input type="text" name="last_name" value={form.last_name} onChange={handleChange} required placeholder="Dela Cruz" className={inpClass} />
+                  </div>
                 </div>
                 <div className="mb-4">
                   <label className={lblClass}>Course / Program</label>
-                  <input type="text" name="course" value={form.course} onChange={handleChange} required placeholder="BSIT, BSED, etc." className={inpClass} />
+                  <div className="relative flex items-center">
+                    <GraduationCap size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                    <input type="text" name="course" value={form.course} onChange={handleChange} required placeholder="BSIT, BSED, etc." className={inpClass} />
+                  </div>
                 </div>
                 <div className="mb-8">
                   <label className={lblClass}>Email Address</label>
-                  <input type="email" name="email" value={form.email} onChange={handleChange} required placeholder="your@gmail.com" className={inpClass} />
+                  <div className="relative flex items-center">
+                    <Mail size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                    <input type="email" name="email" value={form.email} onChange={handleChange} required placeholder="your@gmail.com" className={inpClass} />
+                  </div>
                 </div>
                 <button type="submit" disabled={loading} className={btnClass}>
                   {loading ? <span className="spinner" /> : <>Submit Request <ChevronRight size={16} strokeWidth={2.5} /></>}
@@ -252,12 +267,16 @@ export default function Register() {
 
                 <div className="mb-4">
                   <label className={lblClass}>Email Address</label>
-                  <input type="email" name="email" value={form.email} onChange={handleChange} required placeholder="your@gmail.com" className={inpClass} />
+                  <div className="relative flex items-center">
+                    <Mail size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                    <input type="email" name="email" value={form.email} onChange={handleChange} required placeholder="your@gmail.com" className={inpClass} />
+                  </div>
                 </div>
 
                 <div className="mb-4">
                   <label className={lblClass}>Password</label>
-                  <div className="relative">
+                  <div className="relative flex items-center">
+                    <Lock size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
                     <input type={showPassword ? "text" : "password"} name="password" value={form.password} onChange={handleChange} required minLength={8} placeholder="At least 8 characters" className={`${inpClass} pr-12`} />
                     <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-4 top-1/2 -translate-y-1/2 bg-transparent border-none p-0 text-slate-400 hover:text-slate-600 cursor-pointer flex transition-colors">
                       {showPassword ? <Eye size={18} /> : <EyeOff size={18} />}
@@ -267,7 +286,8 @@ export default function Register() {
 
                 <div className="mb-4">
                   <label className={lblClass}>Confirm Password</label>
-                  <div className="relative">
+                  <div className="relative flex items-center">
+                    <Lock size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
                     <input type={showConfirm ? "text" : "password"} name="confirm_password" value={form.confirm_password} onChange={handleChange} required minLength={8} placeholder="Confirm your password" className={`${inpClass} pr-12`} />
                     <button type="button" onClick={() => setShowConfirm(!showConfirm)} className="absolute right-4 top-1/2 -translate-y-1/2 bg-transparent border-none p-0 text-slate-400 hover:text-slate-600 cursor-pointer flex transition-colors">
                       {showConfirm ? <Eye size={18} /> : <EyeOff size={18} />}

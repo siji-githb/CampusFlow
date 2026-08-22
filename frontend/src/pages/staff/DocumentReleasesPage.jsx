@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { getUncollectedDocuments, getCollectedDocuments, confirmStep, remindStudent } from '../../services/queueService'
 import { useAuth } from '../../context/useAuth'
+import { useStaffEvent } from '../../context/WebSocketContext'
 import { FileText, FolderOpen, AlertTriangle, Search, Check, X, Loader2, Clock, CheckCircle2, RefreshCw, ChevronLeft, ChevronRight, Bell, Calendar } from 'lucide-react'
 
 const ITEMS_PER_PAGE = 10
@@ -148,9 +149,14 @@ export default function DocumentReleasesPage() {
     }
   }
 
+  // Real-time WebSocket event listener for instant 0ms updates
+  useStaffEvent(['RELEASES_UPDATED', 'QUEUE_UPDATED'], () => {
+    fetchData(true)
+  })
+
   useEffect(() => {
     fetchData()
-    const interval = setInterval(() => fetchData(true), 15000)
+    const interval = setInterval(() => fetchData(true), 60000)
     return () => clearInterval(interval)
   }, [fetchData])
 
@@ -214,131 +220,120 @@ export default function DocumentReleasesPage() {
     )
   }
 
-  // ── Skeleton Loading Screen (Initial Load Only) ─────────────────────────
-  if (loading && uncollected.length === 0 && collected.length === 0) {
-    return (
-      <div className="animate-fade-in w-full">
-        {/* Header Skeleton */}
-        <div className="mb-6 animate-pulse">
-          <div className="h-3 w-28 bg-border/60 rounded mb-2" />
-          <div className="h-7 w-64 bg-border/70 rounded-lg mb-2" />
-          <div className="h-3.5 w-110 max-w-full bg-border/40 rounded" />
-        </div>
-
-        {/* Stats Summary Skeleton (2 Cards) */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-5 animate-pulse">
-          {[1, 2].map(i => (
-            <div key={i} className="bg-white rounded-2xl px-5 py-3.5 border border-border shadow-xs flex flex-col justify-between gap-1.5">
-              <div className="flex items-center justify-between">
-                <div className="h-3 w-28 bg-border/60 rounded" />
-                <div className="w-8.5 h-8.5 rounded-lg bg-border/40" />
-              </div>
-              <div>
-                <div className="h-6.5 w-14 bg-border/70 rounded-md mb-1.5" />
-                <div className="h-3 w-32 bg-border/40 rounded" />
-              </div>
-            </div>
-          ))}
-        </div>
-
-        {/* Filter Bar Skeleton (No background box) */}
-        <div className="flex items-center justify-between gap-4 mb-6 animate-pulse">
-          <div className="h-10 w-64 bg-border/40 rounded-xl" />
-          <div className="h-10 w-72 bg-border/40 rounded-xl" />
-        </div>
-
-        {/* Table Skeleton */}
-        <div className="bg-white rounded-2xl border border-border shadow-xs overflow-hidden animate-pulse">
-          <div className="h-12 bg-surface/80 border-b border-border" />
-          <div className="divide-y divide-border/60">
-            {[1, 2, 3, 4, 5, 6].map(i => (
-              <div key={i} className="px-6 py-4 flex items-center justify-between gap-4">
-                <div className="h-6 w-20 bg-border/70 rounded" />
-                <div className="h-5 w-36 bg-border/60 rounded" />
-                <div className="h-5 w-20 bg-border/50 rounded" />
-                <div className="h-5 w-44 bg-border/50 rounded" />
-                <div className="h-5 w-24 bg-border/40 rounded-full" />
-                <div className="h-9 w-44 bg-border/60 rounded-xl" />
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-    )
-  }
-
   return (
-    <div className="animate-fade-in w-full pb-8">
+    <div className="animate-fade-up w-full pb-8">
       
-      {/* ── Page Header ── */}
-      <div className="flex items-start justify-between mb-5 flex-wrap gap-4">
+      {/* ── Page Header (Always visible) ── */}
+      <div className="animate-fade-up flex items-start justify-between mb-5 flex-wrap gap-4">
         <div>
           <p className="text-[11px] font-bold text-gold tracking-widest uppercase m-0 mb-1.5">Document Management</p>
-          <h1 className="font-serif text-[26px] font-bold text-text-main m-0 flex items-center gap-2.5">
-            <FolderOpen size={24} className="text-maroon" /> Document Releases
+          <h1 className="font-serif text-[22px] sm:text-[26px] font-bold text-text-main m-0 flex items-center gap-2">
+            <FolderOpen size={24} className="text-maroon shrink-0" /> Document Releases
           </h1>
-          <p className="text-[12px] text-text-sub mt-1.5 mb-0">
+          <p className="text-[12px] sm:text-[13px] text-text-sub mt-1.5 sm:mt-2 mb-0">
             Track documents that are ready for student collection and review completed pickup records.
           </p>
         </div>
 
         <button
           onClick={() => fetchData(true)}
-          disabled={isRefreshing}
+          disabled={isRefreshing || loading}
           className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-white border border-border text-[12px] font-bold text-text-main hover:bg-surface transition-all shadow-xs cursor-pointer disabled:opacity-60"
         >
-          <RefreshCw size={13} className={`text-maroon ${isRefreshing ? 'animate-spin' : ''}`} />
-          {isRefreshing ? 'Refreshing…' : 'Refresh'}
+          <RefreshCw size={13} className={`text-maroon ${isRefreshing || loading ? 'animate-spin' : ''}`} />
+          {isRefreshing || loading ? 'Refreshing…' : 'Refresh'}
         </button>
       </div>
 
-      {/* ── Stats Summary Bar (2 Cards - Compact Height) ── */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-5">
+      {loading && uncollected.length === 0 && collected.length === 0 ? (
+        <div>
+          {/* Stats Summary Skeleton (2 Cards) */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-5 animate-pulse">
+            {[1, 2].map(i => (
+              <div key={i} className="bg-white rounded-2xl px-5 py-3.5 border border-border shadow-xs flex flex-col justify-between gap-1.5">
+                <div className="flex items-center justify-between">
+                  <div className="h-3 w-28 bg-border/60 rounded" />
+                  <div className="w-8.5 h-8.5 rounded-lg bg-border/40" />
+                </div>
+                <div>
+                  <div className="h-6.5 w-14 bg-border/70 rounded-md mb-1.5" />
+                  <div className="h-3 w-32 bg-border/40 rounded" />
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Filter Bar Skeleton */}
+          <div className="flex items-center justify-between gap-4 mb-6 animate-pulse">
+            <div className="h-10 w-64 bg-border/40 rounded-xl" />
+            <div className="h-10 w-72 bg-border/40 rounded-xl" />
+          </div>
+
+          {/* Table Skeleton */}
+          <div className="bg-white rounded-2xl border border-border shadow-xs overflow-hidden animate-pulse">
+            <div className="h-12 bg-surface/80 border-b border-border" />
+            <div className="divide-y divide-border/60">
+              {[1, 2, 3, 4, 5, 6].map(i => (
+                <div key={i} className="px-6 py-4 flex items-center justify-between gap-4">
+                  <div className="h-6 w-20 bg-border/70 rounded" />
+                  <div className="h-5 w-36 bg-border/60 rounded" />
+                  <div className="h-5 w-20 bg-border/50 rounded" />
+                  <div className="h-5 w-44 bg-border/50 rounded" />
+                  <div className="h-5 w-24 bg-border/40 rounded-full" />
+                  <div className="h-9 w-44 bg-border/60 rounded-xl" />
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      ) : (
+        <>
+      <div className="grid grid-cols-2 gap-2.5 sm:gap-4 mb-4 sm:mb-5">
         {/* Ready for Pickup */}
-        <div className="bg-white rounded-2xl px-5 py-3.5 border border-border shadow-[0_1px_4px_rgba(0,0,0,0.02)] hover:border-gold/50 hover:shadow-xs transition-all flex flex-col justify-between gap-1.5">
-          <div className="flex items-center justify-between">
-            <span className="text-[11px] font-bold text-text-muted uppercase tracking-[0.08em]">
+        <div className="animate-fade-up bg-white rounded-xl sm:rounded-2xl px-3.5 py-3 sm:px-5 sm:py-3.5 border border-border shadow-[0_1px_4px_rgba(0,0,0,0.02)] hover:border-gold/50 hover:shadow-xs transition-all flex flex-col justify-between gap-1.5" style={{ animationDelay: '0.1s' }}>
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-[10px] sm:text-[11px] font-bold text-text-muted uppercase tracking-[0.08em] truncate">
               Ready for Pickup
             </span>
-            <div className="w-8.5 h-8.5 rounded-lg bg-gold-light text-gold border border-gold-border/60 flex items-center justify-center shrink-0">
-              <Clock size={16} strokeWidth={2.4} />
+            <div className="w-7 h-7 sm:w-8.5 sm:h-8.5 rounded-lg bg-gold-light text-gold border border-gold-border/60 flex items-center justify-center shrink-0">
+              <Clock size={15} strokeWidth={2.4} />
             </div>
           </div>
           <div>
-            <div className="font-serif text-[26px] font-extrabold text-gold leading-tight tracking-tight">
+            <div className="font-serif text-[20px] sm:text-[26px] font-extrabold text-gold leading-tight tracking-tight">
               {uncollected.length}
             </div>
-            <div className="text-[11.5px] font-medium text-text-sub mt-0.5 flex items-center gap-1.5">
+            <div className="text-[10.5px] sm:text-[11.5px] font-medium text-text-sub mt-0.5 flex items-center gap-1.5 truncate">
               <span className="w-1.5 h-1.5 rounded-full bg-gold inline-block shrink-0"></span>
-              Pending student collection
+              Pending pickup
             </div>
           </div>
         </div>
 
         {/* Total Claimed */}
-        <div className="bg-white rounded-2xl px-5 py-3.5 border border-border shadow-[0_1px_4px_rgba(0,0,0,0.02)] hover:border-success/50 hover:shadow-xs transition-all flex flex-col justify-between gap-1.5">
-          <div className="flex items-center justify-between">
-            <span className="text-[11px] font-bold text-text-muted uppercase tracking-[0.08em]">
+        <div className="animate-fade-up bg-white rounded-xl sm:rounded-2xl px-3.5 py-3 sm:px-5 sm:py-3.5 border border-border shadow-[0_1px_4px_rgba(0,0,0,0.02)] hover:border-success/50 hover:shadow-xs transition-all flex flex-col justify-between gap-1.5" style={{ animationDelay: '0.15s' }}>
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-[10px] sm:text-[11px] font-bold text-text-muted uppercase tracking-[0.08em] truncate">
               Total Claimed
             </span>
-            <div className="w-8.5 h-8.5 rounded-lg bg-success-light text-success border border-success-border/60 flex items-center justify-center shrink-0">
-              <CheckCircle2 size={16} strokeWidth={2.4} />
+            <div className="w-7 h-7 sm:w-8.5 sm:h-8.5 rounded-lg bg-success-light text-success border border-success-border/60 flex items-center justify-center shrink-0">
+              <CheckCircle2 size={15} strokeWidth={2.4} />
             </div>
           </div>
           <div>
-            <div className="font-serif text-[26px] font-extrabold text-success leading-tight tracking-tight">
+            <div className="font-serif text-[20px] sm:text-[26px] font-extrabold text-success leading-tight tracking-tight">
               {collected.length}
             </div>
-            <div className="text-[11.5px] font-medium text-text-sub mt-0.5 flex items-center gap-1.5">
+            <div className="text-[10.5px] sm:text-[11.5px] font-medium text-text-sub mt-0.5 flex items-center gap-1.5 truncate">
               <span className="w-1.5 h-1.5 rounded-full bg-success inline-block shrink-0"></span>
-              Successfully completed
+              Completed
             </div>
           </div>
         </div>
       </div>
 
       {/* ── Tabs & Search Bar (Clean: without background container box) ── */}
-      <div className="flex items-center justify-between gap-4 mb-5 flex-wrap">
+      <div className="animate-fade-up flex items-center justify-between gap-4 mb-5 flex-wrap" style={{ animationDelay: '0.2s' }}>
         {/* Segmented Tab Controls */}
         <div className="flex bg-white p-1 rounded-xl border border-border shadow-xs">
           <button 
@@ -401,7 +396,7 @@ export default function DocumentReleasesPage() {
 
       {/* ── Uncollected Data Table ── */}
       {activeTab === 'uncollected' && (
-        <div className="bg-white rounded-2xl border border-border shadow-xs overflow-hidden">
+        <div className="animate-fade-up bg-white rounded-2xl border border-border shadow-xs overflow-hidden" style={{ animationDelay: '0.25s' }}>
           {filteredUncollected.length === 0 ? (
             <div className="p-14 flex flex-col items-center justify-center text-center">
               <div className="w-14 h-14 bg-surface rounded-2xl flex items-center justify-center mb-3 border border-border text-text-muted">
@@ -601,7 +596,7 @@ export default function DocumentReleasesPage() {
 
       {/* ── Collected History Data Table ── */}
       {activeTab === 'collected' && (
-        <div className="bg-white rounded-2xl border border-border shadow-xs overflow-hidden">
+        <div className="animate-fade-up bg-white rounded-2xl border border-border shadow-xs overflow-hidden" style={{ animationDelay: '0.25s' }}>
           {filteredCollected.length === 0 ? (
             <div className="p-14 flex flex-col items-center justify-center text-center">
               <div className="w-14 h-14 bg-surface rounded-2xl flex items-center justify-center mb-3 border border-border text-text-muted">
@@ -731,6 +726,8 @@ export default function DocumentReleasesPage() {
             </>
           )}
         </div>
+      )}
+      </>
       )}
 
       {/* ── Toast Notification (Adhering strictly to #006600 rule) ── */}

@@ -12,6 +12,7 @@ always make the actual approve/reject call.
 from datetime import datetime, timedelta, timezone
 from fastapi import HTTPException
 from config import get_settings
+from services.websocket_manager import manager
 from deps import get_supabase_admin as get_admin
 
 settings = get_settings()
@@ -147,6 +148,7 @@ def submit_priority_request(student_id: str, priority_type: str, document_url: s
             "ocr_reasoning": scan["reasoning"],
             "status": "pending",
         }).execute()
+        manager.broadcast_staff_event("PRIORITY_REQUESTS_UPDATED")
         return res.data[0]
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -200,6 +202,7 @@ def approve_request(request_id: str, staff_id: str) -> dict:
     except Exception as e:
         pass  # non-critical if it fails
 
+    manager.broadcast_staff_event("PRIORITY_REQUESTS_UPDATED")
     return {"message": "Priority request approved.", "expires_at": expires_at}
 
 
@@ -222,6 +225,7 @@ def reject_request(request_id: str, staff_id: str, reason: str) -> dict:
         "rejection_reason": reason,
     }).eq("id", request_id).execute()
 
+    manager.broadcast_staff_event("PRIORITY_REQUESTS_UPDATED")
     return {"message": "Priority request rejected."}
 
 

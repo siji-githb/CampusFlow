@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/useAuth'
+import { useStaffEvent } from '../../context/WebSocketContext'
 import campusFlowLogo from '../../assets/logo.png'
 import AdminQueueMonitoringPage from './AdminQueueMonitoringPage'
 import AdminAppointmentsPage from './AdminAppointmentsPage'
@@ -11,7 +12,7 @@ import AdminOfficeConfigPage from './AdminOfficeConfigPage'
 import AdminAuditLogPage from './AdminAuditLogPage'
 import AdminDocumentsPage from './AdminDocumentsPage'
 import MasterListPage from '../staff/MasterListPage'
-import { Calendar, Ticket, Clock, Bot, Search, Shield, BarChart2, LineChart as LineChartIcon, FolderOpen, Users, Settings, MessageSquare, Bell, LogOut, LayoutDashboard, CheckSquare, CheckCircle, ChevronLeft, ChevronRight, ClipboardList, FileText } from 'lucide-react'
+import { Calendar, Ticket, Clock, Bot, Search, Shield, BarChart2, LineChart as LineChartIcon, FolderOpen, Users, Settings, MessageSquare, Bell, LogOut, LayoutDashboard, CheckSquare, CheckCircle, ChevronLeft, ChevronRight, ClipboardList, FileText, Menu, X, PanelLeftClose } from 'lucide-react'
 import {
   getDashboardStats, getReports
 } from '../../services/adminService'
@@ -212,9 +213,15 @@ function OverviewTab() {
       .finally(() => setLoading(false))
   }, [token])
 
+  // Real-time WebSocket event listener for instant 0ms updates
+  useStaffEvent(['QUEUE_UPDATED', 'WINDOW_UPDATED', 'APPOINTMENTS_UPDATED', 'PRIORITY_REQUESTS_UPDATED', 'ID_REQUESTS_UPDATED', 'RELEASES_UPDATED'], () => {
+    fetchStats()
+    fetchReports()
+  })
+
   useEffect(() => {
     fetchStats()
-    const t = setInterval(fetchStats, 15000)
+    const t = setInterval(fetchStats, 60000)
     return () => clearInterval(t)
   }, [fetchStats])
 
@@ -323,8 +330,8 @@ function OverviewTab() {
       {/* Page heading */}
       <div className="mb-7">
         <div className="text-[11px] font-bold text-gold uppercase tracking-[0.06em] mb-2">SYSTEM DASHBOARD</div>
-        <h1 className="font-serif text-[26px] font-bold text-maroon m-0 mb-2 flex items-center gap-3">
-          <LayoutDashboard className="text-maroon" size={24} /> Dashboard
+        <h1 className="font-serif text-[22px] sm:text-[26px] font-bold text-maroon m-0 mb-2 flex items-center gap-2.5 sm:gap-3">
+          <LayoutDashboard size={26} className="text-maroon shrink-0" /> Admin Overview
         </h1>
         <p className="text-[12px] text-text-sub m-0 leading-relaxed max-w-162.5">
           Monitor active queues, review completion rates, and track system health.
@@ -490,7 +497,15 @@ export default function AdminDashboard() {
   const { user, requestLogout } = useAuth()
   const navigate = useNavigate()
   const [activeNav, setActiveNav] = useState('overview')
+  const [visitedTabs, setVisitedTabs] = useState(() => new Set(['overview']))
   const [profileOpen, setProfileOpen] = useState(false)
+  const [isMobileOpen, setIsMobileOpen] = useState(false)
+
+  const handleNavChange = (tabId) => {
+    setActiveNav(tabId)
+    setVisitedTabs(prev => new Set(prev).add(tabId))
+    setIsMobileOpen(false)
+  }
 
   const navGroups = [
     {
@@ -520,50 +535,82 @@ export default function AdminDashboard() {
     }
   ]
 
+  const renderNavContent = () => (
+    <>
+      {/* Brand */}
+      <div className="flex items-center gap-2.5 px-2 mb-8">
+        <img src={campusFlowLogo} alt="CampusFlow" className="w-9.5 h-9.5 rounded-full bg-white object-contain border border-slate-200" />
+        <div>
+          <div className="font-serif text-[14px] font-bold text-maroon leading-[1.2]">CampusFlow</div>
+          <div className="text-[10px] text-text-muted tracking-[0.04em]"><strong>Admin Portal</strong></div>
+        </div>
+      </div>
+
+      {/* Nav */}
+      <nav className="flex-1 flex flex-col gap-6 px-1 overflow-y-auto pb-6 scrollbar-hide">
+        {navGroups.map((group, idx) => (
+          <div key={idx} className="flex flex-col gap-1.5">
+            <div className="text-[10px] font-extrabold text-text-muted uppercase tracking-[0.15em] px-4 mb-1">
+              {group.title}
+            </div>
+            <div className="flex flex-col gap-1 pl-3 pr-2">
+              {group.items.map(item => (
+                <SideItem key={item.id} icon={item.icon} label={item.label}
+                  active={activeNav === item.id}
+                  onClick={() => handleNavChange(item.id)} />
+              ))}
+            </div>
+          </div>
+        ))}
+      </nav>
+    </>
+  )
+
   return (
     <div className="min-h-screen flex bg-off-white font-sans">
 
-      {/* ── Left Sidebar ── */}
-      <aside className="w-60 shrink-0 bg-white border-r border-border flex flex-col fixed inset-y-0 left-0 z-50 p-[24px_14px]">
-        {/* Brand */}
-        <div className="flex items-center gap-2.5 px-2 mb-8">
-          <img src={campusFlowLogo} alt="CampusFlow" className="w-9.5 h-9.5 rounded-full bg-white object-contain border border-slate-200" />
-          <div>
-            <div className="font-serif text-[14px] font-bold text-maroon leading-[1.2]">CampusFlow</div>
-            <div className="text-[10px] text-text-muted tracking-[0.04em]"><strong>Admin Portal</strong></div>
-          </div>
-        </div>
-
-        {/* Nav */}
-        <nav className="flex-1 flex flex-col gap-6 px-1 overflow-y-auto pb-6 scrollbar-hide">
-          {navGroups.map((group, idx) => (
-            <div key={idx} className="flex flex-col gap-1.5">
-              <div className="text-[10px] font-extrabold text-text-muted uppercase tracking-[0.15em] px-4 mb-1">
-                {group.title}
-              </div>
-              <div className="flex flex-col gap-1 pl-3 pr-2">
-                {group.items.map(item => (
-                  <SideItem key={item.id} icon={item.icon} label={item.label}
-                    active={activeNav === item.id}
-                    onClick={() => setActiveNav(item.id)} />
-                ))}
-              </div>
-            </div>
-          ))}
-        </nav>
-
+      {/* ── Left Sidebar (Desktop) ── */}
+      <aside className="hidden md:flex w-60 shrink-0 bg-white border-r border-border flex-col fixed inset-y-0 left-0 z-50 p-[24px_14px]">
+        {renderNavContent()}
       </aside>
 
+      {/* ── Mobile Sidebar Drawer ── */}
+      {isMobileOpen && (
+        <div className="md:hidden fixed inset-0 z-50 flex">
+          <div className="fixed inset-0 bg-black/40 backdrop-blur-xs animate-fade-in" onClick={() => setIsMobileOpen(false)} />
+          <aside className="relative w-64 max-w-[80vw] bg-white border-r border-border flex flex-col h-full z-10 p-[24px_14px] shadow-2xl animate-fade-up">
+            <div className="flex items-center justify-between mb-4 px-2">
+              <div className="flex items-center gap-2">
+                <img src={campusFlowLogo} alt="CampusFlow" className="w-8 h-8 rounded-full bg-white object-contain border border-slate-200" />
+                <span className="font-serif text-[14px] font-bold text-maroon">CampusFlow Admin</span>
+              </div>
+              <button onClick={() => setIsMobileOpen(false)} className="w-8 h-8 rounded-lg bg-surface border-none flex items-center justify-center text-text-muted hover:text-text-main cursor-pointer">
+                <X size={18} />
+              </button>
+            </div>
+            {renderNavContent()}
+          </aside>
+        </div>
+      )}
+
       {/* ── Right Side ── */}
-      <div className="ml-60 flex-1 flex flex-col min-h-screen">
+      <div className="md:ml-60 flex-1 flex flex-col min-h-screen w-full">
 
         {/* Top Bar */}
-        <header className="bg-white border-b border-border px-8 h-15 flex items-center justify-between sticky top-0 z-40 shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
-          <div></div>
+        <header className="bg-white border-b border-border px-4 sm:px-8 h-15 flex items-center justify-between sticky top-0 z-40 shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
+          <div className="flex items-center gap-3">
+            <button 
+              onClick={() => setIsMobileOpen(true)}
+              className="md:hidden w-9 h-9 rounded-xl bg-surface text-text-muted hover:text-text-main flex items-center justify-center border border-border cursor-pointer transition-colors"
+              aria-label="Open menu"
+            >
+              <Menu size={18} />
+            </button>
+          </div>
 
           {/* Right controls */}
           <div className="flex items-center gap-3">
-            <AdminGlobalSearch setActiveNav={setActiveNav} />
+            <AdminGlobalSearch setActiveNav={handleNavChange} />
 
             {/* Bell */}
             <NotificationDropdown />
@@ -579,7 +626,7 @@ export default function AdminDashboard() {
                     user?.first_name?.[0]?.toUpperCase() || 'A'
                   )}
                 </div>
-                <div className="flex items-center gap-1.5 mr-1">
+                <div className="hidden sm:flex items-center gap-1.5 mr-1">
                   <span className="text-[14px] font-bold text-text-main font-sans">
                     {user?.first_name || 'Admin'}
                   </span>
@@ -589,7 +636,7 @@ export default function AdminDashboard() {
                 </div>
               </button>
               {profileOpen && (
-                <div className="absolute top-13 right-0 w-70 bg-white rounded-2xl shadow-[0_8px_30px_rgba(0,0,0,0.12)] p-4 z-110 border border-border">
+                <div className="absolute top-13 right-0 w-70 bg-white rounded-2xl shadow-[0_8px_30px_rgba(0,0,0,0.12)] p-4 z-110 border border-border animate-fade-up">
                   <div className="flex gap-3 mb-4 items-start">
                     <div className="w-10.5 h-10.5 rounded-full bg-maroon-mid border-[1.5px] border-maroon-border flex items-center justify-center text-[16px] font-bold text-maroon overflow-hidden shrink-0">
                       {user?.profile_image ? (
@@ -625,18 +672,58 @@ export default function AdminDashboard() {
           </div>
         </header>
 
-        {/* Main content */}
-        <main className="p-7 flex-1 h-full overflow-hidden">
-          {activeNav === 'overview' && <OverviewTab />}
-          {activeNav === 'reports' && <AdminAnalyticsPage />}
-          {activeNav === 'documents' && <AdminDocumentsPage />}
-          {activeNav === 'config' && <AdminOfficeConfigPage />}
-          {activeNav === 'users' && <AdminUserManagementPage />}
-          {activeNav === 'audit' && <AdminAuditLogPage />}
-          {(activeNav === 'queue' || activeNav === 'releases') && <AdminQueueMonitoringPage />}
-          {activeNav === 'appts' && <AdminAppointmentsPage />}
-          {activeNav === 'records' && <AdminRegistrarRecordsPage />}
-          {activeNav === 'student_records' && <MasterListPage />}
+        {/* ── Main Content Area with Tab Retention ── */}
+        <main className="p-3.5 sm:p-7 flex-1 relative min-h-[calc(100vh-60px)] w-full">
+          {visitedTabs.has('overview') && (
+            <div className={activeNav === 'overview' ? 'block' : 'hidden'}>
+              <OverviewTab />
+            </div>
+          )}
+          {visitedTabs.has('reports') && (
+            <div className={activeNav === 'reports' ? 'block' : 'hidden'}>
+              <AdminAnalyticsPage />
+            </div>
+          )}
+          {visitedTabs.has('documents') && (
+            <div className={activeNav === 'documents' ? 'block' : 'hidden'}>
+              <AdminDocumentsPage />
+            </div>
+          )}
+          {visitedTabs.has('config') && (
+            <div className={activeNav === 'config' ? 'block' : 'hidden'}>
+              <AdminOfficeConfigPage />
+            </div>
+          )}
+          {visitedTabs.has('users') && (
+            <div className={activeNav === 'users' ? 'block' : 'hidden'}>
+              <AdminUserManagementPage />
+            </div>
+          )}
+          {visitedTabs.has('audit') && (
+            <div className={activeNav === 'audit' ? 'block' : 'hidden'}>
+              <AdminAuditLogPage />
+            </div>
+          )}
+          {(visitedTabs.has('queue') || visitedTabs.has('releases')) && (
+            <div className={(activeNav === 'queue' || activeNav === 'releases') ? 'block' : 'hidden'}>
+              <AdminQueueMonitoringPage />
+            </div>
+          )}
+          {visitedTabs.has('appts') && (
+            <div className={activeNav === 'appts' ? 'block' : 'hidden'}>
+              <AdminAppointmentsPage />
+            </div>
+          )}
+          {visitedTabs.has('records') && (
+            <div className={activeNav === 'records' ? 'block' : 'hidden'}>
+              <AdminRegistrarRecordsPage />
+            </div>
+          )}
+          {visitedTabs.has('student_records') && (
+            <div className={activeNav === 'student_records' ? 'block' : 'hidden'}>
+              <MasterListPage />
+            </div>
+          )}
         </main>
       </div>
     </div>

@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useAuth } from '../../context/useAuth'
+import { useStaffEvent } from '../../context/WebSocketContext'
 import { getIdRequests, updateIdRequestStatus, getStudentRecords, sendIdRequestEmail, deleteIdRequest } from '../../services/adminService'
 import { Check, X, Clock, HelpCircle, Mail, BookOpen, Send, User, Calendar, AtSign, Search, Trash2 } from 'lucide-react'
 
@@ -12,7 +13,7 @@ function EmailModal({ req, token, onClose, onSentAndResolve }) {
   const [sendError, setSendError] = useState('')
 
   // Directory search state
-  const [query, setQuery] = useState('')
+  const [query, setQuery] = useState(req?.last_name || '')
   const [allRecords, setAllRecords] = useState([])
   const [loadingDir, setLoadingDir] = useState(true)
   const [dirError, setDirError] = useState('')
@@ -71,13 +72,13 @@ function EmailModal({ req, token, onClose, onSentAndResolve }) {
     <div className="fixed inset-0 z-200 flex items-center justify-center p-4 bg-black/60">
       <div className="bg-white rounded-2xl shadow-[0_24px_64px_rgba(0,0,0,0.18)] w-full max-w-212.5 overflow-hidden animate-fade-up">
         
-        {/* Header */}
-        <div className="bg-maroon px-6 py-5 flex items-start justify-between gap-4">
+        {/* Header - White */}
+        <div className="bg-white border-b border-border px-6 py-5 flex items-start justify-between gap-4">
           <div>
             <p className="text-[10px] font-bold text-gold tracking-widest uppercase m-0 mb-1">ID Request Response</p>
-            <h2 className="text-white font-serif text-[20px] font-bold m-0">Send Student ID</h2>
+            <h2 className="text-text-main font-serif text-[20px] font-bold m-0">Send Student ID</h2>
           </div>
-          <button onClick={onClose} className="bg-white/10 border-none text-white rounded-full w-8 h-8 flex items-center justify-center cursor-pointer hover:bg-white/20 transition-colors shrink-0 text-[18px] leading-none">
+          <button onClick={onClose} className="bg-slate-100 border-none text-text-sub hover:text-text-main rounded-full w-8 h-8 flex items-center justify-center cursor-pointer hover:bg-slate-200 transition-colors shrink-0 text-[18px] leading-none">
             ×
           </button>
         </div>
@@ -242,9 +243,14 @@ export default function IdRequestsPage() {
     }
   }, [token])
 
+  // Real-time WebSocket event listener for instant 0ms updates
+  useStaffEvent('ID_REQUESTS_UPDATED', () => {
+    loadRequests(false)
+  })
+
   useEffect(() => {
     loadRequests()
-    const t = setInterval(() => loadRequests(false), 15000)
+    const t = setInterval(() => loadRequests(false), 60000)
     return () => clearInterval(t)
   }, [loadRequests])
 
@@ -289,63 +295,17 @@ export default function IdRequestsPage() {
     }
   }
 
-  if (loading) {
-    return (
-      <div className="animate-fade-in max-w-5xl">
-        {/* Header Skeleton */}
-        <div className="mb-6 animate-pulse">
-          <div className="h-3 w-28 bg-border/60 rounded mb-2" />
-          <div className="h-7 w-60 bg-border/70 rounded-lg mb-2" />
-          <div className="h-3.5 w-110 max-w-full bg-border/40 rounded" />
-        </div>
+  const pending = requests
+    .filter(r => r.status === 'pending')
+    .sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0))
 
-        {/* Section 1: Needs Action Skeleton */}
-        <div className="mb-8 animate-pulse">
-          <div className="h-5 w-40 bg-border/60 rounded mb-3.5" />
-          <div className="grid gap-4">
-            {[1, 2].map(i => (
-              <div key={i} className="bg-white rounded-2xl border-[1.5px] border-maroon-border/30 p-5 shadow-sm flex flex-col sm:flex-row sm:items-start justify-between gap-4">
-                <div className="flex-1">
-                  <div className="h-5 w-48 bg-border/70 rounded-md mb-2.5" />
-                  <div className="flex flex-wrap items-center gap-4 mt-2">
-                    <div className="h-4 w-52 bg-border/50 rounded" />
-                    <div className="h-4 w-36 bg-border/50 rounded" />
-                  </div>
-                  <div className="h-3 w-44 bg-border/40 rounded mt-3.5" />
-                </div>
-                <div className="h-10 w-full sm:w-32 bg-border/60 rounded-lg shrink-0" />
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Section 2: Request History Skeleton */}
-        <div className="animate-pulse">
-          <div className="h-5 w-36 bg-border/60 rounded mb-3.5" />
-          <div className="grid gap-3">
-            {[1, 2].map(i => (
-              <div key={i} className="bg-white rounded-2xl border border-border p-5 shadow-xs flex flex-col sm:flex-row sm:items-start justify-between gap-4">
-                <div className="flex-1">
-                  <div className="flex items-center gap-3 mb-2">
-                    <div className="h-5 w-40 bg-border/60 rounded-md" />
-                    <div className="h-4 w-20 bg-border/40 rounded-full" />
-                  </div>
-                  <div className="flex flex-wrap items-center gap-4 mt-1.5">
-                    <div className="h-4 w-48 bg-border/40 rounded" />
-                    <div className="h-4 w-32 bg-border/40 rounded" />
-                  </div>
-                </div>
-                <div className="h-4 w-36 bg-border/40 rounded shrink-0" />
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-    )
-  }
-
-  const pending = requests.filter(r => r.status === 'pending')
-  const history = requests.filter(r => r.status !== 'pending')
+  const history = requests
+    .filter(r => r.status !== 'pending')
+    .sort((a, b) => {
+      const timeB = new Date(b.resolved_at || b.created_at || 0).getTime()
+      const timeA = new Date(a.resolved_at || a.created_at || 0).getTime()
+      return timeB - timeA
+    })
 
   const itemsPerPage = 5
   
@@ -360,7 +320,7 @@ export default function IdRequestsPage() {
   const currentHistory = history.slice(startHistory, startHistory + itemsPerPage)
 
   return (
-    <div className="animate-fade-in max-w-5xl">
+    <div className="animate-fade-up max-w-5xl">
 
       {/* Email Modal */}
       {emailTarget && (
@@ -372,114 +332,139 @@ export default function IdRequestsPage() {
         />
       )}
 
-      <div className="mb-6">
+      {/* ── Page Header (Always visible) ── */}
+      <div className="animate-fade-up mb-6">
         <p className="text-[11px] font-bold text-gold tracking-widest uppercase m-0 mb-1.5">User Management</p>
-        <h1 className="font-serif text-[26px] font-bold text-text-main m-0 flex items-center gap-2">
-          <HelpCircle size={24} className="text-maroon" /> Student ID Requests
+        <h1 className="font-serif text-[22px] sm:text-[26px] font-bold text-text-main m-0 flex items-center gap-2">
+          <HelpCircle size={24} className="text-maroon shrink-0" /> Student ID Requests
         </h1>
-        <p className="text-[12px] text-text-sub mt-2 mb-0">
+        <p className="text-[12px] sm:text-[13px] text-text-sub mt-1.5 sm:mt-2 mb-0">
           Manage requests from students who forgot their Student ID.
           Click <strong>Send Email</strong> to compose a reply, then mark as resolved.
         </p>
       </div>
 
       {error && (
-        <div className="py-3 px-4 rounded-xl bg-danger-light border border-danger-border text-danger text-[13px] mb-6">
+        <div className="animate-fade-up py-3 px-4 rounded-xl bg-danger-light border border-danger-border text-danger text-[13px] mb-6">
           {error}
         </div>
       )}
 
       {/* PENDING */}
-      <h2 className="text-[15px] font-bold text-text-main mb-3 flex items-center gap-2">
-        <Clock size={18} className="text-gold" /> Needs Action ({pending.length})
-      </h2>
+      <div className="animate-fade-up" style={{ animationDelay: '0.1s' }}>
+        <h2 className="text-[15px] font-bold text-text-main mb-3 flex items-center gap-2">
+          <Clock size={18} className="text-gold" />
+          <span>Needs Action</span>
+          {!loading ? (
+            <span className="px-2 py-0.5 rounded-full bg-surface border border-border text-text-sub text-[11px] font-bold">
+              {pending.length}
+            </span>
+          ) : (
+            <span className="w-6 h-4.5 rounded-full bg-border/60 animate-pulse inline-block" />
+          )}
+        </h2>
 
-      {pending.length === 0 ? (
-        <div className="bg-white rounded-2xl border border-border p-10 text-center text-text-muted text-[14px] mb-8 shadow-sm">
-          No pending ID requests.
-        </div>
-      ) : (
-        <div className="mb-10">
-          <div className="grid gap-4">
-            {currentPending.map(req => (
-              <div key={req.id} className="bg-white rounded-2xl border-[1.5px] border-maroon-border p-5 shadow-sm flex flex-col sm:flex-row sm:items-start justify-between gap-4 transition-shadow hover:shadow-md">
-                <div>
-                  <h3 className="text-[16px] font-bold text-text-main m-0 mb-1">
-                    {req.last_name}, {req.first_name}
-                  </h3>
-                  <div className="flex flex-wrap items-center gap-3 sm:gap-4 text-[13px] text-text-sub mt-2">
-                    <span className="flex items-center gap-1.5 break-all"><Mail size={15} className="shrink-0" /> {req.email}</span>
-                    <span className="flex items-center gap-1.5"><BookOpen size={15} className="shrink-0" /> {req.course}</span>
+        {loading ? (
+          <div className="mb-8 grid gap-4">
+            {[1, 2].map(i => (
+              <div key={i} className="bg-white rounded-2xl border-[1.5px] border-maroon-border/30 p-5 shadow-sm flex flex-col sm:flex-row sm:items-start justify-between gap-4 animate-pulse">
+                <div className="flex-1">
+                  <div className="h-5 w-48 bg-border/70 rounded-md mb-2.5" />
+                  <div className="flex flex-wrap items-center gap-4 mt-2">
+                    <div className="h-4 w-52 bg-border/50 rounded" />
+                    <div className="h-4 w-36 bg-border/50 rounded" />
                   </div>
-                  <div className="text-[11px] text-text-muted mt-3">
-                    Requested on {new Date(req.created_at).toLocaleString()}
-                  </div>
+                  <div className="h-3 w-44 bg-border/40 rounded mt-3.5" />
                 </div>
-                <div className="flex flex-col gap-2 shrink-0 w-full sm:w-auto">
-                  <button
-                    onClick={() => setEmailTarget(req)}
-                    className="w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-maroon text-white font-bold text-[13px] border-none cursor-pointer hover:bg-maroon-dark transition-colors"
-                  >
-                    <Send size={14} /> Send Email
-                  </button>
-                </div>
+                <div className="h-10 w-full sm:w-32 bg-border/60 rounded-lg shrink-0" />
               </div>
             ))}
           </div>
-
-          {/* Pagination Controls for Pending */}
-          <div className="px-2 py-4 mt-2 flex justify-between items-center">
-            <div className="text-[13px] text-text-sub font-medium">
-              Showing <span className="font-bold text-text-main">{startPending + 1}-{endPending}</span> of <span className="font-bold text-text-main">{pending.length}</span> requests
-            </div>
-            <div className="flex gap-2">
-              <button 
-                onClick={() => setPendingPage(p => Math.max(1, p - 1))}
-                disabled={pendingPage === 1}
-                className="px-3 py-1.5 rounded-lg border border-border bg-white text-text-main text-[12px] font-semibold cursor-pointer hover:bg-surface disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-              >
-                Prev
-              </button>
-              <button 
-                onClick={() => setPendingPage(p => Math.min(totalPendingPages, p + 1))}
-                disabled={pendingPage === totalPendingPages}
-                className="px-3 py-1.5 rounded-lg border border-border bg-white text-text-main text-[12px] font-semibold cursor-pointer hover:bg-surface disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-              >
-                Next
-              </button>
-            </div>
+        ) : pending.length === 0 ? (
+          <div className="bg-white rounded-2xl border border-border p-10 text-center text-text-muted text-[14px] mb-8 shadow-sm">
+            No pending ID requests.
           </div>
-        </div>
-      )}
+        ) : (
+          <div className="mb-10">
+            <div className="grid gap-4">
+              {currentPending.map(req => (
+                <div key={req.id} className="animate-fade-up bg-white rounded-2xl border-[1.5px] border-maroon-border p-5 shadow-sm flex flex-col sm:flex-row sm:items-start justify-between gap-4 transition-shadow hover:shadow-md">
+                  <div>
+                    <div className="font-bold text-[16px] text-text-main">{req.first_name} {req.last_name}</div>
+                    <div className="flex flex-wrap items-center gap-4 mt-1.5 text-[12px] text-text-sub">
+                      <span><strong>Email:</strong> {req.email}</span>
+                      <span><strong>Course:</strong> {req.course}</span>
+                    </div>
+                    <div className="text-[11px] text-text-muted mt-2">Requested: {new Date(req.created_at).toLocaleString()}</div>
+                  </div>
 
-      {/* HISTORY */}
-      <div className="flex items-center justify-between mb-3 mt-4">
-        <h2 className="text-[15px] font-bold text-text-main m-0 flex items-center gap-2">
-          <Check size={18} className="text-success" /> History
-        </h2>
-        {history.length > 0 && (
-          <button 
-            onClick={() => {
-              setIsSelectMode(!isSelectMode)
-              setSelectedIds(new Set())
-            }}
-            className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border text-[12px] font-bold cursor-pointer transition-colors ${
-              isSelectMode 
-                ? 'bg-off-white border-border text-text-sub hover:bg-border'
-                : 'bg-danger-light border-danger-border text-danger hover:bg-danger hover:text-white'
-            }`}
-          >
-            {isSelectMode ? 'Cancel Selection' : <><Trash2 size={14} /> Delete Records</>}
-          </button>
+                  <button
+                    onClick={() => setEmailTarget(req)}
+                    className="px-4 py-2.5 bg-maroon text-white text-[13px] font-bold rounded-xl border-none cursor-pointer hover:bg-maroon-dark transition-colors flex items-center justify-center gap-2 shadow-xs shrink-0 w-full sm:w-auto"
+                  >
+                    <Mail size={15} /> Send Email
+                  </button>
+                </div>
+              ))}
+            </div>
+
+            {/* Pending Pagination */}
+            {totalPendingPages > 1 && (
+              <div className="flex items-center justify-between mt-4 px-2">
+                <span className="text-[12px] text-text-muted">
+                  Showing {startPending + 1}–{endPending} of {pending.length}
+                </span>
+                <div className="flex gap-2">
+                  <button
+                    disabled={pendingPage === 1}
+                    onClick={() => setPendingPage(p => p - 1)}
+                    className="px-3 py-1.5 rounded-lg border border-border bg-white text-[12px] font-semibold text-text-sub hover:bg-off-white disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                  >
+                    Previous
+                  </button>
+                  <button
+                    disabled={pendingPage === totalPendingPages}
+                    onClick={() => setPendingPage(p => p + 1)}
+                    className="px-3 py-1.5 rounded-lg border border-border bg-white text-[12px] font-semibold text-text-sub hover:bg-off-white disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                  >
+                    Next
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
         )}
       </div>
 
-      {isSelectMode && selectedIds.size > 0 && (
-        <div className="mb-3 p-3 bg-danger-light/50 border border-danger-border rounded-xl flex items-center justify-between animate-fade-in">
-          <span className="text-[13px] text-danger font-semibold">{selectedIds.size} selected</span>
-          <button
-            onClick={handleDeleteSelected}
-            disabled={isDeleting}
+      {/* HISTORY */}
+      <div className="animate-fade-up" style={{ animationDelay: '0.15s' }}>
+        <div className="flex items-center justify-between mb-3 mt-4">
+          <h2 className="text-[15px] font-bold text-text-main m-0 flex items-center gap-2">
+            <Check size={18} className="text-success" /> History
+          </h2>
+          {!loading && history.length > 0 && (
+            <button 
+              onClick={() => {
+                setIsSelectMode(!isSelectMode)
+                setSelectedIds(new Set())
+              }}
+              className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border text-[12px] font-bold cursor-pointer transition-colors ${
+                isSelectMode 
+                  ? 'bg-off-white border-border text-text-sub hover:bg-border'
+                  : 'bg-danger-light border-danger-border text-danger hover:bg-danger hover:text-white'
+              }`}
+            >
+              {isSelectMode ? 'Cancel Selection' : <><Trash2 size={14} /> Delete Records</>}
+            </button>
+          )}
+        </div>
+
+        {isSelectMode && selectedIds.size > 0 && (
+          <div className="mb-3 p-3 bg-danger-light/50 border border-danger-border rounded-xl flex items-center justify-between animate-fade-in">
+            <span className="text-[13px] text-danger font-semibold">{selectedIds.size} selected</span>
+            <button
+              onClick={handleDeleteSelected}
+              disabled={isDeleting}
             className="px-4 py-1.5 bg-danger text-white border-none rounded-lg text-[12px] font-bold cursor-pointer hover:bg-danger-dark transition-colors disabled:opacity-50"
           >
             {isDeleting ? 'Deleting...' : 'Confirm Delete'}
@@ -487,7 +472,25 @@ export default function IdRequestsPage() {
         </div>
       )}
 
-      {history.length === 0 ? (
+      {loading ? (
+        <div className="grid gap-3">
+          {[1, 2].map(i => (
+            <div key={i} className="bg-white rounded-2xl border border-border p-5 shadow-xs flex flex-col sm:flex-row sm:items-start justify-between gap-4 animate-pulse">
+              <div className="flex-1">
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="h-5 w-40 bg-border/60 rounded-md" />
+                  <div className="h-4 w-20 bg-border/40 rounded-full" />
+                </div>
+                <div className="flex flex-wrap items-center gap-4 mt-1.5">
+                  <div className="h-4 w-48 bg-border/40 rounded" />
+                  <div className="h-4 w-32 bg-border/40 rounded" />
+                </div>
+              </div>
+              <div className="h-4 w-36 bg-border/40 rounded shrink-0" />
+            </div>
+          ))}
+        </div>
+      ) : history.length === 0 ? (
         <div className="bg-white rounded-2xl border border-border p-6 text-center text-text-muted text-[13px] shadow-sm">
           No resolved requests yet.
         </div>
@@ -560,6 +563,7 @@ export default function IdRequestsPage() {
           </div>
         </div>
       )}
+      </div>
     </div>
   )
 }

@@ -2,261 +2,216 @@
 
 > **An AI-Based Web Appointment and Queue Management System for College Registrar Transactions**
 
-CampusFlow is a full-stack web application designed to modernize and streamline the day-to-day operations of a college registrar's office. It replaces traditional walk-in queues and paper-based scheduling with a digital platform that serves students, registrar staff, and administrators — each with a purpose-built interface.
+CampusFlow is a modern, unified web platform engineered to transform academic registrar services. By replacing physical queues, paper scheduling, and manual tracking with an automated, synchronized workflow, CampusFlow delivers an intuitive experience for students, an efficient operational dashboard for registrar staff, and actionable administrative controls for college leadership.
 
 ---
 
-## Table of Contents
+## 📌 System Highlights
 
-- [Overview](#overview)
-- [Features](#features)
-  - [Student Portal](#student-portal)
-  - [Staff Portal](#staff-portal)
-  - [Admin Portal](#admin-portal)
-- [Tech Stack](#tech-stack)
-- [Project Structure](#project-structure)
-- [Getting Started](#getting-started)
-  - [Prerequisites](#prerequisites)
-  - [Backend Setup](#backend-setup)
-  - [Frontend Setup](#frontend-setup)
-- [Environment Variables](#environment-variables)
-- [Deployment](#deployment)
-- [Roles & Access Control](#roles--access-control)
-- [AI Features](#ai-features)
+* **Multi-Portal Architecture**: Dedicated, role-tailored interfaces for Students, Registrar Staff, and System Administrators.
+* **Smart Appointment Scheduling**: Time-slot reservation engine with transaction-specific document checklists, automated cutoff policies, and cancellation safeguards.
+* **Real-Time Live Queue Management**: Window-based physical counter workflow with instant WebSocket status synchronization.
+* **Document Processing & Release Tracking**: Step-by-step progress tracking for transcript, diploma, certificate, and record requests.
+* **Priority Lane Verification**: Streamlined digital application and document verification for graduating students, working scholars, and special-assistance applicants.
+* **Virtual AI Assistant**: 24/7 natural-language guidance for institutional procedures, document requirements, and appointment inquiries.
 
 ---
 
-## Overview
+## 🏛️ Portal Overviews
 
-CampusFlow addresses the common pain points of a college registrar: long walk-in queues, missed appointments, and lack of transparency. The system provides:
+### 1. Student Portal
+Designed for self-service accessibility on desktop and mobile devices:
+* **Dashboard Overview**: Immediate status of active queue tickets, upcoming appointments, and ready-to-claim document notifications.
+* **Appointment Booking**: Multi-step booking wizard with calendar selection, time slot availability, and requirement previews.
+* **My Schedule & Appointments**: Centralized view to monitor, reschedule, or cancel pending appointments.
+* **Live Queue Status**: Visual progress bar tracking current serving numbers, estimated wait status, assigned window, and pickup alerts.
+* **Document Claiming**: Real-time status for document preparation, verification, and registrar window release.
+* **Profile & Priority Management**: Digital profile management, notification preference controls, and priority lane verification submissions.
+* **AI Registrar Guide**: Interactive assistant answering inquiries regarding registrar forms, policies, and requirements.
 
-- **Real-time queue tracking** for walk-in students
-- **Online appointment booking** for scheduled transactions
-- **AI-powered chat assistance** for student inquiries
-- **Window-based service management** for registrar staff
-- **Administrative dashboards** with reports, audit logs, and office configuration
+### 2. Staff Portal
+Optimized for high-throughput registrar counter operations:
+* **Window Assignment**: Secure service window claiming to maintain one-to-one counter accountability.
+* **Live Queue Management**: One-click ticket calling, multi-step transaction progression, priority filtering, and ticket completion.
+* **Appointment Check-Ins**: Daily schedule overview with attendance tracking and transaction validation.
+* **Document Release Desk**: Verification and claiming management for ready certificates, transcripts, and records.
+* **Academic Master List**: Fast student record verification during counter transactions.
+* **Priority Request Review**: Digital review and approval for student priority access requests.
+* **Direct Messaging**: Communication channel for student clarifications and transaction updates.
 
----
-
-## Features
-
-### Student Portal
-
-| Feature | Description |
-|---|---|
-| **Dashboard** | Personalized overview of active queue position, upcoming appointments, and quick actions |
-| **Book Appointment** | Multi-step appointment booking form with date/time slot selection and transaction type |
-| **My Appointments** | View, track, and cancel scheduled appointments |
-| **My Queue** | Real-time status of an active walk-in queue ticket, including position and serving window |
-| **AI Chat Assistant** | Ask questions about registrar procedures, document requirements, and schedules |
-
-### Staff Portal
-
-| Feature | Description |
-|---|---|
-| **Dashboard** | Live overview of today's queue activity, completion stats, and pending appointments |
-| **Window Assignment** | Staff must claim a service window before starting work; enforced one-to-one mapping |
-| **Live Queue Management** | View, call, serve, skip, and complete walk-in queue tickets in real time |
-| **Appointments Page** | Manage scheduled student appointments and mark them as completed or no-show |
-| **Student Records** | Look up and view student academic records for transaction processing |
-| **Messages** | Receive and respond to messages from students |
-
-### Admin Portal
-
-| Feature | Description |
-|---|---|
-| **Dashboard** | System-wide KPIs: total users, daily volume, completion rates, and staff activity |
-| **Reports** | AI-generated daily summaries with filterable statistics and downloadable data |
-| **Appointments Management** | View all appointments across students and staff; release or manage dates |
-| **Live Queue Monitor** | Real-time view of all active queue windows and ticket states |
-| **User Management** | Promote/demote users between student/staff/admin roles and activate/deactivate accounts |
-| **Registrar Records** | Browse and edit all student academic records stored in the system |
-| **Office Configuration** | Set operating hours, slot durations, booking cutoff days, staff count, and active windows |
-| **Audit Log** | Immutable log of all administrative actions with timestamps and actor identity |
+### 3. Admin Portal
+Comprehensive administrative governance and office configuration:
+* **Executive Analytics**: Real-time KPIs covering daily transaction volume, average service durations, peak hours, and completion rates.
+* **Queue Monitoring**: Live bird's-eye view of all service windows, active staff, and counter queues.
+* **Office & Window Configuration**: Flexible management of operating hours, appointment quotas, slot durations, and active service windows.
+* **Transaction Catalog**: Configuration of available registrar services, document requirements, processing timelines, and routing steps.
+* **User & Role Administration**: Role provisioning (`student`, `staff`, `admin`), profile moderation, and account status management.
+* **Registrar Records Management**: Secure registry for student academic files, grades, and records.
+* **Audit Trail**: Action logging documenting administrative updates with timestamps and actor identities.
 
 ---
 
-## Tech Stack
+## 💻 Technology Stack
 
 ### Frontend
-| Technology | Purpose |
-|---|---|
-| **React 18** | UI framework |
-| **Vite** | Build tool and dev server |
-| **Vanilla CSS (inline styles)** | Styling — no CSS framework dependency |
-| **Lucide React** | Icon library |
-| **Google Fonts** (IBM Plex Sans, Fraunces) | Typography |
+* **Core Framework**: React 18 (SPA Architecture)
+* **Build Tooling**: Vite
+* **Styling**: Tailwind CSS & Modern Design Tokens
+* **Icons**: Lucide React
+* **Realtime Client**: Native WebSocket Engine with auto-reconnection
 
-### Backend
-| Technology | Purpose |
-|---|---|
-| **FastAPI** | REST API framework |
-| **Uvicorn** | ASGI server |
-| **Supabase** | PostgreSQL database + Auth + Realtime |
-| **OpenAI API** | AI chat assistant and report generation |
-| **Pydantic** | Request/response validation |
-| **python-jose / PyJWT** | JWT authentication |
+### Backend & Infrastructure
+* **API Framework**: FastAPI (Python 3.11+)
+* **ASGI Server**: Uvicorn
+* **Database & Auth**: PostgreSQL / Relational Database with Row-Level Security
+* **Realtime Gateway**: Asynchronous WebSocket event broadcasting
+* **Data Validation**: Pydantic v2
+* **Authentication**: Industry-standard JSON Web Tokens (JWT)
 
 ---
 
-## Project Structure
+## 📂 Repository Structure
 
-```
+```text
 CampusFlow/
 ├── backend/
-│   ├── main.py                  # FastAPI app entry point
-│   ├── config.py                # Environment settings
-│   ├── render.yaml              # Render deployment config
-│   ├── requirements.txt         # Python dependencies
-│   ├── routers/
-│   │   ├── admin.py             # Admin + window assignment endpoints
-│   │   ├── appointments.py      # Appointment CRUD
-│   │   ├── auth.py              # Login / register
-│   │   ├── ai.py                # AI chat endpoint
-│   │   ├── messages.py          # Staff-student messaging
-│   │   ├── queue.py             # Queue ticket management
-│   │   └── school_records.py    # Student academic records
-│   └── services/
-│       ├── admin_service.py     # Admin business logic + window assignments
+│   ├── main.py                  # FastAPI application entry point
+│   ├── config.py                # Environment configuration loader
+│   ├── requirements.txt         # Backend Python dependencies
+│   ├── routers/                 # Modular API endpoints
+│   │   ├── auth.py              # Authentication & user profile endpoints
+│   │   ├── appointments.py      # Scheduling & reservation endpoints
+│   │   ├── queue.py             # Queue operations & ticket lifecycle
+│   │   ├── admin.py             # Admin analytics & office config
+│   │   ├── ai.py                # AI virtual guide integration
+│   │   ├── messages.py          # Staff-student communication
+│   │   └── school_records.py    # Academic record management
+│   └── services/                # Core business logic layer
+│       ├── auth_service.py
 │       ├── appointment_service.py
+│       ├── queue_service.py
+│       ├── admin_service.py
 │       ├── ai_service.py
-│       ├── messages_service.py
-│       └── queue_service.py
+│       └── websocket_manager.py # Real-time broadcast engine
 │
 └── frontend/
+    ├── package.json             # Frontend dependencies and scripts
+    ├── vite.config.js           # Vite build and development configuration
     └── src/
-        ├── pages/
-        │   ├── Landing.jsx          # Public landing page
-        │   ├── auth/                # Login & Register
-        │   ├── student/             # Student portal pages
-        │   ├── staff/               # Staff portal pages
-        │   └── admin/               # Admin portal pages
-        ├── components/
-        │   └── layout/              # StudentLayout, StaffLayout, etc.
-        └── services/                # API call helpers (adminService.js, etc.)
+        ├── App.jsx              # Root component & state providers
+        ├── routes/              # Client-side route declarations
+        ├── context/             # Auth and WebSocket global providers
+        ├── components/          # Reusable UI elements & layout shells
+        ├── services/            # Client-side API service connectors
+        └── pages/
+            ├── auth/            # Sign In, Registration, Password Recovery
+            ├── student/         # Student Portal views
+            ├── staff/           # Staff Counter views
+            └── admin/           # Admin Dashboard views
 ```
 
 ---
 
-## Getting Started
+## 🚀 Getting Started
 
 ### Prerequisites
-
-- **Node.js** 18+ and **npm**
-- **Python** 3.11+
-- A **Supabase** project (free tier works)
-- An **OpenAI** API key
+* **Node.js** (v18.0.0 or higher) and **npm**
+* **Python** (v3.11 or higher)
+* **PostgreSQL** Database instance
 
 ---
 
-### Backend Setup Terminal
+### Backend Setup
 
-```bash
-# 1. Navigate to the backend directory/folder
-cd backend
+1. Open a terminal and navigate to the backend directory:
+   ```bash
+   cd backend
+   ```
 
-# 2. Create and activate a virtual environment
-python -m venv venv
-venv\Scripts\activate        # Windows
-# source venv/bin/activate   # macOS/Linux
+2. Create and activate a Python virtual environment:
+   ```bash
+   # Windows
+   python -m venv venv
+   venv\Scripts\activate
 
-# 3. Install dependencies
-pip install -r requirements.txt
+   # macOS / Linux
+   python3 -m venv venv
+   source venv/bin/activate
+   ```
 
-# 4. Create the .env file (see Environment Variables section)
+3. Install required Python packages:
+   ```bash
+   pip install -r requirements.txt
+   ```
 
-# 5. Start the development server
-uvicorn main:app --reload
-```
+4. Create your local environment configuration:
+   Create a `.env` file in the `backend/` directory referencing `.env.example`:
+   ```env
+   # Database Configuration
+   DATABASE_URL=your_database_connection_url
 
-The API will be available at `http://localhost:8000`.  
-Interactive API docs: `http://localhost:8000/docs`
+   # Authentication
+   SECRET_KEY=your_jwt_secret_key
+   ACCESS_TOKEN_EXPIRE_MINUTES=1440
 
----
+   # CORS Configuration
+   ALLOWED_ORIGINS=http://localhost:5173
 
-### Frontend Setup Terminal
+   # Optional AI Integration
+   AI_SERVICE_API_KEY=your_optional_api_key
+   ```
 
-```bash
-# 1. Navigate to the frontend directory/folder
-cd frontend
-
-# 2. Install dependencies
-npm install
-
-# 3. Start the development server
-npm run dev
-```
-
-The app will be available at `http://localhost:5173`.
-
----
-
-## Environment Variables
-
-Environment variables setup:
-Created `.env` file in the `backend/` directory with the following keys:
-
-```env
-SUPABASE_URL=https://your-project.supabase.co
-SUPABASE_ANON_KEY=your-anon-key
-SUPABASE_SERVICE_KEY=your-service-role-key
-OPENAI_API_KEY=sk-...
-SECRET_KEY=your-jwt-secret-key
-```
-
->  Environment(.env) files are listed inside of `.gitignore` to avoid exposing sensitive information.
+5. Start the backend API server:
+   ```bash
+   uvicorn main:app --reload --port 8000
+   ```
+   The backend API will be available at `http://localhost:8000`.
 
 ---
 
-## Deployment
+### Frontend Setup
 
-### Backend — Render
+1. Open a new terminal and navigate to the frontend directory:
+   ```bash
+   cd frontend
+   ```
 
-The backend is configured for deployment on [Render](https://render.com) via `backend/render.yaml`.
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
 
-Commands used:
-```yaml
-buildCommand: pip install -r requirements.txt
-startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
-```
+3. Configure local environment variables:
+   Create a `.env` file in the `frontend/` directory:
+   ```env
+   VITE_API_URL=http://localhost:8000
+   ```
 
-### Frontend — Vercel
-
-The frontend is deployed on [Vercel](https://vercel.com). 
-
-Steps on how I deployed it:
-  Connected the repository, set the root directory to `frontend`, and Vercel will auto-detect the Vite build configuration.
-
-Allowed frontend origins are already whitelisted in the backend CORS configuration:
-- `https://campus-flow.vercel.app`
-- `https://campus-flow-iota.vercel.app`
-
----
-
-## Roles & Access Control
-
-CampusFlow enforces three user roles at the API level:
-
-| Role | Access |
-|---|---|
-| `student` | Student portal only (queue, appointments, AI chat) |
-| `staff` | Staff portal only (queue management, appointments, records, messages) |
-| `admin` | Full access including admin dashboard, user management, and office configuration |
-
-All protected endpoints verify a valid **Supabase JWT** via the `Authorization: Bearer <token>` header. Admin-only endpoints additionally check the `role` field in the `users` table. Window assignment endpoints require `staff` or `admin` role.
+4. Launch the local development server:
+   ```bash
+   npm run dev
+   ```
+   The application will be accessible at `http://localhost:5173`.
 
 ---
 
-## AI Features
+## 👥 User Roles & Permissions
 
-CampusFlow integrates OpenAI to provide:
-
-1. **Student AI Chat** — A conversational assistant that answers questions about registrar transactions, required documents, and procedures. Responses are grounded in the specific transaction types configured in the system.
-
-2. **Admin AI Reports** — The Reports page generates a daily natural-language summary of appointment statistics (completion rate, no-shows, volume trends documents) to help administrators make informed decisions.
+| Role | Target Users | Allowed Access |
+| :--- | :--- | :--- |
+| **`student`** | Enrolled / Active Students | Self-service dashboard, appointment booking, queue ticket status, priority lane verification, AI assistant. |
+| **`staff`** | Registrar Window Officers | Service window assignment, live queue calling, appointment check-ins, document release desk, academic records lookup. |
+| **`admin`** | Registrar Head / System Admins | System KPIs, queue monitoring, office schedule configuration, transaction management, user role assignment, audit logs. |
 
 ---
 
-## License
+## 🧪 Pilot Testing Phase
 
-This project was developed as an academic capstone project. All rights reserved by the authors of CampusFlow.
+A structured Pilot Testing Phase Guide is available in the repository root:
+* **[CampusFlow_Pilot_Testing_User_Flow_Guide.pdf](./CampusFlow_Pilot_Testing_User_Flow_Guide.pdf)** — Complete operational workflow, step-by-step user testing scenarios, success metrics, and evaluation rubric for Students, Staff, and Administrators.
+
+---
+
+## 📄 License & Attribution
+
+Developed as an academic capstone and administrative modernization system. All rights reserved by the CampusFlow Project Team.

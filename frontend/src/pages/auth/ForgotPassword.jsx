@@ -36,7 +36,7 @@ export default function ForgotPassword() {
     }
   }
 
-  const inpClass = `w-full rounded-lg border-[1.5px] border-border bg-off-white text-text-main outline-none box-border font-sans transition-colors duration-150 focus:border-maroon focus:ring-0 ${isMobile ? 'py-[13px] px-[14px] text-[15px] min-h-[52px]' : 'py-[11px] px-[14px] text-[14px]'}`
+  const inpClass = `w-full rounded-lg border-[1.5px] border-border bg-off-white text-text-main outline-none box-border font-sans transition-colors duration-150 focus:border-maroon focus:ring-0 ${isMobile ? 'py-[13px] pl-[42px] pr-[14px] text-[15px] min-h-[52px]' : 'py-[11px] pl-[40px] pr-[14px] text-[14px]'}`
 
   const content = sent ? (
     <div className="text-center py-4">
@@ -76,15 +76,18 @@ export default function ForgotPassword() {
       <form onSubmit={handleSubmit}>
         <div className="mb-5">
           <label className="block text-[11px] font-semibold text-text-sub mb-1.5 tracking-[0.06em] uppercase">Email Address</label>
-          <input
-            type="email"
-            value={email}
-            onChange={e => { setEmail(e.target.value); setError('') }}
-            required
-            placeholder="your@gmail.com"
-            className={inpClass}
-            autoFocus
-          />
+          <div className="relative flex items-center">
+            <Mail size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+            <input
+              type="email"
+              value={email}
+              onChange={e => { setEmail(e.target.value); setError('') }}
+              required
+              placeholder="your@gmail.com"
+              className={inpClass}
+              autoFocus
+            />
+          </div>
         </div>
         <button
           type="submit"

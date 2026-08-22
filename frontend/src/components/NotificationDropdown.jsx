@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { Bell, CheckCircle, Info, AlertTriangle, Check } from 'lucide-react';
 import { useAuth } from '../context/useAuth';
-import { getNotifications, markNotificationRead, markAllNotificationsRead, clearAllNotifications } from '../services/notificationService';
+import { useWebSocket } from '../context/WebSocketContext';
+import { markNotificationRead, markAllNotificationsRead, clearAllNotifications } from '../services/notificationService';
 
 const M = {
   maroon: '#7B1A2A',
@@ -16,10 +16,11 @@ const M = {
   success: '#15803D',
 };
 
-export default function NotificationDropdown({ isMobile = false, mobileRoute }) {
+export default function NotificationDropdown({ isMobile = false }) {
   const { token } = useAuth();
+  const { notifications, setNotifications } = useWebSocket();
+  // eslint-disable-next-line no-unused-vars
   const navigate = useNavigate();
-  const [notifications, setNotifications] = useState([]);
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef(null);
   const triggerRef = useRef(null);
@@ -32,71 +33,6 @@ export default function NotificationDropdown({ isMobile = false, mobileRoute }) 
   }, []);
   
   const effectiveIsMobile = isMobile || windowWidth < 768;
-
-  const fetchNotifications = async () => {
-    if (!token) return;
-    try {
-      const data = await getNotifications(token);
-      setNotifications(data || []);
-    } catch (e) {
-      console.error('Failed to fetch notifications', e);
-    }
-  };
-
-  useEffect(() => {
-    fetchNotifications();
-    
-    if (!token) return;
-
-    const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
-    const wsUrl = API_URL.replace(/^http/, 'ws') + `/notifications/ws?token=${token}`;
-    
-    let ws = null;
-    let reconnectTimeout = null;
-
-    const connectWs = () => {
-      ws = new WebSocket(wsUrl);
-      
-      ws.onopen = () => {
-        // Fetch to ensure we didn't miss any messages while disconnected
-        fetchNotifications();
-      };
-
-      ws.onmessage = (event) => {
-        try {
-          const newNotification = JSON.parse(event.data);
-          setNotifications((prev) => {
-            // Prevent duplicate notifications in state
-            if (prev.some(n => n.id === newNotification.id)) return prev;
-            return [newNotification, ...prev];
-          });
-        } catch (e) {
-          console.error('Failed to parse websocket message', e);
-        }
-      };
-      
-      ws.onerror = () => {
-        // Silencing websocket error logs as reconnects are handled in onclose
-      };
-
-      ws.onclose = () => {
-        // Auto-reconnect after 3 seconds if it unexpectedly drops
-        reconnectTimeout = setTimeout(() => {
-          connectWs();
-        }, 3000);
-      };
-    };
-
-    connectWs();
-    
-    return () => {
-      if (reconnectTimeout) clearTimeout(reconnectTimeout);
-      if (ws) {
-        ws.onclose = null; // prevent reconnect on intentional unmount
-        ws.close();
-      }
-    };
-  }, [token]);
 
   useEffect(() => {
     const handleClickOutside = (event) => {

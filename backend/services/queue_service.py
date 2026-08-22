@@ -4,6 +4,7 @@ from datetime import date, datetime, timezone
 import threading
 from services.admin_service import log_audit_action
 from services.notification_service import create_system_notification
+from services.websocket_manager import manager
 from deps import get_supabase_admin as get_admin
 
 settings = get_settings()
@@ -179,6 +180,8 @@ def activate_queue(appointment_id: str, student_id: str):
         type="info",
     )
 
+    manager.broadcast_staff_event("QUEUE_UPDATED")
+
     return {"ticket": ticket, "steps": steps_res.data}
 
 
@@ -201,37 +204,14 @@ def get_student_queue(student_id: str):
         if not tickets_res.data:
             return None
 
-        # 1b. Selective Stale Cleanup:
-        # ONLY auto-expire if:
-        # - Appointment date is from a past date (appointment_date < today_str)
-        # - Status is still "waiting" (staff never even started/called it)
-        # - Current step is 1 or less (current_step <= 1)
-        # - No release date was assigned
-        #
-        # DO NOT expire if it's already on step 2 or above (current_step >= 2),
-        # has a release_date, or is in active multi-day processing!
+        # 2. Filter out cancelled appointments/tickets
         valid_tickets = []
         for t in tickets_res.data:
             appt = t.get("appointments") or {}
-            appt_date = appt.get("appointment_date") or ""
-            current_step = t.get("current_step") or 1
-            has_release_date = bool(appt.get("release_date"))
+            appt_status = appt.get("status")
+            tx_name = (appt.get("transaction_types") or {}).get("name", "")
             
-            is_stale_unstarted = (
-                t["status"] == "waiting"
-                and appt_date != ""
-                and appt_date < today_str
-                and current_step <= 1
-                and not has_release_date
-            )
-            
-            if is_stale_unstarted:
-                try:
-                    admin.table("queue_tickets").update({"status": "no_show"}).eq("id", t["id"]).execute()
-                    if t.get("appointment_id"):
-                        admin.table("appointments").update({"status": "no_show"}).eq("id", t["appointment_id"]).execute()
-                except Exception:
-                    pass
+            if appt_status == "cancelled" or t.get("status") == "cancelled" or "(deleted" in tx_name:
                 continue
                 
             valid_tickets.append(t)
@@ -239,37 +219,19 @@ def get_student_queue(student_id: str):
         if not valid_tickets:
             return None
 
-        # 2. Pick the active ticket:
-        # Priority 1: Today's active queue ticket (waiting or in_progress for today's appointment)
-        # Priority 2: In-progress multi-day ticket (step 2+, ready for pickup, etc.)
-        # Priority 3: Today's completed ticket
+        # 3. Pick the active ticket:
+        # Priority 1: Any active queue ticket currently waiting or in_progress (persists across days)
+        # Priority 2: Recently completed ticket from today
         active_ticket = None
         for t in valid_tickets:
-            appt = t.get("appointments") or {}
-            appt_status = appt.get("status")
-            tx_name = (appt.get("transaction_types") or {}).get("name", "")
-            appt_date = appt.get("appointment_date")
-            
-            if appt_status == "cancelled" or "(deleted" in tx_name:
-                continue
-                
-            if t["status"] in ["waiting", "in_progress"] and appt_date == today_str:
+            if t["status"] in ["waiting", "in_progress"]:
                 active_ticket = t
                 break
 
         if not active_ticket:
             for t in valid_tickets:
                 appt = t.get("appointments") or {}
-                appt_status = appt.get("status")
-                tx_name = (appt.get("transaction_types") or {}).get("name", "")
-                
-                if appt_status == "cancelled" or "(deleted" in tx_name:
-                    continue
-                    
-                if t["status"] in ["waiting", "in_progress"]:
-                    active_ticket = t
-                    break
-                elif t["status"] == "completed" and appt.get("appointment_date") == today_str:
+                if t["status"] == "completed" and appt.get("appointment_date") == today_str:
                     active_ticket = t
                     break
 
@@ -334,6 +296,8 @@ def call_ticket(queue_ticket_id: str, staff_id: str):
     except Exception:
         pass
 
+    manager.broadcast_staff_event("QUEUE_UPDATED")
+
     return {"message": "Ticket called successfully", "location": window_label}
 
 
@@ -373,6 +337,8 @@ def send_to_processing(queue_ticket_id: str, staff_id: str):
         changes=f"Ticket {ticket.get('queue_number', '')} step '{current_step.get('step_name', '')}' shifted to Back Office",
         severity="Info"
     )
+
+    manager.broadcast_staff_event("QUEUE_UPDATED")
 
     return {"message": "Ticket sent to processing"}
 
@@ -518,6 +484,8 @@ def confirm_step(queue_ticket_id: str, step_number: int, staff_id: str,
             message=f"Your request for {tx_name} (Ticket {ticket['queue_number']}) has been completed and released. Thank you!",
             type="success"
         )
+        manager.broadcast_staff_event("QUEUE_UPDATED")
+        manager.broadcast_staff_event("RELEASES_UPDATED")
         return {"message": "Transaction completed", "status": "completed"}
     else:
         # Advance to next step
@@ -541,6 +509,8 @@ def confirm_step(queue_ticket_id: str, step_number: int, staff_id: str,
             or "Filing" in next_step_name
             or "Verification" in next_step_name
             or "Records" in next_step_name
+            or "Prepared" in next_step_name
+            or "Ready" in next_step_name
             or next_step_data.get("location") == "Back Office"
             or next_step_data.get("requires_presence") is False
         )
@@ -579,6 +549,9 @@ def confirm_step(queue_ticket_id: str, step_number: int, staff_id: str,
                 message=notif_message,
                 type="info"
             )
+        manager.broadcast_staff_event("QUEUE_UPDATED")
+        if is_release_next or is_release_step:
+            manager.broadcast_staff_event("RELEASES_UPDATED")
         return {"message": f"Step {step_number} confirmed. Moved to step {next_step}.", "status": "in_progress"}
 
 
@@ -832,28 +805,28 @@ def get_live_queue_stats():
 def get_uncollected_documents(threshold_days: int = 0):
     """
     Returns tickets currently sitting at a Release step (ready for
-    pickup) that have been waiting longer than threshold_days,
-    sorted longest-waiting first.
+    pickup), sorted longest-waiting first.
     """
-    from datetime import datetime, timezone, timedelta
+    from datetime import datetime, timezone, timedelta, date
     admin = get_admin()
 
-    threshold_date = (datetime.now(timezone.utc) - timedelta(days=threshold_days)).isoformat()
-
     try:
-        res = admin.table("transaction_steps") \
+        query = admin.table("transaction_steps") \
             .select("*, queue_tickets(id, queue_number, student_id, "
                     "users(first_name, last_name, student_id), "
                     "appointments(transaction_types(name), priority_class, release_date))") \
             .ilike("step_name", "%Release%") \
-            .eq("status", "in_progress") \
-            .lt("activated_at", threshold_date) \
-            .execute()
+            .eq("status", "in_progress")
+
+        if threshold_days > 0:
+            threshold_date = (datetime.now(timezone.utc) - timedelta(days=threshold_days)).isoformat()
+            query = query.lt("activated_at", threshold_date)
+
+        res = query.execute()
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
     results = []
-    from datetime import date
     today_date = datetime.now(timezone.utc).date()
     for row in (res.data or []):
         ticket = row.get("queue_tickets") or {}
@@ -869,7 +842,7 @@ def get_uncollected_documents(threshold_days: int = 0):
             continue
         tx_name = raw_tx_name
 
-        # Calculate waiting time relative to assigned release_date
+        # Calculate waiting time relative to assigned release_date or activated_at
         days_waiting = 0
         if release_date_str:
             try:
@@ -877,12 +850,14 @@ def get_uncollected_documents(threshold_days: int = 0):
                     rel_date = datetime.fromisoformat(str(release_date_str).replace("Z", "+00:00")).date()
                 else:
                     rel_date = date.fromisoformat(str(release_date_str))
-                
-                # If release date is in the future, it has not reached release date yet
-                if rel_date > today_date:
-                    continue
 
                 days_waiting = (today_date - rel_date).days
+            except Exception:
+                days_waiting = 0
+        elif row.get("activated_at"):
+            try:
+                act_date = datetime.fromisoformat(str(row.get("activated_at")).replace("Z", "+00:00")).date()
+                days_waiting = (today_date - act_date).days
             except Exception:
                 days_waiting = 0
 
@@ -903,7 +878,7 @@ def get_uncollected_documents(threshold_days: int = 0):
     return results
 
 
-def get_collected_documents(limit: int = 50):
+def get_collected_documents(limit: int = 500):
     """
     Returns tickets that have been successfully released (completed Release step).
     """

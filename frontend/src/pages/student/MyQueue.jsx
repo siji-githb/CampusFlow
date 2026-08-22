@@ -2,10 +2,11 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import { createPortal } from 'react-dom'
 import { useNavigate, Link, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../../context/useAuth'
+import { useStaffEvent } from '../../context/WebSocketContext'
 import StudentLayout from '../../components/layout/StudentLayout'
 import { getMyQueue, activateQueue, getTimeEstimate, getMyDocumentsToClaim } from '../../services/queueService'
 import { getMyAppointments, cancelAppointment } from '../../services/appointmentService'
-import { Clock, Hourglass, PartyPopper, Ticket, Calendar, Inbox, Cog, FileCheck } from 'lucide-react'
+import { Clock, Hourglass, PartyPopper, Ticket, Calendar, Inbox, Cog, FileCheck, Sparkles } from 'lucide-react'
 
 const STEP_STYLE = {
   pending:     { bg: '#F9F9F9', color: '#706B65' }, // text-text-sub
@@ -13,7 +14,7 @@ const STEP_STYLE = {
   completed:   { bg: '#F9F0F1', color: '#7B1A2A' }, // text-maroon
 }
 
-export default function MyQueue() {
+export default function MyQueue({ embedded = false }) {
   const { token } = useAuth()
   const navigate = useNavigate()
   const [queueData, setQueueData]   = useState(null)
@@ -43,6 +44,24 @@ export default function MyQueue() {
   };
   const today = getTodayStr(); // evaluated per-render for local UI checks
 
+  const formatShortDate = (dateStr) => {
+    if (!dateStr) return '';
+    const parts = String(dateStr).split('-');
+    if (parts.length === 3) {
+      return new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2])).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    }
+    return new Date(dateStr).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  };
+
+  const formatFullDate = (dateStr) => {
+    if (!dateStr) return '';
+    const parts = String(dateStr).split('-');
+    if (parts.length === 3) {
+      return new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2])).toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' });
+    }
+    return new Date(dateStr).toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' });
+  };
+
   const fmt12h = (t) => {
     if (!t) return ''
     const parts = t.split(':')
@@ -69,12 +88,23 @@ export default function MyQueue() {
     try {
       const all = await getMyAppointments(token)
       const currentToday = getTodayStr();
-      setUpcomingAppts(all.filter(a => {
-        const apptTickets = Array.isArray(a.queue_tickets) ? a.queue_tickets : [];
+      setUpcomingAppts((all || []).filter(a => {
+        const apptTickets = Array.isArray(a.queue_tickets) ? a.queue_tickets : (a.queue_tickets ? [a.queue_tickets] : []);
         const isTicketCompleted = apptTickets.some(qt => qt.status === 'completed');
+        
+        // Exclude cancelled, no_show, or completed appointments
         if (a.status === 'completed' || a.status === 'cancelled' || a.status === 'no_show' || isTicketCompleted) {
           return false;
         }
+
+        const hasActiveTicket = apptTickets.some(qt => qt.status === 'waiting' || qt.status === 'in_progress');
+        
+        // If already activated on queue, keep it visible in Upcoming too
+        if (hasActiveTicket) {
+          return true;
+        }
+
+        // If NOT activated, only show if today or future (removes unactivated past due tickets)
         return a.appointment_date >= currentToday;
       }))
     } catch (e) { setError(e.message) }
@@ -89,9 +119,15 @@ export default function MyQueue() {
     }
   }, [token])
 
+  // Real-time WebSocket event listener for instant 0ms updates
+  useStaffEvent(['QUEUE_UPDATED', 'WINDOW_UPDATED', 'RELEASES_UPDATED'], () => {
+    fetchQueue()
+    fetchAppts()
+  })
+
   useEffect(() => {
     Promise.all([fetchQueue(), fetchAppts()]).finally(() => setLoading(false))
-    pollRef.current = setInterval(fetchQueue, 15000)
+    pollRef.current = setInterval(fetchQueue, 60000)
     return () => clearInterval(pollRef.current)
   }, [fetchQueue, fetchAppts])
 
@@ -135,56 +171,118 @@ export default function MyQueue() {
   // ── Is the CURRENT active step one that needs the student physically
   //    present, or is it back-office processing with no line to stand in? ──
   const currentStep = steps.find(s => s.status === 'in_progress')
+  const currentStepNameLower = (currentStep?.step_name || '').toLowerCase()
   const currentRequiresPresence = currentStep?.requires_presence !== false // default true if missing/undefined
-  const isCurrentStepRelease = currentStep?.step_name?.toLowerCase().includes('release')
+  const isCurrentStepRelease = currentStepNameLower.includes('release') || currentStepNameLower.includes('claim') || currentStepNameLower.includes('pickup')
+  const isCurrentStepDocPrepared = currentStepNameLower.includes('document prepared') || currentStepNameLower.includes('document ready')
+  const isCurrentStepPrep = !isCurrentStepDocPrepared && !isCurrentStepRelease && (currentStepNameLower.includes('preparation') || currentStepNameLower.includes('verification') || currentStepNameLower.includes('records') || !currentRequiresPresence)
+  const isCurrentStepReceipt = currentStepNameLower.includes('receipt') || currentStepNameLower.includes('payment')
+  
   const releaseDateVal = ticket?.appointments?.release_date
   const isFutureScheduled = Boolean(releaseDateVal && releaseDateVal > today)
   const isReleaseActive = ticket?.status === 'in_progress' && isCurrentStepRelease && !isFutureScheduled
 
-  return (
-    <StudentLayout activeTab="queue" mobileTitle="My Queue">
-
-      <div className="w-full max-w-5xl mx-auto px-3.5 sm:px-6 md:px-8 py-3 sm:py-6 pb-24 md:pb-12 box-border">
+  if (loading && !queueData && upcomingAppts.length === 0) {
+    const skeleton = (
+      <div className="flex-1 w-full pb-22 md:pb-0 px-4 md:px-0 animate-pulse">
+        {/* Header Skeleton */}
         <div className="hidden md:flex justify-between items-start mb-8">
           <div>
-            <div className="text-[11px] font-bold text-gold uppercase tracking-[0.06em] mb-2">LIVE TRACKING</div>
-            <h1 className="font-serif text-[26px] font-bold text-maroon m-0 mb-2 flex items-center gap-3">
-              <Ticket className="text-maroon" size={24} /> My Queue
-            </h1>
-            <p className="text-[12px] text-text-sub m-0 leading-relaxed max-w-162.5">
-              Monitor your active processing status and upcoming appointments.
-            </p>
+            <div className="h-3 w-24 bg-border/60 rounded mb-2" />
+            <div className="h-7 w-36 bg-border/80 rounded mb-2" />
+            <div className="h-3.5 w-64 bg-border/40 rounded" />
           </div>
-          <div className="text-[13px] text-text-sub font-medium flex items-center gap-2 mt-2">
-            <Link to="/student/dashboard" className="text-maroon hover:underline cursor-pointer">Home</Link>
-            <span className="text-border-strong">›</span>
-            <span>My Queue</span>
+          <div className="h-4 w-28 bg-border/40 rounded" />
+        </div>
+
+        {/* Tabs Skeleton */}
+        <div className="flex gap-2 mb-6 bg-white p-1.5 rounded-2xl border border-border">
+          <div className="flex-1 h-9 bg-border/50 rounded-xl" />
+          <div className="flex-1 h-9 bg-border/30 rounded-xl" />
+        </div>
+
+        {/* Ticket Card Skeleton */}
+        <div className="bg-white rounded-3xl p-6 md:p-8 border border-border mb-6">
+          <div className="flex justify-between items-start mb-6">
+            <div>
+              <div className="h-3 w-28 bg-border/60 rounded mb-2" />
+              <div className="h-12 w-32 bg-border/80 rounded-xl mb-2" />
+              <div className="h-4 w-48 bg-border/50 rounded" />
+            </div>
+            <div className="h-7 w-28 bg-border/50 rounded-full" />
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 p-4 bg-off-white rounded-2xl border border-border">
+            <div className="h-12 bg-border/40 rounded-xl" />
+            <div className="h-12 bg-border/40 rounded-xl" />
+            <div className="h-12 bg-border/40 rounded-xl" />
           </div>
         </div>
 
-        {error && (
-          <div className="py-2.5 px-3.5 rounded-xl bg-danger-light text-danger text-xs sm:text-sm mb-4 border border-danger-border font-medium">
-            {error}
+        {/* Steps Timeline Skeleton */}
+        <div className="bg-white rounded-3xl p-6 md:p-8 border border-border">
+          <div className="h-5 w-40 bg-border/80 rounded mb-6" />
+          <div className="flex flex-col gap-4">
+            {[1, 2, 3, 4].map(i => (
+              <div key={i} className="flex items-center gap-4 p-4 rounded-2xl bg-off-white border border-border">
+                <div className="w-9 h-9 rounded-full bg-border/60 shrink-0" />
+                <div className="flex-1">
+                  <div className="h-4 w-40 bg-border/70 rounded mb-1.5" />
+                  <div className="h-3 w-56 bg-border/40 rounded" />
+                </div>
+                <div className="h-6 w-20 bg-border/40 rounded-full" />
+              </div>
+            ))}
           </div>
-        )}
-
-        {/* Navigation Tabs */}
-        <div className="flex gap-2 mb-6 bg-white p-1 sm:p-1.5 rounded-2xl border border-border shadow-2xs">
-          <button 
-            onClick={() => setActiveTab('active')}
-            className={`flex-1 py-2 sm:py-2.5 px-3 sm:px-4 rounded-xl border-none text-xs sm:text-sm font-bold cursor-pointer transition-all duration-200 font-sans ${activeTab === 'active' ? 'bg-maroon-light text-maroon shadow-2xs' : 'bg-transparent text-text-sub hover:bg-off-white'}`}
-          >
-            Active Queue Ticket
-          </button>
-          <button 
-            onClick={() => setActiveTab('upcoming')}
-            className={`flex-1 py-2 sm:py-2.5 px-3 sm:px-4 rounded-xl border-none text-xs sm:text-sm font-bold cursor-pointer transition-all duration-200 font-sans ${activeTab === 'upcoming' ? 'bg-maroon-light text-maroon shadow-2xs' : 'bg-transparent text-text-sub hover:bg-off-white'}`}
-          >
-            Upcoming Tickets
-          </button>
         </div>
+      </div>
+    );
+    if (embedded) return skeleton;
+    return <StudentLayout activeTab="queue" mobileTitle="My Queue">{skeleton}</StudentLayout>;
+  }
 
-        <div className={`${activeTab === 'active' ? 'block' : 'hidden'}`}>
+  const content = (
+    <>
+      <div className="flex-1 w-full pb-22 md:pb-0 px-4 md:px-0">
+      <div className="hidden md:flex justify-between items-start mb-8">
+        <div>
+          <div className="text-[11px] font-bold text-gold uppercase tracking-[0.06em] mb-2">LIVE TRACKING</div>
+          <h1 className="font-serif text-[26px] font-bold text-maroon m-0 mb-2 flex items-center gap-3">
+            <Ticket className="text-maroon" size={24} /> My Queue
+          </h1>
+          <p className="text-[12px] text-text-sub m-0 leading-relaxed max-w-162.5">
+            Monitor your active processing status and upcoming appointments.
+          </p>
+        </div>
+        <div className="text-[13px] text-text-sub font-medium flex items-center gap-2 mt-2">
+          <Link to="/student/dashboard" className="text-maroon hover:underline cursor-pointer">Home</Link>
+          <span className="text-border-strong">›</span>
+          <span>My Queue</span>
+        </div>
+      </div>
+
+      {error && (
+        <div className="py-2.5 px-3.5 rounded-xl bg-danger-light text-danger text-xs sm:text-sm mb-4 border border-danger-border font-medium">
+          {error}
+        </div>
+      )}
+
+      {/* Navigation Tabs */}
+      <div className="flex gap-2 mb-6 bg-white p-1 sm:p-1.5 rounded-2xl border border-border shadow-2xs">
+        <button 
+          onClick={() => setActiveTab('active')}
+          className={`flex-1 py-2 sm:py-2.5 px-3 sm:px-4 rounded-xl border-none text-xs sm:text-sm font-bold cursor-pointer transition-all duration-200 font-sans ${activeTab === 'active' ? 'bg-maroon-light text-maroon shadow-2xs' : 'bg-transparent text-text-sub hover:bg-off-white'}`}
+        >
+          Active Queue Ticket
+        </button>
+        <button 
+          onClick={() => setActiveTab('upcoming')}
+          className={`flex-1 py-2 sm:py-2.5 px-3 sm:px-4 rounded-xl border-none text-xs sm:text-sm font-bold cursor-pointer transition-all duration-200 font-sans ${activeTab === 'upcoming' ? 'bg-maroon-light text-maroon shadow-2xs' : 'bg-transparent text-text-sub hover:bg-off-white'}`}
+        >
+          Upcoming Tickets
+        </button>
+      </div>
+
+      <div className={`${activeTab === 'active' ? 'block' : 'hidden'}`}>
           {loading ? (
             <div className="flex flex-col gap-4">
               <div className="bg-white rounded-2xl p-6 border border-border shadow-sm">
@@ -228,7 +326,7 @@ export default function MyQueue() {
                     </h2>
                     <p className="text-[14px] text-text-sub m-0 mb-6 max-w-sm mx-auto leading-relaxed">
                       {releaseDate ? (
-                        <>Your transaction <strong className="text-maroon font-serif text-[18px]">{ticket.queue_number}</strong> is complete. Your document was released on <strong>{new Date(releaseDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' })}</strong>.</>
+                        <>Your transaction <strong className="text-maroon font-serif text-[18px]">{ticket.queue_number}</strong> is complete. Your document was released on <strong>{formatFullDate(releaseDate)}</strong>.</>
                       ) : (
                         <>Your transaction <strong className="text-maroon font-serif text-[18px]">{ticket.queue_number}</strong> is fully complete. Thank you!</>
                       )}
@@ -253,26 +351,36 @@ export default function MyQueue() {
                   <div className={`px-2.5 sm:px-3.5 py-1 sm:py-1.5 rounded-full text-[10px] sm:text-[11px] font-extrabold tracking-wider uppercase flex items-center gap-1 sm:gap-1.5 shrink-0 whitespace-nowrap ${
                     isReleaseActive
                       ? 'bg-success/10 text-success border border-success/20'
-                      : isFutureScheduled
+                      : isFutureScheduled && isCurrentStepRelease
+                      ? 'bg-gold/10 text-gold-dark border border-gold/25'
+                      : isCurrentStepDocPrepared
+                      ? 'bg-gold/10 text-gold-dark border border-gold/25'
+                      : isCurrentStepPrep
                       ? 'bg-gold/10 text-gold-dark border border-gold/25'
                       : ticket.status === 'in_progress' 
-                      ? 'bg-gold/10 text-gold-dark border border-gold/25' 
+                      ? 'bg-maroon/10 text-maroon border border-maroon/20' 
                       : 'bg-surface text-text-sub border border-border'
                   }`}>
                     <span className={`w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full shrink-0 ${
                       isReleaseActive
                         ? 'bg-success animate-pulse'
-                        : isFutureScheduled
+                        : isFutureScheduled && isCurrentStepRelease
                         ? 'bg-gold'
+                        : isCurrentStepDocPrepared || isCurrentStepPrep
+                        ? 'bg-gold animate-pulse'
                         : ticket.status === 'in_progress' 
-                        ? 'bg-gold animate-pulse' 
+                        ? 'bg-maroon animate-pulse' 
                         : 'bg-text-muted'
                     }`} />
                     <span>
                       {isReleaseActive 
                         ? 'Ready for Pickup' 
-                        : isFutureScheduled 
-                        ? `Scheduled (${new Date(releaseDateVal).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })})` 
+                        : isFutureScheduled && isCurrentStepRelease
+                        ? `Scheduled (${formatShortDate(releaseDateVal)})` 
+                        : isCurrentStepDocPrepared
+                        ? 'Finalizing Document'
+                        : isCurrentStepPrep
+                        ? 'Processing Document'
                         : ticket.status === 'in_progress' 
                         ? 'Serving Now' 
                         : 'In Line (Waiting)'}
@@ -391,8 +499,12 @@ export default function MyQueue() {
                     {steps.map((step, idx) => {
                       const isLast = idx === steps.length - 1
                       const stepRequiresPresence = step.requires_presence !== false
-                      const isRelease = step.step_name.toLowerCase().includes('release')
-                      const isPrep = step.step_name.toLowerCase().includes('preparation')
+                      const stepNameLower = (step.step_name || '').toLowerCase()
+                      const isRelease = stepNameLower.includes('release') || stepNameLower.includes('claim') || stepNameLower.includes('pickup')
+                      const isDocPrepared = stepNameLower.includes('document prepared') || stepNameLower.includes('document ready')
+                      const isPrep = !isDocPrepared && !isRelease && (stepNameLower.includes('preparation') || stepNameLower.includes('verification') || stepNameLower.includes('records') || !stepRequiresPresence)
+                      const isReceipt = stepNameLower.includes('receipt') || stepNameLower.includes('payment')
+                      
                       const isTicketWaiting = ticket.status === 'waiting' || ticket.status === 'pending'
                       const isActiveStep = step.status === 'in_progress' && !isTicketWaiting
                       const releaseWindow = step.location && !step.location.toLowerCase().includes('release') ? step.location : 'Window 1'
@@ -440,12 +552,14 @@ export default function MyQueue() {
                                     ? 'bg-success/10 text-success border border-success/20' :
                                   isActiveStep && isFutureScheduled && isRelease
                                     ? 'bg-gold/10 text-gold-dark border border-gold/25' :
+                                  isActiveStep && isDocPrepared
+                                    ? 'bg-gold/10 text-gold-dark border border-gold/25' :
                                   isActiveStep
                                     ? 'bg-maroon/10 text-maroon border border-maroon/20' :
                                     'bg-surface text-text-muted border border-border'
                                 }`}>
                                   {isActiveStep ? (
-                                    isReleaseActive ? 'Ready for Pickup' : isFutureScheduled && isRelease ? `Scheduled (${new Date(releaseDateVal).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })})` : (isPrep || !stepRequiresPresence ? 'Processing' : 'In Progress')
+                                    isReleaseActive ? 'Ready for Pickup' : isFutureScheduled && isRelease ? `Scheduled (${new Date(releaseDateVal).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })})` : isDocPrepared ? 'Finalizing' : (isPrep || !stepRequiresPresence ? 'Processing' : 'In Progress')
                                   ) : step.status === 'completed' ? 'Done' : (isTicketWaiting && idx === 0 ? 'Waiting in Line' : 'Queued')}
                                 </span>
                               </div>
@@ -532,27 +646,59 @@ export default function MyQueue() {
                                   )}
                                 </div>
                               )}
-                              {isActiveStep && isPrep && (
+
+                              {isActiveStep && isDocPrepared && (
+                                <div className="mt-3 flex flex-col gap-2.5 sm:gap-3">
+                                  <div className="p-3.5 sm:p-4 bg-gold/8 border border-gold/25 rounded-xl">
+                                    <p className="text-xs sm:text-[13px] text-gold-dark font-bold m-0 flex items-center gap-2">
+                                      <Sparkles size={14} className="shrink-0 text-gold" /> Finalizing Document for Release
+                                    </p>
+                                    <p className="text-[11px] sm:text-[12px] text-text-sub m-0 mt-1.5 leading-relaxed">
+                                      Your document records are verified. Staff is currently printing, signing, and dry-sealing the official copy.
+                                      {isFutureScheduled && releaseDateVal && (
+                                        <span className="block mt-1 font-semibold text-gold-dark">
+                                          Scheduled Pickup Date: {new Date(releaseDateVal).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}.
+                                        </span>
+                                      )}
+                                    </p>
+                                  </div>
+                                </div>
+                              )}
+
+                              {isActiveStep && isPrep && !isDocPrepared && (
                                 <div className="mt-2.5 p-3 bg-gold/6 border border-gold/15 rounded-xl">
                                   <p className="text-xs sm:text-[13px] text-gold font-bold m-0 flex items-center gap-2">
-                                    <Cog size={13} className="text-gold animate-spin shrink-0" style={{ animationDuration: '4s' }} /> Your requested document is now being prepared
+                                    <Cog size={13} className="text-gold animate-spin shrink-0" style={{ animationDuration: '4s' }} /> Your requested document records are being verified
                                   </p>
                                   <p className="text-[11px] sm:text-[11.5px] text-text-sub m-0 mt-1 ml-5 leading-relaxed">
-                                    No need to wait in line — we will notify you once it's ready.
+                                    No need to wait in line — we will notify you once it's prepared and ready for pickup.
                                   </p>
                                 </div>
                               )}
-                              {isActiveStep && !isRelease && !isPrep && stepRequiresPresence && (
+                              
+                              {isActiveStep && isReceipt && stepRequiresPresence && (
+                                <div className="mt-2.5 p-3 bg-gold/6 border border-gold/15 rounded-xl">
+                                  <p className="text-xs sm:text-[13px] text-gold font-bold m-0 flex items-center gap-2">
+                                    <Hourglass size={13} className="animate-pulse shrink-0" /> Please proceed to {step.location && !step.location.toLowerCase().includes('checking') ? step.location : 'Window 1'}
+                                  </p>
+                                  <p className="text-[11px] sm:text-[11.5px] text-text-sub m-0 mt-1 ml-5 leading-relaxed">
+                                    Present your queue ticket and official payment receipt to the registrar counter window.
+                                  </p>
+                                </div>
+                              )}
+
+                              {isActiveStep && !isRelease && !isDocPrepared && !isPrep && !isReceipt && stepRequiresPresence && (
                                 <div className="mt-2.5 p-3 bg-gold/6 border border-gold/15 rounded-xl">
                                   <p className="text-xs sm:text-[13px] text-gold font-bold m-0 flex items-center gap-2">
                                     <Hourglass size={13} className="animate-pulse shrink-0" /> Please proceed to {step.location && !step.location.toLowerCase().includes('checking') ? step.location : 'the counter'}
                                   </p>
                                   <p className="text-[11px] sm:text-[11.5px] text-text-sub m-0 mt-1 ml-5 leading-relaxed">
-                                    Present your queue ticket and receipt of payment to the registrar window.
+                                    Present your queue ticket and required requirements to the registrar window.
                                   </p>
                                 </div>
                               )}
-                              {isActiveStep && !isRelease && !isPrep && !stepRequiresPresence && (
+                              
+                              {isActiveStep && !isRelease && !isDocPrepared && !isPrep && !stepRequiresPresence && (
                                 <div className="mt-2.5 p-3 bg-surface border border-border rounded-xl">
                                   <p className="text-xs text-text-sub m-0 flex items-center gap-2 font-medium">
                                     <Cog size={13} className="text-text-muted animate-spin shrink-0" style={{ animationDuration: '3s' }} /> Being processed — no need to wait in line
@@ -596,122 +742,134 @@ export default function MyQueue() {
                 </div>
               ))}
             </div>
-          ) : upcomingAppts.length > 0 ? (
-            <div className="animate-fade-up">
-              <p className="text-[13px] m-0 mb-6 flex items-center gap-2 bg-blue-50 text-blue-800 p-3.5 rounded-xl border border-blue-100">
-                <Ticket size={16} className="text-blue-500" />
-                Activate your queue number when you arrive at the Registrar's Office.
-              </p>
-              <div className="flex flex-col gap-4">
-                {upcomingAppts.map(appt => {
-                  const isToday = appt.appointment_date === today;
-                  const apptTickets = Array.isArray(appt.queue_tickets) ? appt.queue_tickets : [];
-                  const activeTicket = apptTickets.find(qt => qt.status === 'waiting' || qt.status === 'in_progress');
-                  const isCurrentTicketForThisAppt = ticket && (ticket.appointment_id === appt.id || ticket.appointments?.id === appt.id);
-                  const liveTicketForAppt = activeTicket || (isCurrentTicketForThisAppt ? ticket : null);
+          ) : (() => {
+            const validUpcoming = upcomingAppts.filter(appt => {
+              const apptTickets = Array.isArray(appt.queue_tickets) ? appt.queue_tickets : (appt.queue_tickets ? [appt.queue_tickets] : []);
+              const hasActive = apptTickets.some(qt => qt.status === 'waiting' || qt.status === 'in_progress');
+              const isCurrent = ticket && (ticket.appointment_id === appt.id || ticket.appointments?.id === appt.id);
+              if (hasActive || isCurrent) return true;
+              return appt.appointment_date >= today;
+            });
+            if (validUpcoming.length === 0) {
+              return (
+                <div className="animate-fade-up text-center py-16 px-8 bg-white rounded-2xl border border-border shadow-sm">
+                  <div className="text-gold mb-4 flex justify-center"><Inbox size={48} /></div>
+                  <p className="text-[15px] font-semibold text-text-main m-0 mb-1.5">No upcoming appointments</p>
+                  <p className="text-[13px] text-text-sub m-0 mb-6">Queue numbers are only available on your appointment date.</p>
+                  <button onClick={() => navigate('/student/book')} className="py-2.5 px-6 rounded-lg border-none bg-maroon text-white text-[14px] font-semibold cursor-pointer hover:bg-maroon-dark transition-colors">
+                    Book an Appointment
+                  </button>
+                </div>
+              );
+            }
+            return (
+              <div className="animate-fade-up">
+                <p className="text-[13px] m-0 mb-6 flex items-center gap-2 bg-blue-50 text-blue-800 p-3.5 rounded-xl border border-blue-100">
+                  <Ticket size={16} className="text-blue-500" />
+                  Activate your queue number when you arrive at the Registrar's Office.
+                </p>
+                <div className="flex flex-col gap-4">
+                  {validUpcoming.map(appt => {
+                    const isToday = appt.appointment_date === today;
+                    const apptTickets = Array.isArray(appt.queue_tickets) ? appt.queue_tickets : [];
+                    const activeTicket = apptTickets.find(qt => qt.status === 'waiting' || qt.status === 'in_progress');
+                    const isCurrentTicketForThisAppt = ticket && (ticket.appointment_id === appt.id || ticket.appointments?.id === appt.id);
+                    const liveTicketForAppt = activeTicket || (isCurrentTicketForThisAppt ? ticket : null);
 
-                  const relDate = appt.release_date || liveTicketForAppt?.appointments?.release_date || liveTicketForAppt?.release_date;
-                  const isFutureApptScheduled = Boolean(relDate && relDate > today);
-                  const isReadyToday = Boolean(relDate && relDate <= today);
-                  const isReadyForPickup = !isFutureApptScheduled && (isReadyToday || (liveTicketForAppt && isReleaseActive));
-                  const isActivated = !isReadyForPickup && !isFutureApptScheduled && !!liveTicketForAppt && (liveTicketForAppt.status === 'waiting' || liveTicketForAppt.status === 'in_progress');
-                  const isAnotherTicketActiveForToday = ticket && ticket.status !== 'completed' && !isCurrentTicketForThisAppt && ((ticket.appointments?.appointment_date || ticket.appointment_date) === today);
+                    const relDate = appt.release_date || liveTicketForAppt?.appointments?.release_date || liveTicketForAppt?.release_date;
+                    const isFutureApptScheduled = Boolean(relDate && relDate > today);
+                    const isReadyToday = Boolean(relDate && relDate <= today);
+                    const isReadyForPickup = !isFutureApptScheduled && (isReadyToday || (liveTicketForAppt && isReleaseActive));
+                    const isActivated = !isReadyForPickup && !isFutureApptScheduled && !!liveTicketForAppt && (liveTicketForAppt.status === 'waiting' || liveTicketForAppt.status === 'in_progress');
+                    const isAnotherTicketActiveForToday = ticket && ticket.status !== 'completed' && !isCurrentTicketForThisAppt && ((ticket.appointments?.appointment_date || ticket.appointment_date) === today);
 
-                  return (
-                    <div key={appt.id} className="bg-white rounded-2xl border border-border p-6 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden group">
-                      <div className={`absolute top-0 left-0 w-1.5 h-full transition-colors ${
-                        isReadyForPickup ? 'bg-success' : (isFutureApptScheduled || isActivated) ? 'bg-gold' : 'bg-border group-hover:bg-maroon'
-                      }`} />
-                      
-                      <div className="flex flex-col sm:flex-row justify-between items-start gap-3 sm:gap-0 mb-4 pl-1">
-                        <div>
-                          <h3 className="text-[16px] font-bold text-text-main m-0 mb-1.5 leading-tight">{appt.transaction_types?.name}</h3>
-                          <span className="inline-flex items-center gap-1.5 text-[12px] font-semibold py-1 px-3 rounded-full bg-surface text-text-muted border border-border">
-                            <Calendar size={12} className="text-text-muted" /> {new Date(appt.appointment_date).toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' })} at {fmt12h(appt.time_slot)}
-                          </span>
+                    return (
+                      <div key={appt.id} className="bg-white rounded-2xl border border-border p-6 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden group">
+                        <div className={`absolute top-0 left-0 w-1.5 h-full transition-colors ${
+                          isReadyForPickup ? 'bg-success' : (isFutureApptScheduled || isActivated) ? 'bg-gold' : 'bg-border group-hover:bg-maroon'
+                        }`} />
+                        
+                        <div className="flex flex-col sm:flex-row justify-between items-start gap-3 sm:gap-0 mb-4 pl-1">
+                          <div>
+                            <h3 className="text-[16px] font-bold text-text-main m-0 mb-1.5 leading-tight">{appt.transaction_types?.name}</h3>
+                            <span className="inline-flex items-center gap-1.5 text-[12px] font-semibold py-1 px-3 rounded-full bg-surface text-text-muted border border-border">
+                              <Calendar size={12} className="text-text-muted" /> {new Date(appt.appointment_date).toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' })} at {fmt12h(appt.time_slot)}
+                            </span>
+                          </div>
+
+                          {/* Dynamic Status Badge */}
+                          {isReadyForPickup ? (
+                            <span className="shrink-0 text-[11px] font-extrabold py-1 px-3 rounded-full bg-success-light text-success border border-success-border uppercase tracking-wider self-start flex items-center gap-1.5">
+                              <FileCheck size={13} /> Ready for Pickup
+                            </span>
+                          ) : isFutureApptScheduled ? (
+                            <span className="shrink-0 text-[11px] font-extrabold py-1 px-3 rounded-full bg-gold-light text-gold border border-gold-border uppercase tracking-wider self-start flex items-center gap-1.5">
+                              <Calendar size={13} /> Scheduled ({new Date(relDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })})
+                            </span>
+                          ) : isActivated ? (
+                            <span className="shrink-0 text-[11px] font-extrabold py-1 px-3 rounded-full bg-gold-light text-gold border border-gold-border uppercase tracking-wider self-start flex items-center gap-1.5">
+                              <Clock size={13} /> In Progress
+                            </span>
+                          ) : (
+                            <span className="shrink-0 text-[11px] font-bold py-1 px-3 rounded-full bg-surface text-text-sub border border-border uppercase tracking-wider self-start">
+                              Confirmed
+                            </span>
+                          )}
                         </div>
-
-                        {/* Dynamic Status Badge */}
+                        
+                        {/* Dynamic Action Button */}
                         {isReadyForPickup ? (
-                          <span className="shrink-0 text-[11px] font-extrabold py-1 px-3 rounded-full bg-success-light text-success border border-success-border uppercase tracking-wider self-start flex items-center gap-1.5">
-                            <FileCheck size={13} /> Ready for Pickup
-                          </span>
-                        ) : isFutureApptScheduled ? (
-                          <span className="shrink-0 text-[11px] font-extrabold py-1 px-3 rounded-full bg-gold-light text-gold border border-gold-border uppercase tracking-wider self-start flex items-center gap-1.5">
-                            <Calendar size={13} /> Scheduled ({new Date(relDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })})
-                          </span>
+                          <button
+                            onClick={() => {
+                              setActiveTab('active');
+                              window.scrollTo({ top: 0, behavior: 'smooth' });
+                            }}
+                            className="w-full py-3.5 px-4 rounded-xl border border-success-border bg-success-light text-success hover:bg-success hover:text-white text-[14px] font-bold font-sans transition-all flex items-center justify-center gap-2 cursor-pointer shadow-xs hover:-translate-y-0.5"
+                          >
+                            <FileCheck size={16} /> Ready for Pickup • View Claim Stub
+                          </button>
+                        ) : isFutureApptScheduled && liveTicketForAppt ? (
+                          <button
+                            onClick={() => {
+                              setActiveTab('active');
+                              window.scrollTo({ top: 0, behavior: 'smooth' });
+                            }}
+                            className="w-full py-3.5 px-4 rounded-xl border border-gold-border bg-gold-light text-gold hover:bg-gold hover:text-white text-[14px] font-bold font-sans transition-all flex items-center justify-center gap-2 cursor-pointer shadow-xs hover:-translate-y-0.5"
+                          >
+                            <Calendar size={16} /> Scheduled for Release • View Queue Ticket ({liveTicketForAppt.queue_number})
+                          </button>
                         ) : isActivated ? (
-                          <span className="shrink-0 text-[11px] font-extrabold py-1 px-3 rounded-full bg-gold-light text-gold border border-gold-border uppercase tracking-wider self-start flex items-center gap-1.5">
-                            <Clock size={13} /> In Progress
-                          </span>
+                          <button
+                            onClick={() => {
+                              setActiveTab('active');
+                              window.scrollTo({ top: 0, behavior: 'smooth' });
+                            }}
+                            className="w-full py-3.5 px-4 rounded-xl border border-gold-border bg-gold-light text-gold hover:bg-gold hover:text-white text-[14px] font-bold font-sans transition-all flex items-center justify-center gap-2 cursor-pointer shadow-xs hover:-translate-y-0.5"
+                          >
+                            <Ticket size={16} /> In Progress • View Active Queue Ticket ({liveTicketForAppt.queue_number})
+                          </button>
                         ) : (
-                          <span className="shrink-0 text-[11px] font-bold py-1 px-3 rounded-full bg-surface text-text-sub border border-border uppercase tracking-wider self-start">
-                            Confirmed
-                          </span>
+                          <button
+                            onClick={() => setActivateConfirmId(appt.id)}
+                            disabled={activating === appt.id || !isToday || isAnotherTicketActiveForToday}
+                            title={isAnotherTicketActiveForToday ? "You already have an active queue ticket for today" : ""}
+                            className={`w-full py-3.5 px-4 rounded-xl border text-[14px] font-bold font-sans transition-all flex items-center justify-center gap-2 ${
+                              activating === appt.id ? 'bg-surface text-text-muted border-border cursor-wait' :
+                              !isToday ? 'bg-surface text-text-sub border-border cursor-not-allowed opacity-70' :
+                              isAnotherTicketActiveForToday ? 'bg-surface text-text-sub border-border cursor-not-allowed opacity-70' :
+                              'bg-gold text-white border-gold-dark cursor-pointer hover:bg-gold-light hover:text-gold hover:border-gold-light shadow-sm hover:-translate-y-0.5'
+                            }`}
+                          >
+                            {activating === appt.id ? 'Activating...' : !isToday ? 'Available on Appointment Date' : isAnotherTicketActiveForToday ? 'Another Ticket is Active' : <><Ticket size={16} /> Get Queue Number</>}
+                          </button>
                         )}
                       </div>
-                      
-                      {/* Dynamic Action Button */}
-                      {isReadyForPickup ? (
-                        <button
-                          onClick={() => {
-                            setActiveTab('active');
-                            window.scrollTo({ top: 0, behavior: 'smooth' });
-                          }}
-                          className="w-full py-3.5 px-4 rounded-xl border border-success-border bg-success-light text-success hover:bg-success hover:text-white text-[14px] font-bold font-sans transition-all flex items-center justify-center gap-2 cursor-pointer shadow-xs hover:-translate-y-0.5"
-                        >
-                          <FileCheck size={16} /> Ready for Pickup • View Claim Stub
-                        </button>
-                      ) : isFutureApptScheduled && liveTicketForAppt ? (
-                        <button
-                          onClick={() => {
-                            setActiveTab('active');
-                            window.scrollTo({ top: 0, behavior: 'smooth' });
-                          }}
-                          className="w-full py-3.5 px-4 rounded-xl border border-gold-border bg-gold-light text-gold hover:bg-gold hover:text-white text-[14px] font-bold font-sans transition-all flex items-center justify-center gap-2 cursor-pointer shadow-xs hover:-translate-y-0.5"
-                        >
-                          <Calendar size={16} /> Scheduled for Release • View Queue Ticket ({liveTicketForAppt.queue_number})
-                        </button>
-                      ) : isActivated ? (
-                        <button
-                          onClick={() => {
-                            setActiveTab('active');
-                            window.scrollTo({ top: 0, behavior: 'smooth' });
-                          }}
-                          className="w-full py-3.5 px-4 rounded-xl border border-gold-border bg-gold-light text-gold hover:bg-gold hover:text-white text-[14px] font-bold font-sans transition-all flex items-center justify-center gap-2 cursor-pointer shadow-xs hover:-translate-y-0.5"
-                        >
-                          <Ticket size={16} /> In Progress • View Active Queue Ticket ({liveTicketForAppt.queue_number})
-                        </button>
-                      ) : (
-                        <button
-                          onClick={() => setActivateConfirmId(appt.id)}
-                          disabled={activating === appt.id || !isToday || isAnotherTicketActiveForToday}
-                          title={isAnotherTicketActiveForToday ? "You already have an active queue ticket for today" : ""}
-                          className={`w-full py-3.5 px-4 rounded-xl border text-[14px] font-bold font-sans transition-all flex items-center justify-center gap-2 ${
-                            activating === appt.id ? 'bg-surface text-text-muted border-border cursor-wait' :
-                            !isToday ? 'bg-surface text-text-sub border-border cursor-not-allowed opacity-70' :
-                            isAnotherTicketActiveForToday ? 'bg-surface text-text-sub border-border cursor-not-allowed opacity-70' :
-                            'bg-gold text-white border-gold-dark cursor-pointer hover:bg-gold-light hover:text-gold hover:border-gold-light shadow-sm hover:-translate-y-0.5'
-                          }`}
-                        >
-                          {activating === appt.id ? 'Activating...' : !isToday ? 'Available on Appointment Date' : isAnotherTicketActiveForToday ? 'Another Ticket is Active' : <><Ticket size={16} /> Get Queue Number</>}
-                        </button>
-                      )}
-                    </div>
-                  );
-                })}
+                    );
+                  })}
+                </div>
               </div>
-            </div>
-          ) : (
-            <div className="animate-fade-up text-center py-16 px-8 bg-white rounded-2xl border border-border shadow-sm">
-              <div className="text-gold mb-4 flex justify-center"><Inbox size={48} /></div>
-              <p className="text-[15px] font-semibold text-text-main m-0 mb-1.5">No upcoming appointments</p>
-              <p className="text-[13px] text-text-sub m-0 mb-6">Queue numbers are only available on your appointment date.</p>
-              <button onClick={() => navigate('/student/book')} className="py-2.5 px-6 rounded-lg border-none bg-maroon text-white text-[14px] font-semibold cursor-pointer hover:bg-maroon-dark transition-colors">
-                Book an Appointment
-              </button>
-            </div>
-          )}
+            );
+          })()}
         </div>
       </div>
 
@@ -770,6 +928,9 @@ export default function MyQueue() {
         document.body
       )}
 
-    </StudentLayout>
-  )
+    </>
+  );
+
+  if (embedded) return content;
+  return <StudentLayout activeTab="queue" mobileTitle="My Queue">{content}</StudentLayout>;
 }

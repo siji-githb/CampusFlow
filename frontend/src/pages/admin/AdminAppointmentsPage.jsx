@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { createPortal } from 'react-dom'
 import { useAuth } from '../../context/useAuth'
+import { useStaffEvent } from '../../context/WebSocketContext'
 import { getDashboardStats, getAllAppointments, updateAppointmentStatus, getOfficeConfig, setDateOverride } from '../../services/adminService'
 import { rescheduleAppointment, getAvailableSlots } from '../../services/appointmentService'
 import { 
@@ -585,6 +586,12 @@ export default function AdminAppointmentsPage() {
     } finally { setApptLoading(false) }
   }, [token])
 
+  // Real-time WebSocket event listener for instant 0ms updates
+  useStaffEvent(['APPOINTMENTS_UPDATED', 'QUEUE_UPDATED'], () => {
+    loadAppointments(selectedDate)
+    getDashboardStats(token).then(setStats).catch(console.error)
+  })
+
   useEffect(() => {
     loadAppointments(selectedDate)
     setPage(1)
@@ -625,7 +632,7 @@ export default function AdminAppointmentsPage() {
   const isToday = selectedDate === today
 
   return (
-    <div>
+    <div className="animate-fade-up font-sans w-full pb-10">
       {/* ── Toast Notification ── */}
       {toastMsg && (
         <div className={`fixed bottom-10 right-8 z-9999 flex items-center gap-3 px-5 py-3.5 rounded-xl shadow-[0_12px_32px_rgba(0,0,0,0.18)] border text-[13.5px] font-bold animate-fade-up ${
@@ -648,14 +655,14 @@ export default function AdminAppointmentsPage() {
       )}
 
       {/* ── Page Header ── */}
-      <div className="flex items-end justify-between mb-7 flex-wrap gap-3">
+      <div className="flex items-end justify-between mb-6 flex-wrap gap-3">
         <div>
-          <div className="text-[11px] font-bold text-gold uppercase tracking-[0.06em] mb-2">APPOINTMENT SCHEDULING</div>
-          <h1 className="font-serif text-[26px] font-bold text-maroon m-0 mb-2 flex items-center gap-3">
-            <Calendar className="text-maroon" size={24} /> Appointments Management
+          <p className="text-[11px] font-bold text-gold tracking-widest uppercase m-0 mb-1.5">Appointment Scheduling</p>
+          <h1 className="font-serif text-[22px] sm:text-[26px] font-bold text-text-main m-0 mb-2 flex items-center gap-2.5 sm:gap-3">
+            <Calendar size={26} className="text-maroon shrink-0" /> Appointment Management
           </h1>
-          <p className="text-[12px] text-text-sub m-0 leading-relaxed max-w-162.5">
-            Manage student requests, review schedules, and confirm or reschedule appointments.
+          <p className="text-[12px] sm:text-[13px] text-text-sub mt-1.5 sm:mt-2 mb-0 leading-relaxed max-w-2xl">
+            Manage daily student appointment slots, reschedule bookings, and monitor attendance.
           </p>
         </div>
         <div className="flex gap-2.5 items-center">

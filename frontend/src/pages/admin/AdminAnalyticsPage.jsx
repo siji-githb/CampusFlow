@@ -598,22 +598,22 @@ export default function AdminAnalyticsPage() {
   }, [annualReports])
 
   return (
-    <div>
+    <div className="animate-fade-up font-sans w-full pb-10">
       {/* ── Page Header ── */}
-      <div className="flex items-end justify-between mb-7 flex-wrap gap-3">
+      <div className="flex items-end justify-between mb-6 flex-wrap gap-3">
         <div>
-          <div className="text-[11px] font-bold text-gold uppercase tracking-[0.06em] mb-2">SYSTEM ANALYTICS</div>
-          <h1 className="font-serif text-[26px] font-bold text-maroon m-0 mb-2 flex items-center gap-3">
-            <BarChart2 className="text-maroon" size={24} /> Analytics Dashboard
+          <p className="text-[11px] font-bold text-gold tracking-widest uppercase m-0 mb-1.5">System Analytics</p>
+          <h1 className="font-serif text-[22px] sm:text-[26px] font-bold text-text-main m-0 mb-2 flex items-center gap-2.5 sm:gap-3">
+            <BarChart2 size={26} className="text-maroon shrink-0" /> Analytics &amp; Reports
           </h1>
-          <p className="text-[12px] text-text-sub m-0 leading-relaxed max-w-162.5">
+          <p className="text-[12px] sm:text-[13px] text-text-sub mt-1.5 sm:mt-2 mb-0 leading-relaxed max-w-2xl">
             Review AI insights, analyze processing trends, and download annual reports.
           </p>
         </div>
       </div>
 
       {/* ── AI Insight Card ── */}
-      <div className="animate-fade-up bg-[#FDFCFB] rounded-2xl border border-maroon-border/40 p-7 mb-7 shadow-[0_2px_8px_rgba(0,0,0,0.04)]" style={{ animationDelay: '0.6s' }}>
+      <div className="animate-fade-up bg-[#FDFCFB] rounded-2xl border border-maroon-border/40 p-7 mb-7 shadow-[0_2px_8px_rgba(0,0,0,0.04)]" style={{ animationDelay: '0.1s' }}>
         <div className="flex items-start justify-between mb-5">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-maroon-light flex items-center justify-center text-maroon">
@@ -822,7 +822,7 @@ export default function AdminAnalyticsPage() {
       </div>
 
       {/* ── Filter Bar ── */}
-      <div className="flex items-center gap-4 p-4 bg-surface rounded-2xl border border-border mb-7 flex-wrap">
+      <div className="animate-fade-up flex items-center gap-4 p-4 bg-surface rounded-2xl border border-border mb-7 flex-wrap" style={{ animationDelay: '0.2s' }}>
         <FilterSelect label="Timeframe" value={viewType} onChange={setViewType} options={[
           { value: 'monthly', label: 'Monthly' },
           { value: 'annually', label: 'Annually' },
@@ -926,7 +926,7 @@ export default function AdminAnalyticsPage() {
 
       {/* ── Transaction Type Breakdown ── */}
       {!loading && filteredReportByType.length > 0 && (
-        <div className="mt-7 bg-white rounded-2xl border border-border p-7 shadow-[0_2px_8px_rgba(0,0,0,0.04)] mb-8">
+        <div className="animate-fade-up mt-7 bg-white rounded-2xl border border-border p-7 shadow-[0_2px_8px_rgba(0,0,0,0.04)] mb-8" style={{ animationDelay: '0.5s' }}>
           <div className="mb-6 border-b border-border pb-4">
             <p className="text-[10px] font-extrabold text-gold uppercase tracking-[0.08em] m-0 mb-1.5">Breakdown</p>
             <h2 className="font-serif text-[20px] font-bold text-text-main m-0">By Transaction Type</h2>

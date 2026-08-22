@@ -193,6 +193,7 @@ export const addStudentRecord = async (token, record) => {
   formData.append('first_name', record.first_name)
   formData.append('last_name', record.last_name)
   formData.append('course', record.course)
+  formData.append('priority_class', record.priority_class || 'regular')
 
   const res = await fetch(`${API_URL}/admin/student-records/`, {
     method: 'POST',
@@ -222,7 +223,7 @@ export const uploadStudentRecords = async (token, formData) => {
 }
 
 export const deleteStudentRecord = async (token, studentId) => {
-  const res = await fetch(`${API_URL}/admin/student-records/${studentId}`, {
+  const res = await fetch(`${API_URL}/admin/student-records/${encodeURIComponent(studentId)}`, {
     method: 'DELETE',
     headers: {
       'Authorization': `Bearer ${token}`
@@ -252,8 +253,9 @@ export const editStudentRecord = async (token, studentId, record) => {
   formData.append('first_name', record.first_name)
   formData.append('last_name', record.last_name)
   formData.append('course', record.course)
+  formData.append('priority_class', record.priority_class || 'regular')
 
-  const res = await fetch(`${API_URL}/admin/student-records/${studentId}`, {
+  const res = await fetch(`${API_URL}/admin/student-records/${encodeURIComponent(studentId)}`, {
     method: 'PATCH',
     headers: {
       'Authorization': `Bearer ${token}`,

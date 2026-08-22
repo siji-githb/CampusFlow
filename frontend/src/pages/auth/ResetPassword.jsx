@@ -69,7 +69,7 @@ export default function ResetPassword() {
     }
   }
 
-  const inpClass = `w-full rounded-lg border-[1.5px] border-border bg-off-white text-text-main outline-none box-border font-sans transition-colors duration-150 focus:border-maroon focus:ring-0 ${isMobile ? 'py-[13px] px-[14px] text-[15px] min-h-[52px]' : 'py-[11px] px-[14px] text-[14px]'}`
+  const inpClass = `w-full rounded-lg border-[1.5px] border-border bg-off-white text-text-main outline-none box-border font-sans transition-colors duration-150 focus:border-maroon focus:ring-0 ${isMobile ? 'py-[13px] pl-[42px] pr-[14px] text-[15px] min-h-[52px]' : 'py-[11px] pl-[40px] pr-[14px] text-[14px]'}`
 
   // Password strength indicator
   const getStrength = (pw) => {
@@ -150,7 +150,8 @@ export default function ResetPassword() {
         <form onSubmit={handleSubmit}>
           <div className="mb-4">
             <label className="block text-[11px] font-semibold text-text-sub mb-1.5 tracking-[0.06em] uppercase">New Password</label>
-            <div className="relative">
+            <div className="relative flex items-center">
+              <Lock size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
               <input
                 type={showPassword ? 'text' : 'password'}
                 value={password}
@@ -180,7 +181,8 @@ export default function ResetPassword() {
 
           <div className="mb-6">
             <label className="block text-[11px] font-semibold text-text-sub mb-1.5 tracking-[0.06em] uppercase">Confirm Password</label>
-            <div className="relative">
+            <div className="relative flex items-center">
+              <Lock size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
               <input
                 type={showConfirm ? 'text' : 'password'}
                 value={confirmPassword}

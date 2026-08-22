@@ -8,8 +8,8 @@ const SEARCH_ITEMS = [
   { id: 'appointments', label: 'My Appointments', icon: ClipboardList, path: '/student/appointments', type: 'page' },
   { id: 'queue', label: 'Live Queue Status', icon: Ticket, path: '/student/queue', type: 'page' },
   { id: 'ai-chat', label: 'Ask AI Assistant', icon: Bot, path: '/student/ai-chat', type: 'action', desc: 'Chat with our virtual guide' },
-  { id: 'profile', label: 'My Profile', icon: User, path: '#', type: 'page' },
-  { id: 'settings', label: 'Account Settings', icon: Settings, path: '#', type: 'page' },
+  { id: 'profile', label: 'My Profile', icon: User, path: '/student/profile', type: 'page' },
+  { id: 'settings', label: 'Account Settings', icon: Settings, path: '/student/profile', type: 'page' },
 ];
 
 export default function GlobalSearch({ isMobile = false, onAiPrompt }) {
@@ -86,10 +86,10 @@ export default function GlobalSearch({ isMobile = false, onAiPrompt }) {
   };
 
   return (
-    <div ref={containerRef} className={`relative ${isMobile ? '' : 'mr-auto hidden md:block'}`}>
+    <div ref={containerRef} className={`relative ${isMobile ? 'w-20 sm:w-32 focus-within:w-30 sm:focus-within:w-44 transition-all duration-200 shrink-0' : 'mr-auto hidden md:block'}`}>
       <Search 
-        size={isMobile ? 14 : 16} 
-        className={`absolute top-1/2 -translate-y-1/2 pointer-events-none ${isMobile ? 'left-3 text-slate-400' : 'left-4 text-slate-400'}`} 
+        size={isMobile ? 12 : 16} 
+        className={`absolute top-1/2 -translate-y-1/2 pointer-events-none ${isMobile ? 'left-2 text-slate-400' : 'left-4 text-slate-400'}`} 
       />
       <input 
         type="text" 
@@ -104,14 +104,14 @@ export default function GlobalSearch({ isMobile = false, onAiPrompt }) {
         }}
         onKeyDown={handleKeyDown}
         className={isMobile ? (
-          "bg-white border border-slate-200 text-slate-700 placeholder:text-slate-400 text-[12px] rounded-full py-1.5 pl-8 pr-3 w-[120px] focus:outline-none focus:bg-white focus:border-maroon/30 focus:ring-2 focus:ring-maroon/5 transition-all shadow-sm"
+          "w-full bg-white border border-slate-200 text-slate-700 placeholder:text-slate-400 text-[11px] sm:text-[11.5px] rounded-full py-1 sm:py-1.5 pl-6 sm:pl-6.5 pr-2 focus:outline-none focus:bg-white focus:border-maroon/30 focus:ring-2 focus:ring-maroon/5 transition-all shadow-2xs"
         ) : (
           "bg-slate-50 border border-slate-200 text-slate-700 text-[13.5px] font-sans rounded-full py-2.5 pl-10 pr-4 w-[320px] focus:outline-none focus:bg-white focus:border-maroon/30 focus:ring-4 focus:ring-maroon/5 transition-all shadow-[inset_0_2px_4px_rgba(0,0,0,0.02)]"
         )}
       />
 
       {isOpen && displayItems.length > 0 && (
-        <div className={`absolute left-0 top-full mt-2 bg-white rounded-[16px] shadow-[0_12px_40px_rgba(0,0,0,0.12),0_0_0_1px_rgba(0,0,0,0.04)] overflow-hidden z-50 flex flex-col py-2 transition-all origin-top ${isMobile ? 'w-[240px]' : 'w-[320px]'}`}>
+        <div className={`absolute top-full mt-2 bg-white rounded-2xl shadow-[0_12px_40px_rgba(0,0,0,0.12),0_0_0_1px_rgba(0,0,0,0.04)] overflow-hidden z-50 flex flex-col py-2 transition-all origin-top ${isMobile ? 'right-0 sm:left-0 w-60 max-w-[calc(100vw-32px)]' : 'left-0 w-[320px]'}`}>
           {displayItems.map((item, index) => {
             const Icon = item.icon;
             const isActive = index === activeIndex;

@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { createPortal } from 'react-dom'
 import { useAuth } from '../../context/useAuth'
+import { useStaffEvent } from '../../context/WebSocketContext'
 import { getTodaysQueue, confirmStep, callTicket, remindStudent, getLiveQueueStats } from '../../services/queueService'
 import { updateReleaseDate } from '../../services/adminService'
 import { getTransactionTypes } from '../../services/appointmentService'
@@ -29,18 +30,18 @@ const fmt12h = (t) => {
 }
 
 const MiniStat = ({ icon, value, label, sub, subColorClass = 'text-text-muted', loading, delay = '0s' }) => (
-  <div className="flex-1 bg-white rounded-[14px] border border-border shadow-[0_1px_4px_rgba(0,0,0,0.02)] px-5 py-4.5 flex flex-col gap-3 animate-fade-up" style={{ animationDelay: delay }}>
-    <div className="flex items-start justify-between">
-      <div className="text-[11px] font-bold text-text-muted uppercase tracking-[0.06em] mt-1.5">{label}</div>
-      <div className="w-9 h-9 rounded-[10px] bg-maroon-light flex items-center justify-center text-maroon shrink-0">
+  <div className="flex-1 bg-white rounded-xl sm:rounded-[14px] border border-border shadow-[0_1px_4px_rgba(0,0,0,0.02)] p-3.5 sm:px-5 sm:py-4.5 flex flex-col justify-between gap-2.5 sm:gap-3 animate-fade-up" style={{ animationDelay: delay }}>
+    <div className="flex items-start justify-between gap-2">
+      <div className="text-[10.5px] sm:text-[11px] font-bold text-text-muted uppercase tracking-[0.06em] mt-0.5 sm:mt-1.5 leading-tight">{label}</div>
+      <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-lg sm:rounded-[10px] bg-maroon-light flex items-center justify-center text-maroon shrink-0">
         {icon}
       </div>
     </div>
     <div>
-      <div className="font-serif text-[28px] font-extrabold text-text-main leading-none m-0 min-h-7">
-        {loading ? <div className="animate-pulse w-15 h-7 rounded-md bg-border" /> : value}
+      <div className="font-serif text-[22px] sm:text-[28px] font-extrabold text-text-main leading-none m-0 min-h-6 sm:min-h-7">
+        {loading ? <div className="animate-pulse w-15 h-6 sm:h-7 rounded-md bg-border" /> : value}
       </div>
-      {sub && <div className={`text-[11px] font-semibold mt-1.5 ${subColorClass}`}>{sub}</div>}
+      {sub && <div className={`text-[10.5px] sm:text-[11px] font-semibold mt-1 sm:mt-1.5 truncate ${subColorClass}`}>{sub}</div>}
     </div>
   </div>
 )
@@ -159,7 +160,7 @@ const FilterBar = ({ filters, onChange, onReset, availableTxTypes = [] }) => {
 }
 
 // ── Main LiveQueuePage ─────────────────────────────────────────────────────────
-export default function LiveQueuePage() {
+export default function LiveQueuePage({ onNavigate }) {
   const { token } = useAuth()
   const [queue, setQueue]       = useState([])
   const [loading, setLoading]   = useState(true)
@@ -207,9 +208,14 @@ export default function LiveQueuePage() {
     finally { setLoading(false) }
   }, [token])
 
+  // Real-time WebSocket event listener for instant 0ms updates
+  useStaffEvent(['QUEUE_UPDATED', 'WINDOW_UPDATED'], () => {
+    fetchQueue()
+  })
+
   useEffect(() => {
     fetchQueue()
-    const t = setInterval(fetchQueue, 15000)
+    const t = setInterval(fetchQueue, 60000)
     return () => clearInterval(t)
   }, [fetchQueue])
 
@@ -474,42 +480,42 @@ export default function LiveQueuePage() {
       <div className="flex items-start justify-between flex-wrap gap-3">
         <div>
           <p className="text-[11px] font-bold text-gold tracking-widest uppercase m-0 mb-1.5">Real-Time</p>
-          <h1 className="font-serif text-[26px] font-bold text-text-main m-0 flex items-center gap-2">
-            <Ticket size={24} className="text-maroon" /> Live Queue Management
+          <h1 className="font-serif text-[22px] sm:text-[26px] font-bold text-text-main m-0 flex items-center gap-2">
+            <Ticket size={24} className="text-maroon shrink-0" /> Live Queue Management
           </h1>
-          <p className="text-[12px] text-text-sub mt-2 mb-0">
+          <p className="text-[12px] sm:text-[13px] text-text-sub mt-1.5 sm:mt-2 mb-0">
             Monitor and manage the active flow of student transactions.
           </p>
         </div>
         <div className="flex items-center gap-2.5">
           {/* Current time */}
-          <div className="bg-white border border-border shadow-sm text-text-main px-4 py-2.25 rounded-xl text-[15px] font-bold font-sans flex items-center gap-2 mt-8">
-            <Clock size={18} strokeWidth={2.5} className="text-maroon" />
+          <div className="bg-white border border-border shadow-xs text-text-main px-3.5 py-1.5 sm:px-4 sm:py-2.25 rounded-xl text-[13px] sm:text-[15px] font-bold font-sans flex items-center gap-2 mt-2 sm:mt-8">
+            <Clock size={16} strokeWidth={2.5} className="text-maroon" />
             {currentTime}
           </div>
         </div>
       </div>
 
       {/* ── Stats Bar ── */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
+      <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3.5">
         <MiniStat 
-          icon={<Clock size={20} />} 
+          icon={<Clock size={18} />} 
           value={`${avgWait}m`} 
-          label="Average Wait Time" 
-          sub={avgWait > 15 ? "↑ Higher than avg" : "Fast processing"} 
+          label="Avg. Wait Time" 
+          sub={avgWait > 15 ? "↑ Higher wait" : "Fast processing"} 
           subColorClass={avgWait > 15 ? 'text-orange' : 'text-text-muted'} 
           loading={loading} delay="0.1s"
         />
         <MiniStat 
-          icon={<Users size={20} />} 
+          icon={<Users size={18} />} 
           value={waiting.length} 
           label="Waiting in Queue" 
-          sub={`${servingCounter.length} at the counter`} 
+          sub={`${servingCounter.length} at counter`} 
           subColorClass="text-text-muted" 
           loading={loading} delay="0.2s" 
         />
         <MiniStat 
-          icon={<FolderOpen size={20} />} 
+          icon={<FolderOpen size={18} />} 
           value={servingProcessing.length} 
           label="In Processing" 
           sub="Processing table" 
@@ -517,10 +523,10 @@ export default function LiveQueuePage() {
           loading={loading} delay="0.25s" 
         />
         <MiniStat 
-          icon={<CheckSquare size={20} />} 
+          icon={<CheckSquare size={18} />} 
           value={done.length} 
           label="Total Serviced" 
-          sub={done.length >= 80 ? 'High volume — Important' : 'Normal volume'} 
+          sub={done.length >= 80 ? 'High volume' : 'Normal volume'} 
           subColorClass={done.length >= 80 ? 'text-danger' : 'text-text-muted'} 
           loading={loading} delay="0.3s" 
         />
@@ -630,7 +636,7 @@ export default function LiveQueuePage() {
 
             <div className="overflow-x-auto rounded-2xl border border-border shadow-[0_4px_16px_rgba(0,0,0,0.02)] opacity-95">
               <div className="min-w-212.5">
-                {!loading && processingQueue.length > 0 && (
+                {(loading || processingQueue.length > 0) && (
                   <div className="grid grid-cols-[150px_1.5fr_1.2fr_220px_160px] gap-6 px-5 py-3 bg-surface/50 backdrop-blur-sm border-b border-border">
                     {['QUEUE NO.', 'STUDENT DETAILS', 'TRANSACTION', 'STATUS / PROGRESS', 'ACTION'].map(col => (
                       <div key={col} className="text-[10px] font-bold text-text-muted tracking-[0.06em] uppercase">{col}</div>
@@ -639,67 +645,36 @@ export default function LiveQueuePage() {
                 )}
 
                 <div className="bg-white">
-              {loading ? (
-                <div className="p-6 text-center text-xs text-text-muted">Loading…</div>
-              ) : processingQueue.length === 0 ? (
-                <div className="p-8 text-center border border-border rounded-[14px]">
-                  <div className="flex justify-center text-text-muted mb-2"><Inbox size={28} /></div>
-                  <p className="text-sm font-semibold text-text-main m-0 mb-1">Nothing in back-office processing</p>
+                  {loading ? (
+                    <div>
+                      {[1, 2, 3].map(i => (
+                        <div key={i} className={`grid grid-cols-[150px_1.5fr_1.2fr_220px_160px] gap-6 p-4 items-center ${i < 3 ? 'border-b border-border' : ''}`}>
+                          <div className="animate-pulse w-14 h-5 rounded bg-border" />
+                          <div>
+                            <div className="animate-pulse w-32 h-3.5 rounded bg-border mb-1.5" />
+                            <div className="animate-pulse w-20 h-3 rounded bg-border" />
+                          </div>
+                          <div>
+                            <div className="animate-pulse w-28 h-3.5 rounded bg-border mb-1.5" />
+                            <div className="animate-pulse w-16 h-3 rounded bg-border" />
+                          </div>
+                          <div className="animate-pulse w-24 h-5 rounded-full bg-border" />
+                          <div className="animate-pulse w-28 h-8 rounded-lg bg-border" />
+                        </div>
+                      ))}
+                    </div>
+                  ) : processingQueue.length === 0 ? (
+                    <div className="p-8 text-center border border-border rounded-[14px]">
+                      <div className="flex justify-center text-text-muted mb-2"><Inbox size={28} /></div>
+                      <p className="text-sm font-semibold text-text-main m-0 mb-1">Nothing in back-office processing</p>
+                    </div>
+                  ) : (
+                    processingQueue.map((item, idx) => renderQueueRow(item, idx, processingQueue.length, 'Mark Complete', false))
+                  )}
                 </div>
-              ) : (
-                processingQueue.map((item, idx) => renderQueueRow(item, idx, processingQueue.length, 'Mark Complete', false))
-              )}
               </div>
             </div>
           </div>
-          </div>
-
-          {/* Completed section */}
-          {done.length > 0 && !loading && (
-            <div className="mt-6">
-              <div className="flex items-center justify-between mb-2.5">
-                <p className="text-[11px] font-bold text-text-muted uppercase tracking-[0.06em] m-0">Completed Today — {done.length} tickets</p>
-                {done.length > 10 && (
-                  <div className="flex items-center gap-3">
-                    <span className="text-[11px] font-bold text-text-muted">
-                      Showing {(completedPage - 1) * 10 + 1}-{Math.min(completedPage * 10, done.length)} / {done.length}
-                    </span>
-                    <div className="flex gap-1">
-                      <button 
-                        onClick={() => setCompletedPage(p => Math.max(1, p - 1))}
-                        disabled={completedPage === 1}
-                        className="px-2.5 py-1 text-[11px] font-bold rounded bg-surface text-text-main border border-border disabled:opacity-50 disabled:cursor-not-allowed hover:bg-border transition-colors cursor-pointer"
-                      >
-                        Prev
-                      </button>
-                      <button 
-                        onClick={() => setCompletedPage(p => Math.min(Math.ceil(done.length / 10), p + 1))}
-                        disabled={completedPage >= Math.ceil(done.length / 10)}
-                        className="px-2.5 py-1 text-[11px] font-bold rounded bg-surface text-text-main border border-border disabled:opacity-50 disabled:cursor-not-allowed hover:bg-border transition-colors cursor-pointer"
-                      >
-                        Next
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </div>
-              <div className="flex flex-col gap-1.5">
-                {done.slice((completedPage - 1) * 10, completedPage * 10).map(({ ticket }) => (
-                  <div key={ticket.id} className="flex items-center justify-between px-4 py-3 rounded-[10px] bg-white border border-border hover:border-maroon-border transition-colors">
-                    <div className="flex items-center gap-3.5">
-                      <span className="font-serif font-bold text-text-muted text-[16px]">{ticket.queue_number}</span>
-                      <span className="text-[13px] text-text-sub">{ticket.users?.last_name}, {ticket.users?.first_name}</span>
-                      <span className="text-[11px] text-text-muted">{ticket.appointments?.transaction_types?.name}</span>
-                    </div>
-                    <span className="text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-blue-light text-blue border border-blue-border">Completed</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-
-
         </div>
       </div>
 
@@ -709,9 +684,9 @@ export default function LiveQueuePage() {
           ticketData={queue.find(q => q.ticket.id === viewingTicketId)} 
           onClose={() => setViewingTicketId(null)} 
           onConfirm={handleConfirm}
-
           confirming={confirming}
           onSetReleaseDate={handleSetReleaseDate}
+          onNavigate={onNavigate}
         />
       )}
 

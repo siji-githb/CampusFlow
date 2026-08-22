@@ -2,16 +2,61 @@ import { useState, useRef, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import StudentLayout from '../../components/layout/StudentLayout'
 import { useAuth } from '../../context/useAuth'
-import { Edit2, IdCard, Tag, LogOut, Trash2, X, Camera, Loader2, Eye, EyeOff, ShieldAlert, ShieldCheck, Clock, FileText, CheckCircle, Upload, Sparkles } from 'lucide-react'
+import { useStaffEvent } from '../../context/WebSocketContext'
+import { Edit2, IdCard, Tag, LogOut, Trash2, X, Camera, Loader2, Eye, EyeOff, ShieldAlert, ShieldCheck, Clock, FileText, CheckCircle, Upload, Sparkles, Bell, BellOff, Check, AlertCircle } from 'lucide-react'
 import { updateProfile, changePassword, logoutAllDevices, deleteAccount, updateProfilePicture, removeProfilePicture } from '../../services/authService'
 import { getMyPriorityStatus, submitPriorityRequest } from '../../services/priorityService'
 import { uploadMedia } from '../../services/appointmentService'
+import { isNotificationSupported, getPushStatus, setPushEnabled, requestNotificationPermission } from '../../utils/browserNotifications'
 
-export default function StudentProfile() {
+export default function StudentProfile({ embedded = false }) {
   const { user, token, updateUser, logout } = useAuth()
   
   const [isChangingPassword, setIsChangingPassword] = useState(false)
   const [isEditModalOpen, setIsEditModalOpen] = useState(false)
+  const [pushStatus, setPushStatus] = useState(() => getPushStatus())
+  const [toastMsg, setToastMsg] = useState(null)
+
+  const showToast = (text, type = 'success') => {
+    setToastMsg({ text, type })
+    setTimeout(() => setToastMsg(null), 3500)
+  }
+
+  useEffect(() => {
+    const handlePushToggle = () => {
+      setPushStatus(getPushStatus())
+    }
+    window.addEventListener('campusflow-push-toggle', handlePushToggle)
+    return () => window.removeEventListener('campusflow-push-toggle', handlePushToggle)
+  }, [])
+
+  const handleTogglePush = async () => {
+    if (!isNotificationSupported()) {
+      showToast('Browser notifications are not supported on this browser.', 'error')
+      return
+    }
+
+    if (Notification.permission === 'denied') {
+      showToast('Notifications are blocked in your browser settings. Please allow notifications in site permissions.', 'error')
+      return
+    }
+
+    if (pushStatus === 'active') {
+      setPushEnabled(false)
+      setPushStatus('disabled')
+      showToast('Desktop push notifications turned OFF.', 'info')
+    } else {
+      const permission = await requestNotificationPermission()
+      if (permission === 'granted') {
+        setPushEnabled(true)
+        setPushStatus('active')
+        showToast('Desktop push notifications turned ON! You will receive real-time queue & release alerts.', 'success')
+      } else {
+        setPushStatus(getPushStatus())
+        showToast('Notification permission was not granted.', 'error')
+      }
+    }
+  }
   
   // Password Visibility State
   const [showCurrentPassword, setShowCurrentPassword] = useState(false)
@@ -48,23 +93,30 @@ export default function StudentProfile() {
   const [isSubmittingPriority, setIsSubmittingPriority] = useState(false)
   const [uploadProgress, setUploadProgress] = useState(0)
   const [priorityMsg, setPriorityMsg] = useState({ type: '', text: '' })
+
+  const fetchStatus = () => {
+    if (!token) return
+    getMyPriorityStatus(token)
+      .then(status => {
+        setPriorityStatus(status)
+        if (status?.latest_request?.status === 'approved' && user?.priority_class !== status.latest_request.priority_type) {
+          updateUser({ ...user, priority_class: status.latest_request.priority_type })
+        }
+      })
+      .catch(console.error)
+      .finally(() => setLoadingPriority(false))
+  }
+
+  // Real-time WebSocket event listener for instant 0ms updates
+  useStaffEvent('PRIORITY_REQUESTS_UPDATED', () => {
+    fetchStatus()
+  })
+
   useEffect(() => {
     let interval;
     if (token) {
-      const fetchStatus = () => {
-        getMyPriorityStatus(token)
-          .then(status => {
-            setPriorityStatus(status)
-            // Automatically update the user tag in context if staff approved it
-            if (status?.latest_request?.status === 'approved' && user?.priority_class !== status.latest_request.priority_type) {
-              updateUser({ ...user, priority_class: status.latest_request.priority_type })
-            }
-          })
-          .catch(console.error)
-          .finally(() => setLoadingPriority(false))
-      }
       fetchStatus()
-      interval = setInterval(fetchStatus, 15000)
+      interval = setInterval(fetchStatus, 60000)
     }
     return () => clearInterval(interval)
   }, [token, user, updateUser])
@@ -80,45 +132,39 @@ export default function StudentProfile() {
     setUploadProgress(6)
     setPriorityMsg({ type: '', text: '' })
 
-    // Paced progress increments:
-    // Phase 1 (Upload): increments smoothly to ~45%
-    // Phase 2 (AI Vision scan): increments steadily to ~88%
     let phase = 1
     const progressTimer = setInterval(() => {
-      setUploadProgress(prev => {
+      setUploadProgress((prev) => {
         if (phase === 1) {
-          if (prev < 44) return prev + 2
-          return prev
-        } else {
-          if (prev < 88) return prev + 1
-          return prev
+          if (prev < 42) return prev + Math.floor(Math.random() * 8) + 4
+          phase = 2
+          return 46
         }
+        if (prev < 86) return prev + Math.floor(Math.random() * 6) + 3
+        return prev
       })
-    }, 180)
+    }, 280)
 
     try {
-      const uploadRes = await uploadMedia(token, priorityForm.file)
-      phase = 2
-      setUploadProgress(50)
+      const mediaRes = await uploadMedia(priorityForm.file, token)
+      setUploadProgress(92)
+      await submitPriorityRequest({
+        priority_type: priorityForm.type,
+        document_url: mediaRes.url
+      }, token)
 
-      await submitPriorityRequest(token, priorityForm.type, uploadRes.url)
       setUploadProgress(100)
-      clearInterval(progressTimer)
-
-      // Brief delay so student visibly sees 100% completed
-      await new Promise(resolve => setTimeout(resolve, 500))
-
-      const newStatus = await getMyPriorityStatus(token)
-      setPriorityStatus(newStatus)
-      setPriorityMsg({ type: 'success', text: 'Priority request submitted successfully!' })
-      setPriorityForm({ type: 'pwd', file: null })
+      setTimeout(() => {
+        clearInterval(progressTimer)
+        setIsSubmittingPriority(false)
+        setPriorityForm({ type: 'pwd', file: null })
+        setPriorityMsg({ type: 'success', text: 'Priority status request submitted successfully!' })
+        fetchStatus()
+      }, 400)
     } catch (err) {
       clearInterval(progressTimer)
-      setPriorityMsg({ type: 'error', text: err.message || 'Failed to submit request.' })
-    } finally {
-      clearInterval(progressTimer)
       setIsSubmittingPriority(false)
-      setUploadProgress(0)
+      setPriorityMsg({ type: 'error', text: err.message || 'Failed to submit priority request' })
     }
   }
 
@@ -137,8 +183,8 @@ export default function StudentProfile() {
 
   const handleCloseEditModal = () => {
     setIsEditModalOpen(false)
-    setProfileMsg({ type: '', text: '' })
-    // Clear preview memory
+    setPendingProfilePicture(null)
+    setPendingRemovePicture(false)
     if (previewImage && previewImage.startsWith('blob:')) {
       URL.revokeObjectURL(previewImage)
     }
@@ -240,7 +286,7 @@ export default function StudentProfile() {
       setTimeout(() => {
         setIsChangingPassword(false)
         setPasswordMsg({ type: '', text: '' })
-      }, 2000)
+      }, 1500)
     } catch (err) {
       setPasswordMsg({ type: 'error', text: err.message || 'Failed to change password' })
     } finally {
@@ -276,9 +322,68 @@ export default function StudentProfile() {
     }
   }
 
-  return (
-    <StudentLayout activeTab="profile" mobileTitle="Profile" backTo="/student/dashboard">
-      <div className="w-full max-w-5xl mx-auto px-3.5 sm:px-6 md:px-8 py-3 sm:py-6 pb-24 md:pb-12 box-border">
+  if (loadingPriority && !priorityStatus) {
+    const skeleton = (
+      <div className="flex-1 w-full pb-22 md:pb-0 px-4 md:px-0 animate-pulse">
+        {/* Header Skeleton */}
+        <div className="hidden md:flex justify-between items-center mb-8">
+          <div className="h-8 w-32 bg-border/80 rounded-lg" />
+          <div className="h-4 w-24 bg-border/40 rounded" />
+        </div>
+
+        <div className="flex flex-col gap-6">
+          {/* Profile Card Skeleton */}
+          <div className="bg-white rounded-3xl border border-border p-6 md:p-8 flex flex-col md:flex-row items-center gap-6">
+            <div className="w-24 h-24 rounded-full bg-border/60 shrink-0" />
+            <div className="flex-1 text-center md:text-left">
+              <div className="h-6 w-48 bg-border/70 rounded mb-2 mx-auto md:mx-0" />
+              <div className="h-4 w-36 bg-border/50 rounded mb-3 mx-auto md:mx-0" />
+              <div className="h-6 w-28 bg-border/40 rounded-full mx-auto md:mx-0" />
+            </div>
+            <div className="h-10 w-32 bg-border/50 rounded-xl shrink-0" />
+          </div>
+
+          {/* Priority Status Skeleton */}
+          <div className="bg-white rounded-3xl border border-border p-6 md:p-8">
+            <div className="h-5 w-36 bg-border/70 rounded mb-4" />
+            <div className="h-3.5 w-72 bg-border/40 rounded mb-6" />
+            <div className="grid grid-cols-2 gap-4 mb-6">
+              <div className="h-16 bg-off-white rounded-xl border border-border" />
+              <div className="h-16 bg-off-white rounded-xl border border-border" />
+            </div>
+            <div className="h-24 bg-off-white rounded-xl border-2 border-dashed border-border" />
+          </div>
+
+          {/* Push Notification Card Skeleton */}
+          <div className="bg-white rounded-3xl border border-border p-6 md:p-8 flex justify-between items-center">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-2xl bg-border/50 shrink-0" />
+              <div>
+                <div className="h-5 w-44 bg-border/70 rounded mb-2" />
+                <div className="h-3.5 w-64 bg-border/40 rounded" />
+              </div>
+            </div>
+            <div className="h-8 w-14 rounded-full bg-border/50" />
+          </div>
+
+          {/* Security Skeleton */}
+          <div className="bg-white rounded-3xl border border-border p-6 md:p-8 flex justify-between items-center">
+            <div>
+              <div className="h-5 w-36 bg-border/70 rounded mb-2" />
+              <div className="h-3.5 w-56 bg-border/40 rounded" />
+            </div>
+            <div className="h-10 w-36 bg-border/50 rounded-xl" />
+          </div>
+        </div>
+      </div>
+    );
+    if (embedded) return skeleton;
+    return <StudentLayout activeTab="profile" mobileTitle="Profile" backTo="/student/dashboard">{skeleton}</StudentLayout>;
+  }
+
+  const content = (
+    <>
+      <div className="flex-1 w-full pb-22 md:pb-0 px-4 md:px-0">
         
         {/* Header */}
         <div className="hidden md:flex justify-between items-center mb-8">
@@ -540,6 +645,82 @@ export default function StudentProfile() {
               </div>
             )}
           </div>
+
+          {/* Push Notifications Card (Directly Below Priority Status) */}
+          <div className="bg-white rounded-3xl border border-border p-6 sm:p-8 shadow-sm animate-fade-up" style={{ animationDelay: '0.05s' }}>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="flex items-start gap-4">
+                <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 border ${
+                  pushStatus === 'active' 
+                    ? 'bg-success-light/40 border-success-border text-success' 
+                    : pushStatus === 'denied'
+                    ? 'bg-red-50 border-red-200 text-danger'
+                    : 'bg-gold-light/40 border-gold-border text-gold'
+                }`}>
+                  {pushStatus === 'active' ? <Bell size={22} /> : <BellOff size={22} />}
+                </div>
+                <div>
+                  <div className="flex items-center gap-2.5 flex-wrap">
+                    <h3 className="font-serif text-[18px] md:text-[20px] font-bold text-text-main m-0">
+                      Push Notifications & Alerts
+                    </h3>
+                    <span className={`px-2.5 py-0.5 rounded-full text-[10.5px] font-extrabold uppercase tracking-wider border ${
+                      pushStatus === 'active'
+                        ? 'bg-success-light text-success border-success-border'
+                        : pushStatus === 'denied'
+                        ? 'bg-red-50 text-danger border-red-200'
+                        : 'bg-surface text-text-muted border-border'
+                    }`}>
+                      {pushStatus === 'active' ? 'Active' : pushStatus === 'denied' ? 'Blocked by Browser' : 'Disabled'}
+                    </span>
+                  </div>
+                  <p className="text-[13px] text-text-sub m-0 mt-1 leading-relaxed max-w-xl">
+                    Receive instant notifications when your number is called, requirements are verified, or documents are ready for pickup.
+                  </p>
+                </div>
+              </div>
+
+              <div className="shrink-0 self-start sm:self-center flex items-center gap-3">
+                <span className={`text-[13px] font-bold uppercase tracking-wider transition-colors ${
+                  pushStatus === 'active' ? 'text-maroon' : 'text-text-muted'
+                }`}>
+                  {pushStatus === 'active' ? 'ON' : 'OFF'}
+                </span>
+                <button
+                  type="button"
+                  role="switch"
+                  aria-checked={pushStatus === 'active'}
+                  onClick={handleTogglePush}
+                  title={pushStatus === 'active' ? 'Click to turn off alerts' : 'Click to turn on alerts'}
+                  className={`relative inline-flex h-8 w-14 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-maroon/20 shadow-inner ${
+                    pushStatus === 'active' ? 'bg-maroon' : 'bg-slate-200'
+                  }`}
+                >
+                  <span
+                    aria-hidden="true"
+                    className={`pointer-events-none h-7 w-7 transform rounded-full bg-white shadow-md ring-0 transition duration-200 ease-in-out flex items-center justify-center ${
+                      pushStatus === 'active' ? 'translate-x-6' : 'translate-x-0'
+                    }`}
+                  >
+                    {pushStatus === 'active' ? (
+                      <Bell size={13} className="text-maroon" />
+                    ) : (
+                      <BellOff size={13} className="text-text-muted" />
+                    )}
+                  </span>
+                </button>
+              </div>
+            </div>
+
+            {pushStatus === 'denied' && (
+              <div className="mt-4 p-3.5 bg-red-50/80 border border-red-200/80 rounded-xl flex items-center gap-2.5 text-[12px] text-red-700 font-medium">
+                <AlertCircle size={16} className="shrink-0 text-danger" />
+                <span>
+                  Notifications are blocked in your browser site settings. Click the lock/settings icon in your browser URL bar to allow notifications for CampusFlow.
+                </span>
+              </div>
+            )}
+          </div>
           
           {/* Security Card */}
           <div className="bg-white rounded-3xl border border-border p-8 shadow-sm animate-fade-up" style={{ animationDelay: '0.1s' }}>
@@ -735,6 +916,31 @@ export default function StudentProfile() {
           </div>
         </div>
       )}
-    </StudentLayout>
-  )
+      {/* Floating Toast Notification */}
+      {toastMsg && (
+        <div className={`fixed bottom-10 right-8 z-9999 flex items-center gap-3 px-5 py-3.5 rounded-xl shadow-[0_12px_32px_rgba(0,0,0,0.18)] border text-[13.5px] font-bold animate-fade-up ${
+          toastMsg.type === 'error'
+            ? 'bg-danger text-white border-danger-border'
+            : toastMsg.type === 'info'
+            ? 'bg-slate-800 text-white border-slate-700'
+            : 'bg-[#006600] text-white border-[#005200]'
+        }`}>
+          {toastMsg.type === 'error' ? (
+            <AlertCircle size={17} className="shrink-0 text-white" />
+          ) : (
+            <div className="w-5 h-5 rounded-full bg-white/20 flex items-center justify-center shrink-0">
+              <Check size={13} className="text-white stroke-3" />
+            </div>
+          )}
+          <span className="text-white">{toastMsg.text}</span>
+          <button onClick={() => setToastMsg(null)} className="ml-2.5 bg-transparent border-none text-white/80 hover:text-white cursor-pointer p-0 flex items-center shrink-0 transition-opacity">
+            <X size={14} strokeWidth={2.5} />
+          </button>
+        </div>
+      )}
+    </>
+  );
+
+  if (embedded) return content;
+  return <StudentLayout mobileTitle="Profile" backTo="/student/dashboard">{content}</StudentLayout>;
 }

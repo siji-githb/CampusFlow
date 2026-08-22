@@ -42,8 +42,8 @@ export const getUncollectedDocuments = async (token) => {
   return data
 }
 
-export const getCollectedDocuments = async (token) => {
-  const res = await fetch(`${API_URL}/queue/collected`, {
+export const getCollectedDocuments = async (token, limit = 500) => {
+  const res = await fetch(`${API_URL}/queue/collected?limit=${limit}`, {
     headers: authHeader(token)
   })
   const data = await res.json()
