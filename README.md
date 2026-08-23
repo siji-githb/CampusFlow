@@ -37,7 +37,6 @@ Optimized for high-throughput registrar counter operations:
 * **Document Release Desk**: Verification and claiming management for ready certificates, transcripts, and records.
 * **Academic Master List**: Fast student record verification during counter transactions.
 * **Priority Request Review**: Digital review and approval for student priority access requests.
-* **Direct Messaging**: Communication channel for student clarifications and transaction updates.
 
 ### 3. Admin Portal
 Comprehensive administrative governance and office configuration:
@@ -84,7 +83,6 @@ CampusFlow/
 │   │   ├── queue.py             # Queue operations & ticket lifecycle
 │   │   ├── admin.py             # Admin analytics & office config
 │   │   ├── ai.py                # AI virtual guide integration
-│   │   ├── messages.py          # Staff-student communication
 │   │   └── school_records.py    # Academic record management
 │   └── services/                # Core business logic layer
 │       ├── auth_service.py

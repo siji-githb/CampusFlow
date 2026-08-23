@@ -5,7 +5,6 @@ import StudentDashboard from './StudentDashboard'
 import BookAppointment from './BookAppointment'
 import MyAppointments from './MyAppointments'
 import MyQueue from './MyQueue'
-import StudentNotifications from './StudentNotifications'
 import StudentProfile from './StudentProfile'
 
 const TAB_CONFIG = {
@@ -13,7 +12,6 @@ const TAB_CONFIG = {
   book: { title: 'Book Appointment', activeNav: 'book', backTo: null },
   appointments: { title: 'My Appointments', activeNav: 'appointments', backTo: null },
   queue: { title: 'My Queue', activeNav: 'queue', backTo: null },
-  notifications: { title: 'Notifications', activeNav: '', backTo: '/student/dashboard' },
   profile: { title: 'Profile', activeNav: '', backTo: '/student/dashboard' },
 }
 
@@ -25,7 +23,6 @@ export default function StudentPortalShell() {
     if (p.includes('/student/book')) return 'book'
     if (p.includes('/student/appointments')) return 'appointments'
     if (p.includes('/student/queue')) return 'queue'
-    if (p.includes('/student/notifications')) return 'notifications'
     if (p.includes('/student/profile') || p.includes('/student/settings')) return 'profile'
     return 'dashboard'
   }, [location.pathname])
@@ -48,37 +45,31 @@ export default function StudentPortalShell() {
       backTo={currentConfig.backTo}
     >
       {visitedTabs.has('dashboard') && (
-        <div className={currentTab === 'dashboard' ? 'block w-full' : 'hidden'}>
+        <div className={currentTab === 'dashboard' ? 'block w-full animate-fade-up' : 'hidden'}>
           <StudentDashboard embedded={true} />
         </div>
       )}
 
       {visitedTabs.has('book') && (
-        <div className={currentTab === 'book' ? 'block w-full' : 'hidden'}>
+        <div className={currentTab === 'book' ? 'block w-full animate-fade-up' : 'hidden'}>
           <BookAppointment embedded={true} />
         </div>
       )}
 
       {visitedTabs.has('appointments') && (
-        <div className={currentTab === 'appointments' ? 'block w-full' : 'hidden'}>
+        <div className={currentTab === 'appointments' ? 'block w-full animate-fade-up' : 'hidden'}>
           <MyAppointments embedded={true} />
         </div>
       )}
 
       {visitedTabs.has('queue') && (
-        <div className={currentTab === 'queue' ? 'block w-full' : 'hidden'}>
+        <div className={currentTab === 'queue' ? 'block w-full animate-fade-up' : 'hidden'}>
           <MyQueue embedded={true} />
         </div>
       )}
 
-      {visitedTabs.has('notifications') && (
-        <div className={currentTab === 'notifications' ? 'block w-full' : 'hidden'}>
-          <StudentNotifications embedded={true} />
-        </div>
-      )}
-
       {visitedTabs.has('profile') && (
-        <div className={currentTab === 'profile' ? 'block w-full' : 'hidden'}>
+        <div className={currentTab === 'profile' ? 'block w-full animate-fade-up' : 'hidden'}>
           <StudentProfile embedded={true} />
         </div>
       )}

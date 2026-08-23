@@ -4,7 +4,6 @@ import { useAuth } from '../../context/useAuth'
 import { useStaffEvent } from '../../context/WebSocketContext'
 import campusFlowLogo from '../../assets/logo.png'
 import LiveQueuePage from './LiveQueuePage'
-import MessagesPage from './MessagesPage'
 import AppointmentsPage from './AppointmentsPage'
 import MasterListPage from './MasterListPage'
 import IdRequestsPage from './IdRequestsPage'
@@ -14,10 +13,9 @@ import PriorityRequestsPage from './PriorityRequestsPage'
 import DocumentReleasesPage from './DocumentReleasesPage'
 import { getTodaysQueue } from '../../services/queueService'
 import NotificationDropdown from '../../components/NotificationDropdown'
-import { getMessages, markMessageRead } from '../../services/messagesService'
 import { getAppointmentStats } from '../../services/appointmentService'
 import { getPendingPriorityRequests } from '../../services/priorityService'
-import { Inbox, MessageSquare, BarChart2, Ticket, Calendar, ClipboardList, LogOut, Users, User, Settings, CheckSquare, Clock, CalendarClock, Monitor, MonitorX, HelpCircle, LayoutDashboard, ShieldCheck, Loader2, Menu, X, PanelLeftClose, FolderOpen, AlertCircle, IdCard, ChevronRight } from 'lucide-react'
+import { Inbox, BarChart2, Ticket, Calendar, ClipboardList, LogOut, Users, User, Settings, CheckSquare, Clock, CalendarClock, Monitor, MonitorX, HelpCircle, LayoutDashboard, ShieldCheck, Loader2, Menu, X, PanelLeftClose, FolderOpen, AlertCircle, IdCard, ChevronRight } from 'lucide-react'
 import { getWindowAssignments, claimWindow, releaseWindow, getIdRequests } from '../../services/adminService'
 
 // ── Compact Queue Preview (Overview panel) ─────────────────────────────────────
@@ -127,53 +125,6 @@ const StatCard = ({ icon, value, label, sub, subColorClass = "text-text-muted", 
   </div>
 )
 
-// ── Compact Messages Preview (Overview panel) ──────────────────────────────────
-function CompactMessagesPreview() {
-  const { token } = useAuth()
-  const [messages, setMessages] = useState([])
-  const [loading, setLoading] = useState(true)
-
-  useEffect(() => {
-    getMessages(token).then(setMessages).catch(() => { }).finally(() => setLoading(false))
-  }, [token])
-
-  const unread = messages.filter(m => !m.is_read).slice(0, 3)
-
-  if (loading) return (
-    <div className="flex flex-col gap-2">
-      {[1,2,3].map(i => <div key={i} className="h-16 rounded-xl animate-pulse bg-border" />)}
-    </div>
-  )
-
-  if (unread.length === 0) return (
-    <div className="text-center py-7 text-text-muted text-[13px]">
-      <div className="mb-2 flex justify-center"><MessageSquare size={32} /></div>
-      No new escalations
-    </div>
-  )
-
-  return (
-    <div className="flex flex-col gap-2">
-      {unread.map(msg => {
-        const name = msg.users ? `${msg.users.first_name} ${msg.users.last_name}` : 'Unknown Student'
-        const raw = msg.content || ''
-        const body = (raw.match(/^\[.*?\]\s*\n\n([\s\S]*)/) || [])[1]?.trim() || raw
-        return (
-          <div key={msg.id} className="bg-white rounded-xl border border-maroon-border px-3.5 py-3 shadow-[0_1px_6px_rgba(123,26,42,0.06)]">
-            <div className="flex items-center justify-between mb-1">
-              <span className="text-[13px] font-bold text-text-main">{name}</span>
-              {msg.priority === 'urgent' && <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-danger-light text-danger border border-danger-border">URGENT</span>}
-            </div>
-            <p className="text-xs text-text-sub m-0 leading-relaxed line-clamp-2">
-              {body}
-            </p>
-          </div>
-        )
-      })}
-    </div>
-  )
-}
-
 // ── Main StaffDashboard ────────────────────────────────────────────────────────
 export default function StaffDashboard() {
   const { user, requestLogout, token } = useAuth()
@@ -198,7 +149,7 @@ export default function StaffDashboard() {
   const [queue, setQueue] = useState([])
   const [priorityData, setPriorityData] = useState([])
   const [idRequestsData, setIdRequestsData] = useState([])
-  const [badgeStats, setBadgeStats] = useState({ messages: 0, idRequests: 0, priorityRequests: 0 })
+  const [badgeStats, setBadgeStats] = useState({ idRequests: 0, priorityRequests: 0 })
   const [loadingQueue, setLoadingQueue] = useState(true)
   const [apptStats, setApptStats] = useState({ today_appointments: 0, completed_today: 0, total_monthly: 0 })
 
@@ -237,10 +188,9 @@ export default function StaffDashboard() {
   const loadData = useCallback(async () => {
     if (!token) return
     try {
-      const [qData, aStats, msgs, reqs, priorityReqs] = await Promise.all([
+      const [qData, aStats, reqs, priorityReqs] = await Promise.all([
         getTodaysQueue(token).catch(() => []),
         getAppointmentStats(token).catch(() => ({ today_appointments: 0, completed_today: 0, total_monthly: 0 })),
-        getMessages(token).catch(() => []),
         getIdRequests(token).catch(() => []),
         getPendingPriorityRequests(token).catch(() => [])
       ])
@@ -249,7 +199,6 @@ export default function StaffDashboard() {
       setPriorityData(priorityReqs)
       setIdRequestsData(reqs.filter(r => r.status === 'pending'))
       setBadgeStats({
-        messages: msgs.filter(m => !m.is_read).length,
         idRequests: reqs.filter(r => r.status === 'pending').length,
         priorityRequests: priorityReqs.length
       })
@@ -259,7 +208,7 @@ export default function StaffDashboard() {
 
   // Real-time WebSocket event listener for instant 0ms updates
   useStaffEvent(
-    ['QUEUE_UPDATED', 'WINDOW_UPDATED', 'APPOINTMENTS_UPDATED', 'PRIORITY_REQUESTS_UPDATED', 'ID_REQUESTS_UPDATED', 'RELEASES_UPDATED', 'MESSAGES_UPDATED'],
+    ['QUEUE_UPDATED', 'WINDOW_UPDATED', 'APPOINTMENTS_UPDATED', 'PRIORITY_REQUESTS_UPDATED', 'ID_REQUESTS_UPDATED', 'RELEASES_UPDATED'],
     () => {
       loadData()
       loadWindowData()
@@ -331,7 +280,6 @@ export default function StaffDashboard() {
         { id: 'priority-requests', icon: <ShieldCheck size={18} />, label: 'Priority Requests', badge: badgeStats.priorityRequests },
         { id: 'id-requests', icon: <HelpCircle size={18} />, label: 'Id Requests', badge: badgeStats.idRequests },
         { id: 'records', icon: <ClipboardList size={18} />, label: 'Master List' },
-        { id: 'messages', icon: <MessageSquare size={18} />, label: 'Messages', badge: badgeStats.messages },
       ]
     }
   ]
@@ -599,7 +547,7 @@ export default function StaffDashboard() {
                 ))}
               </div>
 
-              {/* Two-column: Queue preview + AI Escalations */}
+              {/* Two-column: Queue preview + Priority Requests */}
               <div className="grid grid-cols-1 lg:grid-cols-[5fr_3fr] gap-4 sm:gap-6">
 
                 {/* Live Queue Preview */}
@@ -676,13 +624,6 @@ export default function StaffDashboard() {
           {visitedTabs.has('queue') && (
             <div className={activeNav === 'queue' ? 'block' : 'hidden'}>
               <LiveQueuePage onNavigate={handleNavChange} />
-            </div>
-          )}
-
-          {/* ──── MESSAGES VIEW ──── */}
-          {visitedTabs.has('messages') && (
-            <div className={activeNav === 'messages' ? 'block' : 'hidden'}>
-              <MessagesPage />
             </div>
           )}
 

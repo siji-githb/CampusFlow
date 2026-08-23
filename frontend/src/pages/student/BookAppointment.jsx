@@ -365,7 +365,7 @@ export default function BookAppointment({ embedded = false }) {
 
   if (types.length === 0 && !error) {
     const skeleton = (
-      <div className="flex-1 w-full pb-22 md:pb-0 px-4 md:px-0 animate-pulse">
+      <div className="flex-1 w-full pt-4 sm:pt-5 md:pt-0 pb-22 md:pb-0 px-4 md:px-0 animate-pulse">
         <div className="hidden md:flex justify-between items-start mb-8">
           <div>
             <div className="h-3 w-24 bg-border/60 rounded mb-2" />
@@ -394,10 +394,10 @@ export default function BookAppointment({ embedded = false }) {
   }
 
   const content = (
-    <div className="flex-1 w-full pb-22 md:pb-0 px-4 md:px-0">
+    <div className="flex-1 w-full pt-4 sm:pt-5 md:pt-0 pb-22 md:pb-0 px-4 md:px-0 animate-fade-up">
 
         {/* Desktop Header */}
-        <div className="hidden md:flex justify-between items-start mb-8">
+        <div className="hidden md:flex justify-between items-start mb-8 animate-fade-up" style={{ animationDelay: '0.05s' }}>
           <div>
             <div className="text-[11px] font-bold text-gold uppercase tracking-[0.06em] mb-2">SCHEDULING</div>
             <h1 className="font-serif text-[26px] font-bold text-maroon m-0 mb-2 flex items-center gap-3">
@@ -417,7 +417,7 @@ export default function BookAppointment({ embedded = false }) {
         <div className="md:flex md:gap-8 md:items-start">
           
           {/* ── Left Column: Tracker & Summary ── */}
-          <div className="w-full md:w-64 lg:w-72 shrink-0 md:sticky md:top-24 mb-4 md:mb-0">
+          <div className="w-full md:w-64 lg:w-72 shrink-0 md:sticky md:top-24 mb-4 md:mb-0 animate-fade-up" style={{ animationDelay: '0.1s' }}>
             <Stepper step={step} />
             
             <div className="hidden md:block mt-6 bg-white rounded-2xl border border-border shadow-sm overflow-hidden">
@@ -458,7 +458,7 @@ export default function BookAppointment({ embedded = false }) {
           </div>
 
           {/* ── Right Column: Form Area ── */}
-          <div className="flex-1 md:min-w-0 md:bg-white md:p-8 md:rounded-3xl md:border md:border-border md:shadow-sm">
+          <div className="flex-1 md:min-w-0 md:bg-white md:p-8 md:rounded-3xl md:border md:border-border md:shadow-sm animate-fade-up" style={{ animationDelay: '0.15s' }}>
 
             {error && (
               <div className="py-2.5 px-3.5 rounded-xl bg-danger-light border border-danger-border text-danger text-xs sm:text-sm mb-4 font-medium flex items-center gap-2">

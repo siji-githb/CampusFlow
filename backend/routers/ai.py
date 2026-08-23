@@ -14,7 +14,7 @@ class ChatRequest(BaseModel):
 
 
 @router.post("/chat")
-@limiter.limit("15/minute")
+@limiter.limit("10/day;5/minute")
 def chat_endpoint(request: Request, data: ChatRequest, user=Depends(get_current_user)):
     return chat(user.id, data.message)
 
@@ -32,4 +32,12 @@ def clear_chat(user=Depends(get_current_user)):
 
 @router.get("/health")
 def health():
-    return {"status": "ok", "module": "ai", "model": settings.openai_model}
+    primary_active = bool(settings.gemini_api_key and settings.gemini_api_key.strip())
+    return {
+        "status": "ok",
+        "module": "ai",
+        "primary_provider": "Google Gemini" if primary_active else "None",
+        "primary_model": settings.gemini_model if primary_active else None,
+        "fallback_provider": "OpenRouter",
+        "fallback_model": settings.fallback_model
+    }

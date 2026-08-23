@@ -670,7 +670,7 @@ export default function MyAppointments({ embedded = false }) {
 
   if (loading && appointments.length === 0) {
     const skeleton = (
-      <div className="flex-1 w-full pb-22 md:pb-0 px-4 md:px-0 animate-pulse">
+      <div className="flex-1 w-full pt-4 sm:pt-5 md:pt-0 pb-22 md:pb-0 px-4 md:px-0 animate-pulse">
         {/* Header Skeleton */}
         <div className="hidden md:flex justify-between items-start mb-8">
           <div>
@@ -713,10 +713,10 @@ export default function MyAppointments({ embedded = false }) {
 
   const content = (
     <>
-      <div className="flex-1 w-full pb-22 md:pb-0 px-4 md:px-0">
+      <div className="flex-1 w-full pt-4 sm:pt-5 md:pt-0 pb-22 md:pb-0 px-4 md:px-0 animate-fade-up">
         
         {/* Desktop Header */}
-        <div className="hidden md:flex justify-between items-start mb-8">
+        <div className="hidden md:flex justify-between items-start mb-8 animate-fade-up" style={{ animationDelay: '0.05s' }}>
           <div>
             <div className="text-[11px] font-bold text-gold uppercase tracking-[0.06em] mb-2">MY SCHEDULE</div>
             <h1 className="font-serif text-[26px] font-bold text-maroon m-0 mb-2 flex items-center gap-3">
@@ -734,7 +734,10 @@ export default function MyAppointments({ embedded = false }) {
         </div>
 
         {/* Action Controls & Notifications (Hidden on mobile when viewing in-page details) */}
-        <div className={`flex-col gap-4 mb-6 ${isMobileViewingDetails ? 'hidden md:flex' : 'flex'}`}>
+        <div 
+          className={`flex-col gap-4 mb-6 animate-fade-up ${isMobileViewingDetails ? 'hidden md:flex' : 'flex'}`}
+          style={{ animationDelay: '0.1s' }}
+        >
           {error && (
             <div className="p-3.5 rounded-xl bg-red-50 border border-red-200 text-danger text-[13px] font-medium flex items-center gap-2">
               <AlertTriangle size={16} /> {error}
@@ -800,7 +803,7 @@ export default function MyAppointments({ embedded = false }) {
         <div className={`flex-col md:flex-row md:gap-8 md:items-start ${isMobileViewingDetails ? 'hidden md:flex' : 'flex'}`}>
           
           {/* ── Left Column: Appointments List ── */}
-          <div className="flex-1 w-full md:max-w-125">
+          <div className="flex-1 w-full md:max-w-125 animate-fade-up" style={{ animationDelay: '0.15s' }}>
             {loading ? (
               <div className="flex flex-col gap-3">
                 {[1, 2, 3].map(i => (
@@ -922,9 +925,9 @@ export default function MyAppointments({ embedded = false }) {
           </div>
 
           {/* ── Right Column: Details (Desktop View) ── */}
-          <div className="hidden md:flex flex-col flex-1 bg-white border border-border rounded-3xl p-8 shadow-sm">
+          <div className="hidden md:flex flex-col flex-1 bg-white border border-border rounded-3xl p-8 shadow-sm animate-fade-up" style={{ animationDelay: '0.2s' }}>
             {selectedAppt ? (
-              <div className="animate-fade-up flex flex-col h-full">
+              <div className="flex flex-col h-full">
                 <AppointmentDetailsContent 
                   selectedAppt={selectedAppt}
                   navigate={navigate}

@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
-from routers import auth, appointments, queue, admin, ai, messages, school_records, notifications
+from routers import auth, appointments, queue, admin, ai, school_records, notifications
 from rate_limit import limiter
 from routers import priority
 
@@ -13,10 +13,24 @@ app = FastAPI(
     version="1.0.0",
 )
 
+from fastapi.responses import JSONResponse
+from starlette.requests import Request
+
 # Rate limiting — protects auth endpoints from brute force and /ai/chat from
-# being hammered (each call costs an OpenAI request).
+# being hammered (each call costs an AI request).
 app.state.limiter = limiter
-app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
+def custom_rate_limit_handler(request: Request, exc: RateLimitExceeded):
+    detail_str = str(exc.detail).lower()
+    if "day" in detail_str:
+        msg = "Daily prompt limit reached. You can send up to 10 AI questions per day. Please try again tomorrow, or visit the Registrar's Office in person for assistance."
+    elif "minute" in detail_str:
+        msg = "You are sending messages too quickly. Please wait a moment before sending another message."
+    else:
+        msg = f"Rate limit exceeded: {exc.detail}"
+    return JSONResponse(status_code=429, content={"detail": msg})
+
+app.add_exception_handler(RateLimitExceeded, custom_rate_limit_handler)
 app.add_middleware(SlowAPIMiddleware)
 
 # CORS — allows React frontend to talk to this API
@@ -39,7 +53,6 @@ app.include_router(appointments.router)
 app.include_router(queue.router)
 app.include_router(admin.router)
 app.include_router(ai.router)
-app.include_router(messages.router)
 app.include_router(school_records.router)
 app.include_router(notifications.router)
 app.include_router(priority.router)

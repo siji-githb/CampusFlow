@@ -32,7 +32,7 @@ def scan_document_legitimacy(document_url: str, priority_type: str) -> dict:
     """
     try:
         from openai import OpenAI
-        client = OpenAI(api_key=settings.openai_api_key, base_url=settings.openai_base_url)
+        client = OpenAI(api_key=settings.fallback_api_key, base_url=settings.fallback_base_url)
 
         expected_doc = (
             "a Philippine PWD (Person with Disability) ID card issued by an LGU or NCDA"
@@ -49,7 +49,7 @@ def scan_document_legitimacy(document_url: str, priority_type: str) -> dict:
         )
 
         resp = client.chat.completions.create(
-            model=settings.openai_vision_model,
+            model=settings.fallback_vision_model,
             max_tokens=400,
             temperature=0,
             messages=[{

@@ -28,31 +28,6 @@ def create_system_notification(user_id: str, title: str, message: str, type: str
     except Exception as e:
         logger.error(f"Failed to create notification for {user_id}: {e}")
 
-def notify_staff_urgent_message(student_name: str):
-    """
-    Finds all staff users and sends them an urgent notification.
-    """
-    try:
-        admin = get_admin_client()
-        # Fetch staff users only
-        res = admin.table("users").select("id").eq("role", "staff").execute()
-        if not res.data:
-            return
-            
-        notifications = [{
-            "user_id": u["id"],
-            "title": "Urgent Message Escalated",
-            "message": f"An urgent message requires your attention from {student_name}.",
-            "type": "warning"
-        } for u in res.data]
-        
-        res_insert = admin.table("notifications").insert(notifications).execute()
-        if res_insert.data:
-            for notif in res_insert.data:
-                manager.send_personal_message_sync(notif, notif["user_id"])
-    except Exception as e:
-        logger.error(f"Failed to notify staff of urgent message: {e}")
-
 def notify_staff_id_request(student_name: str):
     """
     Finds all staff users and sends them a notification about a new ID request.

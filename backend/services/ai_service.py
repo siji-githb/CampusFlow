@@ -5,16 +5,54 @@ from config import get_settings
 from datetime import date, datetime
 import json
 import re
-from services.notification_service import notify_staff_urgent_message
+import logging
 from deps import get_supabase_admin as get_admin
 
 settings = get_settings()
+logger = logging.getLogger(__name__)
+
+
+def get_ai_providers():
+    """
+    Returns configured AI providers in priority order:
+    1. Google Gemini (Primary via Google AI Studio)
+    2. OpenRouter / OpenAI (Fallback)
+    """
+    providers = []
+    
+    # 1. Primary: Google Gemini via Google AI Studio OpenAI-compatible endpoint
+    if settings.gemini_api_key and settings.gemini_api_key.strip():
+        providers.append({
+            "name": "Google Gemini (Primary)",
+            "client": OpenAI(
+                api_key=settings.gemini_api_key.strip(),
+                base_url=settings.gemini_base_url.strip() or "https://generativelanguage.googleapis.com/v1beta/openai/",
+            ),
+            "model": settings.gemini_model.strip() or "gemini-3.6-flash",
+        })
+
+    # 2. Fallback: OpenRouter
+    if settings.fallback_api_key and settings.fallback_api_key.strip() and settings.fallback_api_key != "placeholder":
+        providers.append({
+            "name": "OpenRouter (Fallback)",
+            "client": OpenAI(
+                api_key=settings.fallback_api_key.strip(),
+                base_url=settings.fallback_base_url.strip(),
+            ),
+            "model": settings.fallback_model.strip(),
+        })
+
+    return providers
 
 
 def get_openai_client():
+    """Returns the primary active AI client for backward compatibility."""
+    providers = get_ai_providers()
+    if providers:
+        return providers[0]["client"]
     return OpenAI(
-        api_key=settings.openai_api_key,
-        base_url=settings.openai_base_url,
+        api_key=settings.fallback_api_key,
+        base_url=settings.fallback_base_url,
     )
 
 
@@ -47,13 +85,13 @@ def get_system_prompt():
     for tt in transaction_types:
         tt_info += f"\n- {tt['name']}: requires {', '.join(tt.get('required_documents') or [])}"
 
-    return f"""You are CampusFlow Assistant, an AI scheduling helper for the Registrar's Office of Cebu Roosevelt Memorial Colleges (CRMC).
+    return f"""You are CampusFlow Assistant, an AI scheduling helper dedicated exclusively to the Registrar's Office of Cebu Roosevelt Memorial Colleges (CRMC).
 
 You help students with:
-1. Booking, modifying, or cancelling appointments
-2. Answering FAQs about registrar transactions
-3. Telling students what documents they need to bring
-4. Explaining the step-by-step process for each transaction
+1. Booking, modifying, or cancelling registrar appointments
+2. Answering questions about registrar transaction requirements, fees, and office procedures
+3. Telling students what official documents they need to bring
+4. Checking available appointment slots and tracking upcoming schedules
 
 AVAILABLE TRANSACTION TYPES:{tt_info}
 
@@ -63,17 +101,24 @@ BOOKING CUTOFF: At least {config.get('booking_cutoff_days', '1')} day(s) in adva
 
 TODAY'S DATE: {date.today().strftime('%B %d, %Y')} ({date.today().strftime('%A')})
 
-IMPORTANT RULES:
-- You can only book appointments from Monday to Saturday
-- Students must bring ALL required documents on their appointment date
-- Appointments can be cancelled before the cutoff period
-- If a student mentions "GWA", they are referring to "General Weighted Average (GWA)"
-- If a student asks something outside your knowledge, tell them you will escalate to a staff member
+STRICT SYSTEM SCOPE & CLARIFICATION RULES:
+1. EXCLUSIVE REGISTRAR SCOPE: You are STRICTLY a school registrar and appointment assistant. You MUST NOT answer questions outside of CRMC registrar services, campus queue tracking, and appointment booking (for example: coding, math, general trivia, recipes, creative writing, non-school topics, or personal advice).
+   - If a student asks any question outside of registrar procedures, politely decline with: "I can only assist with CRMC Registrar services, document requirements, queue tracking, and appointment bookings. How can I help you with your registrar requests today?"
+2. ASK FOR CLARIFICATION: If a student's request is vague, unclear, or lacks necessary details (e.g. they say "I need a document", "book me", or give an ambiguous date/subject), DO NOT guess. Politely ask clarifying questions to identify the specific transaction type, required details, or preferred date.
+3. DAYS OF OPERATION: You can only book appointments from Monday to Saturday.
+4. DOCUMENT REQUIREMENTS: Students must bring ALL required physical documents (e.g., Official Receipt) on their appointment date.
+5. GWA MAPPING: If a student mentions "GWA", they are referring to "General Weighted Average (GWA)".
+6. IN-PERSON REFERRAL: If a student inquires about complex, manual registrar disputes or issues requiring staff discretion, advise them to visit the Registrar's Office in person during office hours ({open_time} - {close_time}, Monday to Saturday).
 
 When a student wants to book an appointment:
 1. Do NOT force the user to type exactly the transaction name. Intelligently map abbreviations (e.g., GWA, TOR, COE) to the full transaction names from the AVAILABLE TRANSACTION TYPES.
-2. IMPORTANT: If the transaction is 'GWA' or 'General Weighted Average', you MUST ask the student for their GWA Request Details (Semester, Year Level, and School Year) before booking. Format this as 'GWA_REQUEST: [Semester] | [Year Level] | S.Y. [School Year]' and pass it to the book_appointment tool's 'notes' parameter.
-3. IMPORTANT: If the transaction is 'COE', 'Certificate of Enrollment', 'TOR', 'Transcript of Records', or 'Diploma', you MUST ask the student for the 'Purpose of Request' before booking. Format this as 'PURPOSE: [User Purpose]' and pass it to the book_appointment tool's 'notes' parameter.
+2. IMPORTANT: If the transaction is 'GWA' or 'General Weighted Average', you MUST ask the student for their GWA Request Details (Semester: 1st Semester, 2nd Semester, Summer; Year Level: 1st Year to 4th Year; and School Year e.g. 2025-2026) before booking. Format this as 'GWA_REQUEST: [Semester] | [Year Level] | S.Y. [School Year]' and pass it to the book_appointment tool's 'notes' parameter.
+3. IMPORTANT: If the transaction is 'COE', 'Certificate of Enrollment', 'TOR', 'Transcript of Records', 'Diploma', or any document request, you MUST ask the student for their 'Purpose of Request' based on the official CRMC options:
+   - Employment
+   - Scholarship
+   - Board Exam Application
+   - Other (please specify)
+   Format this as 'PURPOSE: [User Purpose]' and pass it to the book_appointment tool's 'notes' parameter.
 4. Ask for their preferred date (must be Monday to Saturday, at least 1 day in advance).
 5. Call the check_availability tool to see open slots for that date. The slots will be returned in 12-hour AM/PM format (e.g. 01:00 PM). Present them clearly to the user.
 6. Once they choose a date and time slot, call the book_appointment tool (pass the time slot as HH:MM in 24-hour format or whatever the user selected).
@@ -90,7 +135,10 @@ When a student wants to modify an appointment:
 When a student wants to cancel an appointment:
 1. Ask them to confirm.
 2. Call the cancel_appointment tool (note: they cannot cancel if the appointment is today or tomorrow).
-Always be friendly, helpful, and concise. Respond in clean, plain text ONLY. DO NOT use any special characters, markdown formatting, asterisks, bullet points, or hash symbols in your responses."""
+
+FORMATTING RULES:
+- DO NOT use markdown bolding (NEVER use ** or __).
+- Keep responses clean, complete, friendly, and easy to read using standard natural language and punctuation. Never stop mid-sentence."""
 
 
 def get_or_create_session(student_id: str):
@@ -122,80 +170,6 @@ def save_messages(session_id: str, messages: list):
             .execute()
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-
-
-# ── M10: Message Auto-Categorization ─────────────────────────────────────────
-
-def _categorize_message(question: str) -> dict:
-    """
-    Makes a quick AI call to tag the escalated message with
-    priority (urgent/normal/fyi) and category (requirements/scheduling/process/complaint/other).
-    Falls back to safe defaults if the call fails.
-    """
-    try:
-        client = get_openai_client()
-        resp = client.chat.completions.create(
-            model=settings.openai_model,
-            max_tokens=60,
-            temperature=0,
-            messages=[{
-                "role": "user",
-                "content": (
-                    f"Classify this student message for a university registrar staff inbox.\n"
-                    f"Message: \"{question}\"\n\n"
-                    f"Reply with ONLY a JSON object, no extra text:\n"
-                    f"{{\"priority\": \"urgent|normal|fyi\", "
-                    f"\"category\": \"requirements|scheduling|process|complaint|other\"}}"
-                )
-            }]
-        )
-        raw   = resp.choices[0].message.content.strip()
-        match = re.search(r'\{.*?\}', raw, re.DOTALL)
-        if match:
-            tags = json.loads(match.group())
-            priority = tags.get("priority", "normal")
-            category = tags.get("category", "other")
-            # Validate values
-            if priority not in ("urgent", "normal", "fyi"):
-                priority = "normal"
-            if category not in ("requirements", "scheduling", "process", "complaint", "other"):
-                category = "other"
-            return {"priority": priority, "category": category}
-    except Exception:
-        pass
-    return {"priority": "normal", "category": "other"}
-
-
-def escalate_to_staff(student_id: str, question: str):
-    """
-    Saves an AI-escalated student question to the messages table.
-    Automatically tags priority + category via a second AI call (M10).
-    """
-    admin = get_admin()
-
-    # ── M10: categorize before saving ────────────────────────────────────────
-    tags = _categorize_message(question)
-    priority = tags["priority"]
-    category = tags["category"]
-
-    try:
-        admin.table("messages").insert({
-            "student_id": student_id,
-            "content":    question,          # raw student question
-            "priority":   priority,          # urgent | normal | fyi
-            "category":   category,          # requirements | scheduling | process | complaint | other
-            "is_read":    False,
-        }).execute()
-        
-        if priority == "urgent":
-            # fetch student info to include name
-            student_res = admin.table("users").select("first_name, last_name").eq("id", student_id).single().execute()
-            if student_res.data:
-                name = f"{student_res.data.get('first_name')} {student_res.data.get('last_name')}".strip()
-                notify_staff_urgent_message(name)
-            
-    except Exception as e:
-        pass  # escalation failure must never crash the chat
 
 
 AI_TOOLS = [
@@ -273,8 +247,12 @@ AI_TOOLS = [
             "description": "Get a list of the student's upcoming appointments.",
             "parameters": {
                 "type": "object",
-                "properties": {},
-                "required": []
+                "properties": {
+                    "limit": {
+                        "type": "integer",
+                        "description": "Optional maximum number of upcoming appointments to fetch (default: 5)."
+                    }
+                }
             }
         }
     },
@@ -506,108 +484,106 @@ def execute_tool_call(tool_call, student_id: str):
 
 
 def chat(student_id: str, user_message: str):
-    client = get_openai_client()
+    providers = get_ai_providers()
+    if not providers:
+        raise HTTPException(
+            status_code=503, 
+            detail="AI service is not configured. Please configure GEMINI_API_KEY or OPENROUTER_API_KEY in backend/.env"
+        )
 
     # Get or create session
     session    = get_or_create_session(student_id)
     session_id = session["id"]
     history    = session.get("messages") or []
 
-    # Add user message to history
-    history.append({"role": "user", "content": user_message})
+    # Clean history: only conversational messages (user/assistant with valid text content)
+    clean_history = [
+        {"role": m["role"], "content": m["content"]}
+        for m in history
+        if isinstance(m, dict) and m.get("role") in ("user", "assistant") and m.get("content")
+    ]
 
-    # Keep only last 12 messages to avoid token limits
-    recent_history = history[-12:]
+    # Keep only last 10 messages to maintain clean token budgets
+    recent_history = clean_history[-10:]
 
-    # Build messages for API call
-    messages = [
+    # Base payload for API call
+    base_messages = [
         {"role": "system", "content": get_system_prompt()}
-    ] + recent_history
+    ] + recent_history + [{"role": "user", "content": user_message}]
 
-    try:
-        response = client.chat.completions.create(
-            model=settings.openai_model,
-            messages=messages,
-            max_tokens=500,
-            temperature=0.7,
-            tools=AI_TOOLS,
-            tool_choice="auto"
-        )
+    last_exception = None
+
+    for idx, provider in enumerate(providers):
+        client = provider["client"]
+        model = provider["model"]
+        p_name = provider["name"]
         
-        if getattr(response, "choices", None) is None:
-            err_msg = getattr(response, "error", "Unknown API error")
-            raise HTTPException(status_code=503, detail=f"AI service temporarily unavailable: {err_msg}")
-            
-        response_message = response.choices[0].message
-        
-        if response_message.tool_calls:
-            messages.append(response_message)
-            history.append(response_message.model_dump())
-            for tool_call in response_message.tool_calls:
-                function_response = execute_tool_call(tool_call, student_id)
-                tool_msg = {
-                    "tool_call_id": tool_call.id,
-                    "role": "tool",
-                    "name": tool_call.function.name,
-                    "content": function_response,
-                }
-                messages.append(tool_msg)
-                history.append(tool_msg)
-            # Second call to let the AI formulate a response based on the tool result
-            second_response = client.chat.completions.create(
-                model=settings.openai_model,
-                messages=messages,
-                max_tokens=500,
-                temperature=0.7,
-                tools=AI_TOOLS,
-                tool_choice="auto"
-            )
-            
-            if getattr(second_response, "choices", None) is None:
-                err_msg = getattr(second_response, "error", "Unknown API error")
-                raise HTTPException(status_code=503, detail=f"AI service temporarily unavailable: {err_msg}")
+        try:
+            current_messages = list(base_messages)
+            assistant_message = ""
+
+            for loop_idx in range(5):
+                response = client.chat.completions.create(
+                    model=model,
+                    messages=current_messages,
+                    max_tokens=1000,
+                    temperature=0.7,
+                    tools=AI_TOOLS,
+                    tool_choice="auto"
+                )
                 
-            assistant_message = second_response.choices[0].message.content
-        else:
-            assistant_message = response_message.content
+                if getattr(response, "choices", None) is None or not response.choices:
+                    err_msg = getattr(response, "error", "Unknown API error")
+                    raise RuntimeError(f"Provider {p_name} returned no choices: {err_msg}")
+                    
+                response_message = response.choices[0].message
+                
+                if response_message.tool_calls:
+                    current_messages.append(response_message)
+                    for tool_call in response_message.tool_calls:
+                        function_response = execute_tool_call(tool_call, student_id)
+                        tool_msg = {
+                            "tool_call_id": tool_call.id,
+                            "role": "tool",
+                            "name": tool_call.function.name,
+                            "content": function_response,
+                        }
+                        current_messages.append(tool_msg)
+                else:
+                    assistant_message = response_message.content or ""
+                    break
 
-        if not assistant_message:
-            assistant_message = "Done."
+            if not assistant_message:
+                assistant_message = "I have processed your request. Please check your appointments or queue for the latest status."
+            else:
+                assistant_message = assistant_message.replace("**", "").replace("__", "").strip()
 
-        # Check if escalation needed
-        escalation_keywords = [
-            "i don't know", "i'm not sure", "cannot answer",
-            "please contact", "outside my knowledge", "escalate"
-        ]
-        should_escalate = any(kw in assistant_message.lower() for kw in escalation_keywords)
+            # Save clean user & assistant exchange to history
+            history.append({"role": "user", "content": user_message})
+            history.append({"role": "assistant", "content": assistant_message})
+            save_messages(session_id, history[-12:])
 
-        if should_escalate:
-            escalate_to_staff(student_id, user_message)  # ← M10 runs here
-            assistant_message += "\n\n*Your question has been forwarded to a Registrar staff member who will follow up with you.*"
+            return {
+                "message":    assistant_message,
+                "session_id": session_id
+            }
 
-        # Save to history
-        history.append({"role": "assistant", "content": assistant_message})
-        save_messages(session_id, history[-12:])
+        except Exception as e:
+            last_exception = e
+            logger.warning(f"AI Provider '{p_name}' failed with error: {e}. Attempting next provider...")
+            continue
 
-        return {
-            "message":    assistant_message,
-            "session_id": session_id,
-            "escalated":  should_escalate
-        }
-
-    except HTTPException:
-        raise
-    except openai.RateLimitError:
-        raise HTTPException(status_code=429, detail="AI assistant is temporarily busy or rate-limited. Please try again in a few moments.")
-    except openai.APIStatusError as e:
-        if e.status_code == 429:
-            raise HTTPException(status_code=429, detail="AI assistant is temporarily busy or rate-limited. Please try again in a few moments.")
-        raise HTTPException(status_code=500, detail="AI service is temporarily unavailable. Please try again later.")
-    except Exception as e:
-        err_str = str(e)
-        if "429" in err_str or "rate limit" in err_str.lower():
-            raise HTTPException(status_code=429, detail="AI assistant is temporarily busy or rate-limited. Please try again in a few moments.")
-        raise HTTPException(status_code=500, detail=f"AI error: {err_str}")
+    # If all configured providers failed:
+    err_str = str(last_exception)
+    if "429" in err_str or "rate limit" in err_str.lower() or "quota" in err_str.lower():
+        raise HTTPException(
+            status_code=429, 
+            detail="AI assistant is temporarily busy or rate-limited. Please try again in a few moments."
+        )
+    raise HTTPException(
+        status_code=500, 
+        detail=f"AI service temporarily unavailable: {err_str}"
+    )
 
 
 def clear_session(student_id: str):

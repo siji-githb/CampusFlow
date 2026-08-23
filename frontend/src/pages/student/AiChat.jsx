@@ -20,7 +20,7 @@ const MicIcon = () => (
 )
 
 const SendIcon = () => (
-  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <line x1="22" y1="2" x2="11" y2="13"></line>
     <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
   </svg>
@@ -89,7 +89,7 @@ export default function AiChat({ asWidget, headless, onClose, initialQuery }) {
     if (textareaRef.current) {
       textareaRef.current.style.height = '36px';
       const scrollHeight = textareaRef.current.scrollHeight;
-      textareaRef.current.style.height = `${Math.min(Math.max(scrollHeight, 36), 148)}px`;
+      textareaRef.current.style.height = `${Math.min(Math.max(scrollHeight, 36), 48)}px`;
     }
   }, [input]);
 
@@ -170,12 +170,15 @@ export default function AiChat({ asWidget, headless, onClose, initialQuery }) {
     try {
       const data  = await sendMessage(token, msg)
       const reply = data.message
-      setMessages(prev => [...prev, { role: 'assistant', content: reply, escalated: data.escalated }])
+      setMessages(prev => [...prev, { role: 'assistant', content: reply }])
       speakResponse(reply)
     } catch (e) {
-      const isLengthError = e.message.includes('1000 characters') || msg.length > 1000
-      setError(isLengthError ? "Your message is too long — please keep it under 1000 characters." : e.message)
-      setMessages(prev => [...prev, { role: 'assistant', content: isLengthError ? "Message was too long to send." : "Sorry, I'm having trouble connecting. Please try again.", isError: true }])
+      const isLengthError = e.message?.includes('1000 characters') || msg.length > 1000
+      const errorText = isLengthError 
+        ? "Your message is too long — please keep it under 1000 characters." 
+        : (e.message || "Sorry, I'm having trouble connecting. Please try again.")
+      setError(errorText)
+      setMessages(prev => [...prev, { role: 'assistant', content: errorText, isError: true }])
     } finally { setLoading(false) }
   }
 
@@ -226,19 +229,25 @@ export default function AiChat({ asWidget, headless, onClose, initialQuery }) {
               }`}>
                 {msg.role === 'staff' && <p className="text-[11px] font-bold m-0 mb-1 uppercase tracking-wider opacity-80">{msg.staff_name || 'Registrar Staff'}</p>}
                 <p className="m-0 whitespace-pre-wrap">{msg.content}</p>
-                {msg.escalated && <p className="text-[11px] font-medium text-gold m-0 mt-2 pt-2 border-t border-gold/20 flex items-center gap-1.5"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg> Forwarded to Registrar staff</p>}
               </div>
             </div>
           ))}
 
           {loading && (
-            <div className="flex items-end gap-2.5">
+            <div className="flex items-end gap-2.5 animate-fade-up" style={{ animationDuration: '0.2s' }}>
               <div className="w-7 h-7 rounded-full bg-maroon flex items-center justify-center shrink-0 text-white shadow-sm">
                 <BotMessageSquare size={15} />
               </div>
-              <div className="py-3 px-4 rounded-[20px_20px_20px_4px] bg-white border border-border/60 shadow-sm">
-                <div className="flex items-center gap-1.5 h-4">
-                  {[0, 1, 2].map(j => <div key={j} className="w-1.5 h-1.5 rounded-full bg-text-sub/50 animate-bounce-custom" style={{ animationDelay: `${j * 0.15}s` }} />)}
+              <div className="py-2.5 px-3.5 rounded-[20px_20px_20px_4px] bg-white border border-border/70 shadow-xs flex items-center gap-2">
+                <span className="text-[12.5px] font-medium text-text-sub italic">Thinking</span>
+                <div className="flex items-center gap-1 h-3.5">
+                  {[0, 1, 2].map(j => (
+                    <div 
+                      key={j} 
+                      className="w-1.5 h-1.5 rounded-full bg-maroon/70 animate-bounce-custom" 
+                      style={{ animationDelay: `${j * 0.15}s` }} 
+                    />
+                  ))}
                 </div>
               </div>
             </div>
@@ -250,44 +259,48 @@ export default function AiChat({ asWidget, headless, onClose, initialQuery }) {
         <div className={`mx-auto ${asWidget ? 'w-full px-1' : 'max-w-170'}`}>
           {error && <p className="text-[12px] text-red-500 mb-1.5 px-2 flex items-center gap-1"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg> {error}</p>}
 
-          <div className="flex items-end gap-2">
-            {/* Separate Text Box */}
-            <div className={`flex-1 flex items-center bg-[#F3F4F6] px-3.5 py-1.5 rounded-2xl border transition-all ${
-              isListening ? 'border-maroon/40 shadow-[0_0_0_3px_rgba(123,26,42,0.1)]' : 'border-slate-200/80 focus-within:border-maroon/40 focus-within:bg-white focus-within:ring-2 focus-within:ring-maroon/5 focus-within:shadow-xs'
-            }`}>
-              <textarea
-                ref={textareaRef}
-                value={input}
-                onChange={e => setInput(e.target.value)}
-                onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend() } }}
-                placeholder={isListening ? 'Listening...' : 'Ask Aether anything...'}
-                rows={1}
-                style={{ height: '36px' }}
-                className="w-full bg-transparent border-none outline-none resize-none py-1.5 px-0 text-[13.5px] text-text-main placeholder-text-muted/70 leading-5 overflow-y-auto box-border"
-              />
-            </div>
+          {/* Pill-shaped Chatbox Container */}
+          <div className={`relative flex items-center w-full rounded-full border transition-all duration-200 pl-4.5 pr-2 py-1 ${
+            isListening 
+              ? 'border-maroon shadow-[0_0_0_3px_rgba(123,26,42,0.12)] bg-white' 
+              : 'border-slate-300 hover:border-slate-400 focus-within:border-maroon focus-within:bg-white focus-within:ring-2 focus-within:ring-maroon/10 bg-off-white/50 shadow-2xs'
+          }`}>
+            <textarea
+              ref={textareaRef}
+              value={input}
+              onChange={e => setInput(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend() } }}
+              placeholder={isListening ? 'Listening...' : 'Send a message'}
+              rows={1}
+              style={{ height: '38px', minHeight: '38px', maxHeight: '120px' }}
+              className="flex-1 bg-transparent border-none outline-none resize-none py-2 px-0 text-[14px] text-text-main placeholder:text-text-muted/80 leading-5 overflow-y-auto box-border"
+            />
 
-            {/* Outside Action Icons */}
-            <div className="flex items-center gap-1.5 shrink-0 pb-0.5">
+            <div className="flex items-center gap-1 shrink-0 ml-1">
               {/* Mic button */}
               {voiceSupported && (
                 <button
+                  type="button"
                   onClick={isListening ? stopListening : startListening}
                   title={isListening ? 'Stop listening' : 'Tap to speak'}
-                  className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 transition-all border cursor-pointer ${
-                    isListening ? 'bg-maroon text-white animate-pulse-ring border-maroon' : 'bg-white border-slate-200 text-text-sub hover:bg-slate-50 hover:text-text-main hover:border-slate-300 shadow-2xs'
+                  className={`w-8 h-8 rounded-full flex items-center justify-center transition-all cursor-pointer border-none ${
+                    isListening ? 'bg-maroon text-white animate-pulse-ring' : 'bg-transparent text-text-muted hover:text-maroon hover:bg-maroon-light/50'
                   }`}
                 >
                   <MicIcon />
                 </button>
               )}
 
-              {/* Send button */}
+              {/* Send button inside pill */}
               <button
+                type="button"
                 onClick={() => handleSend()}
                 disabled={!input.trim() || loading}
-                className={`w-9 h-9 rounded-full border-none shrink-0 flex items-center justify-center transition-all duration-200 cursor-pointer ${
-                  !input.trim() || loading ? 'bg-slate-200 text-slate-400 cursor-not-allowed' : 'bg-maroon text-white shadow-xs hover:bg-maroon-dark hover:scale-105 active:scale-95'
+                title="Send message"
+                className={`w-8.5 h-8.5 rounded-full flex items-center justify-center transition-all cursor-pointer border-none ${
+                  !input.trim() || loading 
+                    ? 'text-slate-400 bg-transparent cursor-not-allowed opacity-50' 
+                    : 'text-maroon hover:text-white hover:bg-maroon active:scale-95 transition-all'
                 }`}
               >
                 <SendIcon />

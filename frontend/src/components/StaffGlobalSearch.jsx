@@ -1,12 +1,11 @@
 import { useState, useEffect, useRef } from 'react';
-import { Search, BarChart2, Ticket, Calendar, ClipboardList, HelpCircle, MessageSquare, User, Settings, ChevronRight } from 'lucide-react';
+import { Search, BarChart2, Ticket, Calendar, ClipboardList, HelpCircle, User, Settings, ChevronRight } from 'lucide-react';
 
 const SEARCH_ITEMS = [
   { id: 'overview', label: 'Dashboard Overview', icon: BarChart2, desc: 'View summary and statistics' },
   { id: 'queue', label: 'Live Queue Management', icon: Ticket, desc: 'Manage the current active queue' },
   { id: 'appointments', label: 'Appointments', icon: Calendar, desc: 'View and manage student appointments' },
   { id: 'records', label: 'Master List', icon: ClipboardList, desc: 'Manage student data and documents' },
-  { id: 'messages', label: 'Messages & Escalations', icon: MessageSquare, desc: 'View AI escalations and messages' },
   { id: 'id-requests', label: 'ID Requests', icon: HelpCircle, desc: 'Process student ID replacements' },
   { id: 'profile', label: 'My Profile', icon: User, desc: 'View your profile information' },
   { id: 'settings', label: 'Account Settings', icon: Settings, desc: 'Manage your account preferences' },

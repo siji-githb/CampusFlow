@@ -7,7 +7,7 @@ import { Edit2, IdCard, Tag, LogOut, Trash2, X, Camera, Loader2, Eye, EyeOff, Sh
 import { updateProfile, changePassword, logoutAllDevices, deleteAccount, updateProfilePicture, removeProfilePicture } from '../../services/authService'
 import { getMyPriorityStatus, submitPriorityRequest } from '../../services/priorityService'
 import { uploadMedia } from '../../services/appointmentService'
-import { isNotificationSupported, getPushStatus, setPushEnabled, requestNotificationPermission } from '../../utils/browserNotifications'
+import { isNotificationSupported, getPushStatus, setPushEnabled, requestNotificationPermission, sendBrowserNotification } from '../../utils/browserNotifications'
 
 export default function StudentProfile({ embedded = false }) {
   const { user, token, updateUser, logout } = useAuth()
@@ -44,13 +44,14 @@ export default function StudentProfile({ embedded = false }) {
     if (pushStatus === 'active') {
       setPushEnabled(false)
       setPushStatus('disabled')
-      showToast('Desktop push notifications turned OFF.', 'info')
+      showToast('Push notifications turned OFF.', 'info')
     } else {
       const permission = await requestNotificationPermission()
       if (permission === 'granted') {
         setPushEnabled(true)
         setPushStatus('active')
-        showToast('Desktop push notifications turned ON! You will receive real-time queue & release alerts.', 'success')
+        showToast('Push notifications turned ON! You will receive real-time queue & release alerts.', 'success')
+        sendBrowserNotification('Notifications Activated 🔔', 'CampusFlow alerts are now active on this device!')
       } else {
         setPushStatus(getPushStatus())
         showToast('Notification permission was not granted.', 'error')
@@ -324,7 +325,7 @@ export default function StudentProfile({ embedded = false }) {
 
   if (loadingPriority && !priorityStatus) {
     const skeleton = (
-      <div className="flex-1 w-full pb-22 md:pb-0 px-4 md:px-0 animate-pulse">
+      <div className="flex-1 w-full pt-4 sm:pt-5 md:pt-0 pb-22 md:pb-0 px-4 md:px-0 animate-pulse">
         {/* Header Skeleton */}
         <div className="hidden md:flex justify-between items-center mb-8">
           <div className="h-8 w-32 bg-border/80 rounded-lg" />
@@ -383,10 +384,10 @@ export default function StudentProfile({ embedded = false }) {
 
   const content = (
     <>
-      <div className="flex-1 w-full pb-22 md:pb-0 px-4 md:px-0">
+      <div className="flex-1 w-full pt-4 sm:pt-5 md:pt-0 pb-22 md:pb-0 px-4 md:px-0 animate-fade-up">
         
         {/* Header */}
-        <div className="hidden md:flex justify-between items-center mb-8">
+        <div className="hidden md:flex justify-between items-center mb-8 animate-fade-up" style={{ animationDelay: '0.05s' }}>
           <h1 className="font-serif text-[28px] font-bold text-maroon m-0">Profile</h1>
           <div className="text-[13px] text-text-sub font-medium flex items-center gap-2">
             <Link to="/student/dashboard" className="text-maroon hover:underline cursor-pointer">Home</Link>
@@ -396,7 +397,7 @@ export default function StudentProfile({ embedded = false }) {
         </div>
 
         {/* Profile Card */}
-        <div className="bg-white rounded-2xl sm:rounded-3xl border border-border p-4 sm:p-6 md:p-8 shadow-sm animate-fade-up">
+        <div className="bg-white rounded-2xl sm:rounded-3xl border border-border p-4 sm:p-6 md:p-8 shadow-sm animate-fade-up" style={{ animationDelay: '0.1s' }}>
           
           <div className="flex flex-col md:flex-row items-center md:items-start justify-between pb-5 sm:pb-6 md:pb-8 mb-5 sm:mb-6 md:mb-8 border-b border-border gap-4 md:gap-0 w-full">
             <div className="flex flex-col sm:flex-row items-center gap-3.5 sm:gap-6 text-center sm:text-left w-full md:w-auto">
@@ -446,7 +447,7 @@ export default function StudentProfile({ embedded = false }) {
         </div>
 
         {/* Account Settings Header */}
-        <div className="flex justify-between items-center mt-8 md:mt-12 mb-5 md:mb-8">
+        <div className="flex justify-between items-center mt-8 md:mt-12 mb-5 md:mb-8 animate-fade-up" style={{ animationDelay: '0.15s' }}>
           <h2 className="font-serif text-[22px] md:text-[28px] font-bold text-maroon m-0">Account Settings</h2>
         </div>
 
@@ -454,7 +455,7 @@ export default function StudentProfile({ embedded = false }) {
         <div className="flex flex-col gap-6">
 
           {/* Priority Status Card */}
-          <div className="bg-white rounded-3xl border border-border p-8 shadow-sm animate-fade-up">
+          <div className="bg-white rounded-3xl border border-border p-8 shadow-sm animate-fade-up" style={{ animationDelay: '0.2s' }}>
             <h3 className="font-serif text-[18px] md:text-[20px] font-bold text-text-main m-0 mb-5 md:mb-6">Priority Status</h3>
             
             {loadingPriority ? (
@@ -647,7 +648,7 @@ export default function StudentProfile({ embedded = false }) {
           </div>
 
           {/* Push Notifications Card (Directly Below Priority Status) */}
-          <div className="bg-white rounded-3xl border border-border p-6 sm:p-8 shadow-sm animate-fade-up" style={{ animationDelay: '0.05s' }}>
+          <div className="bg-white rounded-3xl border border-border p-6 sm:p-8 shadow-sm animate-fade-up" style={{ animationDelay: '0.25s' }}>
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div className="flex items-start gap-4">
                 <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 border ${
@@ -723,7 +724,7 @@ export default function StudentProfile({ embedded = false }) {
           </div>
           
           {/* Security Card */}
-          <div className="bg-white rounded-3xl border border-border p-8 shadow-sm animate-fade-up" style={{ animationDelay: '0.1s' }}>
+          <div className="bg-white rounded-3xl border border-border p-8 shadow-sm animate-fade-up" style={{ animationDelay: '0.3s' }}>
             <h3 className="font-serif text-[18px] md:text-[20px] font-bold text-text-main m-0 mb-5 md:mb-6">Security</h3>
             
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 md:gap-0">
@@ -793,7 +794,7 @@ export default function StudentProfile({ embedded = false }) {
           </div>
 
           {/* Danger Zone Card */}
-          <div className="bg-white rounded-3xl border border-border p-8 shadow-sm animate-fade-up" style={{ animationDelay: '0.2s' }}>
+          <div className="bg-white rounded-3xl border border-border p-8 shadow-sm animate-fade-up" style={{ animationDelay: '0.35s' }}>
             <h3 className="font-serif text-[18px] md:text-[20px] font-bold text-text-main m-0 mb-5 md:mb-6">Danger Zone</h3>
             
             <div className="flex flex-col md:flex-row md:items-center justify-between pb-6 mb-6 border-b border-border gap-4 md:gap-0">

@@ -184,7 +184,7 @@ export default function MyQueue({ embedded = false }) {
 
   if (loading && !queueData && upcomingAppts.length === 0) {
     const skeleton = (
-      <div className="flex-1 w-full pb-22 md:pb-0 px-4 md:px-0 animate-pulse">
+      <div className="flex-1 w-full pt-4 sm:pt-5 md:pt-0 pb-22 md:pb-0 px-4 md:px-0 animate-pulse">
         {/* Header Skeleton */}
         <div className="hidden md:flex justify-between items-start mb-8">
           <div>
@@ -242,8 +242,8 @@ export default function MyQueue({ embedded = false }) {
 
   const content = (
     <>
-      <div className="flex-1 w-full pb-22 md:pb-0 px-4 md:px-0">
-      <div className="hidden md:flex justify-between items-start mb-8">
+      <div className="flex-1 w-full pt-4 sm:pt-5 md:pt-0 pb-22 md:pb-0 px-4 md:px-0 animate-fade-up">
+      <div className="hidden md:flex justify-between items-start mb-8 animate-fade-up" style={{ animationDelay: '0.05s' }}>
         <div>
           <div className="text-[11px] font-bold text-gold uppercase tracking-[0.06em] mb-2">LIVE TRACKING</div>
           <h1 className="font-serif text-[26px] font-bold text-maroon m-0 mb-2 flex items-center gap-3">
@@ -267,7 +267,10 @@ export default function MyQueue({ embedded = false }) {
       )}
 
       {/* Navigation Tabs */}
-      <div className="flex gap-2 mb-6 bg-white p-1 sm:p-1.5 rounded-2xl border border-border shadow-2xs">
+      <div 
+        className="flex gap-2 mb-6 bg-white p-1 sm:p-1.5 rounded-2xl border border-border shadow-2xs animate-fade-up"
+        style={{ animationDelay: '0.1s' }}
+      >
         <button 
           onClick={() => setActiveTab('active')}
           className={`flex-1 py-2 sm:py-2.5 px-3 sm:px-4 rounded-xl border-none text-xs sm:text-sm font-bold cursor-pointer transition-all duration-200 font-sans ${activeTab === 'active' ? 'bg-maroon-light text-maroon shadow-2xs' : 'bg-transparent text-text-sub hover:bg-off-white'}`}
@@ -338,7 +341,7 @@ export default function MyQueue({ embedded = false }) {
                 );
               })()
             ) : (
-            <div className="animate-fade-up">
+            <div className="animate-fade-up" style={{ animationDelay: '0.15s' }}>
               {/* Queue ticket card (White Theme) */}
               <div className="bg-white rounded-2xl sm:rounded-3xl p-4 sm:p-6 md:p-7 mb-4 shadow-sm border border-border relative overflow-hidden">
                 <div className="flex justify-between items-start mb-3 gap-2">
@@ -359,43 +362,33 @@ export default function MyQueue({ embedded = false }) {
                       ? 'bg-gold/10 text-gold-dark border border-gold/25'
                       : ticket.status === 'in_progress' 
                       ? 'bg-maroon/10 text-maroon border border-maroon/20' 
-                      : 'bg-surface text-text-sub border border-border'
+                      : 'bg-gold/10 text-gold-dark border border-gold/25'
                   }`}>
-                    <span className={`w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full shrink-0 ${
-                      isReleaseActive
-                        ? 'bg-success animate-pulse'
-                        : isFutureScheduled && isCurrentStepRelease
-                        ? 'bg-gold'
-                        : isCurrentStepDocPrepared || isCurrentStepPrep
-                        ? 'bg-gold animate-pulse'
-                        : ticket.status === 'in_progress' 
-                        ? 'bg-maroon animate-pulse' 
-                        : 'bg-text-muted'
+                    <span className={`w-1.5 h-1.5 rounded-full inline-block ${
+                      isReleaseActive ? 'bg-success animate-pulse' :
+                      isFutureScheduled && isCurrentStepRelease ? 'bg-gold' :
+                      isCurrentStepDocPrepared ? 'bg-gold animate-pulse' :
+                      isCurrentStepPrep ? 'bg-gold animate-pulse' :
+                      ticket.status === 'in_progress' ? 'bg-maroon animate-pulse' : 'bg-gold'
                     }`} />
-                    <span>
-                      {isReleaseActive 
-                        ? 'Ready for Pickup' 
-                        : isFutureScheduled && isCurrentStepRelease
-                        ? `Scheduled (${formatShortDate(releaseDateVal)})` 
-                        : isCurrentStepDocPrepared
-                        ? 'Finalizing Document'
-                        : isCurrentStepPrep
-                        ? 'Processing Document'
-                        : ticket.status === 'in_progress' 
-                        ? 'Serving Now' 
-                        : 'In Line (Waiting)'}
-                    </span>
+                    {isReleaseActive ? 'READY FOR PICKUP' : isFutureScheduled && isCurrentStepRelease ? `SCHEDULED (${formatShortDate(ticket.appointments.release_date)})` : isCurrentStepDocPrepared ? 'FINALIZING' : isCurrentStepPrep ? 'PROCESSING' : ticket.status === 'in_progress' ? 'SERVING NOW' : 'WAITING'}
                   </div>
                 </div>
                 
-                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end mt-3.5 sm:mt-4 pt-3.5 sm:pt-4 border-t border-border/70 gap-2.5 sm:gap-0">
-                  <div className="flex flex-col gap-0.5 sm:gap-1 min-w-0">
-                    <p className="text-[14px] sm:text-[16px] font-bold text-text-main m-0 truncate">{ticket.appointments?.transaction_types?.name}</p>
-                    <p className="text-xs sm:text-[12.5px] text-text-sub m-0 font-medium flex items-center gap-1.5 flex-wrap">
-                      <Calendar size={12} className="text-gold shrink-0" />
-                      <span>{ticket.appointments?.appointment_date}</span>
-                      <span className="text-border-strong mx-0.5">|</span>
-                      <span>{fmt12h(ticket.appointments?.time_slot)}</span>
+                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-end gap-3 sm:gap-0 pt-2 border-t border-border/70">
+                  <div>
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-xs sm:text-[13px] font-bold text-text-main">
+                        {ticket.appointments?.transaction_types?.name || ticket.transaction_type || 'Registrar Service'}
+                      </span>
+                      {ticket.priority_class && ticket.priority_class !== 'regular' && (
+                        <span className="text-[10px] bg-maroon-light text-maroon font-extrabold px-2 py-0.5 rounded-md uppercase border border-maroon-border/60">
+                          {ticket.priority_class === 'pwd' ? 'PWD' : ticket.priority_class}
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-[11px] sm:text-xs text-text-sub m-0 font-medium">
+                      Window {ticket.counter_id ? (counters.find(c => c.id === ticket.counter_id)?.counter_number || ticket.counter_id) : '—'} &bull; Step {ticket.current_step || 1} of {ticket.appointments?.transaction_types?.steps_count || 1}
                     </p>
                   </div>
                   {(ticket.status === 'waiting' || ticket.status === 'pending') && (
@@ -419,7 +412,10 @@ export default function MyQueue({ embedded = false }) {
 
               {/* Release Date Card (if set) */}
               {ticket.appointments?.release_date && (
-                <div className="bg-white rounded-2xl sm:rounded-3xl border border-border p-4 sm:p-6 shadow-sm mb-4 flex items-center justify-between gap-3">
+                <div 
+                  className="bg-white rounded-2xl sm:rounded-3xl border border-border p-4 sm:p-6 shadow-sm mb-4 flex items-center justify-between gap-3 animate-fade-up"
+                  style={{ animationDelay: '0.2s' }}
+                >
                   <div>
                     <p className="text-[10px] sm:text-[11px] font-extrabold text-text-muted uppercase tracking-[0.06em] mb-1">Document Release Date</p>
                     <p className="text-sm sm:text-base font-bold text-text-main m-0">
@@ -433,7 +429,10 @@ export default function MyQueue({ embedded = false }) {
               )}
 
               {/* ── Live Monitoring Panel ── */}
-              <div className="bg-white rounded-2xl sm:rounded-3xl border border-border shadow-sm overflow-hidden">
+              <div 
+                className="bg-white rounded-2xl sm:rounded-3xl border border-border shadow-sm overflow-hidden animate-fade-up"
+                style={{ animationDelay: '0.25s' }}
+              >
                 
                 {/* Live Header */}
                 <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-border bg-linear-to-r from-off-white to-white flex items-center justify-between">

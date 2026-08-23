@@ -129,70 +129,81 @@ export default function NotificationDropdown({ isMobile = false }) {
       </button>
 
       {isOpen && (
-        <div className="absolute right-0 top-8.75 w-[90vw] max-w-[320px] bg-white rounded-xl shadow-[0_10px_40px_rgba(0,0,0,0.15)] border border-border overflow-hidden animate-fade-up z-9999" ref={dropdownRef}>
-          <div className="flex items-center justify-between p-3 border-b border-border bg-off-white">
-            <h3 className="m-0 text-[14px] font-semibold text-text-main font-sans">Notifications</h3>
-            <div className="flex items-center gap-3">
-              {unreadCount > 0 && (
-                <button 
-                  onClick={handleMarkAllRead}
-                  className="text-[11px] text-maroon hover:text-maroon-dark bg-transparent border-none cursor-pointer font-semibold transition-colors"
-                >
-                  Mark all read
-                </button>
-              )}
-              {notifications.length > 0 && (
-                <button 
-                  onClick={handleClearAll}
-                  className="text-[11px] text-text-sub hover:text-danger bg-transparent border-none cursor-pointer font-semibold transition-colors"
-                >
-                  Clear all
-                </button>
+        <>
+          {/* Mobile backdrop for easy tap-outside */}
+          <div 
+            className="fixed inset-0 z-9998 sm:hidden bg-black/10 backdrop-blur-2xs transition-opacity" 
+            onClick={() => setIsOpen(false)} 
+          />
+
+          <div 
+            ref={dropdownRef}
+            className="fixed sm:absolute left-3.5 right-3.5 sm:left-auto sm:right-0 top-13.5 sm:top-8.75 sm:w-85 max-w-sm sm:max-w-none mx-auto sm:mx-0 bg-white rounded-2xl sm:rounded-xl shadow-[0_12px_45px_rgba(0,0,0,0.18)] border border-border overflow-hidden animate-fade-up z-9999"
+          >
+            <div className="flex items-center justify-between p-3.5 sm:p-3 border-b border-border bg-off-white">
+              <h3 className="m-0 text-[14px] font-bold sm:font-semibold text-text-main font-sans">Notifications</h3>
+              <div className="flex items-center gap-3">
+                {unreadCount > 0 && (
+                  <button 
+                    onClick={handleMarkAllRead}
+                    className="text-[11px] text-maroon hover:text-maroon-dark bg-transparent border-none cursor-pointer font-bold sm:font-semibold transition-colors"
+                  >
+                    Mark all read
+                  </button>
+                )}
+                {notifications.length > 0 && (
+                  <button 
+                    onClick={handleClearAll}
+                    className="text-[11px] text-text-sub hover:text-danger bg-transparent border-none cursor-pointer font-semibold transition-colors"
+                  >
+                    Clear all
+                  </button>
+                )}
+              </div>
+            </div>
+            
+            <div className="max-h-[65vh] sm:max-h-90 overflow-y-auto">
+              {notifications.length === 0 ? (
+                <div className="p-6 text-center text-text-muted text-[13px]">
+                  <Bell size={24} className="mx-auto mb-2 opacity-50 text-gold" />
+                  <p className="m-0 font-medium">No notifications yet.</p>
+                </div>
+              ) : (
+                <div className="flex flex-col divide-y divide-border/60">
+                  {notifications.map(n => (
+                    <div key={n.id} className={`flex gap-3 p-3.5 sm:p-3.5 transition-colors ${!n.is_read ? 'bg-maroon/5' : 'bg-white hover:bg-off-white'}`}>
+                      <div className="shrink-0 mt-0.5">
+                        {getIcon(n.type)}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex flex-col mb-1">
+                          <p className={`m-0 text-[13px] font-semibold leading-snug ${!n.is_read ? 'text-text-main' : 'text-text-sub'}`}>
+                            {n.title}
+                          </p>
+                          <span className="text-[10.5px] text-text-muted mt-0.5">
+                            {formatNotificationTime(n.created_at)}
+                          </span>
+                        </div>
+                        <p className="m-0 text-[12px] text-text-sub leading-relaxed">
+                          {n.message}
+                        </p>
+                      </div>
+                      {!n.is_read && (
+                        <button 
+                          onClick={(e) => handleMarkRead(n.id, e)}
+                          className="shrink-0 self-center w-6 h-6 flex items-center justify-center rounded-full border-none bg-transparent hover:bg-maroon/10 text-maroon cursor-pointer"
+                          title="Mark as read"
+                        >
+                          <Check size={14} />
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                </div>
               )}
             </div>
           </div>
-          
-          <div className="max-h-90 overflow-y-auto">
-            {notifications.length === 0 ? (
-              <div className="p-6 text-center text-text-muted text-[13px]">
-                <Bell size={24} className="mx-auto mb-2 opacity-50" />
-                <p className="m-0">No notifications yet.</p>
-              </div>
-            ) : (
-              <div className="flex flex-col">
-                {notifications.map(n => (
-                  <div key={n.id} className={`flex gap-3 p-3.5 border-b border-border last:border-none transition-colors ${!n.is_read ? 'bg-maroon/5' : 'bg-white hover:bg-off-white'}`}>
-                    <div className="shrink-0 mt-0.5">
-                      {getIcon(n.type)}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex flex-col mb-1.5">
-                        <p className={`m-0 text-[13px] font-semibold ${!n.is_read ? 'text-text-main' : 'text-text-sub'}`}>
-                          {n.title}
-                        </p>
-                        <span className="text-[10px] text-text-muted mt-0.5">
-                          {formatNotificationTime(n.created_at)}
-                        </span>
-                      </div>
-                      <p className="m-0 text-[12px] text-text-sub leading-tight">
-                        {n.message}
-                      </p>
-                    </div>
-                    {!n.is_read && (
-                      <button 
-                        onClick={(e) => handleMarkRead(n.id, e)}
-                        className="shrink-0 self-center w-6 h-6 flex items-center justify-center rounded-full border-none bg-transparent hover:bg-maroon/10 text-maroon cursor-pointer"
-                        title="Mark as read"
-                      >
-                        <Check size={14} />
-                      </button>
-                    )}
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
+        </>
       )}
     </div>
   );

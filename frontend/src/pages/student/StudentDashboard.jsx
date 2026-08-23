@@ -243,7 +243,7 @@ export default function StudentDashboard({ embedded = false }) {
   }
 
   const content = (
-    <div className="flex-1 w-full pb-22 md:pb-0 px-4 md:px-0">
+    <div className="flex-1 w-full pb-22 md:pb-0 px-4 md:px-0 animate-fade-up">
       {/* ── Documents to Claim Alert ── */}
       {documentsToClaim.length > 0 && (
         <div 
@@ -277,9 +277,8 @@ export default function StudentDashboard({ embedded = false }) {
             <h1 className="font-serif text-[clamp(24px,5vw,42px)] font-bold text-maroon m-0 mb-2 md:mb-3 leading-[1.15]">
               <span className="hidden md:inline text-text-main">{getGreeting()}, </span>{user?.first_name || 'Student'}!
             </h1>
-            <p className="text-[11px] md:text-[13px] text-text-sub font-medium m-0 max-w-145 leading-normal md:leading-[1.6]">
-              <span className="md:hidden">Manage your academic documents, track live queue ticket status, or chat with our virtual assistant—all from your personalized dashboard.</span>
-              <span className="hidden md:inline">Manage your academic documents, track live queue ticket status, or chat with our virtual assistant—all from your personalized dashboard.</span>
+            <p className="text-[12px] md:text-[13.5px] text-text-sub font-medium m-0 max-w-145 leading-normal md:leading-[1.6]">
+              Track live queue status, manage appointments, and access registrar services.
             </p>
           </div>
         </div>
