@@ -461,12 +461,16 @@ def get_ai_insights():
 
     try:
         from openai import OpenAI
+        api_key = settings.gemini_api_key.strip() if (settings.gemini_api_key and settings.gemini_api_key.strip()) else settings.fallback_api_key
+        base_url = settings.gemini_base_url.strip() if (settings.gemini_api_key and settings.gemini_api_key.strip()) else settings.fallback_base_url
+        model = settings.gemini_model.strip() if (settings.gemini_api_key and settings.gemini_api_key.strip()) else settings.fallback_model
+
         client = OpenAI(
-            api_key=settings.openai_api_key,
-            base_url=settings.openai_base_url,
+            api_key=api_key,
+            base_url=base_url,
         )
         resp = client.chat.completions.create(
-            model=settings.openai_model,
+            model=model,
             max_tokens=180,
             temperature=0.5,
             messages=[{

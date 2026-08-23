@@ -87,9 +87,9 @@ export default function AiChat({ asWidget, headless, onClose, initialQuery }) {
 
   useEffect(() => {
     if (textareaRef.current) {
-      textareaRef.current.style.height = '36px';
+      textareaRef.current.style.height = '24px';
       const scrollHeight = textareaRef.current.scrollHeight;
-      textareaRef.current.style.height = `${Math.min(Math.max(scrollHeight, 36), 48)}px`;
+      textareaRef.current.style.height = `${Math.min(Math.max(scrollHeight, 24), 48)}px`;
     }
   }, [input]);
 
@@ -218,16 +218,11 @@ export default function AiChat({ asWidget, headless, onClose, initialQuery }) {
                   <BotMessageSquare size={15} />
                 </div>
               )}
-              {msg.role === 'staff' && (
-                <div className="w-7 h-7 rounded-full bg-linear-to-br from-gold to-yellow-500 flex items-center justify-center shrink-0 text-[11px] font-bold text-maroon font-serif shadow-sm">S</div>
-              )}
               <div className={`max-w-[80%] py-2.5 px-4 text-[14px] leading-relaxed shadow-sm ${
                 msg.role === 'user' ? 'rounded-[20px_20px_4px_20px] bg-maroon text-white border-none' : 
-                msg.role === 'staff' ? 'rounded-[20px_20px_20px_4px] bg-gold-light text-maroon-dark border border-gold/20' : 
                 msg.isError ? 'rounded-[20px_20px_20px_4px] bg-red-50 text-red-600 border border-red-100' : 
                 'rounded-[20px_20px_20px_4px] bg-white text-text-main border border-border/60'
               }`}>
-                {msg.role === 'staff' && <p className="text-[11px] font-bold m-0 mb-1 uppercase tracking-wider opacity-80">{msg.staff_name || 'Registrar Staff'}</p>}
                 <p className="m-0 whitespace-pre-wrap">{msg.content}</p>
               </div>
             </div>
