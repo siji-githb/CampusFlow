@@ -874,8 +874,9 @@ export default function MyQueue({ embedded = false }) {
 
       {/* Cancel Confirmation Modal */}
       {cancelConfirmId && createPortal(
-        <div className="fixed inset-0 z-9999 flex items-center justify-center bg-black/60 p-4 animate-fade-in pointer-events-auto">
-          <div className="bg-white rounded-2xl p-7 max-w-sm w-full shadow-2xl animate-fade-up">
+        <div className="fixed inset-0 z-9999 flex items-center justify-center p-4 pointer-events-auto">
+          <div className="fixed inset-0 bg-black/60 transition-opacity backdrop-blur-2xs" onClick={() => setCancelConfirmId(null)} />
+          <div className="relative bg-white rounded-2xl p-7 max-w-sm w-full shadow-2xl animate-fade-up z-10">
             <h3 className="text-[18px] font-bold text-text-main m-0 mb-2">Cancel Queue Ticket?</h3>
             <p className="text-[14px] text-text-sub m-0 mb-6">
               Are you sure you want to cancel this active queue ticket? This action cannot be undone and you will lose your spot in line.
@@ -901,8 +902,9 @@ export default function MyQueue({ embedded = false }) {
 
       {/* Activate Confirmation Modal */}
       {activateConfirmId && createPortal(
-        <div className="fixed inset-0 z-9999 flex items-center justify-center bg-black/60 p-4 animate-fade-in pointer-events-auto">
-          <div className="bg-white rounded-2xl p-7 max-w-sm w-full shadow-2xl animate-fade-up">
+        <div className="fixed inset-0 z-9999 flex items-center justify-center p-4 pointer-events-auto">
+          <div className="fixed inset-0 bg-black/60 transition-opacity backdrop-blur-2xs" onClick={() => setActivateConfirmId(null)} />
+          <div className="relative bg-white rounded-2xl p-7 max-w-sm w-full shadow-2xl animate-fade-up z-10">
             <h3 className="text-[18px] font-bold text-text-main m-0 mb-2">Get Queue Number?</h3>
             <p className="text-[14px] text-text-sub m-0 mb-6">
               Are you sure you want to activate your queue ticket now? Make sure you are already at the Campus and you already have the receipt or documents needed.

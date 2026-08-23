@@ -43,8 +43,11 @@ async def websocket_endpoint(websocket: WebSocket, user=Depends(get_ws_user)):
     await manager.connect(websocket, user.id)
     try:
         while True:
-            # We don't expect the client to send messages here, but we must
-            # wait on receive() to detect when the client disconnects.
-            await websocket.receive_text()
+            # Wait for client messages or keep-alive pings
+            data = await websocket.receive_text()
+            if data == "ping":
+                await websocket.send_text("pong")
     except WebSocketDisconnect:
+        manager.disconnect(websocket, user.id)
+    except Exception:
         manager.disconnect(websocket, user.id)

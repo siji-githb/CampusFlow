@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from 'react'
+import { createPortal } from 'react-dom'
 import { useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '../../context/useAuth'
 import StudentLayout from '../../components/layout/StudentLayout'
@@ -873,10 +874,10 @@ export default function BookAppointment({ embedded = false }) {
               </div>
             )}
 
-            {confirmingBook && (
-              <div className="fixed inset-0 z-1000 flex items-center justify-center p-4">
-                <div className="absolute inset-0 bg-black/60 transition-opacity duration-300" onClick={() => !loading && setConfirmingBook(false)} />
-                <div className="animate-fade-up relative w-[92%] max-w-85 bg-white rounded-2xl sm:rounded-3xl p-5 sm:p-6 text-center shadow-2xl">
+            {confirmingBook && createPortal((
+              <div className="fixed inset-0 z-9999 flex items-center justify-center p-4">
+                <div className="fixed inset-0 bg-black/60 transition-opacity duration-300 backdrop-blur-2xs" onClick={() => !loading && setConfirmingBook(false)} />
+                <div className="animate-fade-up relative w-[92%] max-w-85 bg-white rounded-2xl sm:rounded-3xl p-5 sm:p-6 text-center shadow-2xl z-10">
                   <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-full bg-gold-light text-gold flex items-center justify-center mx-auto mb-3.5 shadow-2xs">
                     <HelpCircle size={22} />
                   </div>
@@ -902,7 +903,7 @@ export default function BookAppointment({ embedded = false }) {
                   </div>
                 </div>
               </div>
-            )}
+            ), document.body)}
           </div>
         </div>
       </div>

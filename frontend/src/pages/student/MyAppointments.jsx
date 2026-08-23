@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react'
+import { createPortal } from 'react-dom'
 import { useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '../../context/useAuth'
 import { useStaffEvent } from '../../context/WebSocketContext'
@@ -574,7 +575,7 @@ export default function MyAppointments({ embedded = false }) {
   }, [token])
   
   // Real-time WebSocket event listener for instant 0ms updates
-  useStaffEvent(['APPOINTMENTS_UPDATED', 'QUEUE_UPDATED'], () => {
+  useStaffEvent(['APPOINTMENTS_UPDATED', 'QUEUE_UPDATED', 'RELEASES_UPDATED', 'NOTIFICATION_RECEIVED'], () => {
     fetch()
   })
 
@@ -964,10 +965,10 @@ export default function MyAppointments({ embedded = false }) {
         />
       )}
 
-      {confirmCancelId && (
-        <div className="fixed inset-0 z-1000 flex items-center justify-center p-4">
-          <div className="fixed inset-0 bg-black/60 transition-opacity" onClick={() => setConfirmCancelId(null)} />
-          <div className="relative w-full max-w-sm bg-white rounded-2xl p-6 text-center shadow-xl border border-border z-10 animate-fade-up">
+      {confirmCancelId && createPortal((
+        <div className="fixed inset-0 z-9999 flex items-center justify-center p-4">
+          <div className="fixed inset-0 bg-black/60 transition-opacity backdrop-blur-2xs" onClick={() => setConfirmCancelId(null)} />
+          <div className="relative w-full max-w-sm bg-white rounded-2xl p-6 text-center shadow-2xl border border-border z-10 animate-fade-up">
             <div className="w-12 h-12 rounded-full bg-red-100 text-maroon flex items-center justify-center mx-auto mb-4">
               <AlertTriangle size={24} />
             </div>
@@ -991,12 +992,12 @@ export default function MyAppointments({ embedded = false }) {
             </div>
           </div>
         </div>
-      )}
+      ), document.body)}
 
-      {showClearConfirm && (
-        <div className="fixed inset-0 z-1000 flex items-center justify-center p-4">
-          <div className="fixed inset-0 bg-black/60 transition-opacity" onClick={() => setShowClearConfirm(false)} />
-          <div className="relative w-full max-w-sm bg-white rounded-2xl p-6 text-center shadow-xl border border-border z-10 animate-fade-up">
+      {showClearConfirm && createPortal((
+        <div className="fixed inset-0 z-9999 flex items-center justify-center p-4">
+          <div className="fixed inset-0 bg-black/60 transition-opacity backdrop-blur-2xs" onClick={() => setShowClearConfirm(false)} />
+          <div className="relative w-full max-w-sm bg-white rounded-2xl p-6 text-center shadow-2xl border border-border z-10 animate-fade-up">
             <div className="w-12 h-12 rounded-full bg-red-100 text-maroon flex items-center justify-center mx-auto mb-4">
               <Trash2 size={24} />
             </div>
@@ -1022,7 +1023,7 @@ export default function MyAppointments({ embedded = false }) {
             </div>
           </div>
         </div>
-      )}
+      ), document.body)}
     </>
   );
 

@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import { Link } from 'react-router-dom'
 import StudentLayout from '../../components/layout/StudentLayout'
 import { useAuth } from '../../context/useAuth'
@@ -825,14 +826,8 @@ export default function StudentProfile({ embedded = false }) {
       </div>
 
       {/* Manage Profile Modal */}
-      {isEditModalOpen && (
-        <div className="fixed inset-0 z-1000 flex items-center justify-center p-4 bg-black/50" style={{ animation: 'fadeIn 0.2s ease-out' }}>
-          <style>{`
-            @keyframes fadeIn {
-              from { opacity: 0; }
-              to { opacity: 1; }
-            }
-          `}</style>
+      {isEditModalOpen && createPortal((
+        <div className="fixed inset-0 z-9999 flex items-center justify-center p-4 bg-black/60 backdrop-blur-2xs">
           <div className="bg-white rounded-3xl w-full max-w-125 shadow-2xl overflow-hidden animate-fade-up">
             <div className="flex items-center justify-between p-6 border-b border-border bg-off-white">
               <h2 className="font-serif text-[22px] font-bold text-maroon m-0">Manage Profile</h2>
@@ -916,9 +911,9 @@ export default function StudentProfile({ embedded = false }) {
             </div>
           </div>
         </div>
-      )}
+      ), document.body)}
       {/* Floating Toast Notification */}
-      {toastMsg && (
+      {toastMsg && createPortal((
         <div className={`fixed bottom-10 right-8 z-9999 flex items-center gap-3 px-5 py-3.5 rounded-xl shadow-[0_12px_32px_rgba(0,0,0,0.18)] border text-[13.5px] font-bold animate-fade-up ${
           toastMsg.type === 'error'
             ? 'bg-danger text-white border-danger-border'
@@ -938,7 +933,7 @@ export default function StudentProfile({ embedded = false }) {
             <X size={14} strokeWidth={2.5} />
           </button>
         </div>
-      )}
+      ), document.body)}
     </>
   );
 

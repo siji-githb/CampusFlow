@@ -66,10 +66,34 @@ export function WebSocketProvider({ children }) {
 
     fetchInitialNotifications()
 
-    const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000'
-    const wsUrl = API_URL.replace(/^http/, 'ws') + `/notifications/ws?token=${token}`
+    const rawApiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000'
+    const cleanApiUrl = rawApiUrl.replace(/\/+$/, '')
+    const wsProtocol = cleanApiUrl.startsWith('https') ? 'wss' : (cleanApiUrl.startsWith('http') ? 'ws' : (window.location.protocol === 'https:' ? 'wss' : 'ws'))
+    const wsBase = cleanApiUrl.replace(/^https?:\/\//, '')
+    const wsUrl = `${wsProtocol}://${wsBase}/notifications/ws?token=${encodeURIComponent(token)}`
 
     let isMounted = true
+    let heartbeatInterval = null
+
+    const startHeartbeat = (ws) => {
+      if (heartbeatInterval) clearInterval(heartbeatInterval)
+      heartbeatInterval = setInterval(() => {
+        if (ws.readyState === WebSocket.OPEN) {
+          try {
+            ws.send('ping')
+          } catch {
+            // Socket write failed
+          }
+        }
+      }, 25000) // Send ping every 25s to keep cloud load balancers & reverse proxies alive
+    }
+
+    const stopHeartbeat = () => {
+      if (heartbeatInterval) {
+        clearInterval(heartbeatInterval)
+        heartbeatInterval = null
+      }
+    }
 
     const connect = () => {
       if (!isMounted) return
@@ -81,11 +105,14 @@ export function WebSocketProvider({ children }) {
         ws.onopen = () => {
           if (!isMounted) return
           setIsConnected(true)
+          startHeartbeat(ws)
           fetchInitialNotifications()
         }
 
         ws.onmessage = (event) => {
           if (!isMounted) return
+          if (event.data === 'pong') return // Heartbeat response
+
           try {
             const data = JSON.parse(event.data)
 
@@ -96,6 +123,13 @@ export function WebSocketProvider({ children }) {
               setNotifications((prev) => {
                 if (prev.some((n) => n.id === data.id)) return prev
                 return [data, ...prev]
+              })
+
+              // Dispatch event to active pages so they instantly re-fetch updated data
+              dispatchStaffEvent({
+                type: 'STAFF_EVENT',
+                event: 'NOTIFICATION_RECEIVED',
+                payload: data
               })
 
               // Trigger native browser push notification
@@ -111,6 +145,7 @@ export function WebSocketProvider({ children }) {
         }
 
         ws.onclose = () => {
+          stopHeartbeat()
           if (!isMounted) return
           setIsConnected(false)
           reconnectTimeoutRef.current = setTimeout(() => {
@@ -119,6 +154,7 @@ export function WebSocketProvider({ children }) {
         }
       } catch (err) {
         console.error('WebSocket connection error:', err)
+        stopHeartbeat()
         reconnectTimeoutRef.current = setTimeout(() => {
           connect()
         }, 5000)
@@ -129,6 +165,7 @@ export function WebSocketProvider({ children }) {
 
     return () => {
       isMounted = false
+      stopHeartbeat()
       if (reconnectTimeoutRef.current) clearTimeout(reconnectTimeoutRef.current)
       if (wsRef.current) {
         wsRef.current.onclose = null
