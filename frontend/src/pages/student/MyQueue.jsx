@@ -6,7 +6,7 @@ import { useStaffEvent } from '../../context/WebSocketContext'
 import StudentLayout from '../../components/layout/StudentLayout'
 import { getMyQueue, activateQueue, getTimeEstimate, getMyDocumentsToClaim } from '../../services/queueService'
 import { getMyAppointments, cancelAppointment } from '../../services/appointmentService'
-import { Clock, Hourglass, PartyPopper, Ticket, Calendar, Inbox, Cog, FileCheck, Sparkles, Loader2 } from 'lucide-react'
+import { Clock, Hourglass, PartyPopper, Ticket, Calendar, Inbox, Cog, FileCheck, FileSignature, Loader2 } from 'lucide-react'
 
 const STEP_STYLE = {
   pending:     { bg: '#F9F9F9', color: '#706B65' }, // text-text-sub
@@ -172,8 +172,9 @@ export default function MyQueue({ embedded = false }) {
   //    present, or is it back-office processing with no line to stand in? ──
   const currentStep = steps.find(s => s.status === 'in_progress')
   const currentStepNameLower = (currentStep?.step_name || '').toLowerCase()
+  const currentStepLocLower = (currentStep?.location || '').toLowerCase()
   const currentRequiresPresence = currentStep?.requires_presence !== false // default true if missing/undefined
-  const isCurrentStepRelease = currentStepNameLower.includes('release') || currentStepNameLower.includes('claim') || currentStepNameLower.includes('pickup')
+  const isCurrentStepRelease = currentStepNameLower.includes('release') || currentStepNameLower.includes('claim') || currentStepNameLower.includes('pickup') || currentStepNameLower.includes('collection') || currentStepNameLower.includes('issuance') || currentStepLocLower.includes('release')
   const isCurrentStepDocPrepared = currentStepNameLower.includes('document prepared') || currentStepNameLower.includes('document ready')
   const isCurrentStepPrep = !isCurrentStepDocPrepared && !isCurrentStepRelease && (currentStepNameLower.includes('preparation') || currentStepNameLower.includes('verification') || currentStepNameLower.includes('records') || !currentRequiresPresence)
   const isCurrentStepReceipt = currentStepNameLower.includes('receipt') || currentStepNameLower.includes('payment')
@@ -181,6 +182,22 @@ export default function MyQueue({ embedded = false }) {
   const releaseDateVal = ticket?.appointments?.release_date
   const isFutureScheduled = Boolean(releaseDateVal && releaseDateVal > today)
   const isReleaseActive = ticket?.status === 'in_progress' && isCurrentStepRelease && !isFutureScheduled
+
+  const getStepLocationLabel = (step) => {
+    if (!step) return 'Counter'
+    const nameLower = (step.step_name || '').toLowerCase()
+    const loc = step.location || ''
+    const locLower = loc.toLowerCase()
+    
+    // If the step already has a valid counter/location in DB, use it directly
+    if (loc && !locLower.includes('checking') && !locLower.includes('preparation') && !locLower.includes('prepared') && !locLower.includes('ready')) {
+      return loc
+    }
+    if (nameLower.includes('preparation') || nameLower.includes('verification') || nameLower.includes('prepared') || nameLower.includes('records') || step.requires_presence === false) {
+      return 'Back Office'
+    }
+    return loc || 'Counter'
+  }
 
   if (loading && !queueData && upcomingAppts.length === 0) {
     const skeleton = (
@@ -388,7 +405,7 @@ export default function MyQueue({ embedded = false }) {
                       )}
                     </div>
                     <p className="text-[11px] sm:text-xs text-text-sub m-0 font-medium">
-                      Window {ticket.counter_id ? (counters.find(c => c.id === ticket.counter_id)?.counter_number || ticket.counter_id) : '—'} &bull; Step {ticket.current_step || 1} of {ticket.appointments?.transaction_types?.steps_count || 1}
+                      Location: <strong className="text-text-main font-bold">{getStepLocationLabel(currentStep)}</strong> &bull; Step {ticket.current_step || 1} of {steps.length || ticket.total_steps || 1} ({currentStep?.step_name || 'Processing'})
                     </p>
                   </div>
                   {(ticket.status === 'waiting' || ticket.status === 'pending') && (
@@ -404,7 +421,7 @@ export default function MyQueue({ embedded = false }) {
                 {ticket.status === 'in_progress' && !currentRequiresPresence && (
                   <div className="mt-3 pt-2.5 border-t border-border/70">
                     <p className="text-xs sm:text-[12px] text-text-sub m-0 flex items-center gap-2 font-medium">
-                      <Cog size={13} className="text-gold animate-spin shrink-0" style={{ animationDuration: '3s' }} /> No need to wait in line — we'll notify you when it's your turn.
+                      <Cog size={13} className="text-gold animate-spin shrink-0" style={{ animationDuration: '3s' }} /> No need to wait in line — we'll notify you when your document is ready.
                     </p>
                   </div>
                 )}
@@ -419,7 +436,7 @@ export default function MyQueue({ embedded = false }) {
                   <div>
                     <p className="text-[10px] sm:text-[11px] font-extrabold text-text-muted uppercase tracking-[0.06em] mb-1">Document Release Date</p>
                     <p className="text-sm sm:text-base font-bold text-text-main m-0">
-                      {new Date(ticket.appointments.release_date).toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' })}
+                      {formatFullDate(ticket.appointments.release_date)}
                     </p>
                   </div>
                   <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-gold/10 flex items-center justify-center text-gold shrink-0">
@@ -442,7 +459,7 @@ export default function MyQueue({ embedded = false }) {
                       <div className={`absolute inset-0 w-2.5 h-2.5 rounded-full animate-ping opacity-60 ${ticket.status === 'in_progress' ? 'bg-success' : 'bg-gold'}`} />
                     </div>
                     <span className="text-xs sm:text-[13px] font-bold text-text-main uppercase tracking-[0.06em]">
-                      {ticket.status === 'in_progress' ? 'Live Serving' : 'Waiting in Queue'}
+                      {ticket.status === 'in_progress' ? (isReleaseActive ? 'Ready for Pickup' : isFutureScheduled && isCurrentStepRelease ? 'Scheduled for Release' : isCurrentStepDocPrepared ? 'Finalizing Document' : isCurrentStepPrep ? 'In Preparation' : 'Live Serving') : 'Waiting in Queue'}
                     </span>
                   </div>
                   <span className="text-[10px] sm:text-[11px] font-medium text-text-muted">
@@ -499,14 +516,14 @@ export default function MyQueue({ embedded = false }) {
                       const isLast = idx === steps.length - 1
                       const stepRequiresPresence = step.requires_presence !== false
                       const stepNameLower = (step.step_name || '').toLowerCase()
-                      const isRelease = stepNameLower.includes('release') || stepNameLower.includes('claim') || stepNameLower.includes('pickup')
+                      const isRelease = stepNameLower.includes('release') || stepNameLower.includes('claim') || stepNameLower.includes('pickup') || stepNameLower.includes('collection') || stepNameLower.includes('issuance') || (step.location || '').toLowerCase().includes('release')
                       const isDocPrepared = stepNameLower.includes('document prepared') || stepNameLower.includes('document ready')
                       const isPrep = !isDocPrepared && !isRelease && (stepNameLower.includes('preparation') || stepNameLower.includes('verification') || stepNameLower.includes('records') || !stepRequiresPresence)
                       const isReceipt = stepNameLower.includes('receipt') || stepNameLower.includes('payment')
                       
                       const isTicketWaiting = ticket.status === 'waiting' || ticket.status === 'pending'
                       const isActiveStep = step.status === 'in_progress' && !isTicketWaiting
-                      const releaseWindow = step.location && !step.location.toLowerCase().includes('release') ? step.location : 'Window 1'
+                      const releaseWindow = step.location && !step.location.toLowerCase().includes('release') ? step.location : "the Registrar's Office"
 
                       return (
                         <div key={step.id} className="flex gap-2.5 sm:gap-3.5 md:gap-4">
@@ -585,10 +602,10 @@ export default function MyQueue({ embedded = false }) {
                                   {isFutureScheduled ? (
                                     <div className="p-3.5 sm:p-4 bg-gold/8 border border-gold/25 rounded-xl">
                                       <p className="text-xs sm:text-[13px] text-gold-dark font-bold m-0 flex items-center gap-2">
-                                        <Calendar size={14} className="shrink-0 text-gold" /> Scheduled for Release on {new Date(releaseDateVal).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+                                        <Calendar size={14} className="shrink-0 text-gold" /> Scheduled for Release on {formatFullDate(releaseDateVal)}
                                       </p>
                                       <p className="text-[11px] sm:text-[12px] text-text-sub m-0 mt-1.5 leading-relaxed">
-                                        Your document is currently being prepared and processed. Please visit the Registrar's Office on or after your scheduled release date to claim it.
+                                        Your document has been prepared and scheduled for release. No need to wait in line today — please return to {releaseWindow} on or after <strong>{formatFullDate(releaseDateVal)}</strong> with your queue ticket (<strong className="text-maroon font-serif font-bold">{ticket.queue_number}</strong>) to claim it.
                                       </p>
                                     </div>
                                   ) : (
@@ -650,13 +667,22 @@ export default function MyQueue({ embedded = false }) {
                                 <div className="mt-3 flex flex-col gap-2.5 sm:gap-3">
                                   <div className="p-3.5 sm:p-4 bg-gold/8 border border-gold/25 rounded-xl">
                                     <p className="text-xs sm:text-[13px] text-gold-dark font-bold m-0 flex items-center gap-2">
-                                      <Sparkles size={14} className="shrink-0 text-gold" /> Finalizing Document for Release
+                                      <FileSignature size={14} className="shrink-0 text-gold" /> Finalizing Document for Release
                                     </p>
                                     <p className="text-[11px] sm:text-[12px] text-text-sub m-0 mt-1.5 leading-relaxed">
                                       Your document records are verified. Staff is currently printing, signing, and dry-sealing the official copy.
-                                      {isFutureScheduled && releaseDateVal && (
-                                        <span className="block mt-1 font-semibold text-gold-dark">
-                                          Scheduled Pickup Date: {new Date(releaseDateVal).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}.
+                                      {isFutureScheduled && releaseDateVal ? (
+                                        <span className="block mt-2.5 pt-2 border-t border-gold/15">
+                                          <span className="flex items-center gap-1.5 font-bold text-gold-dark text-xs sm:text-[12.5px]">
+                                            <Calendar size={13} className="shrink-0 text-gold" /> Scheduled Pickup Date: {formatFullDate(releaseDateVal)}
+                                          </span>
+                                          <span className="block font-normal text-text-sub mt-1 text-[11px] sm:text-[11.5px]">
+                                            No need to wait in line — please return to the Registrar's Office on your scheduled date.
+                                          </span>
+                                        </span>
+                                      ) : (
+                                        <span className="block mt-1 text-text-sub font-medium">
+                                          No need to wait in line — it will be ready for immediate pickup shortly at the release window.
                                         </span>
                                       )}
                                     </p>
@@ -678,7 +704,7 @@ export default function MyQueue({ embedded = false }) {
                               {isActiveStep && isReceipt && stepRequiresPresence && (
                                 <div className="mt-2.5 p-3 bg-gold/6 border border-gold/15 rounded-xl">
                                   <p className="text-xs sm:text-[13px] text-gold font-bold m-0 flex items-center gap-2">
-                                    <Hourglass size={13} className="animate-pulse shrink-0" /> Please proceed to {step.location && !step.location.toLowerCase().includes('checking') ? step.location : 'Window 1'}
+                                    <Hourglass size={13} className="animate-pulse shrink-0" /> Please proceed to {getStepLocationLabel(step)}
                                   </p>
                                   <p className="text-[11px] sm:text-[11.5px] text-text-sub m-0 mt-1 ml-5 leading-relaxed">
                                     Present your queue ticket and official payment receipt to the registrar counter window.
@@ -689,7 +715,7 @@ export default function MyQueue({ embedded = false }) {
                               {isActiveStep && !isRelease && !isDocPrepared && !isPrep && !isReceipt && stepRequiresPresence && (
                                 <div className="mt-2.5 p-3 bg-gold/6 border border-gold/15 rounded-xl">
                                   <p className="text-xs sm:text-[13px] text-gold font-bold m-0 flex items-center gap-2">
-                                    <Hourglass size={13} className="animate-pulse shrink-0" /> Please proceed to {step.location && !step.location.toLowerCase().includes('checking') ? step.location : 'the counter'}
+                                    <Hourglass size={13} className="animate-pulse shrink-0" /> Please proceed to {getStepLocationLabel(step)}
                                   </p>
                                   <p className="text-[11px] sm:text-[11.5px] text-text-sub m-0 mt-1 ml-5 leading-relaxed">
                                     Present your queue ticket and required requirements to the registrar window.

@@ -313,15 +313,23 @@ def create_appointment(student_id: str, priority_class: str, data: AppointmentCr
 def get_student_appointments(student_id: str):
     admin = get_admin()
     
-    # Auto-cancel past appointments for this student
+    # Auto-cancel past unactivated appointments for this student
     try:
         today_str = str(date.today())
-        admin.table("appointments") \
-            .update({"status": "cancelled"}) \
+        past_appts_res = admin.table("appointments") \
+            .select("id, queue_tickets(id, status)") \
             .in_("status", ["pending", "confirmed"]) \
             .lt("appointment_date", today_str) \
             .eq("student_id", student_id) \
             .execute()
+        
+        for appt in (past_appts_res.data or []):
+            tickets = appt.get("queue_tickets") or []
+            if not isinstance(tickets, list):
+                tickets = [tickets]
+            has_valid_ticket = any(t and t.get("status") in ["waiting", "in_progress", "completed"] for t in tickets)
+            if not has_valid_ticket:
+                admin.table("appointments").update({"status": "cancelled"}).eq("id", appt["id"]).execute()
     except Exception:
         pass
 

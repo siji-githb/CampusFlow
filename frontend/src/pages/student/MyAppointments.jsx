@@ -18,7 +18,7 @@ const CustomDropdown = ({ value, onChange, options, icon }) => {
   const currentLabel = options.find(o => o.value === value)?.label || value
 
   return (
-    <div className="relative inline-block w-auto min-w-36.25 sm:min-w-45 max-w-50 sm:max-w-55 z-20 group">
+    <div className={`relative inline-block w-auto min-w-36.25 sm:min-w-45 max-w-50 sm:max-w-55 ${isOpen ? 'z-50' : 'z-20'} group`}>
       <button
         onClick={() => setIsOpen(!isOpen)}
         className="w-full flex items-center justify-between py-2 px-2.5 pl-8 sm:py-2.5 sm:pl-9 sm:pr-3 rounded-xl border border-border sm:border-[1.5px] bg-white text-xs sm:text-[13.5px] text-text-main font-bold outline-none cursor-pointer font-sans hover:border-maroon/30 transition-all shadow-2xs"
@@ -32,7 +32,7 @@ const CustomDropdown = ({ value, onChange, options, icon }) => {
       {isOpen && (
         <>
           <div className="fixed inset-0 z-40" onClick={() => setIsOpen(false)} />
-          <div className="absolute left-0 top-full mt-1.5 min-w-full w-max max-w-65 bg-white rounded-xl border border-border shadow-lg p-1.5 z-50 animate-fade-up max-h-75 overflow-y-auto" style={{ animationDuration: '0.2s' }}>
+          <div className="absolute left-0 top-full mt-1.5 min-w-full w-max max-w-65 bg-white rounded-xl border border-border shadow-xl p-1.5 z-50 animate-fade-up max-h-75 overflow-y-auto" style={{ animationDuration: '0.15s' }}>
             {options.map(o => {
               const isActive = value === o.value;
               return (
@@ -724,7 +724,6 @@ export default function MyAppointments({ embedded = false }) {
     { value: 'scheduled_release', label: 'Scheduled Claiming' },
     { value: 'ready_for_pickup', label: 'Ready for Pickup' },
     { value: 'confirmed', label: 'Confirmed' },
-    { value: 'pending', label: 'Pending' },
     { value: 'completed', label: 'Completed' },
     { value: 'cancelled', label: 'Cancelled' },
   ]
@@ -800,7 +799,7 @@ export default function MyAppointments({ embedded = false }) {
 
         {/* Action Controls & Notifications (Hidden on mobile when viewing in-page details) */}
         <div 
-          className={`flex-col gap-4 mb-6 animate-fade-up ${isMobileViewingDetails ? 'hidden md:flex' : 'flex'}`}
+          className={`relative z-30 flex-col gap-4 mb-6 animate-fade-up ${isMobileViewingDetails ? 'hidden md:flex' : 'flex'}`}
           style={{ animationDelay: '0.1s' }}
         >
           {error && (
@@ -814,7 +813,7 @@ export default function MyAppointments({ embedded = false }) {
             </div>
           )}
 
-          <div className="flex flex-row items-center justify-between gap-2.5 sm:gap-3 flex-wrap">
+          <div className="relative z-30 flex flex-row items-center justify-between gap-2.5 sm:gap-3 flex-wrap">
             <div className="flex items-center gap-2">
               <CustomDropdown 
                 value={filter} 
@@ -870,7 +869,7 @@ export default function MyAppointments({ embedded = false }) {
         <div className={`flex-col md:flex-row md:gap-8 md:items-start ${isMobileViewingDetails ? 'hidden md:flex' : 'flex'}`}>
           
           {/* ── Left Column: Appointments List ── */}
-          <div className="flex-1 w-full md:max-w-125 animate-fade-up" style={{ animationDelay: '0.15s' }}>
+          <div className="flex-1 w-full md:max-w-125 relative z-10 animate-fade-up" style={{ animationDelay: '0.15s' }}>
             {loading ? (
               <div className="flex flex-col gap-3">
                 {[1, 2, 3].map(i => (

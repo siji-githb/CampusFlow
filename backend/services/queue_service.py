@@ -14,22 +14,27 @@ settings = get_settings()
 _queue_number_lock = threading.Lock()
 
 
-def generate_queue_number(transaction_name: str, count: int) -> str:
+def get_transaction_prefix(transaction_name: str) -> str:
     name = transaction_name.lower()
     if "transcript" in name or "tor" in name:
-        prefix = "TOR"
+        return "TOR"
     elif "enrollment" in name or "coe" in name:
-        prefix = "COE"
+        return "COE"
     elif "diploma" in name:
-        prefix = "DIP"
+        return "DIP"
     elif "general weighted average" in name or "gwa" in name:
-        prefix = "GWA"
+        return "GWA"
     elif "completion form" in name and "request" in name:
-        prefix = "CFR"
+        return "CFR"
     elif "completion form" in name and "submission" in name:
-        prefix = "CFS"
-    else:
-        prefix = "TXN"
+        return "CFS"
+    elif "certificate of registration" in name or "cor" in name:
+        return "COR"
+    return "TXN"
+
+
+def generate_queue_number(transaction_name: str, count: int) -> str:
+    prefix = get_transaction_prefix(transaction_name)
     return f"{prefix}-{str(count).zfill(3)}"
 
 
@@ -79,25 +84,37 @@ def activate_queue(appointment_id: str, student_id: str):
     # Generate queue number
     tt = appt["transaction_types"]
     processing_steps = tt["processing_steps"] or []
+    prefix = get_transaction_prefix(tt.get("name", ""))
 
     # Queue number assignment strategy:
-    #   1. _queue_number_lock guards concurrent requests within a single process.
-    #   2. The retry loop handles races between different processes/replicas.
-    #   3. For guarantee-level safety, a unique constraint on (queue_number, date(created_at))
-    #      should be defined on the queue_tickets table in the database.
-    _MAX_QNUM_RETRIES = 5
+    # 1. _queue_number_lock guards concurrent requests within a single process.
+    # 2. Inspect existing queue numbers for today (in both local and UTC dates) with this prefix to find the max sequence.
+    # 3. Increment sequence dynamically on each attempt.
+    _MAX_QNUM_RETRIES = 10
     ticket = None
     with _queue_number_lock:
-        today_str = str(date.today())
+        utc_today_str = datetime.now(timezone.utc).date().isoformat()
+        
         for attempt in range(_MAX_QNUM_RETRIES):
-            # Re-read the live daily count on every attempt so a retried insert
-            # uses the accurate post-collision count rather than a stale value.
-            count_res = admin.table("queue_tickets") \
-                .select("id, appointments!inner(appointment_date)", count="exact") \
-                .eq("appointments.appointment_date", today_str) \
+            # Find all tickets created today with matching prefix
+            existing_res = admin.table("queue_tickets") \
+                .select("queue_number") \
+                .gte("created_at", utc_today_str) \
+                .ilike("queue_number", f"{prefix}-%") \
                 .execute()
-            daily_count = count_res.count if count_res.count is not None else len(count_res.data)
-            queue_number = generate_queue_number(tt["name"], daily_count + 1)
+            
+            max_num = 0
+            for row in (existing_res.data or []):
+                qnum = row.get("queue_number", "")
+                try:
+                    num_part = int(qnum.split("-")[1])
+                    if num_part > max_num:
+                        max_num = num_part
+                except (IndexError, ValueError):
+                    pass
+
+            candidate_num = max_num + 1 + attempt
+            queue_number = f"{prefix}-{str(candidate_num).zfill(3)}"
 
             try:
                 ticket_res = admin.table("queue_tickets").insert({
@@ -112,12 +129,12 @@ def activate_queue(appointment_id: str, student_id: str):
                 break  # success — exit retry loop
             except Exception as e:
                 err = str(e).lower()
-                # Only retry on duplicate-key / unique-constraint violations.
+                # Retry on duplicate-key / unique-constraint violations
                 if attempt < _MAX_QNUM_RETRIES - 1 and ("duplicate" in err or "unique" in err or "23505" in err):
                     continue
                 raise HTTPException(
                     status_code=409 if ("duplicate" in err or "unique" in err or "23505" in err) else 500,
-                    detail="Could not assign a unique queue number. Please try again." if "duplicate" in err or "unique" in err else str(e)
+                    detail="Could not assign a unique queue number. Please try again." if ("duplicate" in err or "unique" in err or "23505" in err) else str(e)
                 )
 
 
@@ -132,17 +149,26 @@ def activate_queue(appointment_id: str, student_id: str):
 
     steps_to_insert = []
     step_names_only = []
-    from datetime import datetime, timezone
     now_iso = datetime.now(timezone.utc).isoformat()
     
     for i, raw_step in enumerate(processing_steps):
         step_name, requires_presence = _normalize_step(raw_step)
         step_names_only.append(step_name)
+        step_lower = step_name.lower()
+        if "preparation" in step_lower or "prepared" in step_lower or "verification" in step_lower or not requires_presence:
+            loc = "Back Office"
+        elif "release" in step_lower or "claim" in step_lower or "pickup" in step_lower:
+            loc = "Window 2"
+        elif "receipt" in step_lower or "payment" in step_lower or "submission" in step_lower:
+            loc = "Window 1"
+        else:
+            loc = step_name.split(" - ")[0] if " - " in step_name else "Counter"
+
         steps_to_insert.append({
             "queue_ticket_id": ticket["id"],
             "step_number": i + 1,
             "step_name": step_name,
-            "location": step_name.split(" - ")[0] if " - " in step_name else step_name,
+            "location": loc,
             "status": "in_progress" if i == 0 else "pending",
             "activated_at": now_iso if i == 0 else None,
         })
@@ -204,14 +230,19 @@ def get_student_queue(student_id: str):
         if not tickets_res.data:
             return None
 
-        # 2. Filter out cancelled appointments/tickets
+        # 2. Filter out deleted or cancelled tickets
         valid_tickets = []
         for t in tickets_res.data:
             appt = t.get("appointments") or {}
             appt_status = appt.get("status")
             tx_name = (appt.get("transaction_types") or {}).get("name", "")
             
-            if appt_status == "cancelled" or t.get("status") == "cancelled" or "(deleted" in tx_name:
+            # If the queue ticket itself is cancelled or deleted transaction type, skip
+            if t.get("status") == "cancelled" or "(deleted" in tx_name:
+                continue
+            
+            # If appointment was auto-cancelled but ticket is actively waiting or in progress, retain it
+            if appt_status == "cancelled" and t.get("status") not in ["waiting", "in_progress"]:
                 continue
                 
             valid_tickets.append(t)
@@ -221,22 +252,45 @@ def get_student_queue(student_id: str):
 
         # 3. Pick the active ticket:
         # Priority 1: Any active queue ticket currently waiting or in_progress (persists across days)
-        # Priority 2: Recently completed ticket from today
         active_ticket = None
         for t in valid_tickets:
             if t["status"] in ["waiting", "in_progress"]:
                 active_ticket = t
                 break
 
+        # Priority 2: Check if any ticket has transaction steps that are still in_progress
         if not active_ticket:
             for t in valid_tickets:
-                appt = t.get("appointments") or {}
-                if t["status"] == "completed" and appt.get("appointment_date") == today_str:
+                steps_check = admin.table("transaction_steps") \
+                    .select("id, status, step_name") \
+                    .eq("queue_ticket_id", t["id"]) \
+                    .execute()
+                steps_list = steps_check.data or []
+                has_in_progress_step = any(s.get("status") == "in_progress" for s in steps_list)
+                if has_in_progress_step:
+                    active_ticket = t
+                    if t["status"] != "in_progress":
+                        admin.table("queue_tickets").update({"status": "in_progress"}).eq("id", t["id"]).execute()
+                        t["status"] = "in_progress"
+                    break
+
+        # Priority 3: Latest completed ticket (persists so student is never left with a blank wiped screen)
+        if not active_ticket:
+            for t in valid_tickets:
+                if t["status"] == "completed":
                     active_ticket = t
                     break
 
         if not active_ticket:
             return None
+
+        # Ensure appointment status is confirmed for active ticket
+        if active_ticket and active_ticket.get("status") in ["waiting", "in_progress"]:
+            appt = active_ticket.get("appointments") or {}
+            if appt.get("status") == "cancelled" and active_ticket.get("appointment_id"):
+                admin.table("appointments").update({"status": "confirmed"}).eq("id", active_ticket["appointment_id"]).execute()
+                if "appointments" in active_ticket and isinstance(active_ticket["appointments"], dict):
+                    active_ticket["appointments"]["status"] = "confirmed"
 
         ticket = active_ticket
         steps_res = admin.table("transaction_steps") \
@@ -355,16 +409,10 @@ def remind_student(queue_ticket_id: str, staff_id: str):
     ticket = ticket_res.data[0]
     tx_name = ((ticket.get("appointments") or {}).get("transaction_types") or {}).get("name", "document")
     
-    # 1. Get staff's assigned window
-    from services.admin_service import get_window_assignments
-    assignments = get_window_assignments()
-    window_num = assignments.get("assignments", {}).get(staff_id)
-    window_label = f"Window {window_num}" if window_num else "Counter"
-
     create_system_notification(
         user_id=ticket["student_id"],
         title="Document Ready for Release",
-        message=f"Reminder: Your {tx_name} (Ticket {ticket['queue_number']}) is ready for pickup. Please proceed to {window_label} to claim your document.",
+        message=f"Reminder: Your {tx_name} (Ticket {ticket['queue_number']}) is ready for pickup. Please proceed to the Registrar's Office to claim your document.",
         type="info"
     )
 
@@ -526,18 +574,18 @@ def confirm_step(queue_ticket_id: str, step_number: int, staff_id: str,
             today_str = str(date.today())
 
             if rel_date_val and rel_date_val > today_str:
-                # Document is scheduled for a future date.
-                # set_release_date already sends "Document Release Date Scheduled", so do not send a conflicting "ready for release" notif.
-                notif_title = None
-                notif_message = None
+                try:
+                    rel_d_formatted = date.fromisoformat(str(rel_date_val).split("T")[0]).strftime("%B %d, %Y")
+                except Exception:
+                    rel_d_formatted = str(rel_date_val)
+                notif_title = "Document Finalized & Scheduled for Release"
+                notif_message = f"Your {tx_name} (Ticket {ticket['queue_number']}) is prepared. Please return to the Registrar's Office on {rel_d_formatted} to claim your document."
             else:
-                from services.admin_service import get_window_assignments
-                assignments = get_window_assignments()
-                window_num = assignments.get("assignments", {}).get(staff_id)
-                window_label = f"Window {window_num}" if window_num else "Window 1"
-
                 notif_title = "Document Ready for Release"
-                notif_message = f"Your {tx_name} (Ticket {ticket['queue_number']}) is ready for release. Please proceed to {window_label} to claim your document."
+                notif_message = f"Your {tx_name} (Ticket {ticket['queue_number']}) is ready for pickup. Please proceed to the Registrar's Office to claim your document."
+        elif "prepared" in next_step_name.lower():
+            notif_title = "Document Records Verified"
+            notif_message = f"Your {tx_name} records (Ticket {ticket['queue_number']}) are verified. Staff is finalizing the official copy in the back office."
         elif is_back_office_next:
             notif_title = f"{current_step_name} Confirmed"
             notif_message = f"{current_step_name} is confirmed. Your document is now being processed in the back office."
@@ -818,7 +866,7 @@ def get_uncollected_documents(threshold_days: int = 0):
             .select("*, queue_tickets(id, queue_number, student_id, "
                     "users(first_name, last_name, student_id), "
                     "appointments(transaction_types(name), priority_class, release_date))") \
-            .ilike("step_name", "%Release%") \
+            .or_("step_name.ilike.%Release%,step_name.ilike.%Claim%,step_name.ilike.%Pickup%,step_name.ilike.%Collection%,step_name.ilike.%Issuance%,location.ilike.%Release%") \
             .eq("status", "in_progress")
 
         if threshold_days > 0:
@@ -891,7 +939,7 @@ def get_collected_documents(limit: int = 500):
             .select("*, queue_tickets(id, queue_number, student_id, "
                     "users(first_name, last_name, student_id), "
                     "appointments(transaction_types(name), priority_class, release_date))") \
-            .ilike("step_name", "%Release%") \
+            .or_("step_name.ilike.%Release%,step_name.ilike.%Claim%,step_name.ilike.%Pickup%,step_name.ilike.%Collection%,step_name.ilike.%Issuance%,location.ilike.%Release%") \
             .eq("status", "completed") \
             .order("confirmed_at", desc=True) \
             .limit(limit) \
@@ -936,7 +984,7 @@ def get_my_documents_to_claim(student_id: str):
             .select("*, queue_tickets!inner(id, queue_number, student_id, status, appointments(transaction_types(name), release_date))") \
             .eq("queue_tickets.student_id", student_id) \
             .eq("queue_tickets.status", "in_progress") \
-            .ilike("step_name", "%Release%") \
+            .or_("step_name.ilike.%Release%,step_name.ilike.%Claim%,step_name.ilike.%Pickup%,step_name.ilike.%Collection%,step_name.ilike.%Issuance%,location.ilike.%Release%") \
             .eq("status", "in_progress") \
             .execute()
     except Exception as e:
@@ -983,17 +1031,15 @@ def get_public_live_queue():
     For the student dashboard 'Now Serving' view.
     """
     admin = get_admin()
-    today = str(date.today())
     try:
-        # Fetch tickets currently in progress for today
+        # Fetch tickets currently in progress
         tickets_res = admin.table("queue_tickets") \
-            .select("id, queue_number, appointments!inner(transaction_types(name, processing_steps)), transaction_steps(step_number, step_name, status, location)") \
+            .select("id, queue_number, appointments(transaction_types(name, processing_steps)), transaction_steps(step_number, step_name, status, location)") \
             .eq("status", "in_progress") \
-            .gte("created_at", today) \
             .execute()
             
         results = []
-        for ticket in tickets_res.data:
+        for ticket in (tickets_res.data or []):
             # Find the active step to get the counter/location
             steps = ticket.get("transaction_steps", [])
             active_step = next((s for s in steps if s.get("status") == "in_progress"), None)
@@ -1003,8 +1049,8 @@ def get_public_live_queue():
             step_name = (active_step.get("step_name") or "").lower()
             location = active_step.get("location") or "Counter"
             
-            # If step is preparation of document, release, or back office, exclude from live counter list
-            if "preparation" in step_name or "release" in step_name or location.lower() == "back office":
+            # If step is preparation of document, document prepared, release, or back office, exclude from live counter list
+            if "preparation" in step_name or "document prepared" in step_name or "document ready" in step_name or "release" in step_name or location.lower() == "back office":
                 continue
 
             raw_tx_name = ((ticket.get("appointments") or {}).get("transaction_types") or {}).get("name", "Transaction")

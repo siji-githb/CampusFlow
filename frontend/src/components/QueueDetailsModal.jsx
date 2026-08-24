@@ -269,8 +269,10 @@ export default function QueueDetailsModal({ ticketData, onClose, onConfirm, conf
           <div>
             {(() => {
               const isReleaseStep = (s) => {
+                if (!s) return false
                 const n = (s?.step_name || '').toLowerCase()
-                return n.includes('release') || n.includes('claim') || n.includes('issuance of doc')
+                const loc = (s?.location || '').toLowerCase()
+                return n.includes('release') || n.includes('claim') || n.includes('pickup') || n.includes('collection') || n.includes('issuance') || loc.includes('release')
               }
               const isDocPreparedStep = (s) => {
                 const n = (s?.step_name || '').toLowerCase()

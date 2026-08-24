@@ -8,14 +8,92 @@ import { getTransactionTypes } from '../../services/appointmentService'
 import { Check, CheckCircle2, Circle, Clock, X, Users, CheckSquare, AlertTriangle, Download, Inbox, Play, Ticket, DoorOpen, Cog, ChevronDown, SlidersHorizontal, FolderOpen } from 'lucide-react'
 import QueueDetailsModal from '../../components/QueueDetailsModal'
 
-// ── Status config ──────────────────────────────────────────────────────────────
-const STATUS_CFG = {
-  in_progress: { label: 'Serving Now',  bg: 'bg-success-light',  color: 'text-success',  border: 'border-success-border'  },
-  waiting:     { label: 'Waiting',      bg: 'bg-gold-light',   color: 'text-gold',   border: 'border-gold-border'   },
-  pending:     { label: 'Pending',      bg: 'bg-gold-light',   color: 'text-gold',   border: 'border-gold-border'   },
-  completed:   { label: 'Completed',    bg: 'bg-blue-light',   color: 'text-blue',   border: 'border-blue-border'   },
-  no_show:     { label: 'No Show',      bg: 'bg-gray-50',     color: 'text-gray-500',border: 'border-gray-200'      },
-  cancelled:   { label: 'Cancelled',    bg: 'bg-danger-light',    color: 'text-danger',    border: 'border-danger-border'    },
+// ── Helper to determine whether student presence is required ──────────────────
+const getRequiresPresence = (steps) => {
+  const current = steps?.find(s => s.status === 'in_progress') || steps?.[0]
+  if (!current) return false
+  const stepName = (current.step_name || '').toLowerCase()
+  const location = (current.location || '').toLowerCase()
+  if (
+    stepName.includes('preparation') ||
+    stepName.includes('release') ||
+    stepName.includes('claim') ||
+    stepName.includes('pickup') ||
+    location === 'back office' ||
+    location.includes('release')
+  ) {
+    return false
+  }
+  return current.requires_presence !== false // default true if missing/undefined
+}
+
+// ── Helper to resolve the actual document / workflow status ───────────────────
+const getDocStatusConfig = (ticket, steps) => {
+  if (!ticket) {
+    return { label: 'Pending', bg: 'bg-gold-light', color: 'text-gold', border: 'border-gold-border' }
+  }
+
+  if (ticket.status === 'completed') {
+    return { label: 'Completed', bg: 'bg-blue-light', color: 'text-blue', border: 'border-blue-border' }
+  }
+  if (ticket.status === 'cancelled') {
+    return { label: 'Cancelled', bg: 'bg-danger-light', color: 'text-danger', border: 'border-danger-border' }
+  }
+  if (ticket.status === 'no_show') {
+    return { label: 'No Show', bg: 'bg-gray-50', color: 'text-gray-500', border: 'border-gray-200' }
+  }
+
+  const currentStep = steps?.find(s => s.status === 'in_progress') || steps?.[ticket.current_step - 1]
+  const stepNameLower = (currentStep?.step_name || '').toLowerCase()
+  const locLower = (currentStep?.location || '').toLowerCase()
+
+  if (ticket.status === 'in_progress') {
+    // 1. Ready for Pickup / Release
+    if (
+      stepNameLower.includes('release') ||
+      stepNameLower.includes('claim') ||
+      stepNameLower.includes('pickup') ||
+      locLower.includes('release')
+    ) {
+      return { label: 'Ready for Pickup', bg: 'bg-success-light', color: 'text-success', border: 'border-success-border' }
+    }
+
+    // 2. Document Prepared / Dry Seal / Signing
+    if (
+      stepNameLower.includes('document prepared') ||
+      stepNameLower.includes('document ready') ||
+      stepNameLower.includes('dry seal') ||
+      stepNameLower.includes('signing')
+    ) {
+      return { label: 'Document Prepared', bg: 'bg-gold-light', color: 'text-gold-dark', border: 'border-gold-border' }
+    }
+
+    // 3. Processing / Verification / Preparation
+    if (
+      stepNameLower.includes('preparation') ||
+      stepNameLower.includes('verification') ||
+      stepNameLower.includes('records') ||
+      stepNameLower.includes('filing') ||
+      stepNameLower.includes('printing') ||
+      stepNameLower.includes('evaluat') ||
+      locLower === 'back office' ||
+      currentStep?.requires_presence === false
+    ) {
+      return { label: 'In Processing', bg: 'bg-gold-light', color: 'text-gold-dark', border: 'border-gold-border' }
+    }
+
+    // 4. Serving at Counter Window
+    return { label: 'Serving Now', bg: 'bg-success-light', color: 'text-success', border: 'border-success-border' }
+  }
+
+  // Waiting / Pending
+  const isCounter = getRequiresPresence(steps)
+  return {
+    label: isCounter ? 'Waiting' : 'In Processing Queue',
+    bg: 'bg-gold-light',
+    color: 'text-gold',
+    border: 'border-gold-border'
+  }
 }
 
 const fmt12h = (t) => {
@@ -119,8 +197,8 @@ const FilterBar = ({ filters, onChange, onReset, availableTxTypes = [] }) => {
           value={filters.status}
           onChange={val => onChange({ ...filters, status: val })}
           options={[
-            { value: 'active', label: 'Active (Serving & Waiting)' },
-            { value: 'in_progress', label: 'Serving Now' },
+            { value: 'active', label: 'All Active' },
+            { value: 'in_progress', label: 'In Progress' },
             { value: 'waiting', label: 'Waiting' },
             { value: 'completed', label: 'Completed' },
           ]}
@@ -284,12 +362,6 @@ export default function LiveQueuePage({ onNavigate }) {
     finally { setReminding(null) }
   }
 
-  const getRequiresPresence = (steps) => {
-    const current = steps?.find(s => s.status === 'in_progress')
-    if (current?.location === 'Back Office') return false
-    return current?.requires_presence !== false // default true if missing/undefined
-  }
-
   // ── Derived stats ──
   const { active, done, serving, waiting, servingCounter, servingProcessing, highPrio } = useMemo(() => {
     const active = queue.filter(q => q.ticket.status !== 'completed')
@@ -352,7 +424,7 @@ export default function LiveQueuePage({ onNavigate }) {
     const appt    = ticket.appointments
     const txName  = appt?.transaction_types?.name || 'Transaction'
     const pClass  = appt?.priority_class || 'regular'
-    const statusCfg = STATUS_CFG[ticket.status] || STATUS_CFG.pending
+    const statusCfg = getDocStatusConfig(ticket, steps)
     const isHighPrio = pClass === 'alumni' || pClass === 'pwd' || pClass === 'pregnant'
     const inProgressStep = steps?.find(s => s.status === 'in_progress')
     const confirmKey = inProgressStep ? `${ticket.id}-${inProgressStep.step_number}` : null
@@ -379,9 +451,9 @@ export default function LiveQueuePage({ onNavigate }) {
               Priority
             </span>
           )}
-          {ticket.status === 'in_progress' && inProgressStep?.location && (
+          {ticket.status === 'in_progress' && inProgressStep?.location && getRequiresPresence(steps) && !inProgressStep.location.toLowerCase().includes('back office') && (
             <div className="text-[11px] font-bold text-text-sub mt-1.5 flex items-center gap-1 uppercase tracking-[0.04em]">
-              {inProgressStep.location.toLowerCase() === 'back office' ? 'In Process' : `${inProgressStep.location} serving`}
+              {inProgressStep.location}
             </div>
           )}
         </div>
@@ -407,10 +479,10 @@ export default function LiveQueuePage({ onNavigate }) {
         {/* Status + Progress */}
         <div>
           <div className="flex items-center gap-1.5 mb-1.5 flex-wrap">
-            <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full border whitespace-nowrap ${statusCfg.bg} ${statusCfg.color} ${statusCfg.border}`}>
+            <span className={`text-[11px] font-semibold px-2.5 py-0.5 rounded-full border whitespace-nowrap ${statusCfg.bg} ${statusCfg.color} ${statusCfg.border}`}>
               {statusCfg.label}
             </span>
-            {inProgressStep && <span className="text-[11px] text-text-muted">Step {inProgressStep.step_number}</span>}
+            {inProgressStep && <span className="text-[11px] text-text-muted font-medium">Step {inProgressStep.step_number}</span>}
           </div>
           {steps && steps.length > 0 && (
             <StepsBar steps={steps} current={ticket.current_step} total={ticket.total_steps} />

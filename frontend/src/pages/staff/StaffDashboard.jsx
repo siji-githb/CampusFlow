@@ -18,15 +18,28 @@ import { getPendingPriorityRequests } from '../../services/priorityService'
 import { Inbox, BarChart2, Ticket, Calendar, ClipboardList, LogOut, Users, User, Settings, CheckSquare, Clock, CalendarClock, Monitor, MonitorX, HelpCircle, LayoutDashboard, ShieldCheck, Loader2, Menu, X, PanelLeftClose, FolderOpen, AlertCircle, IdCard, ChevronRight } from 'lucide-react'
 import { getWindowAssignments, claimWindow, releaseWindow, getIdRequests } from '../../services/adminService'
 
+// ── Helper to determine whether student presence is required at the counter ────
+const getRequiresPresence = (steps) => {
+  const current = steps?.find(s => s.status === 'in_progress') || steps?.[0]
+  if (!current) return false
+  const stepName = (current.step_name || '').toLowerCase()
+  const location = (current.location || '').toLowerCase()
+  if (
+    stepName.includes('preparation') ||
+    stepName.includes('release') ||
+    stepName.includes('claim') ||
+    stepName.includes('pickup') ||
+    location === 'back office' ||
+    location.includes('release')
+  ) {
+    return false
+  }
+  return current.requires_presence !== false // default true if missing/undefined
+}
+
 // ── Compact Queue Preview (Overview panel) ─────────────────────────────────────
 function CompactQueuePreview({ queue, loading }) {
-  const getRequiresPresence = (steps) => {
-    const current = steps?.find(s => s.status === 'in_progress') || steps?.[0]
-    if (current?.location === 'Back Office') return false
-    return current?.requires_presence !== false // default true
-  }
-
-  // Filter only active tickets that are at the physical counter (exclude processing table)
+  // Filter only active tickets that are at the physical counter (exclude processing & release)
   const activeAll = queue.filter(q => q.ticket.status !== 'completed' && getRequiresPresence(q.steps))
   const active = activeAll.slice(0, 5)
 
@@ -222,12 +235,6 @@ export default function StaffDashboard() {
     const wt = setInterval(loadWindowData, 60000)
     return () => { clearInterval(t); clearInterval(wt) }
   }, [loadData])
-
-  const getRequiresPresence = (steps) => {
-    const current = steps?.find(s => s.status === 'in_progress') || steps?.[0]
-    if (current?.location === 'Back Office') return false
-    return current?.requires_presence !== false // default true
-  }
 
   // Calculate stats — only count tickets at the counter (exclude back-office processing table)
   const activeInQueue = queue.filter(q => q.ticket.status !== 'completed' && getRequiresPresence(q.steps)).length

@@ -74,7 +74,7 @@ export default function StudentDashboard({ embedded = false }) {
         const steps = qData.steps || [];
         const currentStep = steps.find(s => s.status === 'in_progress');
         const currentStepNameLower = (currentStep?.step_name || '').toLowerCase();
-        const isRelease = currentStepNameLower.includes('release') || currentStepNameLower.includes('claim') || currentStepNameLower.includes('pickup');
+        const isRelease = currentStepNameLower.includes('release') || currentStepNameLower.includes('claim') || currentStepNameLower.includes('pickup') || currentStepNameLower.includes('collection') || currentStepNameLower.includes('issuance') || (currentStep?.location || '').toLowerCase().includes('release');
         const isDocPrepared = currentStepNameLower.includes('document prepared') || currentStepNameLower.includes('document ready');
         const isPrep = !isDocPrepared && !isRelease && (currentStepNameLower.includes('preparation') || currentStepNameLower.includes('verification') || currentStepNameLower.includes('records') || currentStep?.requires_presence === false);
         const releaseDateVal = qData.ticket?.appointments?.release_date;
