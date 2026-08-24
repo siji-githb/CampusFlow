@@ -4,7 +4,7 @@ import { useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '../../context/useAuth'
 import { useStaffEvent } from '../../context/WebSocketContext'
 import StudentLayout from '../../components/layout/StudentLayout'
-import { getMyAppointments, cancelAppointment, clearCancelledAppointments } from '../../services/appointmentService'
+import { getMyAppointments, cancelAppointment, clearCancelledAppointments, getBookingConfig } from '../../services/appointmentService'
 import RescheduleModal from '../../components/RescheduleModal'
 import { 
   Inbox, Calendar, Tag, FileText, AlertTriangle, ChevronLeft, ChevronRight, 
@@ -117,6 +117,44 @@ export const getEffectiveStatus = (appt) => {
   return appt.status || 'pending';
 };
 
+export const getPriorityClassInfo = (pClass, userPClass) => {
+  const raw = (pClass || userPClass || 'regular').toLowerCase().trim()
+  if (raw === 'pwd') {
+    return {
+      name: 'PWD',
+      lane: 'PWD Priority Lane',
+      isPriority: true,
+      badge: 'bg-gold/15 text-gold-dark border border-gold/30',
+      pill: 'bg-gold/10 text-gold-dark'
+    }
+  }
+  if (raw === 'pregnant') {
+    return {
+      name: 'Pregnant',
+      lane: 'Pregnant Priority Lane',
+      isPriority: true,
+      badge: 'bg-pink-50 text-pink-600 border border-pink-200',
+      pill: 'bg-pink-50 text-pink-600'
+    }
+  }
+  if (raw === 'alumni') {
+    return {
+      name: 'Alumni',
+      lane: 'Alumni Priority Lane',
+      isPriority: true,
+      badge: 'bg-maroon/10 text-maroon border border-maroon/20',
+      pill: 'bg-maroon/10 text-maroon'
+    }
+  }
+  return {
+    name: 'Regular',
+    lane: 'Regular Lane',
+    isPriority: false,
+    badge: 'bg-slate-100 text-slate-700 border border-slate-200',
+    pill: 'bg-slate-100 text-slate-700'
+  }
+}
+
 function AppointmentDetailsContent({ 
   selectedAppt, 
   navigate, 
@@ -125,6 +163,8 @@ function AppointmentDetailsContent({
   canReschedule, 
   cancelling, 
   fmt12h,
+  numWindows = 3,
+  userPriorityClass = 'regular',
   isMobileModal = false,
   onCloseMobileModal
 }) {
@@ -135,6 +175,7 @@ function AppointmentDetailsContent({
   const isSelScheduled = selEff === 'scheduled_release'
   const isSelCompleted = selEff === 'completed'
   const isSelCancelled = selEff === 'cancelled'
+  const prioInfo = getPriorityClassInfo(selectedAppt.priority_class, userPriorityClass)
 
   return (
     <div className="flex flex-col flex-1 h-full">
@@ -292,7 +333,14 @@ function AppointmentDetailsContent({
               </div>
               <div>
                 <span className="text-[10px] text-text-muted font-bold uppercase tracking-wider block mb-1">PRIORITY CLASSIFICATION</span>
-                <span className="font-bold text-text-main capitalize">{selectedAppt.priority_class}</span>
+                <div className="flex items-center gap-1.5 mt-0.5">
+                  <span className="font-bold text-text-main">{prioInfo.lane}</span>
+                  {prioInfo.isPriority && (
+                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${prioInfo.badge}`}>
+                      Priority
+                    </span>
+                  )}
+                </div>
               </div>
               <div>
                 <span className="text-[10px] text-text-muted font-bold uppercase tracking-wider block mb-1">STATUS</span>
@@ -422,7 +470,9 @@ function AppointmentDetailsContent({
                 <MapPin size={12} className="text-maroon" /> LOCATION & COUNTER
               </p>
               <p className="text-[13.5px] font-bold text-text-main m-0 mb-0.5">Registrar's Office</p>
-              <p className="text-[12px] text-text-sub m-0">Service Windows 1 – 4</p>
+              <p className="text-[12px] text-text-sub m-0">
+                {numWindows > 1 ? `Service Windows 1 – ${numWindows}` : 'Service Window 1'}
+              </p>
             </div>
           </div>
 
@@ -433,7 +483,14 @@ function AppointmentDetailsContent({
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-[13px]">
               <div>
                 <span className="text-[10px] text-text-muted font-bold uppercase tracking-wider block mb-0.5">Priority Lane</span>
-                <span className="font-bold text-text-main capitalize">{selectedAppt.priority_class || 'Regular'}</span>
+                <div className="flex items-center gap-2 mt-0.5">
+                  <span className="font-bold text-text-main">{prioInfo.lane}</span>
+                  {prioInfo.isPriority && (
+                    <span className={`text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-md ${prioInfo.badge}`}>
+                      Active
+                    </span>
+                  )}
+                </div>
               </div>
               <div>
                 <span className="text-[10px] text-text-muted font-bold uppercase tracking-wider block mb-0.5">Stated Purpose</span>
@@ -517,10 +574,11 @@ function AppointmentDetailsContent({
 }
 
 export default function MyAppointments({ embedded = false }) {
-  const { token } = useAuth()
+  const { user, token } = useAuth()
   const navigate = useNavigate()
   const [appointments, setAppointments] = useState([])
   const [selectedApptId, setSelectedApptId] = useState(null)
+  const [numWindows, setNumWindows] = useState(3)
   const [isMobileViewingDetails, setIsMobileViewingDetails] = useState(false)
   
   const selectedAppt = useMemo(() => {
@@ -561,8 +619,14 @@ export default function MyAppointments({ embedded = false }) {
 
   const fetch = useCallback(async () => {
     try { 
-      const data = await getMyAppointments(token)
+      const [data, config] = await Promise.all([
+        getMyAppointments(token),
+        getBookingConfig().catch(() => null)
+      ])
       setAppointments(data || [])
+      if (config && config.num_windows != null) {
+        setNumWindows(Number(config.num_windows))
+      }
       if (data && data.length > 0) {
         setSelectedApptId(prev => {
           if (prev && data.some(a => a.id === prev)) return prev
@@ -575,7 +639,7 @@ export default function MyAppointments({ embedded = false }) {
   }, [token])
   
   // Real-time WebSocket event listener for instant 0ms updates
-  useStaffEvent(['APPOINTMENTS_UPDATED', 'QUEUE_UPDATED', 'RELEASES_UPDATED', 'NOTIFICATION_RECEIVED'], () => {
+  useStaffEvent(['APPOINTMENTS_UPDATED', 'QUEUE_UPDATED', 'RELEASES_UPDATED', 'NOTIFICATION_RECEIVED', 'WINDOW_UPDATED', 'CONFIG_UPDATED'], () => {
     fetch()
   })
 
@@ -794,6 +858,8 @@ export default function MyAppointments({ embedded = false }) {
                 canReschedule={canReschedule}
                 cancelling={cancelling}
                 fmt12h={fmt12h}
+                numWindows={numWindows}
+                userPriorityClass={user?.priority_class}
                 isMobileModal={false}
               />
             </div>
@@ -851,7 +917,17 @@ export default function MyAppointments({ embedded = false }) {
                       </div>
                       <div className="text-[13px] text-text-sub flex flex-col gap-1.5">
                         <span className="flex items-center gap-1.5"><Calendar size={13} className="text-gold shrink-0" /> {appt.appointment_date} at {fmt12h(appt.time_slot)}</span>
-                        <span className="flex items-center gap-1.5"><Tag size={13} className="text-gold shrink-0" /> Priority: <span className="capitalize font-semibold text-text-main ml-0.5">{appt.priority_class}</span></span>
+                        {(() => {
+                          const cardPrio = getPriorityClassInfo(appt.priority_class, user?.priority_class)
+                          return (
+                            <span className="flex items-center gap-1.5">
+                              <Tag size={13} className="text-gold shrink-0" /> Priority: 
+                              <span className={`text-[11px] px-2 py-0.5 rounded-md ml-0.5 font-bold ${cardPrio.badge}`}>
+                                {cardPrio.name}
+                              </span>
+                            </span>
+                          )
+                        })()}
                         {appt.notes && <span className="flex items-start gap-1.5"><FileText size={13} className="text-gold shrink-0 mt-0.5" /> <span className="truncate">{appt.notes}</span></span>}
                       </div>
 
@@ -937,6 +1013,8 @@ export default function MyAppointments({ embedded = false }) {
                   canReschedule={canReschedule}
                   cancelling={cancelling}
                   fmt12h={fmt12h}
+                  numWindows={numWindows}
+                  userPriorityClass={user?.priority_class}
                 />
               </div>
             ) : (

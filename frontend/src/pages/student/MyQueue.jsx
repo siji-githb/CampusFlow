@@ -6,7 +6,7 @@ import { useStaffEvent } from '../../context/WebSocketContext'
 import StudentLayout from '../../components/layout/StudentLayout'
 import { getMyQueue, activateQueue, getTimeEstimate, getMyDocumentsToClaim } from '../../services/queueService'
 import { getMyAppointments, cancelAppointment } from '../../services/appointmentService'
-import { Clock, Hourglass, PartyPopper, Ticket, Calendar, Inbox, Cog, FileCheck, Sparkles } from 'lucide-react'
+import { Clock, Hourglass, PartyPopper, Ticket, Calendar, Inbox, Cog, FileCheck, Sparkles, Loader2 } from 'lucide-react'
 
 const STEP_STYLE = {
   pending:     { bg: '#F9F9F9', color: '#706B65' }, // text-text-sub
@@ -120,7 +120,7 @@ export default function MyQueue({ embedded = false }) {
   }, [token])
 
   // Real-time WebSocket event listener for instant 0ms updates
-  useStaffEvent(['QUEUE_UPDATED', 'WINDOW_UPDATED', 'RELEASES_UPDATED'], () => {
+  useStaffEvent(['QUEUE_UPDATED', 'WINDOW_UPDATED', 'RELEASES_UPDATED', 'APPOINTMENTS_UPDATED', 'NOTIFICATION_RECEIVED'], () => {
     fetchQueue()
     fetchAppts()
   })
@@ -853,13 +853,26 @@ export default function MyQueue({ embedded = false }) {
                             disabled={activating === appt.id || !isToday || isAnotherTicketActiveForToday}
                             title={isAnotherTicketActiveForToday ? "You already have an active queue ticket for today" : ""}
                             className={`w-full py-3.5 px-4 rounded-xl border text-[14px] font-bold font-sans transition-all flex items-center justify-center gap-2 ${
-                              activating === appt.id ? 'bg-surface text-text-muted border-border cursor-wait' :
+                              activating === appt.id ? 'bg-gold-light text-gold border-gold-border cursor-wait' :
                               !isToday ? 'bg-surface text-text-sub border-border cursor-not-allowed opacity-70' :
                               isAnotherTicketActiveForToday ? 'bg-surface text-text-sub border-border cursor-not-allowed opacity-70' :
                               'bg-gold text-white border-gold-dark cursor-pointer hover:bg-gold-light hover:text-gold hover:border-gold-light shadow-sm hover:-translate-y-0.5'
                             }`}
                           >
-                            {activating === appt.id ? 'Activating...' : !isToday ? 'Available on Appointment Date' : isAnotherTicketActiveForToday ? 'Another Ticket is Active' : <><Ticket size={16} /> Get Queue Number</>}
+                            {activating === appt.id ? (
+                              <>
+                                <Loader2 size={16} className="animate-spin text-gold" />
+                                <span>Activating Queue Ticket...</span>
+                              </>
+                            ) : !isToday ? (
+                              'Available on Appointment Date'
+                            ) : isAnotherTicketActiveForToday ? (
+                              'Another Ticket is Active'
+                            ) : (
+                              <>
+                                <Ticket size={16} /> Get Queue Number
+                              </>
+                            )}
                           </button>
                         )}
                       </div>
@@ -903,7 +916,7 @@ export default function MyQueue({ embedded = false }) {
       {/* Activate Confirmation Modal */}
       {activateConfirmId && createPortal(
         <div className="fixed inset-0 z-9999 flex items-center justify-center p-4 pointer-events-auto">
-          <div className="fixed inset-0 bg-black/60 transition-opacity backdrop-blur-2xs" onClick={() => setActivateConfirmId(null)} />
+          <div className="fixed inset-0 bg-black/60 transition-opacity backdrop-blur-2xs" onClick={() => !activating && setActivateConfirmId(null)} />
           <div className="relative bg-white rounded-2xl p-7 max-w-sm w-full shadow-2xl animate-fade-up z-10">
             <h3 className="text-[18px] font-bold text-text-main m-0 mb-2">Get Queue Number?</h3>
             <p className="text-[14px] text-text-sub m-0 mb-6">
@@ -912,16 +925,28 @@ export default function MyQueue({ embedded = false }) {
             <div className="flex gap-3">
               <button 
                 onClick={() => setActivateConfirmId(null)}
-                className="flex-1 py-2.5 px-4 rounded-lg border border-border text-text-main font-semibold hover:bg-surface transition-colors cursor-pointer"
+                disabled={activating === activateConfirmId}
+                className={`flex-1 py-2.5 px-4 rounded-lg border border-border text-text-main font-semibold transition-colors ${
+                  activating === activateConfirmId ? 'opacity-50 cursor-not-allowed bg-surface' : 'hover:bg-surface cursor-pointer'
+                }`}
               >
                 Go Back
               </button>
               <button 
                 onClick={handleActivate}
                 disabled={activating === activateConfirmId}
-                className="flex-1 py-2.5 px-4 rounded-lg bg-gold text-white font-semibold hover:bg-gold-dark transition-colors border-none cursor-pointer disabled:opacity-50 disabled:cursor-wait"
+                className={`flex-1 py-2.5 px-4 rounded-lg bg-gold text-white font-semibold transition-all border-none flex items-center justify-center gap-2 shadow-2xs ${
+                  activating === activateConfirmId ? 'opacity-80 cursor-wait' : 'hover:bg-gold-dark cursor-pointer'
+                }`}
               >
-                {activating === activateConfirmId ? 'Activating...' : 'Yes, Activate'}
+                {activating === activateConfirmId ? (
+                  <>
+                    <Loader2 size={16} className="animate-spin" />
+                    <span>Activating...</span>
+                  </>
+                ) : (
+                  'Yes, Activate'
+                )}
               </button>
             </div>
           </div>

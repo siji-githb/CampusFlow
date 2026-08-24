@@ -1015,7 +1015,7 @@ export default function AdminQueueMonitoringPage() {
                   <div>
                     <div className="text-[12px] font-bold text-text-main">Priority Lane Active</div>
                     <div className="text-[11px] text-text-sub mt-0.5">
-                      Senior, PWD, Pregnant, and Alumni students are automatically prioritized in the queue.
+                      PWD, Pregnant, and Alumni students are automatically prioritized in the queue.
                     </div>
                   </div>
                 </div>

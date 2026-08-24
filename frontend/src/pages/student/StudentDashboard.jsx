@@ -148,7 +148,7 @@ export default function StudentDashboard({ embedded = false }) {
   }, [token]);
 
   // Real-time WebSocket event listener for instant 0ms updates
-  useStaffEvent(['QUEUE_UPDATED', 'WINDOW_UPDATED', 'RELEASES_UPDATED', 'APPOINTMENTS_UPDATED'], () => {
+  useStaffEvent(['QUEUE_UPDATED', 'WINDOW_UPDATED', 'RELEASES_UPDATED', 'APPOINTMENTS_UPDATED', 'NOTIFICATION_RECEIVED'], () => {
     fetchDashboardData();
   });
 

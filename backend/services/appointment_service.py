@@ -44,9 +44,16 @@ def get_booking_config():
         except:
             pass
             
+    num_windows = 3
+    try:
+        num_windows = int(config.get("num_windows", 3))
+    except Exception:
+        pass
+
     return {
         "booking_cutoff_days": int(config.get("booking_cutoff_days", 1)),
         "booking_window_days": int(config.get("booking_window_days", 30)),
+        "num_windows": num_windows,
         "date_overrides": overrides
     }
 
@@ -319,12 +326,26 @@ def get_student_appointments(student_id: str):
         pass
 
     try:
+        user_res = admin.table("users").select("priority_class").eq("id", student_id).single().execute()
+        user_pc = user_res.data.get("priority_class") if user_res.data else "regular"
+    except Exception:
+        user_pc = "regular"
+
+    try:
         res = admin.table("appointments") \
             .select("*, transaction_types(name, processing_steps, required_documents), queue_tickets(id, status, queue_number, current_step, total_steps)") \
             .eq("student_id", student_id) \
             .order("appointment_date", desc=True) \
             .execute()
-        return res.data
+        
+        data = res.data or []
+        for appt in data:
+            if not appt.get("priority_class") or appt.get("priority_class") == "regular":
+                if user_pc and user_pc != "regular":
+                    appt["priority_class"] = user_pc
+                elif not appt.get("priority_class"):
+                    appt["priority_class"] = "regular"
+        return data
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -402,6 +423,8 @@ def cancel_appointment(appointment_id: str, student_id: str):
             message=f"Your appointment for {tx_name} scheduled on {formatted_date}{time_str} has been cancelled. You may book a new slot anytime.",
             type="warning"
         )
+        manager.broadcast_staff_event("APPOINTMENTS_UPDATED")
+        manager.broadcast_staff_event("QUEUE_UPDATED")
         return {"message": "Appointment cancelled successfully"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -425,6 +448,7 @@ def clear_cancelled_appointments(student_id: str):
             changes=f"Deleted {len(res.data)} cancelled records",
             severity="Info"
         )
+        manager.broadcast_staff_event("APPOINTMENTS_UPDATED")
         return {"message": f"Successfully cleared {len(res.data)} cancelled appointments"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

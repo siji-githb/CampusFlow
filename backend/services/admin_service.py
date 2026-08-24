@@ -42,10 +42,53 @@ def get_dashboard_stats():
 
         # Active queue tickets
         active_queue = admin.table("queue_tickets") \
-            .select("id") \
+            .select("id, created_at") \
             .in_("status", ["waiting", "in_progress"]) \
             .gte("created_at", today) \
             .execute()
+
+        # Average wait / processing time today
+        from datetime import datetime, timezone
+        now_utc = datetime.now(timezone.utc)
+        
+        today_completed_steps = admin.table("transaction_steps") \
+            .select("created_at, confirmed_at, activated_at") \
+            .gte("confirmed_at", today) \
+            .neq("location", "Back Office") \
+            .execute()
+
+        total_seconds = 0
+        valid_steps = 0
+        for row in (today_completed_steps.data or []):
+            try:
+                start_raw = row.get("activated_at") or row.get("created_at")
+                if not start_raw or not row.get("confirmed_at"):
+                    continue
+                start = datetime.fromisoformat(start_raw.replace("Z", "+00:00"))
+                end = datetime.fromisoformat(row["confirmed_at"].replace("Z", "+00:00"))
+                secs = (end - start).total_seconds()
+                if 0 < secs < 7200:  # ignore outliers over 2 hours
+                    total_seconds += secs
+                    valid_steps += 1
+            except Exception:
+                pass
+
+        if valid_steps > 0:
+            avg_wait_minutes = round((total_seconds / valid_steps) / 60)
+        else:
+            # Fallback to current active queue tickets waiting
+            active_wait_secs = 0
+            active_count = 0
+            for t in (active_queue.data or []):
+                try:
+                    c_at = datetime.fromisoformat(t.get("created_at", "").replace("Z", "+00:00"))
+                    diff = (now_utc - c_at).total_seconds()
+                    if 0 <= diff < 7200:
+                        active_wait_secs += diff
+                        active_count += 1
+                except Exception:
+                    pass
+            avg_wait_minutes = round((active_wait_secs / active_count) / 60) if active_count > 0 else 0
 
         # Total registered students
         total_students = admin.table("users") \
@@ -81,6 +124,7 @@ def get_dashboard_stats():
             "total_students": len(total_students.data),
             "week_total":     len(week_appts.data),
             "total_completed": total_completed,
+            "avg_wait_minutes": avg_wait_minutes,
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -240,6 +284,13 @@ def update_office_config(key: str, value: str, actor_id: str = None):
                 changes=f"Set to: {value}",
                 severity="Info"
             )
+
+        try:
+            manager.broadcast_staff_event("CONFIG_UPDATED")
+            if key == "num_windows":
+                manager.broadcast_staff_event("WINDOW_UPDATED")
+        except Exception:
+            pass
             
         return {"message": f"Config '{key}' updated to '{value}'"}
     except Exception as e:
@@ -663,6 +714,10 @@ def create_transaction_type(data, actor_id: str):
             status="Success",
             changes=f"Name: {data.name}"
         )
+        try:
+            manager.broadcast_staff_event("CONFIG_UPDATED")
+        except Exception:
+            pass
         
         return res.data[0] if res.data else None
     except Exception as e:
@@ -728,6 +783,10 @@ def update_transaction_type(tt_id: str, data, actor_id: str):
             record_id=tt_id,
             status="Success"
         )
+        try:
+            manager.broadcast_staff_event("CONFIG_UPDATED")
+        except Exception:
+            pass
         
         return res.data[0] if res.data else None
     except Exception as e:
@@ -755,6 +814,10 @@ def delete_transaction_type(tt_id: str, actor_id: str):
             status="Success",
             severity="Warning"
         )
+        try:
+            manager.broadcast_staff_event("CONFIG_UPDATED")
+        except Exception:
+            pass
         
         return {"message": "Transaction type disabled successfully"}
     except Exception as e:

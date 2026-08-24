@@ -202,6 +202,18 @@ def approve_request(request_id: str, staff_id: str) -> dict:
     except Exception as e:
         pass  # non-critical if it fails
 
+    try:
+        from services.notification_service import create_system_notification
+        p_name = "PWD" if req["priority_type"] == "pwd" else "Pregnancy"
+        create_system_notification(
+            user_id=req["student_id"],
+            title="Priority Lane Status Approved",
+            message=f"Your request for {p_name} priority lane access has been approved by the Registrar.",
+            type="success"
+        )
+    except Exception:
+        pass
+
     manager.broadcast_staff_event("PRIORITY_REQUESTS_UPDATED")
     return {"message": "Priority request approved.", "expires_at": expires_at}
 
@@ -224,6 +236,19 @@ def reject_request(request_id: str, staff_id: str, reason: str) -> dict:
         "reviewed_at": datetime.now(timezone.utc).isoformat(),
         "rejection_reason": reason,
     }).eq("id", request_id).execute()
+
+    try:
+        from services.notification_service import create_system_notification
+        p_name = "PWD" if req["priority_type"] == "pwd" else "Pregnancy"
+        reason_msg = f" Reason: {reason}" if reason else ""
+        create_system_notification(
+            user_id=req["student_id"],
+            title="Priority Request Update",
+            message=f"Your request for {p_name} priority status was declined.{reason_msg}",
+            type="warning"
+        )
+    except Exception:
+        pass
 
     manager.broadcast_staff_event("PRIORITY_REQUESTS_UPDATED")
     return {"message": "Priority request rejected."}

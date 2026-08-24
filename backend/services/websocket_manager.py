@@ -14,8 +14,10 @@ class ConnectionManager:
 
     async def connect(self, websocket: WebSocket, user_id: str):
         await websocket.accept()
-        if self.loop is None:
+        try:
             self.loop = asyncio.get_running_loop()
+        except RuntimeError:
+            pass
         if user_id not in self.active_connections:
             self.active_connections[user_id] = []
         self.active_connections[user_id].append(websocket)
@@ -47,13 +49,14 @@ class ConnectionManager:
         """Thread-safe method to send a message from a synchronous route/thread."""
         logger.debug(f"Sync push called for {user_id}. Active: {user_id in self.active_connections}, Loop exists: {self.loop is not None}")
         loop = self.loop
-        if loop is None:
+        if loop is None or loop.is_closed():
             try:
                 loop = asyncio.get_running_loop()
+                self.loop = loop
             except RuntimeError:
                 pass
 
-        if user_id in self.active_connections and loop:
+        if user_id in self.active_connections and loop and not loop.is_closed():
             try:
                 asyncio.run_coroutine_threadsafe(self.send_personal_message(message, user_id), loop)
                 logger.debug(f"Coroutine scheduled successfully for {user_id}")
@@ -76,13 +79,14 @@ class ConnectionManager:
     def broadcast_sync(self, message: dict):
         """Thread-safe method to broadcast a message from a synchronous route/thread."""
         loop = self.loop
-        if loop is None:
+        if loop is None or loop.is_closed():
             try:
                 loop = asyncio.get_running_loop()
+                self.loop = loop
             except RuntimeError:
                 pass
 
-        if loop and self.active_connections:
+        if loop and not loop.is_closed() and self.active_connections:
             try:
                 asyncio.run_coroutine_threadsafe(self.broadcast(message), loop)
             except Exception as e:

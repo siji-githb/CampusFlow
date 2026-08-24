@@ -7,9 +7,8 @@ router = APIRouter(prefix="/notifications", tags=["Notifications"])
 
 @router.get("/")
 async def get_notifications(user=Depends(get_current_user)):
-    # Use anon client — RLS ensures users only see their own notifications
-    supabase = get_supabase_anon()
-    response = supabase.table("notifications").select("*").eq("user_id", user.id).order("created_at", desc=True).execute()
+    admin = get_supabase_admin()
+    response = admin.table("notifications").select("*").eq("user_id", user.id).order("created_at", desc=True).execute()
     return response.data
 
 

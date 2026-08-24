@@ -6,7 +6,8 @@ import StudentLayout from '../../components/layout/StudentLayout'
 import { getTransactionTypes, getAvailableSlots, bookAppointment, getBookingConfig } from '../../services/appointmentService'
 import { 
   CheckCircle, Calendar, Users, CloudSun, Sun, Image as ImageIcon, FileText, 
-  Clock, MapPin, Mail, HelpCircle, ChevronLeft, ChevronRight, Info, AlertTriangle, ChevronDown, Tag, GraduationCap 
+  Clock, MapPin, Mail, HelpCircle, ChevronLeft, ChevronRight, Info, AlertTriangle, ChevronDown, Tag, GraduationCap,
+  Loader2
 } from 'lucide-react'
 
 // ── Custom Dropdown Component ──
@@ -865,10 +866,17 @@ export default function BookAppointment({ embedded = false }) {
                     onClick={handleConfirmClick}
                     disabled={loading}
                     className={`py-2.5 px-4 sm:py-3 sm:px-6 rounded-xl border-none text-xs sm:text-sm font-bold font-sans flex items-center gap-2 justify-center transition-all shadow-md ${
-                      loading ? 'bg-[#B8667A] text-white cursor-not-allowed' : 'bg-maroon text-white cursor-pointer hover:bg-maroon-dark'
+                      loading ? 'bg-maroon/70 text-white cursor-wait' : 'bg-maroon text-white cursor-pointer hover:bg-maroon-dark'
                     }`}
                   >
-                    {loading ? 'Appointing...' : 'Confirm & Appoint'}
+                    {loading ? (
+                      <>
+                        <Loader2 size={16} className="animate-spin" />
+                        <span>Appointing...</span>
+                      </>
+                    ) : (
+                      'Confirm & Appoint'
+                    )}
                   </button>
                 </div>
               </div>
@@ -889,16 +897,23 @@ export default function BookAppointment({ embedded = false }) {
                     <button 
                       onClick={() => setConfirmingBook(false)}
                       disabled={loading}
-                      className={`flex-1 py-2 sm:py-2.5 px-3 rounded-xl border border-border bg-white text-text-main text-xs sm:text-[13px] font-bold cursor-pointer font-sans transition-colors hover:bg-off-white ${loading ? 'opacity-50' : 'opacity-100'}`}
+                      className={`flex-1 py-2 sm:py-2.5 px-3 rounded-xl border border-border bg-white text-text-main text-xs sm:text-[13px] font-bold font-sans transition-colors ${loading ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:bg-off-white'}`}
                     >
                       Go Back
                     </button>
                     <button 
                       onClick={handleBook}
                       disabled={loading}
-                      className={`flex-1 py-2 sm:py-2.5 px-3 rounded-xl border-none bg-maroon text-white text-xs sm:text-[13px] font-bold cursor-pointer font-sans transition-colors hover:bg-maroon-dark shadow-2xs ${loading ? 'opacity-50' : 'opacity-100'}`}
+                      className={`flex-1 py-2 sm:py-2.5 px-3 rounded-xl border-none bg-maroon text-white text-xs sm:text-[13px] font-bold font-sans transition-all flex items-center justify-center gap-2 shadow-2xs ${loading ? 'opacity-85 cursor-wait' : 'hover:bg-maroon-dark cursor-pointer'}`}
                     >
-                      {loading ? 'Appointing...' : 'Yes, Appoint'}
+                      {loading ? (
+                        <>
+                          <Loader2 size={15} className="animate-spin" />
+                          <span>Appointing...</span>
+                        </>
+                      ) : (
+                        'Yes, Appoint'
+                      )}
                     </button>
                   </div>
                 </div>

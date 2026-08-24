@@ -378,6 +378,9 @@ def remind_student(queue_ticket_id: str, staff_id: str):
         severity="Info"
     )
 
+    manager.broadcast_staff_event("RELEASES_UPDATED")
+    manager.broadcast_staff_event("QUEUE_UPDATED")
+
     return {"message": "Reminder sent successfully"}
 
 
