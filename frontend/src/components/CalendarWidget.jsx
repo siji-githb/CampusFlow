@@ -30,31 +30,31 @@ export function CalendarWidget({ selectedDate, onDateSelect, minDateStr, maxDate
   const maxD = parseDateLocal(maxDateStr)
 
   return (
-    <div className="max-w-90 mx-auto">
+    <div className="w-full max-w-xs sm:max-w-sm mx-auto">
       {/* Month header */}
-      <div className="flex justify-between items-center mb-4">
-        <h3 className="font-serif text-[20px] font-bold text-text-main m-0">
+      <div className="flex justify-between items-center mb-3 sm:mb-4">
+        <h3 className="font-serif text-base sm:text-lg md:text-[19px] font-bold text-text-main m-0">
           {MONTHS[month]} {year}
         </h3>
         <div className="flex gap-1">
           {[['‹', -1], ['›', 1]].map(([label, dir]) => (
             <button key={dir} type="button"
               onClick={() => setCurrentMonth(new Date(year, month + dir, 1))}
-              className="w-8 h-8 rounded-lg border border-border bg-white cursor-pointer text-[18px] leading-none text-text-sub flex items-center justify-center font-serif transition-colors hover:bg-off-white"
+              className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg border border-border bg-white cursor-pointer text-base sm:text-[18px] leading-none text-text-sub flex items-center justify-center font-serif transition-colors hover:bg-off-white"
             >{label}</button>
           ))}
         </div>
       </div>
 
       {/* Day headers */}
-      <div className="grid grid-cols-7 gap-1 mb-2 text-center">
+      <div className="grid grid-cols-7 gap-0.5 sm:gap-1 mb-1.5 sm:mb-2 text-center">
         {DAY_NAMES.map(d => (
-          <div key={d} className="text-[12px] font-semibold text-text-muted py-1">{d}</div>
+          <div key={d} className="text-[11px] sm:text-[12px] font-semibold text-text-muted py-0.5 sm:py-1">{d}</div>
         ))}
       </div>
 
       {/* Days grid */}
-      <div className="grid grid-cols-7 gap-1 text-center">
+      <div className="grid grid-cols-7 gap-0.5 sm:gap-1 text-center">
         {days.map((d, i) => {
           if (!d) return <div key={i} />
           const dateStr    = `${year}-${String(month + 1).padStart(2,'0')}-${String(d).padStart(2,'0')}`
@@ -68,7 +68,7 @@ export function CalendarWidget({ selectedDate, onDateSelect, minDateStr, maxDate
             <button key={i} type="button" disabled={isDisabled}
               title={isDisabled ? "Outside booking window or unavailable" : ""}
               onClick={() => !isDisabled && onDateSelect(dateStr)}
-              className={`aspect-square rounded-full border-none text-[13px] font-sans flex flex-col items-center justify-center gap-0.5 transition-all duration-150 ${
+              className={`aspect-square rounded-full border-none text-xs sm:text-[13px] font-sans flex flex-col items-center justify-center gap-0.5 transition-all duration-150 ${
                 isSelected ? 'bg-maroon text-white font-bold' : 
                 isDisabled ? 'bg-[#F5F5F5] text-text-sub font-normal opacity-50 cursor-not-allowed' : 
                 'bg-transparent text-text-main font-normal cursor-pointer hover:bg-maroon-light hover:text-maroon'
@@ -140,7 +140,7 @@ export function SlotBtn({ slot, selected, onSelect, selectedDate }) {
     <button
       type="button"
       onClick={() => isAvailable && onSelect(slot.time_slot)}
-      className={`py-2.5 px-1.5 rounded-lg text-[12px] font-semibold font-sans border-[1.5px] border-solid transition-all duration-150 text-center ${bgClass} ${textClass} ${borderClass} ${cursorClass} ${opacityClass}`}
+      className={`py-2 sm:py-2.5 px-1 sm:px-1.5 rounded-xl text-[11px] sm:text-[12px] font-semibold font-sans border sm:border-[1.5px] border-solid transition-all duration-150 text-center ${bgClass} ${textClass} ${borderClass} ${cursorClass} ${opacityClass}`}
     >
       {text}
     </button>

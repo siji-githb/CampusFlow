@@ -376,13 +376,37 @@ def cancel_appointment(appointment_id: str, student_id: str):
     if appt["status"] in ["completed", "cancelled"]:
         raise HTTPException(status_code=400, detail="Cannot cancel a completed or already cancelled appointment")
 
-    # Removed cutoff check so students can cancel at any time
+    # Prevent cancellation if ticket is already in progress / being served by staff
+    in_prog_res = admin.table("queue_tickets") \
+        .select("id") \
+        .eq("appointment_id", appointment_id) \
+        .eq("status", "in_progress") \
+        .execute()
+    if in_prog_res.data:
+        raise HTTPException(
+            status_code=400,
+            detail="Cannot cancel a ticket that is already in progress or currently being served by staff."
+        )
 
     try:
         admin.table("appointments") \
             .update({"status": "cancelled"}) \
             .eq("id", appointment_id) \
             .execute()
+
+        # Cancel any waiting queue tickets
+        waiting_tickets_res = admin.table("queue_tickets") \
+            .select("id") \
+            .eq("appointment_id", appointment_id) \
+            .eq("status", "waiting") \
+            .execute()
+
+        if waiting_tickets_res.data:
+            ticket_ids = [t["id"] for t in waiting_tickets_res.data]
+            admin.table("queue_tickets") \
+                .update({"status": "cancelled"}) \
+                .in_("id", ticket_ids) \
+                .execute()
             
         # Automatically mark the confirmation notification as read
         try:

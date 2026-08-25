@@ -9,6 +9,8 @@ import { LogOut, ClipboardList, Ticket, Home, Calendar, BotMessageSquare, User, 
 import Navbar from './Navbar';
 import AiChat from '../../pages/student/AiChat';
 import GlobalSearch from '../GlobalSearch';
+import NotificationPromptBanner from '../NotificationPromptBanner';
+import PriorityPromptBanner from '../PriorityPromptBanner';
 import { clearChat } from '../../services/aiService';
 
 // eslint-disable-next-line react-refresh/only-export-components
@@ -138,7 +140,7 @@ export function ProfileDropdown() {
             </div>
           </div>
         ) : (
-          <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-maroon/10 border border-maroon/20 flex items-center justify-center overflow-hidden text-maroon text-[13px] sm:text-[14px] font-bold shadow-2xs shrink-0">
+          <div className="w-9 h-9 sm:w-9.5 sm:h-9.5 rounded-full bg-maroon/10 border border-maroon/20 flex items-center justify-center overflow-hidden text-maroon text-[14px] sm:text-[15px] font-bold shadow-2xs shrink-0">
             {user?.profile_image ? (
               <img src={user.profile_image} alt="Profile" className="w-full h-full object-cover" />
             ) : (
@@ -494,27 +496,35 @@ export default function StudentLayout({ children, activeTab, mobileTitle, backTo
       <div className={`flex-1 flex flex-col min-h-screen transition-all w-full ml-0 ${mlClass}`} style={{ transition: 'margin-left 0.3s cubic-bezier(0.16, 1, 0.3, 1)' }}>
 
         {/* Mobile Header (Hidden on Desktop) */}
-        <header className="md:hidden flex justify-between items-center px-3 sm:px-4 py-2 sm:py-2.5 sticky top-0 z-40 bg-off-white border-b border-border shadow-[0_2px_8px_rgba(0,0,0,0.02)] gap-1.5 sm:gap-2">
-          <div className="flex items-center gap-1.5 sm:gap-2 min-w-0 shrink">
+        <header className="md:hidden flex justify-between items-center px-3.5 sm:px-5 py-3 sm:py-3.5 sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-border shadow-[0_2px_12px_rgba(0,0,0,0.03)] gap-2 min-h-14.5 sm:min-h-16">
+          <div className="flex items-center gap-2.5 sm:gap-3 min-w-0 shrink">
             {backTo ? (
-              <button onClick={() => navigate(backTo)} className="bg-transparent border-none text-text-main cursor-pointer flex items-center justify-center p-1 -ml-1 shrink-0">
-                <ChevronLeft size={22} strokeWidth={2.5} />
+              <button 
+                onClick={() => navigate(backTo)} 
+                className="w-8 h-8 -ml-1 rounded-full flex items-center justify-center text-maroon hover:bg-maroon-light/60 transition-colors cursor-pointer border-none bg-transparent shrink-0 active:scale-95"
+                aria-label="Go back"
+              >
+                <ChevronLeft size={21} strokeWidth={2.5} />
               </button>
             ) : (
-              <img src={campusFlowLogo} alt="CampusFlow Logo" className="w-7.5 h-7.5 sm:w-8 sm:h-8 rounded-full bg-white object-contain border border-slate-200 shadow-sm shrink-0" />
+              <img 
+                src={campusFlowLogo} 
+                alt="CampusFlow Logo" 
+                className="w-7.5 h-7.5 sm:w-8 sm:h-8 rounded-full bg-white object-contain border border-slate-200 shadow-2xs shrink-0" 
+              />
             )}
             <div className="min-w-0">
-              <div className="font-serif text-[12.5px] sm:text-[14px] font-bold text-maroon leading-tight truncate">
+              <div className={`font-serif font-bold text-maroon leading-tight truncate ${mobileTitle ? 'text-[13.5px] sm:text-[15px]' : 'text-[12.5px] sm:text-[13.5px]'}`}>
                 {mobileTitle || 'CampusFlow'}
               </div>
               {!mobileTitle && (
-                <div className="text-[7.5px] sm:text-[8.5px] text-text-muted tracking-[0.06em] uppercase font-bold mt-0.5 whitespace-nowrap">
+                <div className="text-[7px] sm:text-[8px] text-text-muted tracking-[0.06em] uppercase font-bold mt-0.5 whitespace-nowrap">
                   Student Portal
                 </div>
               )}
             </div>
           </div>
-          <div className="flex items-center gap-1.5 sm:gap-2 shrink-0 justify-end">
+          <div className="flex items-center gap-2 sm:gap-2.5 shrink-0 justify-end">
             {location.pathname === '/student/dashboard' && (
               <GlobalSearch isMobile={true} onAiPrompt={handleAiPrompt} />
             )}
@@ -543,6 +553,12 @@ export default function StudentLayout({ children, activeTab, mobileTitle, backTo
             <BottomNav active={activeTab} />
           </div>
         )}
+
+        {/* Floating Portal Banners (Notifications & Priority Lane) */}
+        <div className="fixed bottom-19 left-3.5 right-3.5 sm:bottom-auto sm:top-21 sm:right-8 sm:left-auto sm:max-w-sm z-45 flex flex-col gap-2.5 pointer-events-none">
+          <NotificationPromptBanner />
+          <PriorityPromptBanner />
+        </div>
 
         {chatModal}
       </div>

@@ -4,7 +4,8 @@ import { Link } from 'react-router-dom'
 import StudentLayout from '../../components/layout/StudentLayout'
 import { useAuth } from '../../context/useAuth'
 import { useStaffEvent } from '../../context/WebSocketContext'
-import { Edit2, IdCard, Tag, LogOut, Trash2, X, Camera, Loader2, Eye, EyeOff, ShieldAlert, ShieldCheck, Clock, FileText, CheckCircle, Upload, Sparkles, Bell, BellOff, Check, AlertCircle } from 'lucide-react'
+import { useToast } from '../../context/ToastContext'
+import { Edit2, IdCard, Tag, LogOut, Trash2, X, Camera, Loader2, Eye, EyeOff, ShieldAlert, ShieldCheck, Clock, FileText, CheckCircle, Upload, Sparkles, Bell, BellOff, Check, AlertCircle, Lock } from 'lucide-react'
 import { updateProfile, changePassword, logoutAllDevices, deleteAccount, updateProfilePicture, removeProfilePicture } from '../../services/authService'
 import { getMyPriorityStatus, submitPriorityRequest } from '../../services/priorityService'
 import { uploadMedia } from '../../services/appointmentService'
@@ -12,16 +13,11 @@ import { isNotificationSupported, getPushStatus, setPushEnabled, requestNotifica
 
 export default function StudentProfile({ embedded = false }) {
   const { user, token, updateUser, logout } = useAuth()
+  const toast = useToast()
   
   const [isChangingPassword, setIsChangingPassword] = useState(false)
   const [isEditModalOpen, setIsEditModalOpen] = useState(false)
   const [pushStatus, setPushStatus] = useState(() => getPushStatus())
-  const [toastMsg, setToastMsg] = useState(null)
-
-  const showToast = (text, type = 'success') => {
-    setToastMsg({ text, type })
-    setTimeout(() => setToastMsg(null), 3500)
-  }
 
   useEffect(() => {
     const handlePushToggle = () => {
@@ -33,29 +29,29 @@ export default function StudentProfile({ embedded = false }) {
 
   const handleTogglePush = async () => {
     if (!isNotificationSupported()) {
-      showToast('Browser notifications are not supported on this browser.', 'error')
+      toast.error('Browser notifications are not supported on this browser.')
       return
     }
 
     if (Notification.permission === 'denied') {
-      showToast('Notifications are blocked in your browser settings. Please allow notifications in site permissions.', 'error')
+      toast.error('Notifications are blocked in your browser settings. Please allow notifications in site permissions.')
       return
     }
 
     if (pushStatus === 'active') {
       setPushEnabled(false)
       setPushStatus('disabled')
-      showToast('Push notifications turned OFF.', 'info')
+      toast.info('Push notifications turned OFF.')
     } else {
       const permission = await requestNotificationPermission()
       if (permission === 'granted') {
         setPushEnabled(true)
         setPushStatus('active')
-        showToast('Push notifications turned ON! You will receive real-time queue & release alerts.', 'success')
+        toast.success('Push notifications turned ON! You will receive real-time queue & release alerts.')
         sendBrowserNotification('Notifications Activated 🔔', 'CampusFlow alerts are now active on this device!')
       } else {
         setPushStatus(getPushStatus())
-        showToast('Notification permission was not granted.', 'error')
+        toast.error('Notification permission was not granted.')
       }
     }
   }
@@ -229,19 +225,17 @@ export default function StudentProfile({ embedded = false }) {
 
   const handleUpdateProfile = async () => {
     setProfileMsg({ type: '', text: '' })
-    if (!editData.first_name || !editData.last_name || !editData.email) {
-      setProfileMsg({ type: 'error', text: 'All fields are required.' })
+    
+    if (!pendingProfilePicture && !pendingRemovePicture) {
+      toast.info('No changes made.')
+      handleCloseEditModal()
       return
     }
     
     setIsSavingProfile(true)
     try {
-      // 1. Update text profile
-      const res = await updateProfile(editData, token)
-      
       let finalProfileImage = user?.profile_image
       
-      // 2. Handle picture changes if any
       if (pendingRemovePicture) {
          await removeProfilePicture(token)
          finalProfileImage = null
@@ -251,16 +245,15 @@ export default function StudentProfile({ embedded = false }) {
       }
       
       updateUser({ 
-          ...res.user,
+          ...user,
           profile_image: finalProfileImage 
       })
       
-      setProfileMsg({ type: 'success', text: 'Profile updated successfully!' })
-      setTimeout(() => {
-        handleCloseEditModal()
-      }, 1500)
+      toast.success('Profile photo updated successfully!')
+      handleCloseEditModal()
     } catch (err) {
       setProfileMsg({ type: 'error', text: err.message || 'Failed to update profile' })
+      toast.error(err.message || 'Failed to update profile')
     } finally {
       setIsSavingProfile(false)
     }
@@ -283,6 +276,7 @@ export default function StudentProfile({ embedded = false }) {
         current_password: passwordData.current_password, 
         new_password: passwordData.new_password 
       }, token)
+      toast.success('Password changed successfully!')
       setPasswordMsg({ type: 'success', text: 'Password changed successfully!' })
       setPasswordData({ current_password: '', new_password: '', confirm_password: '' })
       setTimeout(() => {
@@ -291,6 +285,7 @@ export default function StudentProfile({ embedded = false }) {
       }, 1500)
     } catch (err) {
       setPasswordMsg({ type: 'error', text: err.message || 'Failed to change password' })
+      toast.error(err.message || 'Failed to change password')
     } finally {
       setIsSavingPassword(false)
     }
@@ -825,37 +820,56 @@ export default function StudentProfile({ embedded = false }) {
 
       </div>
 
-      {/* Manage Profile Modal */}
+      {/* Edit Profile Modal */}
       {isEditModalOpen && createPortal((
-        <div className="fixed inset-0 z-9999 flex items-center justify-center p-4 bg-black/60 backdrop-blur-2xs">
-          <div className="bg-white rounded-3xl w-full max-w-125 shadow-2xl overflow-hidden animate-fade-up">
-            <div className="flex items-center justify-between p-6 border-b border-border bg-off-white">
-              <h2 className="font-serif text-[22px] font-bold text-maroon m-0">Manage Profile</h2>
+        <div className="fixed inset-0 z-9999 flex items-center justify-center p-3.5 sm:p-4 bg-black/60">
+          <div className="bg-white rounded-2xl sm:rounded-3xl w-full max-w-120 shadow-[0_20px_50px_rgba(0,0,0,0.25)] border border-border overflow-hidden animate-fade-up">
+            
+            {/* Modal Header */}
+            <div className="flex items-start justify-between p-5 sm:p-6 border-b border-border/80 bg-off-white/70">
+              <div>
+                <h2 className="font-serif text-lg sm:text-[21px] font-bold text-maroon m-0 leading-tight">
+                  Edit Profile
+                </h2>
+                <p className="text-[11.5px] sm:text-xs text-text-sub m-0 mt-0.5 font-normal">
+                  Update your photo and view your verified credentials.
+                </p>
+              </div>
               <button 
+                type="button"
                 onClick={handleCloseEditModal}
-                className="p-2 rounded-full hover:bg-border transition-colors text-text-sub hover:text-text-main cursor-pointer"
+                className="w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-text-muted hover:text-text-main hover:bg-black/5 transition-colors cursor-pointer border-none bg-transparent shrink-0 -mr-1 -mt-1"
+                aria-label="Close modal"
               >
-                <X size={20} />
+                <X size={17} />
               </button>
             </div>
-            <div className="p-6 flex flex-col gap-5">
+
+            {/* Modal Body */}
+            <div className="p-5 sm:p-6 flex flex-col gap-4.5 max-h-[calc(85vh-130px)] overflow-y-auto">
               
               {profileMsg.text && (
-                <div className={`p-3 rounded-lg text-[13px] font-medium ${profileMsg.type === 'error' ? 'bg-red-50 text-red-600' : 'bg-green-50 text-green-600'}`}>
+                <div className={`p-3 rounded-xl text-[12.5px] font-medium flex items-center gap-2 ${profileMsg.type === 'error' ? 'bg-red-50 text-red-700 border border-red-200' : 'bg-emerald-50 text-emerald-700 border border-emerald-200'}`}>
                   {profileMsg.text}
                 </div>
               )}
 
-              <div className="flex flex-col gap-3">
-                <label className="block text-[13px] font-semibold text-text-main">Profile Picture</label>
-                <div className="flex items-center gap-5">
-                  <div className="w-16 h-16 rounded-full bg-maroon-light border-2 border-maroon-border flex items-center justify-center text-maroon text-[22px] font-bold overflow-hidden shadow-sm">
+              {/* Profile Photo Studio Section */}
+              <div className="p-4 rounded-2xl bg-off-white/80 border border-border/70 flex flex-col gap-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-[12px] font-bold text-text-main uppercase tracking-wider">Profile Photo</span>
+                  <span className="text-[11px] text-text-muted font-medium">PNG or JPG, max 5MB</span>
+                </div>
+
+                <div className="flex items-center gap-4">
+                  <div className="w-16 h-16 sm:w-17 sm:h-17 rounded-full bg-maroon-light border-2 border-maroon/20 ring-4 ring-maroon/5 flex items-center justify-center text-maroon text-[20px] sm:text-[22px] font-bold font-serif overflow-hidden shadow-sm shrink-0">
                     {previewImage ? (
                       <img src={previewImage} alt="Profile" className="w-full h-full object-cover" />
                     ) : (
                       user?.first_name?.[0]?.toUpperCase() || 'S'
                     )}
                   </div>
+
                   <input 
                     type="file" 
                     ref={fileInputRef} 
@@ -863,75 +877,127 @@ export default function StudentProfile({ embedded = false }) {
                     accept="image/png, image/jpeg" 
                     onChange={handleFileChange}
                   />
-                  <button 
-                    onClick={() => fileInputRef.current?.click()}
-                    disabled={isSavingProfile}
-                    className="flex items-center gap-2 px-4 py-2 rounded-xl border border-border text-[13px] font-semibold text-text-main bg-white hover:bg-off-white hover:border-maroon-border hover:text-maroon transition-colors shadow-sm cursor-pointer disabled:opacity-70 disabled:cursor-not-allowed"
-                  >
-                    <Camera size={14} /> 
-                    Change Picture
-                  </button>
-                  <button 
-                    onClick={handleRemovePicture}
-                    disabled={isSavingProfile || !previewImage} 
-                    className="flex items-center gap-2 text-[13px] font-semibold text-red hover:text-red-dark transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    Remove
-                  </button>
+
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <button 
+                      type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={isSavingProfile}
+                      className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-maroon/30 text-[12px] font-semibold text-maroon bg-white hover:bg-maroon hover:text-white transition-all shadow-2xs cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
+                    >
+                      <Camera size={13} /> 
+                      <span>Upload Photo</span>
+                    </button>
+
+                    {(previewImage || user?.profile_image) && (
+                      <button 
+                        type="button"
+                        onClick={handleRemovePicture}
+                        disabled={isSavingProfile || !previewImage} 
+                        className="flex items-center gap-1 px-3 py-2 rounded-xl text-[12px] font-medium text-red-600 hover:text-red-700 hover:bg-red-50 transition-colors cursor-pointer border-none bg-transparent disabled:opacity-40 disabled:cursor-not-allowed"
+                      >
+                        <Trash2 size={13} />
+                        <span>Remove</span>
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
-              
-              <div className="h-px bg-border w-full" />
-              
-              <div className="grid grid-cols-2 gap-5">
+
+              {/* Locked School Records Notice */}
+              <div className="flex items-start gap-2.5 p-3 sm:p-3.5 rounded-2xl bg-amber-50/70 border border-amber-200/80 text-amber-950 text-[11.5px] sm:text-xs leading-relaxed">
+                <div className="w-5 h-5 rounded-md bg-amber-100 text-amber-800 flex items-center justify-center shrink-0 mt-0.5 shadow-2xs">
+                  <Lock size={12} />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <span className="font-bold text-amber-900 block leading-tight">School Credentials Locked</span>
+                  <span className="text-amber-800/90 font-normal">Official student name and email account cannot be edited. Please contact the Registrar's Office for name corrections or change of email.</span>
+                </div>
+              </div>
+
+              {/* Read-Only Verified Credential Fields */}
+              <div className="flex flex-col gap-3.5">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                  <div>
+                    <label className="block text-[11.5px] font-bold text-text-sub uppercase tracking-wider mb-1.5">
+                      First Name
+                    </label>
+                    <div className="relative">
+                      <input 
+                        type="text" 
+                        value={user?.first_name || ''} 
+                        disabled 
+                        readOnly 
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-border/80 bg-[#F8F7F5] text-[13px] font-semibold text-text-main cursor-not-allowed pr-8 select-none focus:outline-none" 
+                      />
+                      <Lock size={13} className="absolute right-3 top-1/2 -translate-y-1/2 text-text-muted" />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-[11.5px] font-bold text-text-sub uppercase tracking-wider mb-1.5">
+                      Last Name
+                    </label>
+                    <div className="relative">
+                      <input 
+                        type="text" 
+                        value={user?.last_name || ''} 
+                        disabled 
+                        readOnly 
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-border/80 bg-[#F8F7F5] text-[13px] font-semibold text-text-main cursor-not-allowed pr-8 select-none focus:outline-none" 
+                      />
+                      <Lock size={13} className="absolute right-3 top-1/2 -translate-y-1/2 text-text-muted" />
+                    </div>
+                  </div>
+                </div>
+
                 <div>
-                  <label className="block text-[13px] font-semibold text-text-main mb-1.5">First Name</label>
-                  <input type="text" value={editData.first_name} onChange={e => setEditData({...editData, first_name: e.target.value})} className="w-full px-4 py-2.5 rounded-xl border border-border bg-white text-[14px] text-text-main focus:outline-none focus:border-maroon focus:ring-1 focus:ring-maroon transition-colors" />
-                </div>
-                <div>
-                  <label className="block text-[13px] font-semibold text-text-main mb-1.5">Last Name</label>
-                  <input type="text" value={editData.last_name} onChange={e => setEditData({...editData, last_name: e.target.value})} className="w-full px-4 py-2.5 rounded-xl border border-border bg-white text-[14px] text-text-main focus:outline-none focus:border-maroon focus:ring-1 focus:ring-maroon transition-colors" />
+                  <label className="block text-[11.5px] font-bold text-text-sub uppercase tracking-wider mb-1.5">
+                    Email Address
+                  </label>
+                  <div className="relative">
+                    <input 
+                      type="email" 
+                      value={user?.email || ''} 
+                      disabled 
+                      readOnly 
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-border/80 bg-[#F8F7F5] text-[13px] font-semibold text-text-main cursor-not-allowed pr-8 select-none focus:outline-none" 
+                    />
+                    <Lock size={13} className="absolute right-3 top-1/2 -translate-y-1/2 text-text-muted" />
+                  </div>
                 </div>
               </div>
-              <div>
-                <label className="block text-[13px] font-semibold text-text-main mb-1.5">Email Address</label>
-                <input type="email" value={editData.email} onChange={e => setEditData({...editData, email: e.target.value})} className="w-full px-4 py-2.5 rounded-xl border border-border bg-white text-[14px] text-text-main focus:outline-none focus:border-maroon focus:ring-1 focus:ring-maroon transition-colors" />
-              </div>
+
             </div>
-            <div className="p-6 border-t border-border bg-off-white flex justify-end gap-3">
+
+            {/* Modal Footer */}
+            <div className="p-4 sm:p-5 border-t border-border/80 bg-off-white/80 flex items-center justify-end gap-2.5">
               <button 
+                type="button"
                 onClick={handleCloseEditModal}
-                className="px-6 py-2.5 rounded-xl border border-border text-[14px] font-semibold text-text-main bg-white hover:bg-gray-50 transition-colors shadow-sm cursor-pointer"
+                disabled={isSavingProfile}
+                className="px-4 sm:px-5 py-2 sm:py-2.5 rounded-xl border border-border text-[12.5px] font-semibold text-text-main bg-white hover:bg-off-white transition-colors cursor-pointer disabled:opacity-60"
               >
                 Cancel
               </button>
-              <button onClick={handleUpdateProfile} disabled={isSavingProfile} className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-maroon text-white text-[14px] font-semibold hover:bg-maroon-dark transition-colors shadow-sm cursor-pointer disabled:opacity-70 disabled:cursor-not-allowed">
-                {isSavingProfile ? <><Loader2 size={16} className="animate-spin" /> Saving</> : 'Save Changes'}
+              <button 
+                type="button"
+                onClick={handleUpdateProfile} 
+                disabled={isSavingProfile} 
+                className="flex items-center gap-1.5 px-5 sm:px-6 py-2 sm:py-2.5 rounded-xl bg-maroon text-white text-[12.5px] font-bold hover:bg-maroon-dark transition-all shadow-sm cursor-pointer border-none disabled:opacity-70 disabled:cursor-not-allowed"
+              >
+                {isSavingProfile ? (
+                  <>
+                    <Loader2 size={14} className="animate-spin" /> 
+                    <span>Saving...</span>
+                  </>
+                ) : (
+                  <span>Save Changes</span>
+                )}
               </button>
             </div>
+
           </div>
-        </div>
-      ), document.body)}
-      {/* Floating Toast Notification */}
-      {toastMsg && createPortal((
-        <div className={`fixed bottom-10 right-8 z-9999 flex items-center gap-3 px-5 py-3.5 rounded-xl shadow-[0_12px_32px_rgba(0,0,0,0.18)] border text-[13.5px] font-bold animate-fade-up ${
-          toastMsg.type === 'error'
-            ? 'bg-danger text-white border-danger-border'
-            : toastMsg.type === 'info'
-            ? 'bg-slate-800 text-white border-slate-700'
-            : 'bg-[#006600] text-white border-[#005200]'
-        }`}>
-          {toastMsg.type === 'error' ? (
-            <AlertCircle size={17} className="shrink-0 text-white" />
-          ) : (
-            <div className="w-5 h-5 rounded-full bg-white/20 flex items-center justify-center shrink-0">
-              <Check size={13} className="text-white stroke-3" />
-            </div>
-          )}
-          <span className="text-white">{toastMsg.text}</span>
-          <button onClick={() => setToastMsg(null)} className="ml-2.5 bg-transparent border-none text-white/80 hover:text-white cursor-pointer p-0 flex items-center shrink-0 transition-opacity">
-            <X size={14} strokeWidth={2.5} />
-          </button>
         </div>
       ), document.body)}
     </>

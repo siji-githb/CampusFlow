@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom'
 import { useNavigate, Link, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../../context/useAuth'
 import { useStaffEvent } from '../../context/WebSocketContext'
+import { useToast } from '../../context/ToastContext'
 import StudentLayout from '../../components/layout/StudentLayout'
 import { getMyQueue, activateQueue, getTimeEstimate, getMyDocumentsToClaim } from '../../services/queueService'
 import { getMyAppointments, cancelAppointment } from '../../services/appointmentService'
@@ -16,6 +17,7 @@ const STEP_STYLE = {
 
 export default function MyQueue({ embedded = false }) {
   const { token } = useAuth()
+  const toast = useToast()
   const navigate = useNavigate()
   const [queueData, setQueueData]   = useState(null)
   const [upcomingAppts, setUpcomingAppts] = useState([])
@@ -29,6 +31,7 @@ export default function MyQueue({ embedded = false }) {
   const [documentsToClaim, setDocumentsToClaim] = useState([])
   const [cancelConfirmId, setCancelConfirmId] = useState(null)
   const [activateConfirmId, setActivateConfirmId] = useState(null)
+  const [cancelling, setCancelling] = useState(false)
 
   useEffect(() => {
     if (tabParam === 'upcoming') {
@@ -77,7 +80,7 @@ export default function MyQueue({ embedded = false }) {
   const fetchQueue = useCallback(async () => {
     try {
       const data = await getMyQueue(token)
-      setQueueData(data.ticket ? data : null)
+      setQueueData(data?.ticket ? data : null)
       
       const claims = await getMyDocumentsToClaim(token)
       setDocumentsToClaim(claims || [])
@@ -107,46 +110,56 @@ export default function MyQueue({ embedded = false }) {
         // If NOT activated, only show if today or future (removes unactivated past due tickets)
         return a.appointment_date >= currentToday;
       }))
-    } catch (e) { setError(e.message) }
-  }, [token])
-
-  const fetchEstimates = useCallback(async (appointmentId) => {
-    try {
-      const data = await getTimeEstimate(token, appointmentId)
-      setEstimates(data.estimates || [])
     } catch {
-      setEstimates([])
+      // non-fatal
     }
   }, [token])
 
-  // Real-time WebSocket event listener for instant 0ms updates
-  useStaffEvent(['QUEUE_UPDATED', 'WINDOW_UPDATED', 'RELEASES_UPDATED', 'APPOINTMENTS_UPDATED', 'NOTIFICATION_RECEIVED'], () => {
+  const fetchDocumentsToClaim = useCallback(async () => {
+    try {
+      const data = await getMyDocumentsToClaim(token)
+      setDocumentsToClaim(data || [])
+    } catch {
+      // non-fatal
+    }
+  }, [token])
+
+  useEffect(() => {
+    Promise.all([fetchQueue(), fetchAppts(), fetchDocumentsToClaim()]).finally(() => setLoading(false))
+  }, [fetchQueue, fetchAppts, fetchDocumentsToClaim])
+
+  // Real-time WebSocket event listener for 0ms instant sync
+  useStaffEvent(['QUEUE_UPDATED', 'RELEASES_UPDATED', 'NOTIFICATION_RECEIVED', 'APPOINTMENTS_UPDATED'], () => {
     fetchQueue()
     fetchAppts()
+    fetchDocumentsToClaim()
   })
 
+  // Polling every 15s as safety net
   useEffect(() => {
-    Promise.all([fetchQueue(), fetchAppts()]).finally(() => setLoading(false))
-    pollRef.current = setInterval(fetchQueue, 60000)
-    return () => clearInterval(pollRef.current)
-  }, [fetchQueue, fetchAppts])
-
-  useEffect(() => {
-    if (queueData?.ticket?.appointment_id) {
-      fetchEstimates(queueData.ticket.appointment_id)
-    }
-  }, [queueData?.ticket?.appointment_id, fetchEstimates])
+    const id = setInterval(() => {
+      fetchQueue()
+      fetchAppts()
+      fetchDocumentsToClaim()
+    }, 15000)
+    return () => clearInterval(id)
+  }, [fetchQueue, fetchAppts, fetchDocumentsToClaim])
 
   const handleActivate = async () => {
     if (!activateConfirmId) return
-    setActivating(activateConfirmId); setError('')
-    try { 
-      await activateQueue(token, activateConfirmId) 
-      await Promise.all([fetchQueue(), fetchAppts()]) 
+    const apptId = activateConfirmId
+    setActivating(apptId)
+    setError('')
+    try {
+      const res = await activateQueue(token, apptId)
+      setQueueData(res)
       setActiveTab('active')
-      window.scrollTo({ top: 0, behavior: 'smooth' })
+      await fetchAppts()
+      toast.success('Queue ticket activated! You are now in line.')
+    } catch (e) {
+      setError(e.message)
+      toast.error(e.message)
     }
-    catch (e) { setError(e.message) }
     finally { 
       setActivating(null)
       setActivateConfirmId(null)
@@ -155,13 +168,17 @@ export default function MyQueue({ embedded = false }) {
 
   const handleCancelQueue = async () => {
     if (!cancelConfirmId) return
+    setCancelling(true)
     try {
       await cancelAppointment(token, cancelConfirmId)
       await Promise.all([fetchQueue(), fetchAppts()])
+      setCancelConfirmId(null)
+      toast.info('Queue spot cancelled successfully.')
     } catch (e) {
       setError(e.message)
+      toast.error(e.message)
     } finally {
-      setCancelConfirmId(null)
+      setCancelling(false)
     }
   }
 
@@ -914,7 +931,7 @@ export default function MyQueue({ embedded = false }) {
       {/* Cancel Confirmation Modal */}
       {cancelConfirmId && createPortal(
         <div className="fixed inset-0 z-9999 flex items-center justify-center p-4 pointer-events-auto">
-          <div className="fixed inset-0 bg-black/60 transition-opacity backdrop-blur-2xs" onClick={() => setCancelConfirmId(null)} />
+          <div className="fixed inset-0 bg-black/60 transition-opacity backdrop-blur-2xs" onClick={() => !cancelling && setCancelConfirmId(null)} />
           <div className="relative bg-white rounded-2xl p-7 max-w-sm w-full shadow-2xl animate-fade-up z-10">
             <h3 className="text-[18px] font-bold text-text-main m-0 mb-2">Cancel Queue Ticket?</h3>
             <p className="text-[14px] text-text-sub m-0 mb-6">
@@ -923,15 +940,28 @@ export default function MyQueue({ embedded = false }) {
             <div className="flex gap-3">
               <button 
                 onClick={() => setCancelConfirmId(null)}
-                className="flex-1 py-2.5 px-4 rounded-lg border border-border text-text-main font-semibold hover:bg-surface transition-colors cursor-pointer"
+                disabled={cancelling}
+                className={`flex-1 py-2.5 px-4 rounded-lg border border-border text-text-main font-semibold transition-colors ${
+                  cancelling ? 'opacity-50 cursor-not-allowed bg-surface' : 'hover:bg-surface cursor-pointer'
+                }`}
               >
                 Go Back
               </button>
               <button 
                 onClick={handleCancelQueue}
-                className="flex-1 py-2.5 px-4 rounded-lg bg-danger text-white font-semibold hover:bg-danger-dark transition-colors border-none cursor-pointer"
+                disabled={cancelling}
+                className={`flex-1 py-2.5 px-4 rounded-lg bg-danger text-white font-semibold transition-all border-none flex items-center justify-center gap-2 ${
+                  cancelling ? 'opacity-80 cursor-wait' : 'hover:bg-danger-dark cursor-pointer'
+                }`}
               >
-                Yes, Cancel
+                {cancelling ? (
+                  <>
+                    <Loader2 size={16} className="animate-spin text-white" />
+                    <span>Cancelling...</span>
+                  </>
+                ) : (
+                  'Yes, Cancel'
+                )}
               </button>
             </div>
           </div>

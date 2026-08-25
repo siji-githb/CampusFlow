@@ -507,20 +507,22 @@ export default function BookAppointment({ embedded = false }) {
                         className="group h-full text-left bg-white border border-border sm:border-[1.5px] rounded-2xl p-4 sm:p-5 cursor-pointer transition-all duration-200 shadow-2xs flex flex-col justify-between hover:border-maroon hover:shadow-md hover:-translate-y-0.5"
                       >
                         {/* Top: Title & Description */}
-                        <div className="flex-1 flex flex-col w-full mb-3">
-                          <div className="flex items-start gap-2.5 sm:gap-3 mb-2">
-                            <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-maroon-light text-maroon flex items-center justify-center shrink-0 border border-maroon-border/40 group-hover:bg-maroon group-hover:text-white transition-colors">
+                        <div className="flex-1 flex flex-col w-full mb-3.5">
+                          <div className="flex items-start gap-2.5 sm:gap-3">
+                            <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-maroon-light text-maroon flex items-center justify-center shrink-0 border border-maroon-border/40 group-hover:bg-maroon group-hover:text-white transition-colors mt-0.5">
                               <FileText size={16} />
                             </div>
                             <div className="flex-1 min-w-0">
-                              <h3 className="font-serif text-sm sm:text-base font-bold text-text-main m-0 leading-snug group-hover:text-maroon transition-colors truncate">
-                                {t.name}
-                              </h3>
-                              <p className="text-xs sm:text-[13px] text-text-sub m-0 mt-0.5 line-clamp-2 leading-relaxed">
+                              <div className="flex items-start justify-between gap-2">
+                                <h3 className="font-serif text-sm sm:text-base font-bold text-text-main m-0 leading-snug group-hover:text-maroon transition-colors">
+                                  {t.name}
+                                </h3>
+                                <ChevronRight size={16} className="text-text-muted shrink-0 group-hover:text-maroon group-hover:translate-x-0.5 transition-all mt-0.5" />
+                              </div>
+                              <p className="text-xs sm:text-[13px] text-text-sub m-0 mt-1.5 leading-relaxed font-normal">
                                 {t.clean_description}
                               </p>
                             </div>
-                            <ChevronRight size={16} className="text-text-muted shrink-0 group-hover:text-maroon group-hover:translate-x-0.5 transition-all mt-0.5" />
                           </div>
                         </div>
 

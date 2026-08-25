@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom'
 import { useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '../../context/useAuth'
 import { useStaffEvent } from '../../context/WebSocketContext'
+import { useToast } from '../../context/ToastContext'
 import StudentLayout from '../../components/layout/StudentLayout'
 import { getMyAppointments, cancelAppointment, clearCancelledAppointments, getBookingConfig } from '../../services/appointmentService'
 import RescheduleModal from '../../components/RescheduleModal'
@@ -10,7 +11,7 @@ import {
   Inbox, Calendar, Tag, FileText, AlertTriangle, ChevronLeft, ChevronRight, 
   Clock, CheckCircle, CheckCircle2, Filter, ChevronDown, Trash2, FileCheck, MapPin, 
   Building2, ShieldCheck, ArrowRight, PlusCircle, Sparkles, Zap, Info, X, 
-  CalendarCheck, FolderOpen, ClipboardList, ExternalLink, RefreshCw 
+  CalendarCheck, FolderOpen, ClipboardList, ExternalLink, RefreshCw, Loader2 
 } from 'lucide-react'
 
 const CustomDropdown = ({ value, onChange, options, icon }) => {
@@ -594,9 +595,9 @@ export default function MyAppointments({ embedded = false }) {
     return `${h12}:${mStr} ${suffix}`
   }
 
+  const toast = useToast()
   const [loading, setLoading] = useState(true)
   const [error, setError]     = useState('')
-  const [successMsg, setSuccessMsg] = useState('')
   const [filter, setFilter]   = useState('all')
   const [cancelling, setCancelling] = useState(null)
   const [rescheduling, setRescheduling] = useState(null)
@@ -652,23 +653,33 @@ export default function MyAppointments({ embedded = false }) {
   const handleCancelConfirm = async () => {
     if (!confirmCancelId) return
     const id = confirmCancelId
-    setConfirmCancelId(null)
     setCancelling(id)
-    try { await cancelAppointment(token, id); await fetch(); setSuccessMsg('Appointment cancelled successfully.') }
-    catch (e) { setError(e.message) }
-    finally { setCancelling(null); setTimeout(() => setSuccessMsg(''), 4000) }
+    try { 
+      await cancelAppointment(token, id); 
+      await fetch(); 
+      toast.success('Appointment cancelled successfully.')
+      setConfirmCancelId(null)
+    }
+    catch (e) { 
+      setError(e.message)
+      toast.error(e.message) 
+    }
+    finally { setCancelling(null) }
   }
 
   const handleClearCancelled = async () => {
-    setShowClearConfirm(false)
     setClearingAll(true)
     try { 
       await clearCancelledAppointments(token)
       await fetch()
-      setSuccessMsg('All cancelled appointments have been cleared.')
+      toast.success('All cancelled appointments have been cleared.')
+      setShowClearConfirm(false)
     }
-    catch (e) { setError(e.message) }
-    finally { setClearingAll(false); setTimeout(() => setSuccessMsg(''), 4000) }
+    catch (e) { 
+      setError(e.message)
+      toast.error(e.message) 
+    }
+    finally { setClearingAll(false) }
   }
 
   const filteredAppointments = useMemo(() => {
@@ -805,11 +816,6 @@ export default function MyAppointments({ embedded = false }) {
           {error && (
             <div className="p-3.5 rounded-xl bg-red-50 border border-red-200 text-danger text-[13px] font-medium flex items-center gap-2">
               <AlertTriangle size={16} /> {error}
-            </div>
-          )}
-          {successMsg && (
-            <div className="p-3.5 rounded-xl bg-success-light border border-success-border text-success text-[13px] font-medium flex items-center gap-2">
-              <CheckCircle size={16} /> {successMsg}
             </div>
           )}
 
@@ -1036,15 +1042,14 @@ export default function MyAppointments({ embedded = false }) {
           onSuccess={() => {
             setReschedulingAppt(null)
             fetch()
-            setSuccessMsg('Appointment rescheduled successfully!')
-            setTimeout(() => setSuccessMsg(''), 4000)
+            toast.success('Appointment rescheduled successfully!')
           }}
         />
       )}
 
       {confirmCancelId && createPortal((
         <div className="fixed inset-0 z-9999 flex items-center justify-center p-4">
-          <div className="fixed inset-0 bg-black/60 transition-opacity backdrop-blur-2xs" onClick={() => setConfirmCancelId(null)} />
+          <div className="fixed inset-0 bg-black/60 transition-opacity backdrop-blur-2xs" onClick={() => !cancelling && setConfirmCancelId(null)} />
           <div className="relative w-full max-w-sm bg-white rounded-2xl p-6 text-center shadow-2xl border border-border z-10 animate-fade-up">
             <div className="w-12 h-12 rounded-full bg-red-100 text-maroon flex items-center justify-center mx-auto mb-4">
               <AlertTriangle size={24} />
@@ -1056,15 +1061,24 @@ export default function MyAppointments({ embedded = false }) {
             <div className="flex gap-2">
               <button 
                 onClick={() => setConfirmCancelId(null)} 
-                className="flex-1 py-2.5 px-3 rounded-xl border border-border bg-white text-text-main text-[13px] font-semibold cursor-pointer hover:bg-off-white transition-colors"
+                disabled={!!cancelling}
+                className="flex-1 py-2.5 px-3 rounded-xl border border-border bg-white text-text-main text-[13px] font-semibold cursor-pointer hover:bg-off-white transition-colors disabled:opacity-50"
               >
                 Keep It
               </button>
               <button 
                 onClick={handleCancelConfirm} 
-                className="flex-1 py-2.5 px-3 rounded-xl border-none bg-maroon text-white text-[13px] font-semibold cursor-pointer hover:bg-maroon-dark transition-colors shadow-xs"
+                disabled={!!cancelling}
+                className="flex-1 py-2.5 px-3 rounded-xl border-none bg-maroon text-white text-[13px] font-semibold cursor-pointer hover:bg-maroon-dark transition-colors shadow-xs flex items-center justify-center gap-2 disabled:opacity-80"
               >
-                Yes, Cancel
+                {cancelling ? (
+                  <>
+                    <Loader2 size={16} className="animate-spin text-white" />
+                    <span>Cancelling...</span>
+                  </>
+                ) : (
+                  'Yes, Cancel'
+                )}
               </button>
             </div>
           </div>
@@ -1073,7 +1087,7 @@ export default function MyAppointments({ embedded = false }) {
 
       {showClearConfirm && createPortal((
         <div className="fixed inset-0 z-9999 flex items-center justify-center p-4">
-          <div className="fixed inset-0 bg-black/60 transition-opacity backdrop-blur-2xs" onClick={() => setShowClearConfirm(false)} />
+          <div className="fixed inset-0 bg-black/60 transition-opacity backdrop-blur-2xs" onClick={() => !clearingAll && setShowClearConfirm(false)} />
           <div className="relative w-full max-w-sm bg-white rounded-2xl p-6 text-center shadow-2xl border border-border z-10 animate-fade-up">
             <div className="w-12 h-12 rounded-full bg-red-100 text-maroon flex items-center justify-center mx-auto mb-4">
               <Trash2 size={24} />
@@ -1093,9 +1107,16 @@ export default function MyAppointments({ embedded = false }) {
               <button 
                 onClick={handleClearCancelled} 
                 disabled={clearingAll}
-                className="flex-1 py-2.5 px-3 rounded-xl border-none bg-maroon text-white text-[13px] font-semibold cursor-pointer hover:bg-maroon-dark transition-colors shadow-xs disabled:opacity-50"
+                className="flex-1 py-2.5 px-3 rounded-xl border-none bg-maroon text-white text-[13px] font-semibold cursor-pointer hover:bg-maroon-dark transition-colors shadow-xs disabled:opacity-80 flex items-center justify-center gap-2"
               >
-                {clearingAll ? 'Clearing...' : 'Yes, Clear All'}
+                {clearingAll ? (
+                  <>
+                    <Loader2 size={16} className="animate-spin text-white" />
+                    <span>Clearing...</span>
+                  </>
+                ) : (
+                  'Yes, Clear All'
+                )}
               </button>
             </div>
           </div>

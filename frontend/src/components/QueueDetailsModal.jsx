@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import { createPortal } from 'react-dom'
+import { useNavigate } from 'react-router-dom'
 import { 
   X, 
   Check, 
@@ -15,9 +16,11 @@ import {
   FileText, 
   Sparkles, 
   ShieldCheck,
-  DoorOpen,
+  MapPin,
+  UserCheck,
   ClipboardList,
-  Info
+  Info,
+  ArrowRight
 } from 'lucide-react'
 import CustomDatePicker from './common/CustomDatePicker'
 
@@ -80,8 +83,20 @@ function fmt12hTime(t) {
   return `${h12}:${parts[1]} ${ampm}`
 }
 
+// ── Helper: Format date for display ──────────────────────────────────────────
+function formatDisplayDate(dateStr) {
+  if (!dateStr) return ''
+  try {
+    const d = new Date(dateStr + 'T00:00:00')
+    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+  } catch {
+    return dateStr
+  }
+}
+
 // ── Queue Details Modal ───────────────────────────────────────────────────────
 export default function QueueDetailsModal({ ticketData, onClose, onConfirm, confirming, onSetReleaseDate, onNavigate }) {
+  const navigate = useNavigate()
   const [localTicket, setLocalTicket] = useState(ticketData.ticket)
   const [localSteps, setLocalSteps] = useState(ticketData.steps)
 
@@ -279,13 +294,8 @@ export default function QueueDetailsModal({ ticketData, onClose, onConfirm, conf
                 return n.includes('document prepared') || n.includes('document ready')
               }
 
-              // Hide release step always, and hide Step 3 unless Schedule Date is picked (future date)
-              const isScheduledMode = Boolean(releaseDate && releaseDate !== getTodayStr())
-              const displaySteps = steps.filter(s => {
-                if (isReleaseStep(s)) return false
-                if (isDocPreparedStep(s) && !isScheduledMode) return false
-                return true
-              })
+              // Show all steps in the roadmap
+              const displaySteps = steps || []
 
               return (
                 <>
@@ -303,6 +313,12 @@ export default function QueueDetailsModal({ ticketData, onClose, onConfirm, conf
                       const isLast = idx === displaySteps.length - 1
                       const isCurrent = ticket.status === 'in_progress' && step.status === 'in_progress'
                       const isCompleted = step.status === 'completed'
+                      const isRelease = isReleaseStep(step)
+                      const isPrevCompleted = idx === 0 || displaySteps.slice(0, idx).every(s => s.status === 'completed')
+                      
+                      const effectiveReleaseDate = appt?.release_date || releaseDate
+                      const isFutureScheduled = Boolean(effectiveReleaseDate && effectiveReleaseDate !== getTodayStr())
+                      
                       const confirmKey = `${ticket.id}-${step.step_number}`
                       const isConfirming = confirming === confirmKey
                       
@@ -344,6 +360,20 @@ export default function QueueDetailsModal({ ticketData, onClose, onConfirm, conf
 
                       const stepDesc = getStepDescription(step, idx, displaySteps.length)
                       
+                      const rawLoc = (step.location || '').trim()
+                      const rawStepName = (step.step_name || '').trim().toLowerCase()
+                      let cleanLocation = null
+
+                      if (rawLoc && rawLoc.toLowerCase() !== rawStepName && rawLoc.toLowerCase() !== 'counter' && !rawLoc.toLowerCase().includes('preparation') && !rawLoc.toLowerCase().includes('prepared') && !rawLoc.toLowerCase().includes('release')) {
+                        cleanLocation = rawLoc
+                      } else if (isReceiptSub || rawStepName.includes('receipt') || rawStepName.includes('payment')) {
+                        cleanLocation = 'Window 1'
+                      } else if (isRelease || rawStepName.includes('release')) {
+                        cleanLocation = 'Releasing Counter'
+                      } else if (step.requires_presence === false || isPrepDoc || isDocPrepared) {
+                        cleanLocation = 'Back Office'
+                      }
+                      
                       return (
                         <div key={step.id} className="flex gap-4 sm:gap-6">
                           {/* Step Indicator & Spine */}
@@ -351,11 +381,19 @@ export default function QueueDetailsModal({ ticketData, onClose, onConfirm, conf
                             <div className={`w-10 h-10 rounded-full shrink-0 flex items-center justify-center text-[13.5px] font-extrabold transition-all duration-300 ${
                               isCompleted 
                                 ? 'bg-success text-white ring-4 ring-success-light shadow-xs' 
-                                : isCurrent 
+                                : isCurrent && !isRelease
                                 ? 'bg-maroon text-white ring-4 ring-maroon-light shadow-sm' 
+                                : isRelease && isPrevCompleted
+                                ? 'bg-emerald-600 text-white ring-4 ring-emerald-100 shadow-xs'
                                 : 'bg-white border-2 border-border text-text-muted'
                             }`}>
-                              {isCompleted ? <Check size={18} strokeWidth={3} /> : step.step_number}
+                              {isCompleted ? (
+                                <Check size={18} strokeWidth={3} />
+                              ) : isRelease && isPrevCompleted ? (
+                                <Check size={18} strokeWidth={3} />
+                              ) : (
+                                step.step_number
+                              )}
                             </div>
                             {!isLast && (
                               <div className={`w-0.5 flex-1 min-h-14 my-2 transition-colors duration-500 ${
@@ -367,50 +405,73 @@ export default function QueueDetailsModal({ ticketData, onClose, onConfirm, conf
                           {/* Step Card Content */}
                           <div className={`flex-1 ${isLast ? 'pb-0' : 'pb-6'}`}>
                             <div className={`flex flex-col gap-3 rounded-2xl transition-all duration-300 ${
-                              isCurrent 
+                              isCurrent && !isRelease
                                 ? 'bg-white p-5 sm:p-6 border-2 border-maroon/20 shadow-md ring-4 ring-maroon/5 -mt-1' 
                                 : isCompleted
                                 ? 'bg-surface/50 p-4.5 rounded-2xl border border-border/80'
+                                : isRelease && isPrevCompleted
+                                ? 'bg-emerald-50/50 p-5 rounded-2xl border border-emerald-300/80 shadow-sm'
                                 : 'bg-surface/30 p-4.5 rounded-2xl border border-border/50 opacity-65'
                             }`}>
                               
                               {/* Step Header Row */}
                               <div className="flex justify-between items-start gap-4 flex-wrap">
                                 <div className="flex-1 min-w-0">
-                                  <div className="flex items-center gap-2 flex-wrap mb-1">
-                                    <span className={`text-[15.5px] font-bold ${
-                                      isCompleted ? 'text-success' : isCurrent ? 'text-text-main' : 'text-text-sub'
+                                  <div className="flex items-center gap-2 flex-wrap mb-1.5">
+                                    <span className={`text-[15px] font-bold ${
+                                      isCompleted ? 'text-success' : isCurrent && !isRelease ? 'text-text-main' : isRelease && isPrevCompleted ? 'text-emerald-950 font-extrabold' : 'text-text-sub'
                                     }`}>
-                                      {step.step_name}
+                                      {isRelease ? 'Document Release & Claiming' : step.step_name}
                                     </span>
 
-                                    {isCurrent && (
+                                    {/* Current Action badge only on active processing intake steps */}
+                                    {isCurrent && !isRelease && (
                                       <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-maroon-light text-maroon border border-maroon-border">
                                         Current Action
                                       </span>
                                     )}
 
-                                    {/* Presence Badge */}
-                                    {step.requires_presence === false ? (
-                                      <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-gold-light text-gold border border-gold-border">
-                                        <Sparkles size={11} /> Back-Office Processing
-                                      </span>
-                                    ) : (
-                                      <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-surface border border-border text-text-muted">
-                                        <Users size={11} /> Student Presence Required
-                                      </span>
+                                    {/* Primary Status Badge for Release step */}
+                                    {isRelease && isPrevCompleted && !isCompleted && (
+                                      isFutureScheduled ? (
+                                        <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-gold-light text-gold-dark border border-gold-border shadow-2xs">
+                                          <Calendar size={11} /> Scheduled for {formatDisplayDate(effectiveReleaseDate)}
+                                        </span>
+                                      ) : (
+                                        <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-900 border border-emerald-300 shadow-2xs">
+                                          <CheckCircle2 size={11} className="text-emerald-700" /> Ready to Claim
+                                        </span>
+                                      )
                                     )}
 
-                                    {step.location && (
+                                    {/* Presence Badge (hidden on ready release to keep it neat) */}
+                                    {!(isRelease && isPrevCompleted) && (
+                                      step.requires_presence === false ? (
+                                        <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-gold-light text-gold-dark border border-gold-border">
+                                          <Sparkles size={11} /> Back-Office Processing
+                                        </span>
+                                      ) : (
+                                        <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-surface border border-border text-text-muted">
+                                          <UserCheck size={11} /> Student In-Person
+                                        </span>
+                                      )
+                                    )}
+
+                                    {/* Location Badge (only when clean and distinct) */}
+                                    {cleanLocation && !(isRelease && isPrevCompleted) && (
                                       <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-surface border border-border text-text-muted">
-                                        <DoorOpen size={11} /> {step.location}
+                                        <MapPin size={10.5} /> {cleanLocation}
                                       </span>
                                     )}
                                   </div>
 
                                   {/* Step Description */}
                                   <p className="text-[12.5px] text-text-sub font-normal m-0 leading-relaxed mt-1">
-                                    {stepDesc}
+                                    {isRelease && isPrevCompleted && !isCompleted
+                                      ? (isFutureScheduled 
+                                          ? `Document preparation is complete. Scheduled for student pickup on ${formatDisplayDate(effectiveReleaseDate)} in Document Releases.` 
+                                          : `Document preparation is complete, signed, and dry-sealed. Ready for student claiming at the Releasing Counter.`)
+                                      : stepDesc}
                                   </p>
                                   
                                   {isCompleted && step.confirmed_at && (
@@ -420,7 +481,8 @@ export default function QueueDetailsModal({ ticketData, onClose, onConfirm, conf
                                     </div>
                                   )}
 
-                                  {isCurrent && (
+                                  {/* Active Instruction Text only for active processing steps */}
+                                  {isCurrent && !isRelease && (
                                     <div className="text-[12.5px] text-maroon font-semibold mt-2 flex items-center gap-1.5">
                                       <span className="w-1.5 h-1.5 rounded-full bg-maroon animate-ping inline-block" />
                                       {instructionText}
@@ -428,8 +490,29 @@ export default function QueueDetailsModal({ ticketData, onClose, onConfirm, conf
                                   )}
                                 </div>
                                 
+                                {/* Action Button for Release step when Ready */}
+                                {isRelease && isPrevCompleted && !isCompleted && (
+                                  <div className="shrink-0 mt-0.5">
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        onClose()
+                                        if (onNavigate) {
+                                          onNavigate('document-releases')
+                                        } else {
+                                          navigate('/staff/releases')
+                                        }
+                                      }}
+                                      className="px-4 py-2.5 rounded-xl text-[12.5px] font-bold bg-maroon hover:bg-maroon-dark text-white shadow-xs inline-flex items-center gap-2 transition-all cursor-pointer border-none active:scale-98"
+                                    >
+                                      <span>Go to Document Releases</span>
+                                      <ArrowRight size={13} />
+                                    </button>
+                                  </div>
+                                )}
+
                                 {/* Action Button for Current Step */}
-                                {isCurrent && (
+                                {isCurrent && !isRelease && (
                                   <div className="shrink-0">
                                     <button
                                       onClick={async () => {

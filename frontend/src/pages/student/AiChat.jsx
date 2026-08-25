@@ -1,14 +1,15 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/useAuth'
+import { useToast } from '../../context/ToastContext'
 import Navbar from '../../components/layout/Navbar'
 import { sendMessage, clearChat, getChatHistory } from '../../services/aiService'
 import { BotMessageSquare, Eraser } from 'lucide-react'
 
 const SUGGESTED = [
-  'What documents do I need for a TOR?',
   'How do I book an appointment?',
-  'How long does a COE take?',
+  'What requirements do I need for a TOR or COE?',
+  'Can you make an appointment for me?',
 ]
 
 const MicIcon = () => (
@@ -28,7 +29,7 @@ const SendIcon = () => (
 
 export default function AiChat({ asWidget, headless, onClose, initialQuery }) {
   const { token } = useAuth()
-  // eslint-disable-next-line no-unused-vars
+  const toast = useToast()
   const navigate  = useNavigate()
 
   const DEFAULT_MESSAGE = {
@@ -77,7 +78,6 @@ export default function AiChat({ asWidget, headless, onClose, initialQuery }) {
   }, [showConfirm]);
 
   const [isListening, setIsListening] = useState(false)
-  const [isSpeaking,  setIsSpeaking]  = useState(false)
   const recognitionRef = useRef(null)
   const voiceSupported = typeof window !== 'undefined' &&
     ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window)
@@ -98,31 +98,14 @@ export default function AiChat({ asWidget, headless, onClose, initialQuery }) {
   useEffect(() => {
     return () => {
       recognitionRef.current?.stop()
-      window.speechSynthesis?.cancel()
     }
   }, [])
-
-  const speakResponse = (text) => {
-    if (!('speechSynthesis' in window)) return
-    window.speechSynthesis.cancel()
-    const clean = text.replace(/[\u{1F600}-\u{1F6FF}]/gu, '').trim()
-    const utter  = new SpeechSynthesisUtterance(clean)
-    utter.lang   = 'en-PH'
-    utter.rate   = 0.95
-    utter.pitch  = 1
-    utter.onstart = () => setIsSpeaking(true)
-    utter.onend   = () => setIsSpeaking(false)
-    utter.onerror = () => setIsSpeaking(false)
-    window.speechSynthesis.speak(utter)
-  }
 
   const startListening = () => {
     if (!voiceSupported) {
       alert('Voice input requires Chrome or Edge.')
       return
     }
-    window.speechSynthesis?.cancel()
-    setIsSpeaking(false)
 
     const SR = window.SpeechRecognition || window.webkitSpeechRecognition
     const recognition = new SR()
@@ -162,8 +145,7 @@ export default function AiChat({ asWidget, headless, onClose, initialQuery }) {
 
     setInput(''); setError('')
     recognitionRef.current?.stop()
-    window.speechSynthesis?.cancel()
-    setIsListening(false); setIsSpeaking(false)
+    setIsListening(false)
 
     setMessages(prev => [...prev, { role: 'user', content: msg }])
     setLoading(true)
@@ -171,7 +153,6 @@ export default function AiChat({ asWidget, headless, onClose, initialQuery }) {
       const data  = await sendMessage(token, msg)
       const reply = data.message
       setMessages(prev => [...prev, { role: 'assistant', content: reply }])
-      speakResponse(reply)
     } catch (e) {
       const isLengthError = e.message?.includes('1000 characters') || msg.length > 1000
       const errorText = isLengthError 
@@ -183,13 +164,15 @@ export default function AiChat({ asWidget, headless, onClose, initialQuery }) {
   }
 
   const handleClear = async () => {
-    window.speechSynthesis?.cancel()
-    setIsSpeaking(false)
     setShowConfirm(false)
     try {
       await clearChat(token)
       setMessages([{ role: 'assistant', content: 'Chat cleared! How can I help you today?' }])
-    } catch (e) { setError(e.message) }
+      toast.info('Chat conversation cleared.')
+    } catch (e) { 
+      setError(e.message)
+      toast.error(e.message) 
+    }
   }
 
   const chatContent = (
@@ -310,15 +293,6 @@ export default function AiChat({ asWidget, headless, onClose, initialQuery }) {
               <span className="text-[10.5px] text-maroon flex items-center gap-1.5 font-medium">
                 <span className="w-1.5 h-1.5 rounded-full bg-maroon animate-pulse"></span>
                 Listening...
-              </span>
-            ) : isSpeaking ? (
-              <span className="text-[10.5px] text-maroon flex items-center gap-1.5 font-medium">
-                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>
-                Speaking...
-                <button onClick={() => { window.speechSynthesis?.cancel(); setIsSpeaking(false) }}
-                  className="ml-1 px-1.5 py-0.2 rounded text-[9.5px] bg-maroon-light text-maroon hover:bg-maroon hover:text-white transition-colors border-none cursor-pointer">
-                  Stop
-                </button>
               </span>
             ) : (
               <p className="text-[10.5px] text-text-muted m-0 text-center">

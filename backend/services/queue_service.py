@@ -238,11 +238,7 @@ def get_student_queue(student_id: str):
             tx_name = (appt.get("transaction_types") or {}).get("name", "")
             
             # If the queue ticket itself is cancelled or deleted transaction type, skip
-            if t.get("status") == "cancelled" or "(deleted" in tx_name:
-                continue
-            
-            # If appointment was auto-cancelled but ticket is actively waiting or in progress, retain it
-            if appt_status == "cancelled" and t.get("status") not in ["waiting", "in_progress"]:
+            if t.get("status") == "cancelled" or "(deleted" in tx_name or appt_status == "cancelled":
                 continue
                 
             valid_tickets.append(t)

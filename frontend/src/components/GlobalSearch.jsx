@@ -86,10 +86,10 @@ export default function GlobalSearch({ isMobile = false, onAiPrompt }) {
   };
 
   return (
-    <div ref={containerRef} className={`relative ${isMobile ? 'w-20 sm:w-32 focus-within:w-30 sm:focus-within:w-44 transition-all duration-200 shrink-0' : 'mr-auto hidden md:block'}`}>
+    <div ref={containerRef} className={`relative ${isMobile ? 'w-24 sm:w-36 focus-within:w-36 sm:focus-within:w-48 transition-all duration-200 shrink-0' : 'mr-auto hidden md:block'}`}>
       <Search 
-        size={isMobile ? 12 : 16} 
-        className={`absolute top-1/2 -translate-y-1/2 pointer-events-none ${isMobile ? 'left-2 text-slate-400' : 'left-4 text-slate-400'}`} 
+        size={isMobile ? 13.5 : 16} 
+        className={`absolute top-1/2 -translate-y-1/2 pointer-events-none ${isMobile ? 'left-2.5 text-slate-400' : 'left-4 text-slate-400'}`} 
       />
       <input 
         type="text" 
@@ -104,7 +104,7 @@ export default function GlobalSearch({ isMobile = false, onAiPrompt }) {
         }}
         onKeyDown={handleKeyDown}
         className={isMobile ? (
-          "w-full bg-white border border-slate-200 text-slate-700 placeholder:text-slate-400 text-[11px] sm:text-[11.5px] rounded-full py-1 sm:py-1.5 pl-6 sm:pl-6.5 pr-2 focus:outline-none focus:bg-white focus:border-maroon/30 focus:ring-2 focus:ring-maroon/5 transition-all shadow-2xs"
+          "w-full bg-white border border-slate-200 text-slate-700 placeholder:text-slate-400 text-[12px] sm:text-[12.5px] rounded-full py-1.5 sm:py-2 pl-7 sm:pl-8 pr-2.5 focus:outline-none focus:bg-white focus:border-maroon/30 focus:ring-2 focus:ring-maroon/5 transition-all shadow-2xs"
         ) : (
           "bg-slate-50 border border-slate-200 text-slate-700 text-[13.5px] font-sans rounded-full py-2.5 pl-10 pr-4 w-[320px] focus:outline-none focus:bg-white focus:border-maroon/30 focus:ring-4 focus:ring-maroon/5 transition-all shadow-[inset_0_2px_4px_rgba(0,0,0,0.02)]"
         )}
