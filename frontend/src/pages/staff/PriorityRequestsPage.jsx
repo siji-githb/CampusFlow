@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
+import { createPortal } from 'react-dom'
 import { useAuth } from '../../context/useAuth'
 import { useStaffEvent } from '../../context/WebSocketContext'
 import { getPendingPriorityRequests, approvePriorityRequest, rejectPriorityRequest } from '../../services/priorityService'
@@ -36,8 +37,8 @@ function ImageModal({ url, onClose }) {
     setIsDragging(false);
   };
 
-  return (
-    <div className="fixed inset-0 z-200 flex items-center justify-center bg-black/90 cursor-pointer overflow-hidden" 
+  return createPortal((
+    <div className="fixed inset-0 z-99999 flex items-center justify-center bg-black/90 cursor-pointer overflow-hidden animate-fade-in" 
          onClick={onClose}
          onMouseMove={handleMouseMove}
          onMouseUp={handleMouseUp}
@@ -71,7 +72,7 @@ function ImageModal({ url, onClose }) {
         />
       </div>
     </div>
-  )
+  ), document.body)
 }
 
 export default function PriorityRequestsPage() {

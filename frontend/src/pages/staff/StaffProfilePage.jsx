@@ -1,4 +1,5 @@
 import { useState, useRef } from 'react'
+import { createPortal } from 'react-dom'
 import { useAuth } from '../../context/useAuth'
 import { Edit2, IdCard, Tag, LogOut, Trash2, X, Camera, Loader2, Eye, EyeOff, ChevronLeft } from 'lucide-react'
 import { updateProfile, changePassword, logoutAllDevices, deleteAccount, updateProfilePicture, removeProfilePicture } from '../../services/authService'
@@ -399,15 +400,9 @@ export default function StaffProfilePage({ setActiveNav }) {
       </div>
 
       {/* Manage Profile Modal */}
-      {isEditModalOpen && (
-        <div className="fixed inset-0 z-1000 flex items-center justify-center p-4 bg-black/50" style={{ animation: 'fadeIn 0.2s ease-out' }}>
-          <style>{`
-            @keyframes fadeIn {
-              from { opacity: 0; }
-              to { opacity: 1; }
-            }
-          `}</style>
-          <div className="bg-white rounded-3xl w-full max-w-125 shadow-2xl overflow-hidden animate-fade-up">
+      {isEditModalOpen && createPortal((
+        <div className="fixed inset-0 z-99999 flex items-center justify-center p-4 bg-black/60 overflow-y-auto animate-fade-in" onClick={handleCloseEditModal}>
+          <div className="bg-white rounded-3xl w-full max-w-125 my-auto shadow-[0_25px_80px_rgba(0,0,0,0.2)] border border-border overflow-hidden animate-fade-up" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between p-6 border-b border-border bg-off-white">
               <h2 className="font-serif text-[22px] font-bold text-maroon m-0">Manage Profile</h2>
               <button 
@@ -490,7 +485,7 @@ export default function StaffProfilePage({ setActiveNav }) {
             </div>
           </div>
         </div>
-      )}
+      ), document.body)}
     </>
   )
 }

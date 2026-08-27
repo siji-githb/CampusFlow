@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
+import { createPortal } from 'react-dom'
 import { useAuth } from '../../context/useAuth'
 import { getAuditLog } from '../../services/adminService'
 import { 
@@ -642,28 +643,36 @@ export default function AdminAuditLogPage() {
       </div>
 
       {/* ── Event Detail Modal (Clean System Palette: White canvas, Maroon header) ── */}
-      {selectedLog && (
-        <div className="fixed inset-0 bg-black/60 z-10000 flex items-center justify-center p-4 animate-fade-in" onClick={() => setSelectedLog(null)}>
+      {selectedLog && createPortal((
+        <div className="fixed inset-0 z-99999 flex items-center justify-center p-4 sm:p-6 overflow-y-auto bg-black/60 animate-fade-in" onClick={() => setSelectedLog(null)}>
           <div 
-            className="animate-fade-up relative w-full max-w-xl bg-white text-text-main rounded-3xl p-6 sm:p-8 shadow-[0_20px_60px_rgba(0,0,0,0.15)] border border-border flex flex-col gap-5 max-h-[90vh] overflow-y-auto"
+            className="animate-fade-up relative my-auto w-full max-w-xl bg-white text-text-main rounded-3xl p-6 sm:p-8 shadow-[0_25px_80px_rgba(0,0,0,0.25)] border border-border flex flex-col gap-5 max-h-[90vh] overflow-y-auto"
             onClick={e => e.stopPropagation()}
           >
             
             {/* Modal Header */}
-            <div className="flex justify-between items-start pb-4 border-b border-border">
-              <div className="flex items-center gap-3.5">
-                <div className="w-12 h-12 rounded-2xl bg-maroon-light text-maroon flex items-center justify-center shrink-0 border border-maroon-border">
+            <div className="flex justify-between items-start pb-4 border-b border-border gap-3">
+              <div className="flex items-center gap-3.5 min-w-0">
+                <div className="w-12 h-12 rounded-2xl bg-maroon-light text-maroon flex items-center justify-center shrink-0 border border-maroon-border shadow-2xs">
                   <Shield size={24} />
                 </div>
-                <div>
+                <div className="min-w-0">
                   <div className="text-[11px] font-bold text-gold uppercase tracking-[0.06em] mb-0.5">
                     AUDIT EVENT DETAILS
                   </div>
-                  <h2 className="font-serif text-[20px] font-bold text-maroon m-0 leading-snug">
+                  <h2 className="font-serif text-[19px] sm:text-[20px] font-bold text-maroon m-0 leading-snug truncate">
                     {selectedLog.action}
                   </h2>
                 </div>
               </div>
+              <button 
+                type="button"
+                onClick={() => setSelectedLog(null)}
+                className="w-8 h-8 rounded-full flex items-center justify-center text-text-muted hover:text-text-main hover:bg-slate-100 transition-colors cursor-pointer border-none bg-transparent shrink-0 -mr-1 -mt-1"
+                aria-label="Close modal"
+              >
+                <X size={18} />
+              </button>
             </div>
 
             {/* Modal Details Grid */}
@@ -736,6 +745,7 @@ export default function AdminAuditLogPage() {
             {/* Modal Footer */}
             <div className="pt-3 border-t border-border flex justify-end">
               <button
+                type="button"
                 onClick={() => setSelectedLog(null)}
                 className="py-2.5 px-6 rounded-xl bg-maroon text-white font-sans font-semibold text-[13.5px] cursor-pointer hover:bg-maroon-dark transition-colors border-none shadow-sm"
               >
@@ -745,7 +755,7 @@ export default function AdminAuditLogPage() {
 
           </div>
         </div>
-      )}
+      ), document.body)}
 
     </div>
   )

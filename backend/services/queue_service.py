@@ -418,7 +418,7 @@ def remind_student(queue_ticket_id: str, staff_id: str):
         table_name="queue_tickets",
         record_id=queue_ticket_id,
         status="Success",
-        changes=f"Reminder sent for ticket {ticket.get('queue_number')} at {window_label}",
+        changes=f"Reminder sent for ticket {ticket.get('queue_number')} ({tx_name})",
         severity="Info"
     )
 

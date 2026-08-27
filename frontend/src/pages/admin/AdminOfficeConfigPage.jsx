@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import { useAuth } from '../../context/useAuth'
 import { getOfficeConfig, updateOfficeConfig } from '../../services/adminService'
 import { Check, AlertTriangle, Settings, CheckCircle2, X, Loader2 } from 'lucide-react'
@@ -207,9 +208,9 @@ export default function AdminOfficeConfigPage() {
       )}
 
       {/* Confirmation Modal */}
-      {confirmSave && (
-        <div className="fixed inset-0 bg-black/70 z-10000 flex items-center justify-center p-4 animate-fade-in">
-          <div className="bg-[#0A2218] text-white rounded-3xl p-8 w-[90%] max-w-100 shadow-[0_25px_80px_rgba(0,0,0,0.6)] border border-emerald-800/50 text-center animate-fade-up">
+      {confirmSave && createPortal((
+        <div className="fixed inset-0 bg-black/70 z-99999 flex items-center justify-center p-4 sm:p-6 overflow-y-auto animate-fade-in" onClick={() => setConfirmSave(null)}>
+          <div className="bg-[#0A2218] text-white rounded-3xl p-8 w-[90%] max-w-100 my-auto shadow-[0_25px_80px_rgba(0,0,0,0.6)] border border-emerald-800/50 text-center animate-fade-up" onClick={e => e.stopPropagation()}>
             <div className="w-14 h-14 rounded-2xl bg-emerald-900/50 border border-emerald-700/50 flex items-center justify-center mx-auto mb-4 text-gold">
               <Settings size={26} />
             </div>
@@ -220,12 +221,14 @@ export default function AdminOfficeConfigPage() {
             </p>
             <div className="flex gap-3">
               <button 
+                type="button"
                 onClick={() => setConfirmSave(null)}
                 className="flex-1 py-3 px-4 rounded-xl bg-white/10 text-white/80 border-none text-[13.5px] font-semibold cursor-pointer transition-colors duration-200 hover:bg-white/20 hover:text-white"
               >
                 Cancel
               </button>
               <button 
+                type="button"
                 onClick={() => handleSave(confirmSave)}
                 disabled={saving === confirmSave}
                 className={`flex-1 py-3 px-4 rounded-xl bg-gold text-[#061811] border-none text-[13.5px] font-extrabold transition-colors duration-200 shadow-md flex items-center justify-center gap-2 ${saving === confirmSave ? 'opacity-80 cursor-not-allowed' : 'cursor-pointer hover:bg-yellow-400'}`}
@@ -242,7 +245,7 @@ export default function AdminOfficeConfigPage() {
             </div>
           </div>
         </div>
-      )}
+      ), document.body)}
     </div>
   )
 }

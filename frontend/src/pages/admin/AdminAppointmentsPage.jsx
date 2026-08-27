@@ -196,13 +196,13 @@ const RescheduleModal = ({ appt, onClose, onConfirm }) => {
     return h >= 12
   })
 
-  return (
-    <div className="fixed inset-0 z-100 flex items-center justify-center p-4 sm:p-6">
-      <div className="fixed inset-0 bg-black/60 transition-opacity animate-fade-in" onClick={onClose} />
+  return createPortal((
+    <div className="fixed inset-0 z-99999 flex items-center justify-center p-4 sm:p-6 overflow-y-auto animate-fade-in" onClick={onClose}>
+      <div className="fixed inset-0 bg-black/60 transition-opacity animate-fade-in" />
       
       {/* Main Modal */}
       {!showConfirm ? (
-        <div className="animate-fade-up relative w-full max-w-xl bg-white rounded-3xl p-6 sm:p-8 shadow-[0_25px_70px_rgba(0,0,0,0.18)] border border-border z-10 custom-scrollbar max-h-[90vh] overflow-y-auto font-sans">
+        <div className="animate-fade-up relative my-auto w-full max-w-xl bg-white rounded-3xl p-6 sm:p-8 shadow-[0_25px_70px_rgba(0,0,0,0.18)] border border-border z-10 custom-scrollbar max-h-[90vh] overflow-y-auto font-sans" onClick={e => e.stopPropagation()}>
           
           {/* Header */}
           <div className="flex items-start justify-between mb-5 pb-4 border-b border-border">
@@ -421,7 +421,7 @@ const RescheduleModal = ({ appt, onClose, onConfirm }) => {
         </div>
       )}
     </div>
-  )
+  ), document.body)
 }
 
 // ── Override Modal ─────────────────────────────────────────────────────────────
@@ -439,10 +439,10 @@ const OverrideModal = ({ isOpen, type, selectedDate, currentNote, onClose, onSav
   const dateObj = new Date(`${selectedDate}T00:00:00`)
   const formattedDate = dateObj.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/60 transition-opacity" onClick={onClose} />
-      <div className="animate-fade-up relative w-full max-w-120 bg-white rounded-3xl p-8 shadow-[0_20px_60px_rgba(0,0,0,0.15)] border border-white/20">
+  return createPortal((
+    <div className="fixed inset-0 z-99999 flex items-center justify-center p-4 sm:p-6 overflow-y-auto animate-fade-in" onClick={onClose}>
+      <div className="fixed inset-0 bg-black/60 transition-opacity" />
+      <div className="animate-fade-up relative my-auto w-full max-w-120 bg-white rounded-3xl p-8 shadow-[0_25px_70px_rgba(0,0,0,0.18)] border border-border z-10" onClick={e => e.stopPropagation()}>
         
         {/* Header Section */}
         <div className="flex items-start justify-between mb-6">
@@ -498,7 +498,7 @@ const OverrideModal = ({ isOpen, type, selectedDate, currentNote, onClose, onSav
         </div>
       </div>
     </div>
-  )
+  ), document.body)
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

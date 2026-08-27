@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
+import { createPortal } from 'react-dom'
 import { useAuth } from '../../context/useAuth'
 import { getAllUsers, updateUserRole, getDashboardStats, toggleUserStatus } from '../../services/adminService'
 import { GraduationCap, Briefcase, Shield, AlertTriangle, Check, Search, X as XIcon, Users, Pencil, MoreVertical, Ban, CheckCircle, CheckCircle2, X } from 'lucide-react'
@@ -57,27 +58,44 @@ const PriorityBadge = ({ label }) => {
 // ── Edit Role Modal ────────────────────────────────────────────────────────────
 function EditRoleModal({ user, onSave, onClose, saving }) {
   const [role, setRole] = useState(user.role)
-  return (
-    <>
-      <div onClick={onClose} className="fixed inset-0 bg-black/40 z-200" />
-      <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-210 w-105 bg-white rounded-2xl p-7 shadow-[0_20px_60px_rgba(0,0,0,0.2)]">
+  return createPortal((
+    <div className="fixed inset-0 z-99999 flex items-center justify-center p-4 sm:p-6 overflow-y-auto bg-black/60 animate-fade-in" onClick={onClose}>
+      <div 
+        className="animate-fade-up relative my-auto w-full max-w-105 bg-white text-text-main rounded-3xl p-6 sm:p-7 shadow-[0_25px_80px_rgba(0,0,0,0.25)] border border-border"
+        onClick={e => e.stopPropagation()}
+      >
         {/* Header */}
-        <div className="flex items-center gap-3.5 mb-6">
-          <Avatar name={`${user.first_name} ${user.last_name}`} role={user.role} size={44} />
-          <div>
-            <div className="font-serif text-[18px] font-bold text-text-main">{user.first_name} {user.last_name}</div>
-            <div className="text-[12px] text-text-muted">{user.email}</div>
+        <div className="flex items-center justify-between gap-3.5 mb-6">
+          <div className="flex items-center gap-3.5 min-w-0">
+            <Avatar name={`${user.first_name} ${user.last_name}`} role={user.role} size={46} />
+            <div className="min-w-0">
+              <div className="font-serif text-[18px] font-bold text-text-main leading-snug truncate">{user.first_name} {user.last_name}</div>
+              <div className="text-[12px] text-text-muted truncate">{user.email}</div>
+            </div>
           </div>
+          <button 
+            type="button"
+            onClick={onClose}
+            className="w-8 h-8 rounded-full flex items-center justify-center text-text-muted hover:text-text-main hover:bg-slate-100 transition-colors cursor-pointer border-none bg-transparent shrink-0 -mr-1 -mt-1"
+            aria-label="Close modal"
+          >
+            <X size={18} />
+          </button>
         </div>
 
-        <label className="text-[12px] font-bold text-text-muted uppercase tracking-[0.06em] block mb-2">Assign Role</label>
+        <label className="text-[11px] font-bold text-text-muted uppercase tracking-[0.08em] block mb-2.5">Assign Role</label>
         <div className="grid grid-cols-3 gap-2.5 mb-6">
           {['student', 'staff', 'admin'].map(r => {
             const cfg = ROLE_CFG[r]
             const active = role === r
             return (
-              <button key={r} onClick={() => setRole(r)} className={`p-[14px_10px] rounded-xl border-2 text-[13px] font-sans capitalize transition-all duration-150 cursor-pointer ${active ? `${cfg.bg} ${cfg.color} font-bold` : 'bg-off-white text-text-sub font-normal border-border'} ${active && r === 'student' ? 'border-info' : active && r === 'staff' ? 'border-gold' : active && r === 'admin' ? 'border-maroon' : ''}`}>
-                <div className="mb-1 flex justify-center">
+              <button 
+                key={r} 
+                type="button"
+                onClick={() => setRole(r)} 
+                className={`p-[14px_10px] rounded-2xl border-2 text-[13px] font-sans capitalize transition-all duration-150 cursor-pointer flex flex-col items-center justify-center ${active ? `${cfg.bg} ${cfg.color} font-bold shadow-xs` : 'bg-off-white text-text-sub font-medium border-border hover:bg-surface'} ${active && r === 'student' ? 'border-maroon/40' : active && r === 'staff' ? 'border-gold' : active && r === 'admin' ? 'border-maroon' : ''}`}
+              >
+                <div className="mb-1.5 flex justify-center">
                   {r === 'student' ? <GraduationCap size={24} /> : r === 'staff' ? <Briefcase size={24} /> : <Shield size={24} />}
                 </div>
                 {cfg.label}
@@ -87,17 +105,25 @@ function EditRoleModal({ user, onSave, onClose, saving }) {
         </div>
 
         <div className="flex gap-2.5">
-          <button onClick={onClose} className="flex-1 py-2.5 px-3 rounded-[10px] border border-border bg-off-white text-text-main text-[14px] font-semibold cursor-pointer font-sans hover:bg-surface transition-colors">
+          <button 
+            type="button"
+            onClick={onClose} 
+            className="flex-1 py-3 px-4 rounded-xl border border-border bg-white text-text-main text-[13.5px] font-semibold cursor-pointer font-sans hover:bg-surface transition-colors shadow-2xs"
+          >
             Cancel
           </button>
-          <button onClick={() => onSave(user.id, role)} disabled={saving || role === user.role}
-            className={`flex-2 py-2.5 px-3 rounded-[10px] border-none text-[14px] font-bold font-sans transition-colors ${saving || role === user.role ? 'bg-border text-text-muted cursor-not-allowed' : 'bg-maroon text-white cursor-pointer hover:bg-maroon-dark'}`}>
+          <button 
+            type="button"
+            onClick={() => onSave(user.id, role)} 
+            disabled={saving || role === user.role}
+            className={`flex-2 py-3 px-4 rounded-xl border-none text-[13.5px] font-bold font-sans transition-colors shadow-2xs ${saving || role === user.role ? 'bg-border text-text-muted cursor-not-allowed' : 'bg-maroon text-white cursor-pointer hover:bg-maroon-dark'}`}
+          >
             {saving ? 'Saving…' : 'Save Changes'}
           </button>
         </div>
       </div>
-    </>
-  )
+    </div>
+  ), document.body)
 }
 
 // ── Export CSV ─────────────────────────────────────────────────────────────────

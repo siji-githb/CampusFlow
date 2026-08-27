@@ -262,8 +262,8 @@ export default function MasterListPage() {
 
       {/* Edit Modal */}
       {editingRecord && createPortal((
-        <div className="fixed inset-0 bg-black/40 z-100 flex items-center justify-center animate-fade-up">
-          <div className="bg-white p-6 rounded-2xl w-full max-w-100 shadow-[0_8px_32px_rgba(0,0,0,0.1)] animate-fade-up">
+        <div className="fixed inset-0 bg-black/60 z-99999 flex items-center justify-center p-4 overflow-y-auto animate-fade-in" onClick={() => setEditingRecord(null)}>
+          <div className="bg-white p-6 sm:p-7 rounded-2xl w-full max-w-100 my-auto shadow-[0_25px_70px_rgba(0,0,0,0.2)] border border-border animate-fade-up" onClick={e => e.stopPropagation()}>
             <h3 className="text-[18px] font-bold text-maroon m-0 mb-4 font-serif">Edit Record: {editingRecord}</h3>
             <form onSubmit={handleEditSubmit} className="grid gap-3">
               <div>
@@ -332,8 +332,8 @@ export default function MasterListPage() {
 
       {/* Single Delete Modal */}
       {recordToDelete && createPortal((
-        <div className="fixed inset-0 bg-black/40 z-100 flex items-center justify-center animate-fade-up">
-          <div className="bg-white p-6 rounded-2xl w-full max-w-sm shadow-[0_8px_32px_rgba(0,0,0,0.1)] animate-fade-up text-center">
+        <div className="fixed inset-0 bg-black/60 z-99999 flex items-center justify-center p-4 overflow-y-auto animate-fade-in" onClick={() => setRecordToDelete(null)}>
+          <div className="bg-white p-6 rounded-2xl w-full max-w-sm my-auto shadow-[0_25px_70px_rgba(0,0,0,0.2)] border border-border animate-fade-up text-center" onClick={e => e.stopPropagation()}>
             <div className="w-12 h-12 rounded-full bg-danger-light border-2 border-danger-border flex items-center justify-center mx-auto mb-4 text-danger">
               <Trash2 size={24} />
             </div>
@@ -353,8 +353,8 @@ export default function MasterListPage() {
 
       {/* Bulk Delete Modal */}
       {showBulkDeleteModal && createPortal((
-        <div className="fixed inset-0 bg-black/40 z-100 flex items-center justify-center animate-fade-up">
-          <div className="bg-white p-6 rounded-2xl w-full max-w-sm shadow-[0_8px_32px_rgba(0,0,0,0.1)] animate-fade-up text-center">
+        <div className="fixed inset-0 bg-black/60 z-99999 flex items-center justify-center p-4 overflow-y-auto animate-fade-in" onClick={() => setShowBulkDeleteModal(false)}>
+          <div className="bg-white p-6 rounded-2xl w-full max-w-sm my-auto shadow-[0_25px_70px_rgba(0,0,0,0.2)] border border-border animate-fade-up text-center" onClick={e => e.stopPropagation()}>
             <div className="w-12 h-12 rounded-full bg-danger-light border-2 border-danger-border flex items-center justify-center mx-auto mb-4 text-danger">
               <Trash2 size={24} />
             </div>

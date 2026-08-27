@@ -378,10 +378,10 @@ export default function AppointmentsPage() {
         const refId = `APPT-${viewDetailsModal.id.split('-')[0].toUpperCase()}`
 
         return (
-          <div className="fixed inset-0 z-1000 flex items-center justify-center p-4 sm:p-6 md:p-8">
-            <div className="fixed inset-0 bg-black/60 transition-opacity animate-fade-in" onClick={() => setViewDetailsModal(null)} />
+          <div className="fixed inset-0 z-99999 flex items-center justify-center p-4 sm:p-6 md:p-8 overflow-y-auto" onClick={() => setViewDetailsModal(null)}>
+            <div className="fixed inset-0 bg-black/60 transition-opacity animate-fade-in" />
             
-            <div className="animate-fade-up relative w-full max-w-4xl bg-white text-text-main rounded-3xl p-6 sm:p-8 md:p-10 max-h-[90vh] overflow-y-auto shadow-[0_25px_80px_rgba(0,0,0,0.18)] border border-border z-10 custom-scrollbar font-sans">
+            <div className="animate-fade-up relative my-auto w-full max-w-4xl bg-white text-text-main rounded-3xl p-6 sm:p-8 md:p-10 max-h-[90vh] overflow-y-auto shadow-[0_25px_80px_rgba(0,0,0,0.18)] border border-border z-10 custom-scrollbar font-sans" onClick={e => e.stopPropagation()}>
               
               {/* Header */}
               <div className="flex justify-between items-start mb-6 pb-5 border-b border-border gap-4">

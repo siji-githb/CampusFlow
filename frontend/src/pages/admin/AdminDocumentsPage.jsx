@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useAuth } from '../../context/useAuth';
 import {
   getTransactionTypes,
@@ -334,9 +335,9 @@ export default function AdminDocumentsPage() {
       </div>
 
       {/* Edit/View Modal */}
-      {isModalOpen && (
-        <div className="fixed inset-0 bg-black/30 z-50 flex items-center justify-center p-4 animate-fade-in">
-          <div className="bg-white rounded-[20px] shadow-[0_10px_40px_rgba(0,0,0,0.12)] w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden animate-scale-up border border-border">
+      {isModalOpen && createPortal((
+        <div className="fixed inset-0 bg-black/60 z-99999 flex items-center justify-center p-4 sm:p-6 overflow-y-auto animate-fade-in" onClick={() => setIsModalOpen(false)}>
+          <div className="bg-white rounded-[20px] shadow-[0_20px_70px_rgba(0,0,0,0.2)] w-full max-w-2xl max-h-[90vh] my-auto flex flex-col overflow-hidden animate-scale-up border border-border" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between p-6 px-8 border-b border-border bg-linear-to-r from-[#FDFBF7] to-white">
               <h2 className="m-0 text-[20px] font-bold font-serif text-maroon flex items-center gap-3">
                 <div className="w-10 h-10 rounded-full bg-maroon/10 flex items-center justify-center">
@@ -650,12 +651,12 @@ export default function AdminDocumentsPage() {
             )}
           </div>
         </div>
-      )}
+      ), document.body)}
 
       {/* Delete Confirmation Modal */}
-      {deleteModalOpen && (
-        <div className="fixed inset-0 bg-black/30 z-50 flex items-center justify-center p-4 animate-fade-in">
-          <div className="bg-white rounded-2xl shadow-[0_10px_40px_rgba(0,0,0,0.12)] w-full max-w-sm overflow-hidden animate-scale-up border border-border">
+      {deleteModalOpen && createPortal((
+        <div className="fixed inset-0 bg-black/60 z-99999 flex items-center justify-center p-4 sm:p-6 overflow-y-auto animate-fade-in" onClick={() => setDeleteModalOpen(false)}>
+          <div className="bg-white rounded-2xl shadow-[0_20px_70px_rgba(0,0,0,0.2)] w-full max-w-sm my-auto overflow-hidden animate-scale-up border border-border" onClick={e => e.stopPropagation()}>
             <div className="p-6 text-center">
               <div className="w-16 h-16 bg-danger/10 text-danger rounded-full flex items-center justify-center mx-auto mb-4">
                 <AlertCircle size={32} />
@@ -685,7 +686,7 @@ export default function AdminDocumentsPage() {
             </div>
           </div>
         </div>
-      )}
+      ), document.body)}
     </>
   );
 }

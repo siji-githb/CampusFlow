@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
+import { createPortal } from 'react-dom'
 import { useAuth } from '../../context/useAuth'
 import { useStaffEvent } from '../../context/WebSocketContext'
 import { getIdRequests, updateIdRequestStatus, getStudentRecords, sendIdRequestEmail, deleteIdRequest } from '../../services/adminService'
@@ -68,9 +69,9 @@ function EmailModal({ req, token, onClose, onSentAndResolve }) {
     }
   }
 
-  return (
-    <div className="fixed inset-0 z-200 flex items-center justify-center p-4 bg-black/60">
-      <div className="bg-white rounded-2xl shadow-[0_24px_64px_rgba(0,0,0,0.18)] w-full max-w-212.5 overflow-hidden animate-fade-up">
+  return createPortal((
+    <div className="fixed inset-0 z-99999 flex items-center justify-center p-4 bg-black/60 overflow-y-auto animate-fade-in" onClick={onClose}>
+      <div className="bg-white rounded-2xl shadow-[0_24px_64px_rgba(0,0,0,0.18)] w-full max-w-212.5 my-auto overflow-hidden animate-fade-up border border-border" onClick={e => e.stopPropagation()}>
         
         {/* Header - White */}
         <div className="bg-white border-b border-border px-6 py-5 flex items-start justify-between gap-4">
@@ -213,7 +214,7 @@ function EmailModal({ req, token, onClose, onSentAndResolve }) {
         </div>
       </div>
     </div>
-  )
+  ), document.body)
 }
 
 // ── Main Page ──────────────────────────────────────────────────────────────────

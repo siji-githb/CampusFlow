@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
+import { createPortal } from 'react-dom'
 import { useAuth } from '../../context/useAuth'
 import { getRegistrarRecords } from '../../services/adminService'
 import { ChevronDown, Download, RefreshCw, AlertTriangle, Search, X as XIcon, FolderOpen, Printer, Check, Clipboard, CheckCircle, Clock, Archive, Calendar } from 'lucide-react'
@@ -540,9 +541,9 @@ export default function AdminRegistrarRecordsPage() {
       </div>
 
       {/* ── View Record Modal ── */}
-      {viewingRecord && (
-        <div className="fixed inset-0 z-9999 flex items-center justify-center bg-black/50 p-4">
-          <div className="bg-white rounded-3xl w-full max-w-150 shadow-[0_20px_40px_rgba(0,0,0,0.1)] overflow-hidden">
+      {viewingRecord && createPortal((
+        <div className="fixed inset-0 z-99999 flex items-center justify-center bg-black/60 p-4 sm:p-6 overflow-y-auto animate-fade-in" onClick={() => setViewingRecord(null)}>
+          <div className="bg-white rounded-3xl w-full max-w-150 my-auto shadow-[0_25px_80px_rgba(0,0,0,0.2)] border border-border overflow-hidden animate-fade-up" onClick={e => e.stopPropagation()}>
              {/* Header */}
              <div className="p-[24px_32px] bg-maroon-light border-b border-border flex justify-between items-center">
                <div>
@@ -623,7 +624,7 @@ export default function AdminRegistrarRecordsPage() {
              </div>
           </div>
         </div>
-      )}
+      ), document.body)}
     </div>
   )
 }
