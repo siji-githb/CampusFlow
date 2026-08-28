@@ -458,17 +458,24 @@ export default function AdminQueueMonitoringPage() {
     const readyReleases = uncollected
     const overdueReleases = uncollected.filter(d => (d.days_waiting || 0) >= 3)
 
-    // Completed strictly today in local timezone
-    const isTicketCompletedToday = (q) => {
-      if (q.ticket.status !== 'completed') return false
-      const lastConfirmed = q.steps?.filter(s => s.status === 'completed' && s.confirmed_at)
-        .sort((a, b) => new Date(b.confirmed_at) - new Date(a.confirmed_at))[0]
-      const ts = lastConfirmed?.confirmed_at || q.ticket.updated_at || q.ticket.created_at
-      return isSameLocalDate(ts)
-    }
-    const queueCompletedToday = queue.filter(isTicketCompletedToday).length
-    const releasesCollectedToday = collected.filter(d => isSameLocalDate(d.confirmed_at)).length
-    const completedTodayCount = queueCompletedToday + releasesCollectedToday
+    // Deduplicate unique completed tickets/releases for today in local timezone
+    const completedTodayMap = new Map()
+    queue.forEach(q => {
+      if (q.ticket.status === 'completed') {
+        const lastConfirmed = q.steps?.filter(s => s.status === 'completed' && s.confirmed_at)
+          .sort((a, b) => new Date(b.confirmed_at) - new Date(a.confirmed_at))[0]
+        const ts = lastConfirmed?.confirmed_at || q.ticket.updated_at || q.ticket.created_at
+        if (isSameLocalDate(ts)) {
+          completedTodayMap.set(q.ticket.queue_number, true)
+        }
+      }
+    })
+    collected.forEach(d => {
+      if (isSameLocalDate(d.confirmed_at)) {
+        completedTodayMap.set(d.queue_number, true)
+      }
+    })
+    const completedTodayCount = completedTodayMap.size
 
     return {
       atWindows,
@@ -505,16 +512,26 @@ export default function AdminQueueMonitoringPage() {
   // ── Donut 2: Document Distribution ──
   const docDistributionDonut = useMemo(() => {
     const counts = {}
+    const seenQueueNumbers = new Set()
     
-    // Count active queue
+    // 1. Count from active queue
     queue.forEach(q => {
-      const name = q.ticket.appointments?.transaction_types?.name || 'Other'
-      counts[name] = (counts[name] || 0) + 1
+      const qNum = q.ticket.queue_number
+      if (qNum && !seenQueueNumbers.has(qNum)) {
+        seenQueueNumbers.add(qNum)
+        const name = q.ticket.appointments?.transaction_types?.name || 'Other'
+        counts[name] = (counts[name] || 0) + 1
+      }
     })
-    // Count uncollected releases
+
+    // 2. Count uncollected releases (avoiding double-counting if already in queue)
     uncollected.forEach(d => {
-      const name = d.transaction_type || 'Other'
-      counts[name] = (counts[name] || 0) + 1
+      const qNum = d.queue_number
+      if (qNum && !seenQueueNumbers.has(qNum)) {
+        seenQueueNumbers.add(qNum)
+        const name = d.transaction_type || 'Other'
+        counts[name] = (counts[name] || 0) + 1
+      }
     })
 
     const data = Object.entries(counts).map(([name, count]) => ({
@@ -572,8 +589,8 @@ export default function AdminQueueMonitoringPage() {
       }
 
       // Compute human-readable wait time
-      let elapsedText = '0 min'
-      if (ticket.created_at) {
+      let elapsedText = 'Completed'
+      if (ticket.status !== 'completed' && ticket.created_at) {
         const elapsedMins = Math.max(0, Math.floor((now.getTime() - Date.parse(ticket.created_at)) / 60000))
         if (elapsedMins >= 1440) {
           const days = Math.floor(elapsedMins / 1440)
@@ -658,17 +675,69 @@ export default function AdminQueueMonitoringPage() {
       }
     })
 
+    // 3. Collected Releases (Completed Pickups)
+    const collectedItems = collected.map(d => {
+      return {
+        id: d.queue_ticket_id || `collected-${d.queue_number}`,
+        queue_number: d.queue_number,
+        student_name: d.student_name || 'Unknown Student',
+        student_id: d.student_id || '—',
+        transaction_type: d.transaction_type,
+        priority_class: d.priority_class || 'regular',
+        stage: 'Claimed / Completed',
+        statusKey: 'completed',
+        statusLabel: 'Completed',
+        locationLabel: 'Release Window',
+        releaseDate: d.release_date || null,
+        elapsedText: 'Completed',
+        rawDate: d.confirmed_at,
+        isReleaseOnly: true,
+        step_number: 3,
+        rawTicketData: {
+          ticket: {
+            id: d.queue_ticket_id,
+            queue_number: d.queue_number,
+            student_id: d.student_id,
+            status: 'completed',
+            users: {
+              first_name: d.student_name,
+              last_name: '',
+              student_id: d.student_id
+            },
+            appointments: {
+              transaction_types: { name: d.transaction_type },
+              priority_class: d.priority_class || 'regular',
+              release_date: d.release_date || null
+            }
+          },
+          steps: [
+            {
+              step_number: 3,
+              step_name: 'Document Release / Issuance',
+              status: 'completed',
+              confirmed_at: d.confirmed_at,
+              released_to: d.released_to,
+              location: 'Release Window'
+            }
+          ]
+        }
+      }
+    })
+
     // Combine avoiding duplication by queue_number
     const existingQueueNumbers = new Set(queueItems.map(item => item.queue_number))
     const uniqueReleaseItems = releaseItems.filter(item => !existingQueueNumbers.has(item.queue_number))
+    const uniqueCollectedItems = collectedItems.filter(item => !existingQueueNumbers.has(item.queue_number))
     
-    let combined = [...queueItems, ...uniqueReleaseItems]
+    let combined = [...queueItems, ...uniqueReleaseItems, ...uniqueCollectedItems]
 
     // ── Tab Filtering ──
     if (activeTab === 'counter') {
       combined = combined.filter(i => i.statusKey === 'serving' || i.statusKey === 'waiting')
     } else if (activeTab === 'processing') {
       combined = combined.filter(i => i.statusKey === 'prep')
+    } else if (activeTab === 'releases') {
+      combined = combined.filter(i => i.statusKey === 'ready' || i.statusKey === 'overdue')
     } else if (activeTab === 'completed') {
       const isItemCompletedToday = (item) => {
         if (item.statusKey !== 'completed') return false
@@ -677,10 +746,10 @@ export default function AdminQueueMonitoringPage() {
         const ts = lastConfirmed?.confirmed_at || item.rawDate
         if (!ts) return false
         const d = new Date(ts)
-        const now = new Date()
-        return d.getFullYear() === now.getFullYear() &&
-               d.getMonth() === now.getMonth() &&
-               d.getDate() === now.getDate()
+        const nowDate = new Date()
+        return d.getFullYear() === nowDate.getFullYear() &&
+               d.getMonth() === nowDate.getMonth() &&
+               d.getDate() === nowDate.getDate()
       }
       combined = combined.filter(isItemCompletedToday)
     } else if (activeTab === 'all_active') {
@@ -707,7 +776,7 @@ export default function AdminQueueMonitoringPage() {
 
       return searchMatch && txMatch && prioMatch
     })
-  }, [queue, uncollected, activeTab, search, txTypeFilter, priorityFilter, now])
+  }, [queue, uncollected, collected, activeTab, search, txTypeFilter, priorityFilter, now])
 
   // Pagination
   const totalPages = Math.max(1, Math.ceil(allUnifiedItems.length / PER_PAGE))
@@ -1220,10 +1289,16 @@ export default function AdminQueueMonitoringPage() {
 
                       {/* Elapsed / Waiting */}
                       <td className="py-4 px-5 whitespace-nowrap">
-                        <div className="text-[12.5px] font-semibold text-text-main flex items-center gap-1.5 whitespace-nowrap">
-                          <Clock size={13.5} className="text-text-muted shrink-0" />
-                          <span>{item.elapsedText}</span>
-                        </div>
+                        {item.statusKey === 'completed' ? (
+                          <span className="text-[12px] text-text-muted font-medium italic">
+                            Completed
+                          </span>
+                        ) : (
+                          <div className="text-[12.5px] font-semibold text-text-main flex items-center gap-1.5 whitespace-nowrap">
+                            <Clock size={13.5} className="text-text-muted shrink-0" />
+                            <span>{item.elapsedText}</span>
+                          </div>
+                        )}
                       </td>
 
                       {/* Status Badge */}

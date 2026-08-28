@@ -173,20 +173,31 @@ def get_reports(days: int = 7, doc_type: str = None):
             status = appt["status"]
             by_status[status] = by_status.get(status, 0) + 1
 
-            if status == "completed" and appt.get("created_at") and appt.get("updated_at"):
-                try:
-                    c_at = datetime.fromisoformat(appt["created_at"].replace("Z", "+00:00"))
-                    u_at = datetime.fromisoformat(appt["updated_at"].replace("Z", "+00:00"))
-                    total_processing_mins += max(0, (u_at - c_at).total_seconds() / 60.0)
-                    completed_with_time += 1
-                except Exception:
-                    pass
-
         total     = sum(by_date.values())
         completed = by_status.get("completed", 0)
         cancelled = by_status.get("cancelled", 0)
         no_show   = by_status.get("no_show", 0)
-        avg_processing_mins = round(total_processing_mins / completed_with_time) if completed_with_time > 0 else 0
+
+        # Compute real average processing time from completed steps in period
+        steps_res = admin.table("transaction_steps") \
+            .select("created_at, activated_at, confirmed_at, location") \
+            .gte("confirmed_at", str(start_date)) \
+            .eq("status", "completed") \
+            .execute()
+
+        step_durations = []
+        for s in (steps_res.data or []):
+            if s.get("confirmed_at") and (s.get("activated_at") or s.get("created_at")):
+                try:
+                    c_time = datetime.fromisoformat(s["confirmed_at"].replace("Z", "+00:00"))
+                    st_time = datetime.fromisoformat((s.get("activated_at") or s.get("created_at")).replace("Z", "+00:00"))
+                    diff_mins = max(0, (c_time - st_time).total_seconds() / 60.0)
+                    if 0 < diff_mins <= 480:
+                        step_durations.append(diff_mins)
+                except Exception:
+                    pass
+
+        avg_processing_mins = round(sum(step_durations) / len(step_durations)) if step_durations else 0
 
         return {
             "period_days":         days,
@@ -510,44 +521,53 @@ def get_ai_insights():
         if forecast.get("top_transaction_type"):
             forecast_str += f", mostly requesting {forecast['top_transaction_type']}"
 
-    try:
-        from openai import OpenAI
-        api_key = settings.gemini_api_key.strip() if (settings.gemini_api_key and settings.gemini_api_key.strip()) else settings.fallback_api_key
-        base_url = settings.gemini_base_url.strip() if (settings.gemini_api_key and settings.gemini_api_key.strip()) else settings.fallback_base_url
-        model = settings.gemini_model.strip() if (settings.gemini_api_key and settings.gemini_api_key.strip()) else settings.fallback_model
+    insight = ""
+    from services.ai_service import get_ai_providers
+    providers = get_ai_providers()
 
-        client = OpenAI(
-            api_key=api_key,
-            base_url=base_url,
-        )
-        resp = client.chat.completions.create(
-            model=model,
-            max_tokens=180,
-            temperature=0.5,
-            messages=[{
-                "role": "user",
-                "content": (
-                    f"You are a helpful assistant for the Registrar's Office at Cebu Roosevelt Memorial Colleges.\n"
-                    f"Here is the latest data:\n"
-                    f"- Peak Hour Today: {peak_hour}\n"
-                    f"- Most Requested Document: {busiest_document}\n"
-                    f"- Served Today: {completed} out of {total} appointments\n"
-                    f"- Expected Tomorrow: {forecast_str}\n"
-                    f"- 2-Week Trend: {trend_str}\n\n"
-                    f"Write a 2-sentence summary in simple, everyday, easy-to-understand English for school staff and admins:\n"
-                    f"1. First sentence: Clearly state what is happening with student visits or requests (use rounded percentages like 42% instead of 42.1%).\n"
-                    f"2. Second sentence: Give a simple, practical tip (like preparing document copies in advance or having extra staff ready at the counter).\n"
-                    f"RULES:\n"
-                    f"- Use simple, natural, conversational words. Avoid heavy corporate jargon, complex buzzwords, or overly formal phrases.\n"
-                    f"- Keep it short, direct, and helpful.\n"
-                    f"- Do not use bullet points, titles, or greetings."
-                )
-            }]
-        )
-        insight = resp.choices[0].message.content.strip()
+    prompt_content = (
+        f"You are a helpful assistant for the Registrar's Office at Cebu Roosevelt Memorial Colleges.\n"
+        f"Here is the latest operational data:\n"
+        f"- Peak Hour Today: {peak_hour}\n"
+        f"- Most Requested Document: {busiest_document}\n"
+        f"- Served Today: {completed} out of {total} appointments\n"
+        f"- Expected Tomorrow: {forecast_str}\n"
+        f"- 2-Week Trend: {trend_str}\n\n"
+        f"Write a 2-sentence summary in simple, conversational English for school staff and admins:\n"
+        f"1. First sentence: Clearly state what is happening with student visits or requests (use rounded percentages like 42% instead of 42.1%).\n"
+        f"2. Second sentence: Give a simple, practical tip (like preparing document copies in advance or having extra staff ready at the counter).\n"
+        f"RULES:\n"
+        f"- Write COMPLETE sentences only. Never leave a thought or sentence unfinished.\n"
+        f"- Use simple, natural words. Avoid heavy jargon, buzzwords, or formal preambles.\n"
+        f"- Do not use bullet points, greetings, or headings."
+    )
 
-    except Exception:
-        # Plain fallback — easy to understand, never crashes
+    for p in providers:
+        try:
+            client = p["client"]
+            model = p["model"]
+            resp = client.chat.completions.create(
+                model=model,
+                max_tokens=2500,
+                temperature=0.4,
+                messages=[{"role": "user", "content": prompt_content}]
+            )
+            raw_text = (resp.choices[0].message.content or "").strip()
+            # Clean and ensure only complete sentences ending in punctuation are retained
+            if raw_text:
+                matches = list(re.finditer(r'[.!?](?:\s|$)', raw_text))
+                if matches:
+                    last_end = matches[-1].end()
+                    clean_text = raw_text[:last_end].strip()
+                    if len(clean_text) > 30:
+                        insight = clean_text
+                        break
+        except Exception as e:
+            logger.warning(f"Provider {p['name']} failed in get_ai_insights: {e}")
+            continue
+
+    # Plain fallback if AI providers are unreachable or return empty text
+    if not insight:
         if total == 0 and forecast.get("insufficient_data"):
             insight = "No appointments recorded today yet. As more students visit, the system will share helpful tips on busy hours and popular documents."
         elif total == 0:

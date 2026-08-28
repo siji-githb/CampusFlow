@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { createPortal } from 'react-dom'
 import { useAuth } from '../../context/useAuth'
 import { useStaffEvent } from '../../context/WebSocketContext'
@@ -7,18 +7,43 @@ import { rescheduleAppointment, getAvailableSlots } from '../../services/appoint
 import { 
   AlertTriangle, Inbox, Check, X as XIcon, ChevronLeft, ChevronRight, ChevronDown, Filter, Calendar, 
   FolderOpen, CheckCircle, Clock, PieChart, Activity, Archive, Info, Eye, CheckCircle2,
-  CalendarCheck, ShieldCheck, Users, Mail, FileText, Ticket, ExternalLink, ClipboardList
+  CalendarCheck, ShieldCheck, Users, Mail, FileText, Ticket, ExternalLink, ClipboardList,
+  Search, RotateCcw, Ban, StickyNote
 } from 'lucide-react'
 import CustomDatePicker from '../../components/common/CustomDatePicker'
 
 // ── Status Config ──────────────────────────────────────────────────────────────
 const STATUS_CFG = {
-  confirmed:  { label: 'Confirmed',  bg: 'bg-blue-light',    color: 'text-blue',        border: 'border-blue-border' },
-  completed:  { label: 'Completed',  bg: 'bg-success-light', color: 'text-success',     border: 'border-success-border' },
-  cancelled:  { label: 'Cancelled',  bg: 'bg-danger-light',  color: 'text-danger',      border: 'border-danger-border' },
-  pending:    { label: 'Scheduled',  bg: 'bg-gold-light',    color: 'text-gold',        border: 'border-gold-border' },
-  no_show:    { label: 'No Show',    bg: 'bg-surface',       color: 'text-text-muted',  border: 'border-border' },
-  in_progress:{ label: 'Initiated',  bg: 'bg-maroon-light',  color: 'text-maroon',      border: 'border-maroon-border'},
+  confirmed:   { label: 'Confirmed',        bg: 'bg-blue-light',    color: 'text-blue',     border: 'border-blue-border',    dot: 'bg-blue' },
+  in_progress: { label: 'Ready for Pickup', bg: 'bg-success-light', color: 'text-success',  border: 'border-success-border', dot: 'bg-success' },
+  completed:   { label: 'Completed',        bg: 'bg-success-light', color: 'text-success',  border: 'border-success-border', dot: 'bg-success' },
+  cancelled:   { label: 'Cancelled',        bg: 'bg-danger-light',  color: 'text-danger',   border: 'border-danger-border',  dot: 'bg-danger' },
+  no_show:     { label: 'No Show',          bg: 'bg-surface',       color: 'text-text-muted',border: 'border-border',         dot: 'bg-text-muted' },
+}
+
+// ── Status Options for Filter Dropdown ─────────────────────────────────────────
+const STATUS_OPTIONS = [
+  { value: 'all',         label: 'All Statuses',      dot: null },
+  { value: 'confirmed',   label: 'Confirmed',         dot: 'bg-blue' },
+  { value: 'in_progress', label: 'Ready for Pickup',  dot: 'bg-success' },
+  { value: 'completed',   label: 'Completed',         dot: 'bg-success' },
+  { value: 'cancelled',   label: 'Cancelled',         dot: 'bg-danger' },
+  { value: 'no_show',     label: 'No Show',           dot: 'bg-text-muted' },
+]
+
+// ── Effective Status Resolver ───────────────────────────────────────────────────
+const getEffectiveStatus = (appt) => {
+  if (!appt) return 'confirmed'
+  if (appt.status === 'completed' || appt.status === 'cancelled' || appt.status === 'no_show') {
+    return appt.status
+  }
+  const ticket = Array.isArray(appt.queue_tickets) ? appt.queue_tickets[0] : appt.queue_tickets
+  if (ticket) {
+    if (ticket.status === 'completed') return 'completed'
+    if (ticket.status === 'in_progress' || ticket.status === 'waiting') return 'in_progress'
+  }
+  if (appt.status === 'pending') return 'confirmed'
+  return appt.status || 'confirmed'
 }
 
 // ── Mini Calendar ──────────────────────────────────────────────────────────────
@@ -26,9 +51,13 @@ const DAYS = ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su']
 const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December']
 
 function MiniCalendar({ selectedDate, onSelect, dateOverrides = {} }) {
+  const d = new Date()
+  const todayStr = new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10)
+  const selStr = selectedDate || todayStr
+
   const [view, setView] = useState(() => {
-    const d = selectedDate ? new Date(selectedDate) : new Date()
-    return { year: d.getFullYear(), month: d.getMonth() }
+    const [y, m] = selStr.split('-')
+    return { year: parseInt(y), month: parseInt(m) - 1 }
   })
 
   const { year, month } = view
@@ -44,85 +73,155 @@ function MiniCalendar({ selectedDate, onSelect, dateOverrides = {} }) {
     return dayNum > 0 && dayNum <= lastDay.getDate() ? dayNum : null
   })
 
-  const d = new Date()
-  const todayStr = new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10)
-  const selStr   = selectedDate
-
   const prevMonth = () => setView(v => v.month === 0 ? { year: v.year - 1, month: 11 } : { year: v.year, month: v.month - 1 })
   const nextMonth = () => setView(v => v.month === 11 ? { year: v.year + 1, month: 0  } : { year: v.year, month: v.month + 1 })
 
   return (
-    <div className="bg-white rounded-[14px] border border-border p-4 shadow-sm">
+    <div className="bg-white rounded-2xl border border-border p-5 shadow-[0_2px_8px_rgba(0,0,0,0.04)]">
       {/* Month Nav */}
-      <div className="flex items-center justify-between mb-3.5">
-        <button onClick={prevMonth} className="bg-transparent border-none cursor-pointer p-[4px_8px] rounded-md text-text-sub flex items-center justify-center hover:bg-surface transition-colors">
+      <div className="flex items-center justify-between mb-4">
+        <button 
+          type="button"
+          onClick={prevMonth} 
+          className="bg-transparent border-none cursor-pointer p-1.5 rounded-lg text-text-sub flex items-center justify-center hover:bg-surface hover:text-text-main transition-colors"
+          title="Previous Month"
+        >
           <ChevronLeft size={16} />
         </button>
-        <span className="font-serif text-[15px] font-bold text-text-main">
+        <span className="font-serif text-[15px] font-bold text-text-main tracking-tight">
           {MONTHS[month]} {year}
         </span>
-        <button onClick={nextMonth} className="bg-transparent border-none cursor-pointer p-[4px_8px] rounded-md text-text-sub flex items-center justify-center hover:bg-surface transition-colors">
+        <button 
+          type="button"
+          onClick={nextMonth} 
+          className="bg-transparent border-none cursor-pointer p-1.5 rounded-lg text-text-sub flex items-center justify-center hover:bg-surface hover:text-text-main transition-colors"
+          title="Next Month"
+        >
           <ChevronRight size={16} />
         </button>
       </div>
 
       {/* Day headers */}
-      <div className="grid grid-cols-7 mb-1.5">
+      <div className="grid grid-cols-7 mb-2 text-center">
         {DAYS.map(d => (
-          <div key={d} className="text-center text-[10px] font-bold text-text-muted pb-1.5">{d}</div>
+          <div key={d} className="text-[10.5px] font-extrabold text-text-muted uppercase tracking-wider">{d}</div>
         ))}
       </div>
 
       {/* Cells */}
-      <div className="grid grid-cols-7 gap-0.5">
+      <div className="grid grid-cols-7 gap-y-1.5 justify-items-center">
         {cells.map((day, i) => {
-          if (!day) return <div key={i} />
+          if (!day) return <div key={i} className="w-8 h-8" />
           const dateStr = `${year}-${String(month + 1).padStart(2,'0')}-${String(day).padStart(2,'0')}`
           const isToday = dateStr === todayStr
           const isSel   = dateStr === selStr
           const isSun   = (i % 7 === 6)
           const override = dateOverrides[dateStr]
           
-          let btnClass = "w-full aspect-square rounded-lg border-none text-[12px] cursor-pointer transition-colors relative flex flex-col items-center justify-center gap-0.5 "
+          let btnClass = "w-8 h-8 rounded-full border-none text-[12px] cursor-pointer transition-all relative flex items-center justify-center "
           
           if (isSel) {
-            btnClass += "bg-maroon text-white font-bold"
+            btnClass += "bg-maroon text-white font-bold shadow-xs"
           } else if (isToday) {
-            btnClass += "bg-maroon-light text-maroon font-bold hover:bg-surface"
+            btnClass += "bg-maroon-light text-maroon font-bold hover:bg-maroon/20"
           } else {
-            btnClass += `bg-transparent font-normal hover:bg-surface ${isSun ? 'text-danger' : 'text-text-main'}`
+            btnClass += `bg-transparent font-semibold hover:bg-surface ${isSun ? 'text-danger' : 'text-text-main'}`
           }
 
           return (
-            <button key={i} onClick={() => onSelect(dateStr)} className={btnClass}>
+            <button key={i} onClick={() => onSelect(dateStr)} className={btnClass} type="button">
               <span>{day}</span>
-              <div className="flex justify-center w-full h-1">
-                {override && (
-                  <div className={`w-1 h-1 rounded-full ${override.is_blocked ? (isSel ? 'bg-white' : 'bg-danger') : (isSel ? 'bg-white' : 'bg-info')}`} />
-                )}
-              </div>
+              {override && (
+                <div className={`absolute bottom-0.5 w-1 h-1 rounded-full ${override.is_blocked ? (isSel ? 'bg-white' : 'bg-danger') : (isSel ? 'bg-white' : 'bg-info')}`} />
+              )}
             </button>
           )
         })}
       </div>
+
+      {/* Jump to Today button */}
+      {selectedDate !== todayStr && (
+        <div className="mt-4 pt-3 border-t border-border">
+          <button
+            type="button"
+            onClick={() => {
+              onSelect(todayStr)
+              const [y, m] = todayStr.split('-')
+              setView({ year: parseInt(y), month: parseInt(m) - 1 })
+            }}
+            className="w-full py-1.5 px-3 rounded-xl border border-border bg-surface text-text-sub hover:text-maroon hover:bg-off-white text-[11.5px] font-bold cursor-pointer transition-all flex items-center justify-center gap-1.5"
+          >
+            <Calendar size={13} className="text-maroon" /> Jump to Today
+          </button>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ── Modern Status Dropdown ─────────────────────────────────────────────────────
+const StatusDropdown = ({ value, onChange }) => {
+  const [isOpen, setIsOpen] = useState(false)
+  const current = STATUS_OPTIONS.find(o => o.value === value) || STATUS_OPTIONS[0]
+
+  return (
+    <div className="relative z-30">
+      <button
+        type="button"
+        onClick={() => setIsOpen(!isOpen)}
+        className="flex items-center justify-between gap-3 py-2 px-3.5 rounded-xl border border-border bg-white text-[12.5px] text-text-main font-bold shadow-2xs hover:border-maroon/40 hover:shadow-xs transition-all cursor-pointer font-sans min-w-40"
+      >
+        <div className="flex items-center gap-2">
+          {current.dot && <span className={`w-2 h-2 rounded-full ${current.dot} shrink-0`} />}
+          <span className="truncate">{current.label}</span>
+        </div>
+        <ChevronDown size={14} className={`text-text-muted transition-transform duration-200 shrink-0 ${isOpen ? 'rotate-180 text-maroon' : ''}`} />
+      </button>
+
+      {isOpen && (
+        <>
+          <div className="fixed inset-0 z-40" onClick={() => setIsOpen(false)} />
+          <div className="absolute right-0 top-full mt-1.5 w-48 bg-white rounded-xl border border-border shadow-xl p-1.5 z-50 animate-fade-up" style={{ animationDuration: '0.15s' }}>
+            {STATUS_OPTIONS.map(o => {
+              const isActive = value === o.value
+              return (
+                <div
+                  key={o.value}
+                  onClick={() => { onChange(o.value); setIsOpen(false) }}
+                  className={`px-3 py-2 rounded-lg cursor-pointer flex items-center justify-between text-[12px] font-medium transition-colors ${isActive ? 'bg-maroon/5 text-maroon font-bold' : 'text-text-main hover:bg-off-white'}`}
+                >
+                  <div className="flex items-center gap-2">
+                    {o.dot ? (
+                      <span className={`w-2 h-2 rounded-full ${o.dot} shrink-0`} />
+                    ) : (
+                      <span className="w-2 h-2 rounded-full bg-border shrink-0" />
+                    )}
+                    <span>{o.label}</span>
+                  </div>
+                  {isActive && <Check size={13} className="text-maroon shrink-0" />}
+                </div>
+              )
+            })}
+          </div>
+        </>
+      )}
     </div>
   )
 }
 
 // ── Status Badge ───────────────────────────────────────────────────────────────
 const StatusBadge = ({ status }) => {
-  const cfg = STATUS_CFG[status] || STATUS_CFG.pending
-  const dotColor = status === 'confirmed' ? 'bg-blue' : status === 'completed' ? 'bg-success' : status === 'cancelled' ? 'bg-danger' : status === 'pending' ? 'bg-gold' : 'bg-maroon'
+  const cfg = STATUS_CFG[status] || STATUS_CFG.confirmed
   return (
     <span className={`text-[11px] font-bold py-1 px-3 rounded-full border tracking-[0.02em] whitespace-nowrap inline-flex items-center gap-1.5 ${cfg.bg} ${cfg.color} ${cfg.border}`}>
-      <span className={`w-1.5 h-1.5 rounded-full ${dotColor}`} />
+      <span className={`w-1.5 h-1.5 rounded-full ${cfg.dot || 'bg-blue'}`} />
       {cfg.label}
     </span>
   )
 }
 
 // ── Avatar Initials ────────────────────────────────────────────────────────────
-const Av = ({ name, size = 32, bg = 'bg-maroon-mid', color = 'text-maroon' }) => {
+const Av = ({ name, size = 34, bg = 'bg-maroon-mid', color = 'text-maroon' }) => {
   const initials = name ? name.split(' ').slice(0, 2).map(w => w[0]?.toUpperCase()).join('') : '?'
   return (
     <div className={`rounded-full flex items-center justify-center shrink-0 border border-maroon-border font-bold ${bg} ${color}`}
@@ -397,7 +496,7 @@ const RescheduleModal = ({ appt, onClose, onConfirm }) => {
             <div className="flex justify-between items-center text-[13px]">
               <span className="text-maroon font-bold uppercase tracking-wider">New Schedule:</span>
               <span className="text-maroon font-extrabold">
-                {newFormattedDate} • {format12Hour(time)}
+        {newFormattedDate} • {format12Hour(time)}
               </span>
             </div>
           </div>
@@ -516,6 +615,7 @@ export default function AdminAppointmentsPage() {
   const [apptLoading, setApptLoading] = useState(false)
   const [error, setError]             = useState('')
   const [statusFilter, setStatusFilter] = useState('all')
+  const [searchQuery, setSearchQuery]   = useState('')
   const [page, setPage]               = useState(1)
   const [rescheduleTarget, setRescheduleTarget] = useState(null)
   const [viewDetailsModal, setViewDetailsModal] = useState(null)
@@ -531,6 +631,28 @@ export default function AdminAppointmentsPage() {
   }
 
   const PER_PAGE = 6
+
+  const canReschedule = (apptDateStr, apptTimeStr) => {
+    if (!apptDateStr) return false
+    const [year, month, day] = apptDateStr.split('-').map(Number)
+    let hour = 0, min = 0
+    if (apptTimeStr) {
+      const match = apptTimeStr.match(/(\d+):(\d+)\s*(AM|PM)?/i)
+      if (match) {
+        let h = parseInt(match[1], 10)
+        const m = parseInt(match[2], 10)
+        const ampm = match[3]?.toUpperCase()
+        if (ampm === 'PM' && h < 12) h += 12
+        if (ampm === 'AM' && h === 12) h = 0
+        hour = h
+        min = m
+      }
+    }
+    const apptDate = new Date(year, month - 1, day, hour, min)
+    const now = new Date()
+    const diffHours = (apptDate.getTime() - now.getTime()) / (1000 * 60 * 60)
+    return diffHours >= 24
+  }
 
   const handleRescheduleSubmit = async (appointmentId, newDate, newTime) => {
     try {
@@ -549,9 +671,7 @@ export default function AdminAppointmentsPage() {
   const handleStatusChange = async (appointmentId, newStatus) => {
     try {
       await updateAppointmentStatus(token, appointmentId, newStatus)
-      // refresh appointments
       loadAppointments(selectedDate)
-      // refresh stats
       getDashboardStats(token).then(setStats).catch(console.error)
       showToast(`Appointment status updated to ${STATUS_CFG[newStatus]?.label || newStatus}!`)
     } catch (err) {
@@ -581,7 +701,6 @@ export default function AdminAppointmentsPage() {
       const data = await getAllAppointments(token, date)
       setAppointments(Array.isArray(data) ? data : [])
     } catch {
-      // Backend may not have this route yet — show empty gracefully
       setAppointments([])
     } finally { setApptLoading(false) }
   }, [token])
@@ -597,23 +716,45 @@ export default function AdminAppointmentsPage() {
     setPage(1)
   }, [selectedDate, loadAppointments])
 
-  // Derived
-  const filtered = appointments.filter(a =>
-    statusFilter === 'all' || a.status === statusFilter
-  ).sort((a, b) => {
-    const aComp = a.status === 'completed'
-    const bComp = b.status === 'completed'
-    if (aComp && !bComp) return 1
-    if (!aComp && bComp) return -1
-    return (a.time_slot || '').localeCompare(b.time_slot || '')
-  })
-  const totalPages = Math.max(1, Math.ceil(filtered.length / PER_PAGE))
-  const paginated  = filtered.slice((page - 1) * PER_PAGE, page * PER_PAGE)
+  // Derived filtered items with search and status support
+  const filtered = useMemo(() => {
+    return appointments.filter(a => {
+      const effStatus = getEffectiveStatus(a)
+      const matchesStatus = statusFilter === 'all' || effStatus === statusFilter || a.status === statusFilter
+      if (!matchesStatus) return false
 
-  const completedCount  = appointments.filter(a => a.status === 'completed').length
-  const fulfillmentRate = appointments.length > 0
-    ? Math.round((completedCount / appointments.length) * 100)
-    : 0
+      if (searchQuery.trim()) {
+        const q = searchQuery.toLowerCase().trim()
+        const student = a.users || {}
+        const name = `${student.first_name || ''} ${student.last_name || ''}`.toLowerCase()
+        const studentId = (student.student_id || '').toLowerCase()
+        const txName = (a.transaction_types?.name || a.transaction_type?.name || '').toLowerCase()
+        return name.includes(q) || studentId.includes(q) || txName.includes(q)
+      }
+      return true
+    }).sort((a, b) => {
+      const aComp = getEffectiveStatus(a) === 'completed'
+      const bComp = getEffectiveStatus(b) === 'completed'
+      if (aComp && !bComp) return 1
+      if (!aComp && bComp) return -1
+      return (a.time_slot || '').localeCompare(b.time_slot || '')
+    })
+  }, [appointments, statusFilter, searchQuery])
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PER_PAGE))
+  const paginated  = useMemo(() => {
+    const start = (page - 1) * PER_PAGE
+    return filtered.slice(start, start + PER_PAGE)
+  }, [filtered, page])
+
+  const selectedDaySummary = useMemo(() => {
+    const summary = { confirmed: 0, in_progress: 0, completed: 0, cancelled: 0, no_show: 0 }
+    appointments.forEach(a => {
+      const st = getEffectiveStatus(a)
+      if (summary[st] !== undefined) summary[st]++
+    })
+    return summary
+  }, [appointments])
 
   const formatTime = (timeSlot) => {
     if (!timeSlot) return '—'
@@ -626,13 +767,13 @@ export default function AdminAppointmentsPage() {
   const formatDateLabel = (ds) => {
     if (!ds) return ''
     const d = new Date(ds + 'T00:00:00')
-    return d.toLocaleDateString('en-PH', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })
+    return d.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })
   }
 
   const isToday = selectedDate === today
 
   return (
-    <div className="animate-fade-up font-sans w-full pb-10">
+    <div className="animate-fade-up font-sans w-full pb-12">
       {/* ── Toast Notification ── */}
       {toastMsg && (
         <div className={`fixed bottom-10 right-8 z-9999 flex items-center gap-3 px-5 py-3.5 rounded-xl shadow-[0_12px_32px_rgba(0,0,0,0.18)] border text-[13.5px] font-bold animate-fade-up ${
@@ -655,293 +796,415 @@ export default function AdminAppointmentsPage() {
       )}
 
       {/* ── Page Header ── */}
-      <div className="flex items-end justify-between mb-6 flex-wrap gap-3">
+      <div className="flex items-end justify-between mb-7 flex-wrap gap-4 border-b border-border pb-6">
         <div>
-          <p className="text-[11px] font-bold text-gold tracking-widest uppercase m-0 mb-1.5">Appointment Scheduling</p>
-          <h1 className="font-serif text-[22px] sm:text-[26px] font-bold text-text-main m-0 mb-2 flex items-center gap-2.5 sm:gap-3">
-            <Calendar size={26} className="text-maroon shrink-0" /> Appointment Management
+          <p className="text-[11px] font-extrabold text-gold tracking-[0.08em] uppercase m-0 mb-1.5 flex items-center gap-1.5">
+            <CalendarCheck size={14} /> Appointment Scheduling
+          </p>
+          <h1 className="font-serif text-[24px] sm:text-[28px] font-bold text-text-main m-0 mb-2 flex items-center gap-3">
+            <Calendar size={28} className="text-maroon shrink-0" /> Appointment Management
           </h1>
-          <p className="text-[12px] sm:text-[13px] text-text-sub mt-1.5 sm:mt-2 mb-0 leading-relaxed max-w-2xl">
-            Manage daily student appointment slots, reschedule bookings, and monitor attendance.
+          <p className="text-[13px] text-text-sub mt-1 mb-0 leading-relaxed max-w-2xl">
+            Manage daily student appointment slots, reschedule bookings, and monitor real-time queue attendance.
           </p>
         </div>
-        <div className="flex gap-2.5 items-center">
-          {/* Filter pill */}
-          <div className="flex items-center gap-2.5 mr-1.5">
-            <span className="text-[10px] font-extrabold text-text-muted uppercase tracking-[0.08em] pt-0.5 flex items-center gap-1.5">
-              <Filter size={12} strokeWidth={3} /> STATUS
-            </span>
-            <div className="relative">
-              <select
-                value={statusFilter}
-                onChange={e => { setStatusFilter(e.target.value); setPage(1) }}
-                className="py-2.25 pr-9 pl-4 rounded-xl border border-border bg-white text-[13px] text-text-main outline-none cursor-pointer font-sans appearance-none font-bold shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:border-text-muted/30 transition-all">
-                <option value="all">All Statuses</option>
-                <option value="pending">Scheduled</option>
-                <option value="confirmed">Confirmed</option>
-                <option value="in_progress">Initiated</option>
-                <option value="completed">Completed</option>
-                <option value="cancelled">Cancelled</option>
-                <option value="no_show">No Show</option>
-              </select>
-              <span className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none flex items-center text-text-muted"><ChevronDown size={14} strokeWidth={2.5} /></span>
-            </div>
+
+        {/* Live indicator & Actions */}
+        <div className="flex items-center gap-3 flex-wrap">
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-success-light text-success border border-success-border text-[11.5px] font-bold">
+            <span className="w-2 h-2 rounded-full bg-success animate-pulse shrink-0" />
+            <span>Live Sync</span>
           </div>
 
-
+          <button 
+            type="button"
+            onClick={() => loadAppointments(selectedDate)} 
+            className="py-2 px-3.5 rounded-xl border border-border bg-white text-[12.5px] font-bold text-text-main hover:bg-surface hover:border-maroon/30 transition-all cursor-pointer flex items-center gap-1.5 shadow-2xs"
+            title="Refresh appointments"
+          >
+            <RotateCcw size={14} className="text-text-muted" /> Refresh
+          </button>
         </div>
       </div>
 
       {error && (
-        <div className="p-3 px-4 rounded-[10px] bg-danger-light text-danger border border-danger-border mb-6 flex items-center gap-2"><AlertTriangle size={16} /> {error}</div>
+        <div className="p-3.5 px-4.5 rounded-xl bg-danger-light text-danger border border-danger-border mb-6 flex items-center gap-2.5 font-medium text-[13px]">
+          <AlertTriangle size={17} className="shrink-0" /> {error}
+        </div>
       )}
 
-      {/* ── Stat Cards ── */}
-      <div className="grid grid-cols-4 gap-4 mb-7">
+      {/* ── KPI Metric Cards ── */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-7">
         {[
-          { label: "Today's Total", value: stats?.today?.total ?? 0, icon: <Calendar size={18} />, bg: 'bg-maroon-light', fg: 'text-maroon', sub: 'Scheduled' },
-          { label: 'Completed Today', value: stats?.today?.completed ?? 0, icon: <CheckCircle2 size={18} />, bg: 'bg-gold-light', fg: 'text-gold', sub: 'Today' },
-          { label: 'Total Completed', value: stats?.total_completed ?? stats?.today?.completed ?? 0, icon: <CheckCircle size={18} />, bg: 'bg-maroon-light', fg: 'text-maroon', sub: 'System-wide' },
-          { label: 'Completion Rate', value: (() => {
-              const total = stats?.today?.total || 0;
-              const comp  = stats?.today?.completed || 0;
-              return total > 0 ? `${Math.round((comp / total) * 100)}%` : '0%';
-            })(), icon: <PieChart size={18} />, bg: 'bg-gold-light', fg: 'text-gold', sub: 'Of total scheduled' },
+          { label: "Today's Bookings", value: stats?.today?.total ?? 0, icon: <Calendar size={18} />, bg: 'bg-maroon-light', fg: 'text-maroon', sub: 'Total scheduled today' },
+          { label: 'Confirmed', value: stats?.today?.confirmed ?? 0, icon: <CalendarCheck size={18} />, bg: 'bg-blue-light', fg: 'text-blue', sub: 'Awaiting student arrival' },
+          { label: 'Ready for Pickup', value: selectedDaySummary.in_progress, icon: <Clock size={18} />, bg: 'bg-success-light', fg: 'text-success', sub: 'Ready at counter window' },
+          { label: 'Completed Today', value: stats?.today?.completed ?? 0, icon: <CheckCircle2 size={18} />, bg: 'bg-gold-light', fg: 'text-gold', sub: 'Successfully processed' },
         ].map((c, i) => (
-          <div key={i} className="animate-fade-up rounded-2xl p-[18px_20px] bg-white border border-border shadow-[0_1px_4px_rgba(0,0,0,0.04)] relative overflow-hidden" style={{ animationDelay: `${i * 0.1}s` }}>
+          <div key={i} className="animate-fade-up rounded-2xl p-5 bg-white border border-border shadow-[0_2px_8px_rgba(0,0,0,0.04)] relative overflow-hidden" style={{ animationDelay: `${i * 0.08}s` }}>
             <div className="flex items-start justify-between mb-3">
-              <div className="text-[10px] font-extrabold text-text-muted uppercase tracking-[0.08em]">{c.label}</div>
-              <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${c.bg} ${c.fg}`}>
+              <span className="text-[10.5px] font-extrabold text-text-muted uppercase tracking-[0.08em]">{c.label}</span>
+              <div className={`w-8.5 h-8.5 rounded-xl flex items-center justify-center ${c.bg} ${c.fg} shadow-2xs`}>
                 {c.icon}
               </div>
             </div>
-            <div className="font-sans text-[28px] font-bold text-text-main leading-none">
-              {loading ? <div className="animate-pulse w-15 h-9 bg-border rounded-lg" /> : c.value}
+            <div className="font-sans text-[28px] font-extrabold text-text-main leading-none">
+              {loading ? <div className="animate-pulse w-14 h-8 bg-border rounded-lg" /> : c.value}
             </div>
-            <div className="text-[11px] font-medium text-text-muted mt-1.5">{c.sub}</div>
+            <div className="text-[11.5px] font-medium text-text-muted mt-2">{c.sub}</div>
           </div>
         ))}
       </div>
 
-      {/* ── Main Body: Calendar + Schedule ── */}
-      <div className="grid grid-cols-[240px_1fr] gap-5">
+      {/* ── Main Layout: Sidebar (Calendar & Summary) + Schedule Table ── */}
+      <div className="grid grid-cols-1 lg:grid-cols-[270px_1fr] gap-6 items-start">
 
-        {/* Left: Calendar + Quick Actions */}
-        <div className="animate-fade-up flex flex-col gap-4" style={{ animationDelay: '0.5s' }}>
+        {/* ── Left Sidebar ── */}
+        <div className="flex flex-col gap-5">
+          {/* Mini Calendar */}
           <MiniCalendar selectedDate={selectedDate} onSelect={setSelectedDate} dateOverrides={dateOverrides} />
 
           {/* Quick Actions */}
           <div className="bg-white rounded-2xl border border-border p-5 shadow-[0_2px_8px_rgba(0,0,0,0.04)]">
-            <p className="text-[10px] font-extrabold text-text-muted uppercase tracking-[0.08em] m-0 mb-4 pb-3 border-b border-border">Quick Actions</p>
+            <p className="text-[10.5px] font-extrabold text-text-muted uppercase tracking-[0.08em] m-0 mb-3.5 pb-2.5 border-b border-border">
+              Quick Actions
+            </p>
             <div className="flex flex-col gap-2.5">
               {[
-                { label: 'Block Date', action: () => setOverrideModal({ isOpen: true, type: 'block' }) },
-                { label: 'Add Notice Note', action: () => setOverrideModal({ isOpen: true, type: 'note' }) },
+                { label: 'Block Date', icon: <Ban size={15} className="text-danger" />, action: () => setOverrideModal({ isOpen: true, type: 'block' }) },
+                { label: 'Add Notice Note', icon: <StickyNote size={15} className="text-info" />, action: () => setOverrideModal({ isOpen: true, type: 'note' }) },
               ].map((item, i) => (
-                <button key={i} onClick={item.action} className="w-full py-2.5 px-4 rounded-xl border border-border bg-white text-text-main text-[13px] font-bold cursor-pointer text-left font-sans transition-all hover:border-text-muted/30 hover:bg-off-white hover:-translate-y-0.5 shadow-[0_2px_8px_rgba(0,0,0,0.04)]">
-                  {item.label}
+                <button 
+                  key={i} 
+                  type="button"
+                  onClick={item.action} 
+                  className="w-full py-2.5 px-3.5 rounded-xl border border-border bg-white text-text-main text-[12.5px] font-bold cursor-pointer text-left font-sans transition-all hover:border-maroon-border hover:bg-surface hover:text-maroon shadow-2xs flex items-center gap-2.5"
+                >
+                  {item.icon}
+                  <span>{item.label}</span>
                 </button>
               ))}
             </div>
           </div>
 
           {/* Selected Date Summary */}
-          {!loading && stats && (
-            <div className="bg-white rounded-2xl border border-border p-5 shadow-[0_2px_8px_rgba(0,0,0,0.04)] flex flex-col gap-4">
-              <div>
-                <p className="text-[10px] font-extrabold text-text-muted uppercase tracking-[0.08em] m-0 mb-4 pb-3 border-b border-border">Day Summary</p>
-                <div className="flex flex-col gap-3.5">
-                  {[
-                    { l: 'Confirmed',   v: stats?.today?.confirmed || 0, c: 'text-info'  },
-                    { l: 'Completed',   v: stats?.today?.completed || 0, c: 'text-success' },
-                    { l: 'Cancelled',   v: stats?.today?.cancelled || 0, c: 'text-danger'   },
-                    { l: 'No Show',     v: stats?.today?.no_show || 0,   c: 'text-text-muted' },
-                  ].map((s, i) => (
-                    <div key={i} className="flex justify-between items-center group">
-                      <span className="text-[13px] font-semibold text-text-sub group-hover:text-text-main transition-colors">{s.l}</span>
-                      <span className={`font-sans text-[16px] font-extrabold ${s.c}`}>{s.v}</span>
+          <div className="bg-white rounded-2xl border border-border p-5 shadow-[0_2px_8px_rgba(0,0,0,0.04)] flex flex-col gap-4">
+            <div>
+              <p className="text-[10.5px] font-extrabold text-text-muted uppercase tracking-[0.08em] m-0 mb-3.5 pb-2.5 border-b border-border flex items-center justify-between">
+                <span>Day Summary</span>
+                <span className="text-text-sub font-mono font-bold">{appointments.length} Total</span>
+              </p>
+              <div className="flex flex-col gap-3">
+                {[
+                  { l: 'Confirmed',        v: selectedDaySummary.confirmed,   c: 'text-blue',    dot: 'bg-blue' },
+                  { l: 'Ready for Pickup', v: selectedDaySummary.in_progress, c: 'text-success', dot: 'bg-success' },
+                  { l: 'Completed',        v: selectedDaySummary.completed,   c: 'text-success', dot: 'bg-success' },
+                  { l: 'Cancelled',        v: selectedDaySummary.cancelled,   c: 'text-danger',  dot: 'bg-danger' },
+                  { l: 'No Show',          v: selectedDaySummary.no_show,     c: 'text-text-muted', dot: 'bg-text-muted' },
+                ].map((s, i) => (
+                  <div key={i} className="flex justify-between items-center group py-0.5">
+                    <div className="flex items-center gap-2">
+                      <span className={`w-2 h-2 rounded-full ${s.dot} shrink-0`} />
+                      <span className="text-[12.5px] font-semibold text-text-sub group-hover:text-text-main transition-colors">{s.l}</span>
                     </div>
-                  ))}
-                </div>
-              </div>
-              
-              {/* Overrides / Notice Note */}
-              {dateOverrides[selectedDate] && (
-                <div className={`p-4 rounded-xl border ${dateOverrides[selectedDate].is_blocked ? 'bg-danger-light border-danger-border' : 'bg-info-light border-info-border'}`}>
-                  <div className="flex items-center gap-2 mb-2">
-                    {dateOverrides[selectedDate].is_blocked ? <AlertTriangle size={16} className="text-danger" /> : <Info size={16} className="text-info" />}
-                    <span className={`text-[12px] font-bold uppercase tracking-wider ${dateOverrides[selectedDate].is_blocked ? 'text-danger' : 'text-info'}`}>
-                      {dateOverrides[selectedDate].is_blocked ? 'Date Blocked' : 'Notice Note'}
-                    </span>
+                    <span className={`font-sans text-[15px] font-extrabold ${s.c}`}>{s.v}</span>
                   </div>
-                  <p className="text-[13px] text-text-main m-0 leading-relaxed font-medium">
-                    {dateOverrides[selectedDate].note}
-                  </p>
-                  <button 
-                    onClick={async () => {
-                      try {
-                        await setDateOverride(token, selectedDate, false, "")
-                        setDateOverrides(prev => { const n = {...prev}; delete n[selectedDate]; return n; })
-                        loadAppointments(selectedDate)
-                      } catch (err) { setError(err.message) }
-                    }}
-                    className="mt-3 py-1.5 px-3 rounded-lg border border-border bg-white text-text-main text-[11px] font-bold cursor-pointer font-sans hover:bg-surface transition-colors shadow-sm"
-                  >
-                    Remove
-                  </button>
-                </div>
-              )}
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Active Overrides / Notice Banner */}
+          {dateOverrides[selectedDate] && (
+            <div className={`p-4.5 rounded-2xl border ${dateOverrides[selectedDate].is_blocked ? 'bg-danger-light border-danger-border' : 'bg-info-light border-info-border'}`}>
+              <div className="flex items-center gap-2 mb-2">
+                {dateOverrides[selectedDate].is_blocked ? <AlertTriangle size={16} className="text-danger" /> : <Info size={16} className="text-info" />}
+                <span className={`text-[11.5px] font-extrabold uppercase tracking-wider ${dateOverrides[selectedDate].is_blocked ? 'text-danger' : 'text-info'}`}>
+                  {dateOverrides[selectedDate].is_blocked ? 'Date Blocked' : 'Notice Note'}
+                </span>
+              </div>
+              <p className="text-[12.5px] text-text-main m-0 leading-relaxed font-medium">
+                {dateOverrides[selectedDate].note}
+              </p>
+              <button 
+                type="button"
+                onClick={async () => {
+                  try {
+                    await setDateOverride(token, selectedDate, false, "")
+                    setDateOverrides(prev => { const n = {...prev}; delete n[selectedDate]; return n; })
+                    loadAppointments(selectedDate)
+                  } catch (err) { setError(err.message) }
+                }}
+                className="mt-3 py-1.5 px-3 rounded-lg border border-border bg-white text-text-main text-[11px] font-bold cursor-pointer font-sans hover:bg-surface transition-colors shadow-2xs"
+              >
+                Remove Override
+              </button>
             </div>
           )}
         </div>
 
-        {/* Right: Today's Schedule table */}
-        <div className="animate-fade-up" style={{ animationDelay: '0.6s' }}>
-          <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
+        {/* ── Right Content: Appointments Schedule Table Card ── */}
+        <div className="bg-white rounded-2xl border border-border shadow-[0_2px_8px_rgba(0,0,0,0.04)] overflow-hidden">
+          
+          {/* Card Header & Controls */}
+          <div className="p-5 sm:p-6 border-b border-border flex flex-col md:flex-row md:items-center md:justify-between gap-4 bg-white">
             <div>
-              <h2 className="font-serif text-[20px] font-bold text-text-main m-0 mb-1">
-                {isToday ? "Today's Schedule" : formatDateLabel(selectedDate)}
-              </h2>
+              <div className="flex items-center gap-2.5 mb-1">
+                <h2 className="font-serif text-[20px] font-bold text-text-main m-0">
+                  {isToday ? "Today's Schedule" : formatDateLabel(selectedDate)}
+                </h2>
+                <span className="px-2.5 py-0.5 rounded-full bg-maroon-light text-maroon text-[11.5px] font-extrabold border border-maroon-border">
+                  {filtered.length} {filtered.length === 1 ? 'Booking' : 'Bookings'}
+                </span>
+              </div>
               <p className="text-[12px] text-text-muted m-0">
-                {filtered.length} appointment{filtered.length !== 1 ? 's' : ''} {statusFilter !== 'all' ? `· ${STATUS_CFG[statusFilter]?.label || statusFilter}` : ''}
+                {isToday ? 'Live appointments for today' : `Appointments scheduled on ${selectedDate}`}
               </p>
             </div>
 
-          </div>
+            {/* Controls: Search + Status Filter */}
+            <div className="flex items-center gap-3 flex-wrap">
+              {/* Search input */}
+              <div className="relative min-w-56 sm:min-w-64">
+                <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-text-muted pointer-events-none" />
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={e => { setSearchQuery(e.target.value); setPage(1) }}
+                  placeholder="Search student or doc..."
+                  className="w-full pl-9 pr-3.5 py-2 rounded-xl border border-border bg-surface text-[12.5px] font-medium text-text-main placeholder:text-text-muted outline-none focus:border-maroon/40 focus:bg-white transition-all shadow-2xs"
+                />
+                {searchQuery && (
+                  <button 
+                    type="button"
+                    onClick={() => setSearchQuery('')}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-text-muted hover:text-text-main p-0.5 cursor-pointer bg-transparent border-none"
+                  >
+                    <XIcon size={13} />
+                  </button>
+                )}
+              </div>
 
-          {/* Table */}
-          <div className="bg-white rounded-2xl border border-border overflow-hidden shadow-sm">
-            {/* Header */}
-            <div className="grid grid-cols-[100px_1.4fr_1.4fr_120px_175px] p-[14px_24px] bg-off-white border-b border-border">
-              {['Time', 'Student', 'Transaction', 'Status', 'Action'].map(h => (
-                <span key={h} className="text-[11px] font-bold text-text-muted uppercase tracking-[0.08em]">{h}</span>
-              ))}
+              {/* Status Dropdown */}
+              <div className="flex items-center gap-2">
+                <span className="text-[10.5px] font-extrabold text-text-muted uppercase tracking-[0.08em] hidden sm:inline-block">Status</span>
+                <StatusDropdown
+                  value={statusFilter}
+                  onChange={v => { setStatusFilter(v); setPage(1) }}
+                />
+              </div>
             </div>
-
-            {/* Rows */}
-            {apptLoading ? (
-              [1, 2, 3, 4, 5].map((n, idx) => (
-                <div key={n} className={`grid grid-cols-[100px_1.4fr_1.4fr_120px_175px] p-[16px_24px] items-center ${idx === 4 ? 'border-none' : 'border-b border-border/60'} bg-white`}>
-                  <div className="animate-pulse h-6 w-12.5 rounded bg-border" />
-                  <div className="flex items-center gap-2.5">
-                    <div className="animate-pulse w-8.5 h-8.5 rounded-full bg-border" />
-                    <div className="animate-pulse h-4.5 w-[60%] rounded bg-border" />
-                  </div>
-                  <div className="animate-pulse h-4 w-[70%] rounded bg-border" />
-                  <div className="animate-pulse h-5.5 w-17.5 rounded-full bg-border" />
-                  <div className="animate-pulse h-6.5 w-15 rounded-md bg-border" />
-                </div>
-              ))
-            ) : paginated.length === 0 ? (
-              <div className="p-[60px_24px] text-center">
-                <div className="flex justify-center mb-4 text-text-muted/50"><Inbox size={52} strokeWidth={1.5} /></div>
-                <p className="font-serif text-[18px] font-bold text-text-main m-0 mb-1">
-                  No appointments {isToday ? 'today' : `on ${selectedDate}`}
-                </p>
-                <p className="text-[13px] text-text-muted m-0 max-w-62.5 mx-auto">
-                  {statusFilter !== 'all' ? 'Try changing the status filter to see other appointments.' : 'This date has no scheduled appointments yet.'}
-                </p>
-              </div>
-            ) : (
-              paginated.map((appt, idx) => {
-                const student = appt.users
-                const name    = student ? `${student.first_name || ''} ${student.last_name || ''}`.trim() || 'Unknown Student' : 'Unknown Student'
-                const txName  = appt.transaction_types?.name || appt.transaction_type?.name || 'Transaction'
-                const isLast  = idx === paginated.length - 1
-                const time    = formatTime(appt.time_slot)
-
-                return (
-                  <div key={appt.id} className={`group grid grid-cols-[100px_1.4fr_1.4fr_120px_175px] p-[16px_24px] items-center transition-all duration-200 hover:bg-surface border-l-2 border-l-transparent ${isLast ? 'border-none' : 'border-b border-border'} bg-white`}>
-                    {/* Time */}
-                    <div>
-                      <div className="font-sans text-[13.5px] font-bold text-text-main">{time}</div>
-                      <div className="text-[10.5px] font-medium text-text-muted mt-0.5">
-                        {appt.slot_duration_minutes ? `${appt.slot_duration_minutes}min` : ''}
-                      </div>
-                    </div>
-
-                    {/* Student */}
-                    <div className="flex items-center gap-3 min-w-0">
-                      <Av name={name} size={34} />
-                      <div className="min-w-0 pr-4">
-                        <div className="text-[14px] font-bold text-text-main whitespace-nowrap overflow-hidden text-ellipsis group-hover:text-maroon transition-colors">{name}</div>
-                        {student?.student_id && (
-                          <div className="text-[10.5px] font-medium text-text-muted font-mono mt-0.5">{student.student_id}</div>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Transaction */}
-                    <div className="pr-4 min-w-0">
-                      <div className="text-[13.5px] font-medium text-text-sub overflow-hidden text-ellipsis whitespace-nowrap">{txName}</div>
-                      {appt.transaction_types?.required_documents?.length > 0 && (
-                        <div className="flex flex-wrap gap-1 mt-1">
-                          {appt.transaction_types.required_documents.slice(0, 2).map((doc, i) => (
-                            <span key={i} className="text-[9.5px] font-medium text-text-muted bg-off-white px-1.5 py-px rounded-full whitespace-nowrap">{typeof doc === 'string' ? doc : doc.name}</span>
-                          ))}
-                          {appt.transaction_types.required_documents.length > 2 && (
-                            <span className="text-[9.5px] font-medium text-text-muted">+{appt.transaction_types.required_documents.length - 2} more</span>
-                          )}
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Status */}
-                    <div className="flex items-center">
-                      <StatusBadge status={appt.status} />
-                    </div>
-
-                    {/* Action */}
-                    <div className="flex gap-2 flex-wrap items-center">
-                      <button 
-                        onClick={() => setViewDetailsModal(appt)} 
-                        className="py-1.5 px-3 rounded-lg border border-border bg-white text-text-main text-[11.5px] font-bold cursor-pointer font-sans hover:border-maroon-border hover:text-maroon hover:bg-surface transition-all shadow-2xs"
-                        title="View Details"
-                      >
-                        View Details
-                      </button>
-
-                      {appt.status === 'pending' && (
-                        <button onClick={() => handleStatusChange(appt.id, 'confirmed')} className="py-1.5 px-2.5 rounded-lg border-none bg-maroon-light text-maroon text-[11px] font-bold cursor-pointer font-sans hover:bg-maroon hover:text-white transition-colors">
-                          Confirm
-                        </button>
-                      )}
-
-                      {(appt.status === 'pending' || appt.status === 'confirmed') && (
-                        <button onClick={() => setRescheduleTarget(appt)} className="py-1.5 px-2.5 rounded-lg border border-border bg-white text-text-main text-[11px] font-bold cursor-pointer font-sans hover:bg-surface transition-colors shadow-sm">
-                          Reschedule
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                )
-              })
-            )}
-
-            {/* Footer pagination */}
-            {filtered.length > 0 && (
-              <div className="p-[12px_20px] border-t border-border flex items-center justify-between bg-surface">
-                <span className="text-[12px] text-text-muted">
-                  Showing {Math.min((page - 1) * PER_PAGE + 1, filtered.length)}–{Math.min(page * PER_PAGE, filtered.length)} of {filtered.length} appointments
-                </span>
-                <div className="flex gap-1 items-center">
-                  <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}
-                    className={`py-1.5 px-2.5 rounded-md border border-border bg-white text-[12px] font-semibold font-sans ${page === 1 ? 'cursor-not-allowed text-text-muted' : 'cursor-pointer text-text-main'}`}>
-                  Prev
-                  </button>
-                  {Array.from({ length: totalPages }, (_, i) => (
-                    <button key={i} onClick={() => setPage(i + 1)} className={`w-7.5 h-7.5 rounded-md text-[12px] font-semibold cursor-pointer font-sans border ${page === i + 1 ? 'border-maroon bg-maroon text-white' : 'border-border bg-white text-text-main'}`}>
-                      {i + 1}
-                    </button>
-                  ))}
-                  <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages}
-                    className={`py-1.5 px-2.5 rounded-md border border-border bg-white text-[12px] font-semibold font-sans ${page === totalPages ? 'cursor-not-allowed text-text-muted' : 'cursor-pointer text-text-main'}`}>
-                    Next
-                  </button>
-                </div>
-              </div>
-            )}
           </div>
+
+          {/* Schedule Table */}
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="bg-surface/70 border-b border-border">
+                  <th className="py-3 px-5 text-[11px] font-extrabold text-text-muted uppercase tracking-[0.08em] w-28">Time</th>
+                  <th className="py-3 px-5 text-[11px] font-extrabold text-text-muted uppercase tracking-[0.08em] min-w-[180px]">Student</th>
+                  <th className="py-3 px-5 text-[11px] font-extrabold text-text-muted uppercase tracking-[0.08em] min-w-[200px]">Transaction</th>
+                  <th className="py-3 px-5 text-[11px] font-extrabold text-text-muted uppercase tracking-[0.08em] w-32">Priority</th>
+                  <th className="py-3 px-5 text-[11px] font-extrabold text-text-muted uppercase tracking-[0.08em] w-36">Status</th>
+                  <th className="py-3 px-5 text-[11px] font-extrabold text-text-muted uppercase tracking-[0.08em] w-48 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border">
+                {apptLoading ? (
+                  [1, 2, 3, 4].map(n => (
+                    <tr key={n} className="animate-pulse">
+                      <td className="py-4 px-5"><div className="h-5 w-14 rounded bg-border" /></td>
+                      <td className="py-4 px-5">
+                        <div className="flex items-center gap-3">
+                          <div className="w-8.5 h-8.5 rounded-full bg-border shrink-0" />
+                          <div className="space-y-1.5 w-32">
+                            <div className="h-4 w-full rounded bg-border" />
+                            <div className="h-3 w-16 rounded bg-border" />
+                          </div>
+                        </div>
+                      </td>
+                      <td className="py-4 px-5"><div className="h-4 w-36 rounded bg-border" /></td>
+                      <td className="py-4 px-5"><div className="h-5 w-16 rounded-full bg-border" /></td>
+                      <td className="py-4 px-5"><div className="h-6 w-24 rounded-full bg-border" /></td>
+                      <td className="py-4 px-5 text-right"><div className="h-7 w-20 rounded-lg bg-border inline-block" /></td>
+                    </tr>
+                  ))
+                ) : paginated.length === 0 ? (
+                  <tr>
+                    <td colSpan={6} className="py-16 px-6 text-center">
+                      <div className="w-14 h-14 rounded-2xl bg-surface text-text-muted/60 flex items-center justify-center mx-auto mb-3 border border-border">
+                        <Calendar size={28} strokeWidth={1.5} />
+                      </div>
+                      <p className="font-serif text-[17px] font-bold text-text-main m-0 mb-1">
+                        No appointments found {isToday ? 'for today' : `for ${selectedDate}`}
+                      </p>
+                      <p className="text-[12.5px] text-text-muted m-0 max-w-sm mx-auto leading-relaxed">
+                        {searchQuery 
+                          ? `No bookings match "${searchQuery}". Try clearing your search query.`
+                          : statusFilter !== 'all' 
+                          ? 'Try switching to "All Statuses" to view other bookings.' 
+                          : 'There are no student bookings recorded on this date.'}
+                      </p>
+                    </td>
+                  </tr>
+                ) : (
+                  paginated.map(appt => {
+                    const student = appt.users
+                    const name = student ? `${student.first_name || ''} ${student.last_name || ''}`.trim() || 'Unknown Student' : 'Unknown Student'
+                    const txName = appt.transaction_types?.name || appt.transaction_type?.name || 'Transaction'
+                    const time = formatTime(appt.time_slot)
+                    const effStatus = getEffectiveStatus(appt)
+                    const isPriority = appt.priority_class && appt.priority_class !== 'regular'
+
+                    return (
+                      <tr key={appt.id} className="hover:bg-surface/50 transition-colors group">
+                        {/* Time */}
+                        <td className="py-4.5 px-5 whitespace-nowrap">
+                          <div className="font-sans text-[13.5px] font-bold text-text-main flex items-center gap-1.5">
+                            <Clock size={13} className="text-text-muted shrink-0" />
+                            <span>{time}</span>
+                          </div>
+                          {appt.slot_duration_minutes && (
+                            <span className="text-[10.5px] font-medium text-text-muted mt-0.5 block">
+                              {appt.slot_duration_minutes} min duration
+                            </span>
+                          )}
+                        </td>
+
+                        {/* Student */}
+                        <td className="py-4.5 px-5">
+                          <div className="flex items-center gap-3">
+                            <Av name={name} size={34} />
+                            <div className="min-w-0">
+                              <div className="text-[13.5px] font-bold text-text-main truncate group-hover:text-maroon transition-colors">
+                                {name}
+                              </div>
+                              {student?.student_id && (
+                                <div className="text-[11px] font-mono font-medium text-text-muted mt-0.5">
+                                  ID: {student.student_id}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </td>
+
+                        {/* Transaction */}
+                        <td className="py-4.5 px-5">
+                          <div className="text-[13.5px] font-bold text-text-main leading-snug">
+                            {txName}
+                          </div>
+                          {appt.transaction_types?.required_documents?.length > 0 && (
+                            <span className="text-[11px] text-text-muted font-medium mt-0.5 block">
+                              {appt.transaction_types.required_documents.length} required document{appt.transaction_types.required_documents.length !== 1 ? 's' : ''}
+                            </span>
+                          )}
+                        </td>
+
+                        {/* Priority */}
+                        <td className="py-4.5 px-5 whitespace-nowrap">
+                          {isPriority ? (
+                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-maroon-light text-maroon text-[10.5px] font-extrabold uppercase border border-maroon-border/60">
+                              <ShieldCheck size={11} className="shrink-0" />
+                              <span>{appt.priority_class}</span>
+                            </span>
+                          ) : (
+                            <span className="text-[12px] font-medium text-text-muted">
+                              Regular
+                            </span>
+                          )}
+                        </td>
+
+                        {/* Status */}
+                        <td className="py-4.5 px-5 whitespace-nowrap">
+                          <StatusBadge status={effStatus} />
+                        </td>
+
+                        {/* Actions */}
+                        <td className="py-4.5 px-5 text-right whitespace-nowrap">
+                          <div className="flex items-center justify-end gap-2">
+                            <button 
+                              type="button"
+                              onClick={() => setViewDetailsModal(appt)} 
+                              className="py-1.5 px-3 rounded-xl border border-border bg-white text-text-main text-[12px] font-bold cursor-pointer font-sans hover:border-maroon-border hover:text-maroon hover:bg-surface transition-all shadow-2xs"
+                              title="View full booking details"
+                            >
+                              View Details
+                            </button>
+
+                            {appt.status === 'pending' && (
+                              <button 
+                                type="button"
+                                onClick={() => handleStatusChange(appt.id, 'confirmed')} 
+                                className="py-1.5 px-3 rounded-xl border-none bg-maroon-light text-maroon text-[12px] font-bold cursor-pointer font-sans hover:bg-maroon hover:text-white transition-colors"
+                              >
+                                Confirm
+                              </button>
+                            )}
+
+                            {(effStatus === 'confirmed' || appt.status === 'pending') && canReschedule(appt.appointment_date, appt.time_slot) && (
+                              <button 
+                                type="button"
+                                onClick={() => setRescheduleTarget(appt)} 
+                                className="py-1.5 px-3 rounded-xl border border-border bg-white text-text-main text-[12px] font-bold cursor-pointer font-sans hover:bg-surface hover:border-text-muted transition-colors shadow-2xs"
+                              >
+                                Reschedule
+                              </button>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    )
+                  })
+                )}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Table Footer / Pagination */}
+          {filtered.length > 0 && (
+            <div className="p-4 px-6 border-t border-border flex items-center justify-between bg-surface/40 flex-wrap gap-3">
+              <span className="text-[12px] text-text-muted font-medium">
+                Showing {Math.min((page - 1) * PER_PAGE + 1, filtered.length)}–{Math.min(page * PER_PAGE, filtered.length)} of {filtered.length} bookings
+              </span>
+              
+              <div className="flex items-center gap-1.5">
+                <button 
+                  type="button"
+                  onClick={() => setPage(p => Math.max(1, p - 1))} 
+                  disabled={page === 1}
+                  className={`py-1.5 px-3 rounded-lg border border-border bg-white text-[12px] font-bold font-sans transition-all ${
+                    page === 1 ? 'opacity-40 cursor-not-allowed text-text-muted' : 'cursor-pointer text-text-main hover:bg-surface'
+                  }`}
+                >
+                  Prev
+                </button>
+                {Array.from({ length: totalPages }, (_, i) => (
+                  <button 
+                    key={i} 
+                    type="button"
+                    onClick={() => setPage(i + 1)} 
+                    className={`w-8 h-8 rounded-lg text-[12px] font-bold cursor-pointer font-sans border transition-all ${
+                      page === i + 1 
+                        ? 'border-maroon bg-maroon text-white shadow-2xs' 
+                        : 'border-border bg-white text-text-main hover:bg-surface'
+                    }`}
+                  >
+                    {i + 1}
+                  </button>
+                ))}
+                <button 
+                  type="button"
+                  onClick={() => setPage(p => Math.min(totalPages, p + 1))} 
+                  disabled={page === totalPages}
+                  className={`py-1.5 px-3 rounded-lg border border-border bg-white text-[12px] font-bold font-sans transition-all ${
+                    page === totalPages ? 'opacity-40 cursor-not-allowed text-text-muted' : 'cursor-pointer text-text-main'
+                  }`}
+                >
+                  Next
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
@@ -1032,7 +1295,7 @@ export default function AdminAppointmentsPage() {
                     <h2 className="font-serif text-[28px] sm:text-[34px] font-extrabold text-maroon m-0 leading-none tracking-tight">
                       {refId}
                     </h2>
-                    <StatusBadge status={viewDetailsModal.status} />
+                    <StatusBadge status={getEffectiveStatus(viewDetailsModal)} />
                   </div>
                 </div>
 
@@ -1292,7 +1555,7 @@ export default function AdminAppointmentsPage() {
                       Confirm Appointment
                     </button>
                   )}
-                  {(isPending || isConfirmed) && (
+                  {(isPending || isConfirmed) && canReschedule(viewDetailsModal.appointment_date, viewDetailsModal.time_slot) && (
                     <button 
                       onClick={() => {
                         const target = viewDetailsModal

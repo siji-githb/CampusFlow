@@ -254,7 +254,7 @@ function OverviewTab() {
     {
       label: 'Appointments Today',
       value: loading || !stats ? null : stats?.today?.total || 0,
-      sub: loading || !stats ? '—' : `${stats?.today?.confirmed || 0} Confirmed`,
+      sub: loading || !stats ? '—' : 'Total for today',
       subColorClass: 'text-text-muted',
       icon: <Calendar size={20} />,
       colorClass: 'text-maroon',
@@ -513,7 +513,7 @@ export default function AdminDashboard() {
       items: [
         { id: 'overview', icon: <LayoutDashboard size={18} />, label: 'Dashboard' },
         { id: 'reports', icon: <BarChart2 size={18} />, label: 'Analytics' },
-        { id: 'queue', icon: <Ticket size={18} />, label: 'Live Queue & Releases' },
+        { id: 'queue', icon: <Ticket size={18} />, label: 'Live Queue Monitoring'},
         { id: 'appts', icon: <Calendar size={18} />, label: 'Appointments' },
       ]
     },
