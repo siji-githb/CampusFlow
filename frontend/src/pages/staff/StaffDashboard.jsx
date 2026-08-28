@@ -38,58 +38,94 @@ const getRequiresPresence = (steps) => {
 }
 
 // ── Compact Queue Preview (Overview panel) ─────────────────────────────────────
-function CompactQueuePreview({ queue, loading }) {
+function CompactQueuePreview({ queue, loading, onNavigate }) {
   // Filter only active tickets that are at the physical counter (exclude processing & release)
   const activeAll = queue.filter(q => q.ticket.status !== 'completed' && getRequiresPresence(q.steps))
-  const active = activeAll.slice(0, 5)
+  const active = activeAll.slice(0, 4)
 
   if (loading) return (
-    <div className="flex flex-col gap-2">
-      {[1,2,3,4,5].map(i => <div key={i} className="h-12 rounded-xl animate-pulse bg-border" />)}
+    <div className="flex flex-col gap-2.5">
+      {[1, 2, 3].map(i => <div key={i} className="h-14 rounded-xl animate-pulse bg-border/60" />)}
     </div>
   )
 
   if (active.length === 0) return (
-    <div className="text-center py-7 text-text-muted text-[13px]">
-      <div className="mb-2 flex justify-center"><Inbox size={32} /></div>
-      No active tickets at the counter right now
+    <div className="flex flex-col items-center justify-center py-8 px-4 text-center my-auto">
+      <div className="w-13 h-13 rounded-2xl bg-surface border border-border flex items-center justify-center mb-3 text-text-muted/70 shadow-2xs">
+        <Ticket size={24} strokeWidth={1.5} />
+      </div>
+      <h3 className="font-serif text-[15px] font-bold text-text-main m-0 mb-1">Counter is Clear</h3>
+      <p className="text-[12px] text-text-muted m-0 max-w-xs leading-relaxed">
+        No active student tickets waiting at the counter right now.
+      </p>
     </div>
   )
 
   return (
-    <div className="flex flex-col">
-      <div className="flex flex-col gap-2.5 sm:gap-3.5">
-        {active.map(({ ticket }) => {
-          const name = ticket.users ? `${ticket.users.last_name}, ${ticket.users.first_name}` : 'Unknown'
-          const isServing = ticket.status === 'in_progress'
-          const priorityClass = ticket.appointments?.priority_class
+    <div className="flex flex-col gap-2.5">
+      {active.map(({ ticket }) => {
+        const student = ticket.users
+        const name = student ? `${student.first_name || ''} ${student.last_name || ''}`.trim() || 'Unknown Student' : 'Unknown Student'
+        const initials = name.split(' ').slice(0, 2).map(w => w[0]?.toUpperCase()).join('') || '?'
+        const isServing = ticket.status === 'in_progress'
+        const priorityClass = ticket.appointments?.priority_class
+        const isPriority = priorityClass && priorityClass !== 'regular'
+        const txName = ticket.appointments?.transaction_types?.name || ticket.transaction_type?.name || 'Document Transaction'
 
-          return (
-            <div key={ticket.id} className={`flex items-center gap-2.5 sm:gap-4 px-3.5 sm:px-5 py-3 sm:py-4 rounded-xl border ${isServing ? 'border-success-border bg-success-light' : 'border-border bg-off-white'}`}>
-              <span className="font-serif text-[16px] sm:text-[18px] font-extrabold text-maroon min-w-12 sm:min-w-16">{ticket.queue_number}</span>
-              <div className="flex-1 min-w-0 flex flex-col justify-center">
-                <div className="flex items-center gap-1.5 sm:gap-2 mb-0.5 sm:mb-1">
-                  <span className="text-[13px] sm:text-[14px] font-bold text-text-main truncate">{name}</span>
-                  {priorityClass && priorityClass !== 'regular' && (
-                    <span className="shrink-0 text-[9px] sm:text-[10px] font-bold px-1.5 sm:px-2 py-0.5 rounded-full bg-danger-light text-danger border border-danger-border tracking-wider uppercase">
+        return (
+          <div 
+            key={ticket.id} 
+            onClick={() => onNavigate && onNavigate('queue')}
+            className={`group flex items-center justify-between gap-3 p-3 sm:px-4 sm:py-3.5 rounded-xl border transition-all cursor-pointer shadow-2xs hover:shadow-xs ${
+              isServing 
+                ? 'border-success-border bg-success-light/40 hover:bg-success-light/70' 
+                : 'border-border bg-white hover:border-maroon-border hover:bg-surface/50'
+            }`}
+          >
+            {/* Queue Number & Info */}
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="w-10 h-10 rounded-xl bg-maroon text-white flex items-center justify-center font-serif text-[14px] font-extrabold shrink-0 shadow-2xs">
+                {ticket.queue_number}
+              </div>
+              <div className="min-w-0">
+                <div className="flex items-center gap-1.5 mb-0.5">
+                  <span className="text-[13px] font-bold text-text-main truncate group-hover:text-maroon transition-colors">
+                    {name}
+                  </span>
+                  {isPriority && (
+                    <span className="shrink-0 text-[9px] font-extrabold px-1.5 py-0.2 rounded-full bg-maroon-light text-maroon border border-maroon-border/60 uppercase">
                       {priorityClass}
                     </span>
                   )}
                 </div>
-                <div className="text-[11px] sm:text-[12px] text-text-sub font-medium truncate">{ticket.appointments?.transaction_types?.name || 'Transaction'}</div>
+                <div className="text-[11.5px] text-text-muted font-medium truncate">
+                  {txName}
+                </div>
               </div>
-              <span className={`text-[10px] sm:text-[11px] font-bold px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-full whitespace-nowrap border shrink-0 flex items-center gap-1 sm:gap-1.5 ${isServing ? 'bg-success-light text-success border-success-border' : 'bg-gold-light text-gold border-gold-border'}`}>
-                {isServing ? <><span className="w-1.5 h-1.5 rounded-full bg-success"></span> Serving</> : <><Clock size={11} className="opacity-80" /> Waiting</>}
+            </div>
+
+            {/* Serving / Waiting Status */}
+            <div className="shrink-0 flex items-center gap-2">
+              <span className={`text-[11px] font-bold px-2.5 py-1 rounded-full border flex items-center gap-1.5 ${
+                isServing 
+                  ? 'bg-success-light text-success border-success-border' 
+                  : 'bg-gold-light text-gold border-gold-border'
+              }`}>
+                <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${isServing ? 'bg-success animate-pulse' : 'bg-gold'}`} />
+                <span>{isServing ? 'Serving' : 'Waiting'}</span>
               </span>
             </div>
-          )
-        })}
-      </div>
-      <div className="mt-3 sm:mt-4 text-right">
-        <span className="text-[10px] sm:text-[11px] font-bold text-text-muted tracking-wide">
-          Showing {active.length} out of {activeAll.length} tickets at the counter
-        </span>
-      </div>
+          </div>
+        )
+      })}
+      
+      {activeAll.length > 4 && (
+        <div className="pt-2 text-right">
+          <span className="text-[11px] font-semibold text-text-muted">
+            + {activeAll.length - 4} more tickets in queue
+          </span>
+        </div>
+      )}
     </div>
   )
 }
@@ -555,69 +591,125 @@ export default function StaffDashboard() {
               </div>
 
               {/* Two-column: Queue preview + Priority Requests */}
-              <div className="grid grid-cols-1 lg:grid-cols-[5fr_3fr] gap-4 sm:gap-6">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 sm:gap-6 items-stretch">
 
                 {/* Live Queue Preview */}
-                <div className="animate-fade-up bg-white rounded-xl sm:rounded-2xl p-4 sm:p-6 border border-border shadow-[0_1px_4px_rgba(0,0,0,0.04)]" style={{ animationDelay: '0.5s' }}>
-                  <div className="flex items-center justify-between mb-4 sm:mb-5">
-                    <div>
-                      <p className="text-[11px] font-bold text-gold tracking-widest uppercase m-0 mb-1">Real-Time</p>
-                      <h2 className="font-serif text-[16px] sm:text-[18px] font-bold text-text-main m-0">Live Queue Management</h2>
+                <div className="animate-fade-up bg-white rounded-2xl p-5 sm:p-6 border border-border shadow-[0_2px_8px_rgba(0,0,0,0.04)] flex flex-col justify-between" style={{ animationDelay: '0.5s' }}>
+                  <div>
+                    <div className="flex items-center justify-between mb-4 sm:mb-5 pb-3.5 border-b border-border/80">
+                      <div>
+                        <p className="text-[11px] font-extrabold text-gold tracking-[0.08em] uppercase m-0 mb-1 flex items-center gap-1.5">
+                          <span className="w-1.5 h-1.5 rounded-full bg-success animate-pulse shrink-0" />
+                          Real-Time Queue
+                        </p>
+                        <div className="flex items-center gap-2.5">
+                          <h2 className="font-serif text-[18px] sm:text-[20px] font-bold text-text-main m-0">
+                            Live Queue Management
+                          </h2>
+                          {queue.filter(q => q.ticket.status !== 'completed' && getRequiresPresence(q.steps)).length > 0 && (
+                            <span className="px-2 py-0.5 rounded-full bg-maroon-light text-maroon text-[11px] font-extrabold border border-maroon-border/60">
+                              {queue.filter(q => q.ticket.status !== 'completed' && getRequiresPresence(q.steps)).length} Active
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      <button 
+                        onClick={() => handleNavChange('queue')} 
+                        className="group px-3 py-1.5 sm:px-3.5 sm:py-1.5 rounded-xl border border-border bg-white text-text-main hover:border-maroon/40 hover:text-maroon hover:bg-surface text-[11.5px] font-bold cursor-pointer font-sans transition-all duration-200 shadow-2xs hover:shadow-xs flex items-center gap-1.5 shrink-0"
+                      >
+                        View All
+                        <ChevronRight size={13} className="transition-transform duration-200 group-hover:translate-x-0.5 text-text-muted group-hover:text-maroon" />
+                      </button>
                     </div>
-                    <button 
-                      onClick={() => handleNavChange('queue')} 
-                      className="group px-3 py-1.5 sm:px-3.5 sm:py-1.5 rounded-xl border border-maroon-border bg-maroon-light text-maroon hover:bg-maroon hover:text-white hover:border-maroon text-[11px] sm:text-xs font-semibold cursor-pointer font-sans transition-all duration-200 shadow-2xs hover:shadow-xs flex items-center gap-1 shrink-0"
-                    >
-                      View All
-                      <ChevronRight size={13} className="transition-transform duration-200 group-hover:translate-x-0.5" />
-                    </button>
+
+                    <CompactQueuePreview queue={queue} loading={loadingQueue} onNavigate={handleNavChange} />
                   </div>
-                  <CompactQueuePreview queue={queue} loading={loadingQueue} />
                 </div>
 
-                <div className="flex flex-col gap-4 sm:gap-5">
-                  {/* Priority Request Panel */}
-                  <div className="animate-fade-up flex-1 bg-white rounded-xl sm:rounded-2xl p-4 sm:p-6 border border-border shadow-[0_1px_4px_rgba(0,0,0,0.04)] flex flex-col" style={{ animationDelay: '0.6s' }}>
-                    <div className="flex items-center justify-between mb-3.5 sm:mb-4">
+                {/* Priority Request Panel */}
+                <div className="animate-fade-up bg-white rounded-2xl p-5 sm:p-6 border border-border shadow-[0_2px_8px_rgba(0,0,0,0.04)] flex flex-col justify-between" style={{ animationDelay: '0.6s' }}>
+                  <div>
+                    <div className="flex items-center justify-between mb-4 sm:mb-5 pb-3.5 border-b border-border/80">
                       <div>
-                        <p className="text-[11px] font-bold text-gold tracking-widest uppercase m-0 mb-1">Pending</p>
-                        <h2 className="font-serif text-[16px] sm:text-[18px] font-bold text-text-main m-0">
-                          Priority Requests
-                        </h2>
+                        <p className="text-[11px] font-extrabold text-gold tracking-[0.08em] uppercase m-0 mb-1">
+                          Action Required
+                        </p>
+                        <div className="flex items-center gap-2.5">
+                          <h2 className="font-serif text-[18px] sm:text-[20px] font-bold text-text-main m-0">
+                            Priority Requests
+                          </h2>
+                          {priorityData.length > 0 && (
+                            <span className="px-2 py-0.5 rounded-full bg-maroon-light text-maroon text-[11px] font-extrabold border border-maroon-border/60">
+                              {priorityData.length} Pending
+                            </span>
+                          )}
+                        </div>
                       </div>
                       <button 
                         onClick={() => handleNavChange('priority-requests')} 
-                        className="group px-3 py-1.5 sm:px-3.5 sm:py-1.5 rounded-xl border border-maroon-border bg-maroon-light text-maroon hover:bg-maroon hover:text-white hover:border-maroon text-[11px] sm:text-xs font-semibold cursor-pointer font-sans transition-all duration-200 shadow-2xs hover:shadow-xs flex items-center gap-1 shrink-0"
+                        className="group px-3 py-1.5 sm:px-3.5 sm:py-1.5 rounded-xl border border-border bg-white text-text-main hover:border-maroon/40 hover:text-maroon hover:bg-surface text-[11.5px] font-bold cursor-pointer font-sans transition-all duration-200 shadow-2xs hover:shadow-xs flex items-center gap-1.5 shrink-0"
                       >
                         View All
-                        <ChevronRight size={13} className="transition-transform duration-200 group-hover:translate-x-0.5" />
+                        <ChevronRight size={13} className="transition-transform duration-200 group-hover:translate-x-0.5 text-text-muted group-hover:text-maroon" />
                       </button>
                     </div>
-                    <div className="flex-1 overflow-auto">
+
+                    <div className="overflow-auto">
                       {loadingQueue ? (
-                        <div className="flex flex-col gap-2">
+                        <div className="flex flex-col gap-2.5">
                           {[1, 2, 3].map(i => (
-                            <div key={i} className="h-16 rounded-xl animate-pulse bg-border/60" />
+                            <div key={i} className="h-14 rounded-xl animate-pulse bg-border/60" />
                           ))}
                         </div>
                       ) : priorityData.length === 0 ? (
-                        <div className="flex flex-col items-center justify-center py-6 text-text-muted">
-                          <div className="w-12 h-12 rounded-xl bg-surface flex items-center justify-center mb-3 border border-border">
-                            <AlertCircle size={20} className="text-text-muted/60" />
+                        <div className="flex flex-col items-center justify-center py-8 px-4 text-center my-auto">
+                          <div className="w-13 h-13 rounded-2xl bg-surface border border-border flex items-center justify-center mb-3 text-text-muted/70 shadow-2xs">
+                            <ShieldCheck size={24} strokeWidth={1.5} />
                           </div>
-                          <span className="text-[12.5px] font-medium">No priority requests</span>
+                          <h3 className="font-serif text-[15px] font-bold text-text-main m-0 mb-1">All Requests Reviewed</h3>
+                          <p className="text-[12px] text-text-muted m-0 max-w-xs leading-relaxed">
+                            No pending student priority verification requests at the moment.
+                          </p>
                         </div>
                       ) : (
-                        <div className="flex flex-col gap-2">
-                          {priorityData.slice(0, 5).map(req => (
-                            <div key={req.id} className="bg-white rounded-xl border border-maroon-border px-3.5 py-3 shadow-sm cursor-pointer hover:bg-maroon-light/20 transition-colors" onClick={() => handleNavChange('priority-requests')}>
-                              <div className="flex items-center justify-between mb-1">
-                                <span className="text-[13px] font-bold text-text-main">{req.users?.first_name} {req.users?.last_name}</span>
-                                <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-danger-light text-danger border border-danger-border">{req.priority_type?.toUpperCase()}</span>
+                        <div className="flex flex-col gap-2.5">
+                          {priorityData.slice(0, 4).map(req => {
+                            const student = req.users
+                            const name = student ? `${student.first_name || ''} ${student.last_name || ''}`.trim() || 'Unknown Student' : 'Unknown Student'
+                            const initials = name.split(' ').slice(0, 2).map(w => w[0]?.toUpperCase()).join('') || '?'
+                            const studentId = student?.student_id || 'N/A'
+                            const pType = req.priority_type || 'Priority'
+
+                            return (
+                              <div 
+                                key={req.id} 
+                                onClick={() => handleNavChange('priority-requests')}
+                                className="group flex items-center justify-between gap-3 p-3 sm:px-4 sm:py-3 rounded-xl border border-border bg-white hover:border-maroon-border hover:bg-surface/50 transition-all cursor-pointer shadow-2xs hover:shadow-xs"
+                              >
+                                <div className="flex items-center gap-3 min-w-0">
+                                  <div className="w-9 h-9 rounded-full bg-maroon-light text-maroon border border-maroon-border/60 flex items-center justify-center font-bold text-[12.5px] shrink-0">
+                                    {initials}
+                                  </div>
+                                  <div className="min-w-0">
+                                    <div className="text-[13px] font-bold text-text-main truncate group-hover:text-maroon transition-colors">
+                                      {name}
+                                    </div>
+                                    <div className="text-[11px] font-mono text-text-muted font-medium mt-0.5">
+                                      ID: {studentId}
+                                    </div>
+                                  </div>
+                                </div>
+
+                                <div className="flex items-center gap-2 shrink-0">
+                                  <span className="text-[10px] font-extrabold px-2.5 py-1 rounded-full bg-maroon-light text-maroon border border-maroon-border/70 uppercase tracking-wider flex items-center gap-1">
+                                    <ShieldCheck size={11} className="shrink-0" />
+                                    <span>{pType}</span>
+                                  </span>
+                                  <ChevronRight size={14} className="text-text-muted group-hover:text-maroon group-hover:translate-x-0.5 transition-all" />
+                                </div>
                               </div>
-                              <div className="text-[11px] text-text-sub font-mono">{req.users?.student_id}</div>
-                            </div>
-                          ))}
+                            )
+                          })}
                         </div>
                       )}
                     </div>

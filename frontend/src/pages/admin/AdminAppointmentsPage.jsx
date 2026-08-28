@@ -118,20 +118,29 @@ function MiniCalendar({ selectedDate, onSelect, dateOverrides = {} }) {
           const isSun   = (i % 7 === 6)
           const override = dateOverrides[dateStr]
           
-          let btnClass = "w-8 h-8 rounded-full border-none text-[12px] cursor-pointer transition-all relative flex items-center justify-center "
+          let btnClass = "w-8 h-8 rounded-full border-none text-[12px] relative flex items-center justify-center "
           
-          if (isSel) {
-            btnClass += "bg-maroon text-white font-bold shadow-xs"
+          if (isSun) {
+            btnClass += "bg-transparent font-medium text-danger/45 cursor-not-allowed"
+          } else if (isSel) {
+            btnClass += "bg-maroon text-white font-bold shadow-xs cursor-pointer"
           } else if (isToday) {
-            btnClass += "bg-maroon-light text-maroon font-bold hover:bg-maroon/20"
+            btnClass += "bg-maroon-light text-maroon font-bold hover:bg-maroon/20 cursor-pointer"
           } else {
-            btnClass += `bg-transparent font-semibold hover:bg-surface ${isSun ? 'text-danger' : 'text-text-main'}`
+            btnClass += "bg-transparent font-semibold hover:bg-surface text-text-main cursor-pointer"
           }
 
           return (
-            <button key={i} onClick={() => onSelect(dateStr)} className={btnClass} type="button">
+            <button 
+              key={i} 
+              disabled={isSun}
+              onClick={() => !isSun && onSelect(dateStr)} 
+              className={btnClass} 
+              type="button"
+              title={isSun ? "Sundays are closed" : undefined}
+            >
               <span>{day}</span>
-              {override && (
+              {override && !isSun && (
                 <div className={`absolute bottom-0.5 w-1 h-1 rounded-full ${override.is_blocked ? (isSel ? 'bg-white' : 'bg-danger') : (isSel ? 'bg-white' : 'bg-info')}`} />
               )}
             </button>
@@ -149,7 +158,7 @@ function MiniCalendar({ selectedDate, onSelect, dateOverrides = {} }) {
               const [y, m] = todayStr.split('-')
               setView({ year: parseInt(y), month: parseInt(m) - 1 })
             }}
-            className="w-full py-1.5 px-3 rounded-xl border border-border bg-surface text-text-sub hover:text-maroon hover:bg-off-white text-[11.5px] font-bold cursor-pointer transition-all flex items-center justify-center gap-1.5"
+            className="w-full py-1.5 px-3 rounded-xl border border-border bg-white text-text-sub hover:text-maroon hover:bg-off-white text-[11.5px] font-bold cursor-pointer transition-all flex items-center justify-center gap-1.5 shadow-2xs"
           >
             <Calendar size={13} className="text-maroon" /> Jump to Today
           </button>
@@ -796,35 +805,16 @@ export default function AdminAppointmentsPage() {
       )}
 
       {/* ── Page Header ── */}
-      <div className="flex items-end justify-between mb-7 flex-wrap gap-4 border-b border-border pb-6">
-        <div>
-          <p className="text-[11px] font-extrabold text-gold tracking-[0.08em] uppercase m-0 mb-1.5 flex items-center gap-1.5">
-            <CalendarCheck size={14} /> Appointment Scheduling
-          </p>
-          <h1 className="font-serif text-[24px] sm:text-[28px] font-bold text-text-main m-0 mb-2 flex items-center gap-3">
-            <Calendar size={28} className="text-maroon shrink-0" /> Appointment Management
-          </h1>
-          <p className="text-[13px] text-text-sub mt-1 mb-0 leading-relaxed max-w-2xl">
-            Manage daily student appointment slots, reschedule bookings, and monitor real-time queue attendance.
-          </p>
-        </div>
-
-        {/* Live indicator & Actions */}
-        <div className="flex items-center gap-3 flex-wrap">
-          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-success-light text-success border border-success-border text-[11.5px] font-bold">
-            <span className="w-2 h-2 rounded-full bg-success animate-pulse shrink-0" />
-            <span>Live Sync</span>
-          </div>
-
-          <button 
-            type="button"
-            onClick={() => loadAppointments(selectedDate)} 
-            className="py-2 px-3.5 rounded-xl border border-border bg-white text-[12.5px] font-bold text-text-main hover:bg-surface hover:border-maroon/30 transition-all cursor-pointer flex items-center gap-1.5 shadow-2xs"
-            title="Refresh appointments"
-          >
-            <RotateCcw size={14} className="text-text-muted" /> Refresh
-          </button>
-        </div>
+      <div className="mb-5 sm:mb-6">
+        <p className="text-[11px] font-extrabold text-gold tracking-[0.08em] uppercase m-0 mb-1.5 flex items-center gap-1.5">
+          <CalendarCheck size={14} /> Appointment Scheduling
+        </p>
+        <h1 className="font-serif text-[24px] sm:text-[28px] font-bold text-text-main m-0 mb-2 flex items-center gap-3">
+          <Calendar size={28} className="text-maroon shrink-0" /> Appointment Management
+        </h1>
+        <p className="text-[13px] text-text-sub mt-1 mb-0 leading-relaxed max-w-2xl">
+          Manage daily student appointment slots, reschedule bookings, and monitor real-time queue attendance.
+        </p>
       </div>
 
       {error && (
@@ -972,7 +962,7 @@ export default function AdminAppointmentsPage() {
                   value={searchQuery}
                   onChange={e => { setSearchQuery(e.target.value); setPage(1) }}
                   placeholder="Search student or doc..."
-                  className="w-full pl-9 pr-3.5 py-2 rounded-xl border border-border bg-surface text-[12.5px] font-medium text-text-main placeholder:text-text-muted outline-none focus:border-maroon/40 focus:bg-white transition-all shadow-2xs"
+                  className="w-full pl-9 pr-3.5 py-2 rounded-xl border border-border bg-white text-[12.5px] font-medium text-text-main placeholder:text-text-muted outline-none focus:border-maroon/40 focus:ring-2 focus:ring-maroon/5 transition-all shadow-2xs"
                 />
                 {searchQuery && (
                   <button 
@@ -1000,13 +990,13 @@ export default function AdminAppointmentsPage() {
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead>
-                <tr className="bg-surface/70 border-b border-border">
-                  <th className="py-3 px-5 text-[11px] font-extrabold text-text-muted uppercase tracking-[0.08em] w-28">Time</th>
-                  <th className="py-3 px-5 text-[11px] font-extrabold text-text-muted uppercase tracking-[0.08em] min-w-[180px]">Student</th>
-                  <th className="py-3 px-5 text-[11px] font-extrabold text-text-muted uppercase tracking-[0.08em] min-w-[200px]">Transaction</th>
-                  <th className="py-3 px-5 text-[11px] font-extrabold text-text-muted uppercase tracking-[0.08em] w-32">Priority</th>
-                  <th className="py-3 px-5 text-[11px] font-extrabold text-text-muted uppercase tracking-[0.08em] w-36">Status</th>
-                  <th className="py-3 px-5 text-[11px] font-extrabold text-text-muted uppercase tracking-[0.08em] w-48 text-right">Actions</th>
+                <tr className="bg-white border-b border-border">
+                  <th className="py-3.5 px-5 text-[11px] font-extrabold text-text-muted uppercase tracking-[0.08em] w-28">Time</th>
+                  <th className="py-3.5 px-5 text-[11px] font-extrabold text-text-muted uppercase tracking-[0.08em] min-w-45">Student</th>
+                  <th className="py-3.5 px-5 text-[11px] font-extrabold text-text-muted uppercase tracking-[0.08em] min-w-50">Transaction</th>
+                  <th className="py-3.5 px-5 text-[11px] font-extrabold text-text-muted uppercase tracking-[0.08em] w-32">Priority</th>
+                  <th className="py-3.5 px-5 text-[11px] font-extrabold text-text-muted uppercase tracking-[0.08em] w-36">Status</th>
+                  <th className="py-3.5 px-5 text-[11px] font-extrabold text-text-muted uppercase tracking-[0.08em] w-48 text-right">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
@@ -1162,7 +1152,7 @@ export default function AdminAppointmentsPage() {
 
           {/* Table Footer / Pagination */}
           {filtered.length > 0 && (
-            <div className="p-4 px-6 border-t border-border flex items-center justify-between bg-surface/40 flex-wrap gap-3">
+            <div className="p-4 px-6 border-t border-border flex items-center justify-between bg-white flex-wrap gap-3">
               <span className="text-[12px] text-text-muted font-medium">
                 Showing {Math.min((page - 1) * PER_PAGE + 1, filtered.length)}–{Math.min(page * PER_PAGE, filtered.length)} of {filtered.length} bookings
               </span>

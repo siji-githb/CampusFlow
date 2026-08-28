@@ -1,4 +1,5 @@
 import logging
+import re
 from fastapi import HTTPException
 from config import get_settings
 from datetime import date, timedelta
@@ -227,7 +228,6 @@ def get_registrar_records(days: int = 30):
             .order("appointment_date", desc=True) \
             .execute()
             
-        import re
         for row in records.data:
             raw_tx_name = (row.get("transaction_types") or {}).get("name", "Unknown")
             row["transaction_types"] = row.get("transaction_types", {})
