@@ -5,8 +5,7 @@ import { useAuth } from '../../context/useAuth';
 import campusFlowLogo from '../../assets/logo.png';
 import BottomNav from './BottomNav';
 import NotificationDropdown from '../NotificationDropdown';
-import { LogOut, ClipboardList, Ticket, Home, Calendar, BotMessageSquare, User, Settings, Search, ChevronLeft, Eraser, ChevronRight } from 'lucide-react';
-import Navbar from './Navbar';
+import { LogOut, ClipboardList, Ticket, Home, Calendar, BotMessageSquare, User, Settings, Search, ChevronLeft, Eraser, ChevronRight, X } from 'lucide-react';
 import AiChat from '../../pages/student/AiChat';
 import GlobalSearch from '../GlobalSearch';
 import NotificationPromptBanner from '../NotificationPromptBanner';
@@ -267,8 +266,8 @@ export default function StudentLayout({ children, activeTab, mobileTitle, backTo
     const enforceBounds = () => {
       setPosition(prev => {
         if (!prev) return prev;
-        const w = isChatOpen ? (isDesktop ? 380 : window.innerWidth - 64) : 60;
-        const h = isChatOpen ? 600 : 60;
+        const w = isChatOpen ? (isDesktop ? 480 : window.innerWidth - 32) : 60;
+        const h = isChatOpen ? (isDesktop ? 620 : window.innerHeight - 104) : 60;
         const x = Math.max(0, Math.min(prev.x, window.innerWidth - w));
         const y = Math.max(0, Math.min(prev.y, window.innerHeight - h));
         if (x === prev.x && y === prev.y) return prev;
@@ -310,8 +309,8 @@ export default function StudentLayout({ children, activeTab, mobileTitle, backTo
       let newX = startPos.current.btnX + dx;
       let newY = startPos.current.btnY + dy;
       
-      const w = isChatOpen ? (isDesktop ? 380 : window.innerWidth - 64) : 60;
-      const h = isChatOpen ? 600 : 60;
+      const w = isChatOpen ? (isDesktop ? 480 : window.innerWidth - 32) : 60;
+      const h = isChatOpen ? (isDesktop ? 620 : window.innerHeight - 104) : 60;
       
       newX = Math.max(0, Math.min(newX, window.innerWidth - w));
       newY = Math.max(0, Math.min(newY, window.innerHeight - h));
@@ -325,15 +324,35 @@ export default function StudentLayout({ children, activeTab, mobileTitle, backTo
     if (e.currentTarget.hasPointerCapture(e.pointerId)) {
       e.currentTarget.releasePointerCapture(e.pointerId);
     }
+    setTimeout(() => {
+      hasDragged.current = false;
+    }, 50);
+  };
+
+  const closeChat = (e) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    hasDragged.current = false;
+    setIsDragging(false);
+    setIsChatOpen(false);
+    setPosition(null); // Smoothly glides back to original home position
   };
 
   const toggleChat = (e) => {
-    if (e && e.type === 'click' && hasDragged.current) {
-      e.preventDefault();
+    if (e) {
       e.stopPropagation();
-      return;
+      if (e.type === 'click' && hasDragged.current) {
+        e.preventDefault();
+        return;
+      }
     }
-    setIsChatOpen(prev => !prev);
+    if (isChatOpen) {
+      closeChat(e);
+    } else {
+      setIsChatOpen(true);
+    }
   };
 
   const handleAiPrompt = (query) => {
@@ -341,10 +360,24 @@ export default function StudentLayout({ children, activeTab, mobileTitle, backTo
     setIsChatOpen(true);
   };
 
-  // Chat Modal logic (transforming widget)
-  const isMobileOpen = !isDesktop && isChatOpen;
-  const chatWidth = isMobileOpen ? 'calc(100vw - 64px)' : '380px';
-  const chatHeight = '600px';
+  // Fluid morphing dimensions (identical smooth physics for both mobile & desktop)
+  const chatWidth = isChatOpen ? (isDesktop ? '480px' : 'calc(100vw - 32px)') : '60px';
+  const chatHeight = isChatOpen ? (isDesktop ? '620px' : 'calc(100dvh - 108px)') : '60px';
+  const chatMaxHeight = isChatOpen ? (isDesktop ? 'calc(100vh - 64px)' : 'calc(100dvh - 108px)') : '60px';
+  const chatBorderRadius = isChatOpen ? (isDesktop ? '24px' : '20px') : '50%';
+
+  const chatPositionStyle = (() => {
+    if (position && isChatOpen) {
+      return {
+        left: `${position.x}px`,
+        top: `${position.y}px`,
+      };
+    }
+    return {
+      bottom: isDesktop ? '32px' : '88px',
+      right: isDesktop ? '32px' : '16px',
+    };
+  })();
 
   const chatModal = (
     <div
@@ -356,19 +389,18 @@ export default function StudentLayout({ children, activeTab, mobileTitle, backTo
       style={{
         position: 'fixed',
         zIndex: 1000,
-        ...(position 
-             ? { left: position.x, top: position.y } 
-             : { bottom: isDesktop ? '32px' : '90px', right: isDesktop ? '32px' : '20px' }
-        ),
-        width: isChatOpen ? chatWidth : '60px',
-        height: isChatOpen ? chatHeight : '60px',
-        maxHeight: isChatOpen ? 'calc(100vh - 140px)' : '60px',
-        borderRadius: isChatOpen ? '24px' : '50%',
+        ...chatPositionStyle,
+        width: chatWidth,
+        height: chatHeight,
+        maxHeight: chatMaxHeight,
+        borderRadius: chatBorderRadius,
         background: M.white,
-        boxShadow: isChatOpen ? '0 12px 40px rgba(0,0,0,0.2)' : '0 8px 24px rgba(123,26,42,0.3)',
+        boxShadow: isChatOpen ? '0 16px 48px rgba(0,0,0,0.22)' : '0 8px 24px rgba(123,26,42,0.3)',
         border: isChatOpen ? `1px solid ${M.border}` : 'none',
         overflow: 'hidden',
-        transition: isDragging ? 'none' : 'width 0.35s cubic-bezier(0.16, 1, 0.3, 1), height 0.35s cubic-bezier(0.16, 1, 0.3, 1), border-radius 0.35s ease, box-shadow 0.35s ease, left 0.35s cubic-bezier(0.16, 1, 0.3, 1), top 0.35s cubic-bezier(0.16, 1, 0.3, 1)',
+        transition: isDragging
+          ? 'none'
+          : 'width 0.35s cubic-bezier(0.16, 1, 0.3, 1), height 0.35s cubic-bezier(0.16, 1, 0.3, 1), border-radius 0.35s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.35s ease, left 0.35s cubic-bezier(0.16, 1, 0.3, 1), top 0.35s cubic-bezier(0.16, 1, 0.3, 1), right 0.35s cubic-bezier(0.16, 1, 0.3, 1), bottom 0.35s cubic-bezier(0.16, 1, 0.3, 1)',
         display: 'flex',
         flexDirection: 'column',
         touchAction: 'none'
@@ -430,8 +462,14 @@ export default function StudentLayout({ children, activeTab, mobileTitle, backTo
                   </div>
                 </div>
               )}
-              <button onClick={(e) => { e.stopPropagation(); toggleChat(e); }} className="text-text-sub hover:text-text-main hover:bg-black/5 p-1.5 rounded-lg bg-transparent border-none cursor-pointer flex items-center justify-center transition-colors">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+              <button 
+                type="button"
+                onClick={closeChat} 
+                className="text-text-sub hover:text-text-main hover:bg-black/5 p-1.5 rounded-lg bg-transparent border-none cursor-pointer flex items-center justify-center transition-colors"
+                aria-label="Close Chat"
+                title="Close Chat"
+              >
+                <X size={18} />
               </button>
             </div>
           </div>
@@ -454,7 +492,7 @@ export default function StudentLayout({ children, activeTab, mobileTitle, backTo
         }}
         onPointerDown={e => e.stopPropagation()} 
       >
-        <AiChat key={chatKey} asWidget headless onClose={() => setIsChatOpen(false)} initialQuery={initialAiQuery} />
+        <AiChat key={chatKey} asWidget headless onClose={closeChat} initialQuery={initialAiQuery} />
       </div>
     </div>
   );

@@ -144,12 +144,9 @@ export default function StudentProfile({ embedded = false }) {
     }, 280)
 
     try {
-      const mediaRes = await uploadMedia(priorityForm.file, token)
+      const mediaRes = await uploadMedia(token, priorityForm.file)
       setUploadProgress(92)
-      await submitPriorityRequest({
-        priority_type: priorityForm.type,
-        document_url: mediaRes.url
-      }, token)
+      await submitPriorityRequest(token, priorityForm.type, mediaRes.url)
 
       setUploadProgress(100)
       setTimeout(() => {

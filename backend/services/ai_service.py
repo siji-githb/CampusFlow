@@ -12,47 +12,70 @@ settings = get_settings()
 logger = logging.getLogger(__name__)
 
 
+# List of fallback Gemini Flash models to rotate through if primary fails.
+# Explicitly excludes any 3.5 models (e.g. gemini-3.5-flash, gemini-3.5-flash-lite).
+FALLBACK_FLASH_MODELS = [
+    "gemini-3.7-flash",
+    "gemini-3.6-flash",
+    "gemini-3-flash-preview",
+    "gemini-3.1-flash-lite",
+    "gemini-2.5-flash",
+    "gemini-2.5-flash-lite",
+    "gemini-flash-latest",
+    "gemini-flash-lite-latest",
+]
+
+
 def get_ai_providers():
     """
-    Returns configured AI providers in priority order:
-    1. Google Gemini (Primary via Google AI Studio)
-    2. OpenRouter / OpenAI (Fallback)
+    Returns configured Google Gemini Flash AI providers in priority order:
+    1. Google Gemini Primary Flash Model (e.g. gemini-3.6-flash or from config)
+    2. Fallback Google Gemini Flash Models (excluding any 3.5 models)
+    Note: OpenRouter fallback is disabled per configuration.
     """
     providers = []
     
-    # 1. Primary: Google Gemini via Google AI Studio OpenAI-compatible endpoint
-    if settings.gemini_api_key and settings.gemini_api_key.strip():
-        providers.append({
-            "name": "Google Gemini (Primary)",
-            "client": OpenAI(
-                api_key=settings.gemini_api_key.strip(),
-                base_url=settings.gemini_base_url.strip() or "https://generativelanguage.googleapis.com/v1beta/openai/",
-            ),
-            "model": settings.gemini_model.strip() or "gemini-3.6-flash",
-        })
+    if not settings.gemini_api_key or not settings.gemini_api_key.strip():
+        return providers
 
-    # 2. Fallback: OpenRouter
-    if settings.fallback_api_key and settings.fallback_api_key.strip() and settings.fallback_api_key != "placeholder":
+    gemini_client = OpenAI(
+        api_key=settings.gemini_api_key.strip(),
+        base_url=settings.gemini_base_url.strip() or "https://generativelanguage.googleapis.com/v1beta/openai/",
+    )
+
+    primary_model = (settings.gemini_model or "gemini-3.6-flash").strip()
+    
+    # 1. Primary Gemini Flash model
+    providers.append({
+        "name": f"Google Gemini ({primary_model}) [Primary]",
+        "client": gemini_client,
+        "model": primary_model,
+    })
+
+    # 2. Fallback Gemini Flash models (strictly excluding 3.5 and duplicates)
+    for model_name in FALLBACK_FLASH_MODELS:
+        if "3.5" in model_name:
+            continue
+        if model_name.lower() == primary_model.lower():
+            continue
+        
         providers.append({
-            "name": "OpenRouter (Fallback)",
-            "client": OpenAI(
-                api_key=settings.fallback_api_key.strip(),
-                base_url=settings.fallback_base_url.strip(),
-            ),
-            "model": settings.fallback_model.strip(),
+            "name": f"Google Gemini ({model_name}) [Fallback]",
+            "client": gemini_client,
+            "model": model_name,
         })
 
     return providers
 
 
 def get_openai_client():
-    """Returns the primary active AI client for backward compatibility."""
+    """Returns the primary active AI client."""
     providers = get_ai_providers()
     if providers:
         return providers[0]["client"]
     return OpenAI(
-        api_key=settings.fallback_api_key,
-        base_url=settings.fallback_base_url,
+        api_key=settings.gemini_api_key.strip() if settings.gemini_api_key else "",
+        base_url=settings.gemini_base_url.strip() or "https://generativelanguage.googleapis.com/v1beta/openai/",
     )
 
 
@@ -488,7 +511,7 @@ def chat(student_id: str, user_message: str):
     if not providers:
         raise HTTPException(
             status_code=503, 
-            detail="AI service is not configured. Please configure GEMINI_API_KEY or OPENROUTER_API_KEY in backend/.env"
+            detail="AI service is not configured. Please configure GEMINI_API_KEY in backend/.env"
         )
 
     # Get or create session
@@ -526,7 +549,7 @@ def chat(student_id: str, user_message: str):
                 response = client.chat.completions.create(
                     model=model,
                     messages=current_messages,
-                    max_tokens=2000,
+                    max_tokens=4096,
                     temperature=0.7,
                     tools=AI_TOOLS,
                     tool_choice="auto"

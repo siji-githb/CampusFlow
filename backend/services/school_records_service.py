@@ -36,12 +36,11 @@ SHEET_COURSE_MAP = {
     "TOURISM MANAGEMENT": "Bachelor of Science in Tourism Management",
     "BACHELOR OF SCIENCE IN TOURISM MANAGEMENT": "Bachelor of Science in Tourism Management",
     
-    "BSBA": "Bachelor of Science in Business Administration",
-    "BS BA": "Bachelor of Science in Business Administration",
-    "BUSINESS ADMINISTRATION": "Bachelor of Science in Business Administration",
-    "BACHELOR OF SCIENCE IN BUSINESS ADMINISTRATION": "Bachelor of Science in Business Administration",
-    
-    # Financial Management aliases
+    # Business Administration / Financial Management aliases -> Financial Management
+    "BSBA": "Bachelor of Science in Financial Management",
+    "BS BA": "Bachelor of Science in Financial Management",
+    "BUSINESS ADMINISTRATION": "Bachelor of Science in Financial Management",
+    "BACHELOR OF SCIENCE IN BUSINESS ADMINISTRATION": "Bachelor of Science in Financial Management",
     "BSBA-FM": "Bachelor of Science in Financial Management",
     "BSBAFM": "Bachelor of Science in Financial Management",
     "BSBA FM": "Bachelor of Science in Financial Management",
@@ -67,7 +66,17 @@ SHEET_COURSE_MAP = {
     "MATH": "Bachelor of Secondary Education",
     "SCIENCE": "Bachelor of Secondary Education",
     "SOCIAL STUDIES": "Bachelor of Secondary Education",
-    "PSYCHOLOGY": "Bachelor of Secondary Education",
+
+    # Psychology aliases
+    "BSPSYCH": "Bachelor of Science in Psychology",
+    "BS-PSYCH": "Bachelor of Science in Psychology",
+    "BS PSYCH": "Bachelor of Science in Psychology",
+    "BSPSY": "Bachelor of Science in Psychology",
+    "BS PSY": "Bachelor of Science in Psychology",
+    "BSPSYCHOLOGY": "Bachelor of Science in Psychology",
+    "BS PSYCHOLOGY": "Bachelor of Science in Psychology",
+    "PSYCHOLOGY": "Bachelor of Science in Psychology",
+    "BACHELOR OF SCIENCE IN PSYCHOLOGY": "Bachelor of Science in Psychology",
 }
 
 # Header cell labels we look for while scanning down a sheet for its header row.

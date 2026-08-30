@@ -5,7 +5,23 @@ const authHeader = (token) => ({
   'Authorization': `Bearer ${token}`
 })
 
-export const submitPriorityRequest = async (token, priorityType, documentUrl) => {
+export const submitPriorityRequest = async (arg1, arg2, arg3) => {
+  let token, priorityType, documentUrl
+  if (typeof arg1 === 'object' && arg1 !== null) {
+    priorityType = arg1.priority_type || arg1.priorityType
+    documentUrl = arg1.document_url || arg1.documentUrl
+    token = arg2
+  } else {
+    token = arg1
+    if (typeof arg2 === 'object' && arg2 !== null) {
+      priorityType = arg2.priority_type || arg2.priorityType
+      documentUrl = arg2.document_url || arg2.documentUrl
+    } else {
+      priorityType = arg2
+      documentUrl = arg3
+    }
+  }
+
   const res = await fetch(`${API_URL}/priority/submit`, {
     method: 'POST',
     headers: authHeader(token),

@@ -2,7 +2,6 @@ import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/useAuth'
 import { useToast } from '../../context/ToastContext'
-import Navbar from '../../components/layout/Navbar'
 import { sendMessage, clearChat, getChatHistory } from '../../services/aiService'
 import { BotMessageSquare, Eraser } from 'lucide-react'
 
@@ -89,7 +88,7 @@ export default function AiChat({ asWidget, headless, onClose, initialQuery }) {
     if (textareaRef.current) {
       textareaRef.current.style.height = '24px';
       const scrollHeight = textareaRef.current.scrollHeight;
-      textareaRef.current.style.height = `${Math.min(Math.max(scrollHeight, 24), 48)}px`;
+      textareaRef.current.style.height = `${Math.min(Math.max(scrollHeight, 24), 24)}px`;
     }
   }, [input]);
 
@@ -201,7 +200,7 @@ export default function AiChat({ asWidget, headless, onClose, initialQuery }) {
                   <BotMessageSquare size={15} />
                 </div>
               )}
-              <div className={`max-w-[80%] py-2.5 px-4 text-[14px] leading-relaxed shadow-sm ${
+              <div className={`${asWidget ? 'max-w-[88%]' : 'max-w-[80%]'} py-2.5 px-4 text-[14px] leading-relaxed shadow-sm ${
                 msg.role === 'user' ? 'rounded-[20px_20px_4px_20px] bg-maroon text-white border-none' : 
                 msg.isError ? 'rounded-[20px_20px_20px_4px] bg-red-50 text-red-600 border border-red-100' : 
                 'rounded-[20px_20px_20px_4px] bg-white text-text-main border border-border/60'

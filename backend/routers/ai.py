@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, Request
 from pydantic import BaseModel, Field
-from services.ai_service import chat, clear_session, get_or_create_session
+from services.ai_service import chat, clear_session, get_or_create_session, get_ai_providers
 from config import get_settings
 from deps import get_current_user
 from rate_limit import limiter
@@ -32,12 +32,14 @@ def clear_chat(user=Depends(get_current_user)):
 
 @router.get("/health")
 def health():
-    primary_active = bool(settings.gemini_api_key and settings.gemini_api_key.strip())
+    providers = get_ai_providers()
+    primary = providers[0]["model"] if providers else None
+    fallbacks = [p["model"] for p in providers[1:]] if len(providers) > 1 else []
     return {
         "status": "ok",
         "module": "ai",
-        "primary_provider": "Google Gemini" if primary_active else "None",
-        "primary_model": settings.gemini_model if primary_active else None,
-        "fallback_provider": "OpenRouter",
-        "fallback_model": settings.fallback_model
+        "primary_provider": "Google Gemini",
+        "primary_model": primary,
+        "fallback_models": fallbacks,
+        "openrouter_enabled": False
     }

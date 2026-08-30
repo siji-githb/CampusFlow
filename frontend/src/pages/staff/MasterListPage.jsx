@@ -6,10 +6,10 @@ import { useAuth } from '../../context/useAuth'
 
 const COURSES = [
   'Bachelor of Science in Information Technology',
-  'Bachelor of Science in Business Administration',
   'Bachelor of Science in Financial Management',
   'Bachelor of Elementary Education',
   'Bachelor of Secondary Education',
+  'Bachelor of Science in Psychology',
   'Bachelor of Science in Criminology',
   'Bachelor of Science in Hospitality Management',
   'Bachelor of Science in Tourism Management',
@@ -19,10 +19,10 @@ const COURSES = [
 const COURSE_FILTER_OPTIONS = [
   { v: 'All', l: 'All Courses' },
   { v: 'Bachelor of Science in Information Technology', l: 'BS Information Technology' },
-  { v: 'Bachelor of Science in Business Administration', l: 'BS Business Administration' },
   { v: 'Bachelor of Science in Financial Management', l: 'BS Financial Management' },
   { v: 'Bachelor of Elementary Education', l: 'B Elementary Education' },
   { v: 'Bachelor of Secondary Education', l: 'B Secondary Education' },
+  { v: 'Bachelor of Science in Psychology', l: 'BS Psychology' },
   { v: 'Bachelor of Science in Criminology', l: 'BS Criminology' },
   { v: 'Bachelor of Science in Hospitality Management', l: 'BS Hospitality Management' },
   { v: 'Bachelor of Science in Tourism Management', l: 'BS Tourism Management' },

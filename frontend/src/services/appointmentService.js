@@ -95,7 +95,19 @@ export const rescheduleAppointment = async (token, appointmentId, newDate, newTi
   return data
 }
 
-export const uploadMedia = async (token, file) => {
+export const uploadMedia = async (arg1, arg2) => {
+  let token, file
+  if (typeof arg1 === 'string' && (arg2 instanceof Blob || (typeof File !== 'undefined' && arg2 instanceof File))) {
+    token = arg1
+    file = arg2
+  } else if ((arg1 instanceof Blob || (typeof File !== 'undefined' && arg1 instanceof File)) && typeof arg2 === 'string') {
+    file = arg1
+    token = arg2
+  } else {
+    token = arg1
+    file = arg2
+  }
+
   const formData = new FormData()
   formData.append('file', file)
   

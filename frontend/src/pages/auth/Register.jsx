@@ -1,10 +1,96 @@
 import { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { registerUser, verifyStudent, requestStudentId } from '../../services/authService'
-import { Eye, EyeOff, ChevronLeft, ChevronRight, AlertTriangle, IdCard, User, Mail, Lock, GraduationCap } from 'lucide-react'
+import { Eye, EyeOff, ChevronLeft, ChevronRight, ChevronDown, Check, AlertTriangle, IdCard, User, Mail, Lock, GraduationCap } from 'lucide-react'
 import campusFlowLogo from '../../assets/logo.png'
 import loginImage from '../../assets/login.png'
 import TermsModal from '../../components/TermsModal'
+
+const COURSES = [
+  'Bachelor of Science in Information Technology',
+  'Bachelor of Science in Financial Management',
+  'Bachelor of Elementary Education',
+  'Bachelor of Secondary Education',
+  'Bachelor of Science in Psychology',
+  'Bachelor of Science in Criminology',
+  'Bachelor of Science in Hospitality Management',
+  'Bachelor of Science in Tourism Management',
+  'Bachelor of Science in Accountancy'
+]
+
+function CourseDropdown({ value, onChange }) {
+  const [isOpen, setIsOpen] = useState(false)
+
+  return (
+    <div className="relative">
+      <button
+        type="button"
+        onClick={() => setIsOpen(!isOpen)}
+        className={`w-full rounded-xl border bg-slate-50/50 text-left outline-none box-border font-sans transition-all duration-200 py-2.5 sm:py-3 pl-10 pr-9 text-[13px] sm:text-sm shadow-sm font-medium flex items-center justify-between cursor-pointer ${
+          isOpen
+            ? 'border-maroon bg-white ring-[3px] ring-maroon/10 shadow-md'
+            : 'border-slate-200 hover:border-slate-300 hover:bg-white'
+        } ${!value ? 'text-slate-400' : 'text-slate-800 font-semibold'}`}
+      >
+        <GraduationCap
+          size={16}
+          className={`absolute left-3.5 top-1/2 -translate-y-1/2 transition-colors pointer-events-none ${
+            isOpen ? 'text-maroon' : 'text-slate-400'
+          }`}
+        />
+        <span className="truncate pr-2">{value || 'Select your course / program'}</span>
+        <ChevronDown
+          size={15}
+          className={`absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 transition-transform duration-200 shrink-0 pointer-events-none ${
+            isOpen ? 'rotate-180 text-maroon' : ''
+          }`}
+        />
+      </button>
+
+      {isOpen && (
+        <>
+          <div className="fixed inset-0 z-40" onClick={() => setIsOpen(false)} />
+          <div
+            className="absolute left-0 right-0 top-full mt-1.5 bg-white rounded-2xl border border-slate-200 shadow-[0_16px_36px_rgba(0,0,0,0.14)] p-1.5 z-50 animate-fade-up max-h-60 overflow-y-auto custom-scrollbar"
+            style={{ animationDuration: '0.15s' }}
+          >
+            <div className="px-2.5 py-1.5 mb-1 text-[10.5px] font-extrabold text-slate-400 uppercase tracking-wider border-b border-slate-100 flex items-center justify-between">
+              <span>Academic Programs</span>
+              <span className="font-mono text-slate-500">{COURSES.length} Available</span>
+            </div>
+            {COURSES.map((course, idx) => {
+              const isSelected = value === course
+              return (
+                <div
+                  key={idx}
+                  onClick={() => {
+                    onChange(course)
+                    setIsOpen(false)
+                  }}
+                  className={`px-3 py-2.5 rounded-xl cursor-pointer flex items-center justify-between text-[12.5px] sm:text-[13px] transition-all mb-0.5 ${
+                    isSelected
+                      ? 'bg-maroon text-white font-bold shadow-xs'
+                      : 'text-slate-700 hover:bg-slate-50 hover:text-maroon font-medium'
+                  }`}
+                >
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <span
+                      className={`w-1.5 h-1.5 rounded-full shrink-0 ${
+                        isSelected ? 'bg-white' : 'bg-slate-300'
+                      }`}
+                    />
+                    <span className="truncate">{course}</span>
+                  </div>
+                  {isSelected && <Check size={14} className="text-white shrink-0 ml-2" />}
+                </div>
+              )
+            })}
+          </div>
+        </>
+      )}
+    </div>
+  )
+}
 
 export default function Register() {
   const navigate = useNavigate()
@@ -59,6 +145,7 @@ export default function Register() {
   const handleRequestId = async (e) => {
     e.preventDefault(); setLoading(true); setError(''); setReqSuccess(false);
     try {
+      if (!form.course) throw new Error('Please select your Course / Program')
       await requestStudentId({
         first_name: form.first_name,
         last_name: form.last_name,
@@ -230,10 +317,13 @@ export default function Register() {
                 </div>
                 <div className="mb-3 sm:mb-4">
                   <label className={lblClass}>Course / Program</label>
-                  <div className="relative flex items-center">
-                    <GraduationCap size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
-                    <input type="text" name="course" value={form.course} onChange={handleChange} required placeholder="BSIT, BSED, etc." className={inpClass} />
-                  </div>
+                  <CourseDropdown 
+                    value={form.course} 
+                    onChange={(selectedCourse) => {
+                      setForm(prev => ({ ...prev, course: selectedCourse }))
+                      setError('')
+                    }} 
+                  />
                 </div>
                 <div className="mb-5 sm:mb-7">
                   <label className={lblClass}>Email Address</label>
