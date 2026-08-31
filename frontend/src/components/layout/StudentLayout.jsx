@@ -122,7 +122,7 @@ export function ProfileDropdown() {
       >
         {isDesktop ? (
           <div className="flex items-center gap-2.5 py-1 px-2 rounded-full hover:bg-slate-100/80 transition-colors">
-            <div className="w-9.5 h-9.5 rounded-full bg-maroon/10 border border-maroon/20 flex items-center justify-center overflow-hidden text-maroon text-[15px] font-bold">
+            <div className="w-9.5 h-9.5 rounded-full bg-maroon/10 border border-maroon/20 flex items-center justify-center overflow-hidden text-maroon text-fluid-15 font-bold">
               {user?.profile_image ? (
                 <img src={user.profile_image} alt="Profile" className="w-full h-full object-cover" />
               ) : (
@@ -130,7 +130,7 @@ export function ProfileDropdown() {
               )}
             </div>
             <div className="flex items-center gap-1.5">
-              <span className="text-[14px] font-semibold text-text-main font-sans">
+              <span className="text-fluid-14 font-semibold text-text-main font-sans">
                 {user?.first_name || 'Student'}
               </span>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={`text-text-sub transition-transform duration-200 ${profileOpen ? 'rotate-180' : ''}`}>
@@ -139,7 +139,7 @@ export function ProfileDropdown() {
             </div>
           </div>
         ) : (
-          <div className="w-9 h-9 sm:w-9.5 sm:h-9.5 rounded-full bg-maroon/10 border border-maroon/20 flex items-center justify-center overflow-hidden text-maroon text-[14px] sm:text-[15px] font-bold shadow-2xs shrink-0">
+          <div className="w-9 h-9 sm:w-9.5 sm:h-9.5 rounded-full bg-maroon/10 border border-maroon/20 flex items-center justify-center overflow-hidden text-maroon text-fluid-14 sm:text-fluid-15 font-bold shadow-2xs shrink-0">
             {user?.profile_image ? (
               <img src={user.profile_image} alt="Profile" className="w-full h-full object-cover" />
             ) : (
@@ -156,7 +156,7 @@ export function ProfileDropdown() {
         >
           {/* User Info Header */}
           <div className="flex items-start gap-3 mb-3">
-            <div className="w-11 h-11 rounded-full bg-maroon/10 border border-maroon/20 flex items-center justify-center overflow-hidden shrink-0 text-maroon text-[16px] font-bold font-serif shadow-2xs">
+            <div className="w-11 h-11 rounded-full bg-maroon/10 border border-maroon/20 flex items-center justify-center overflow-hidden shrink-0 text-maroon text-fluid-16 font-bold font-serif shadow-2xs">
               {user?.profile_image ? (
                 <img src={user.profile_image} alt="Profile" className="w-full h-full object-cover" />
               ) : (
@@ -164,17 +164,17 @@ export function ProfileDropdown() {
               )}
             </div>
             <div className="flex-1 min-w-0">
-              <div className="font-serif text-[15px] font-bold text-text-main leading-tight truncate">
+              <div className="font-serif text-fluid-15 font-bold text-text-main leading-tight truncate">
                 {user?.first_name} {user?.last_name}
               </div>
-              <div className="text-[11.5px] text-text-sub truncate mb-1.5">
+              <div className="text-fluid-11-5 text-text-sub truncate mb-1.5">
                 {user?.email || 'student@crmc.edu.ph'}
               </div>
               <div className="flex items-center gap-1.5 flex-wrap">
-                <span className="text-[9.5px] font-extrabold text-maroon bg-maroon/8 border border-maroon/20 px-1.5 py-0.5 rounded-md uppercase tracking-wider">
+                <span className="text-fluid-9-5 font-extrabold text-maroon bg-maroon/8 border border-maroon/20 px-1.5 py-0.5 rounded-md uppercase tracking-wider">
                   ID: {user?.student_id || 'Not set'}
                 </span>
-                <span className="text-[9.5px] font-extrabold text-gold bg-gold/10 border border-gold/30 px-1.5 py-0.5 rounded-md uppercase tracking-wider">
+                <span className="text-fluid-9-5 font-extrabold text-gold bg-gold/10 border border-gold/30 px-1.5 py-0.5 rounded-md uppercase tracking-wider">
                   {user?.priority_class ? user.priority_class.toUpperCase() : 'REGULAR'}
                 </span>
               </div>
@@ -187,7 +187,7 @@ export function ProfileDropdown() {
           <div className="flex flex-col gap-0.5">
             <button 
               onClick={() => { setProfileOpen(false); navigate('/student/profile'); }}
-              className="flex items-center justify-between px-2.5 py-2 rounded-xl text-[13px] font-semibold text-text-main hover:bg-off-white hover:text-maroon transition-all cursor-pointer border-none bg-transparent w-full text-left group"
+              className="flex items-center justify-between px-2.5 py-2 rounded-xl text-fluid-13 font-semibold text-text-main hover:bg-off-white hover:text-maroon transition-all cursor-pointer border-none bg-transparent w-full text-left group"
             >
               <div className="flex items-center gap-2.5">
                 <User size={15} className="text-text-main shrink-0 group-hover:text-maroon transition-colors" />
@@ -198,7 +198,7 @@ export function ProfileDropdown() {
 
             <button 
               onClick={() => { setProfileOpen(false); navigate('/student/settings'); }}
-              className="flex items-center justify-between px-2.5 py-2 rounded-xl text-[13px] font-semibold text-text-main hover:bg-off-white hover:text-maroon transition-all cursor-pointer border-none bg-transparent w-full text-left group"
+              className="flex items-center justify-between px-2.5 py-2 rounded-xl text-fluid-13 font-semibold text-text-main hover:bg-off-white hover:text-maroon transition-all cursor-pointer border-none bg-transparent w-full text-left group"
             >
               <div className="flex items-center gap-2.5">
                 <Settings size={15} className="text-text-main shrink-0 group-hover:text-maroon transition-colors" />
@@ -209,7 +209,7 @@ export function ProfileDropdown() {
 
             <button 
               onClick={() => { setProfileOpen(false); navigate('/student/appointments'); }}
-              className="flex items-center justify-between px-2.5 py-2 rounded-xl text-[13px] font-semibold text-text-main hover:bg-off-white hover:text-maroon transition-all cursor-pointer border-none bg-transparent w-full text-left group"
+              className="flex items-center justify-between px-2.5 py-2 rounded-xl text-fluid-13 font-semibold text-text-main hover:bg-off-white hover:text-maroon transition-all cursor-pointer border-none bg-transparent w-full text-left group"
             >
               <div className="flex items-center gap-2.5">
                 <ClipboardList size={15} className="text-text-main shrink-0 group-hover:text-maroon transition-colors" />
@@ -220,7 +220,7 @@ export function ProfileDropdown() {
 
             <button 
               onClick={() => { setProfileOpen(false); navigate('/student/queue'); }}
-              className="flex items-center justify-between px-2.5 py-2 rounded-xl text-[13px] font-semibold text-text-main hover:bg-off-white hover:text-maroon transition-all cursor-pointer border-none bg-transparent w-full text-left group"
+              className="flex items-center justify-between px-2.5 py-2 rounded-xl text-fluid-13 font-semibold text-text-main hover:bg-off-white hover:text-maroon transition-all cursor-pointer border-none bg-transparent w-full text-left group"
             >
               <div className="flex items-center gap-2.5">
                 <Ticket size={15} className="text-text-main shrink-0 group-hover:text-maroon transition-colors" />
@@ -235,7 +235,7 @@ export function ProfileDropdown() {
           {/* Log Out */}
           <button
             onClick={() => { setProfileOpen(false); requestLogout(); }}
-            className="w-full py-2.5 px-3 rounded-xl border border-red-200 bg-red-50/80 hover:bg-red-100 text-danger text-[13px] font-bold flex items-center justify-center gap-2 cursor-pointer transition-all active:scale-[0.98]"
+            className="w-full py-2.5 px-3 rounded-xl border border-red-200 bg-red-50/80 hover:bg-red-100 text-danger text-fluid-13 font-bold flex items-center justify-center gap-2 cursor-pointer transition-all active:scale-[0.98]"
           >
             <LogOut size={15} className="text-danger" /> Log Out
           </button>
@@ -435,8 +435,8 @@ export default function StudentLayout({ children, activeTab, mobileTitle, backTo
                 <BotMessageSquare size={18} />
               </div>
               <div>
-                <span className="font-bold text-[15px] block leading-tight text-text-main">Aether</span>
-                <span className="text-[10px] text-text-sub tracking-wider uppercase block leading-tight">AI Assistant</span>
+                <span className="font-bold text-fluid-15 block leading-tight text-text-main">Aether</span>
+                <span className="text-fluid-10 text-text-sub tracking-wider uppercase block leading-tight">AI Assistant</span>
               </div>
             </div>
             <div className="flex items-center gap-2 relative">
@@ -452,13 +452,13 @@ export default function StudentLayout({ children, activeTab, mobileTitle, backTo
               </button>
               {showClearConfirm && (
                 <div className="absolute top-[120%] right-6 bg-white rounded-lg shadow-lg p-3 z-50 w-45 border border-border" onClick={e => e.stopPropagation()}>
-                  <p className="m-0 mb-3 text-[12px] text-text-main font-medium text-left">Clear chat history?</p>
+                  <p className="m-0 mb-3 text-fluid-12 text-text-main font-medium text-left">Clear chat history?</p>
                   <div className="flex justify-end gap-2">
-                    <button onClick={() => setShowClearConfirm(false)} className="px-3 py-1.5 rounded bg-black/5 hover:bg-black/10 text-text-sub text-[11px] border-none cursor-pointer">Cancel</button>
+                    <button onClick={() => setShowClearConfirm(false)} className="px-3 py-1.5 rounded bg-black/5 hover:bg-black/10 text-text-sub text-fluid-11 border-none cursor-pointer">Cancel</button>
                     <button onClick={async () => {
                       try { await clearChat(token); setChatKey(prev => prev + 1); setShowClearConfirm(false); } 
                       catch(err) { console.error(err); }
-                    }} className="px-3 py-1.5 rounded bg-maroon hover:bg-maroon-dark text-white text-[11px] border-none cursor-pointer font-medium">Clear</button>
+                    }} className="px-3 py-1.5 rounded bg-maroon hover:bg-maroon-dark text-white text-fluid-11 border-none cursor-pointer font-medium">Clear</button>
                   </div>
                 </div>
               )}
@@ -552,11 +552,11 @@ export default function StudentLayout({ children, activeTab, mobileTitle, backTo
               />
             )}
             <div className="min-w-0">
-              <div className={`font-serif font-bold text-maroon leading-tight truncate ${mobileTitle ? 'text-[13.5px] sm:text-[15px]' : 'text-[12.5px] sm:text-[13.5px]'}`}>
+              <div className={`font-serif font-bold text-maroon leading-tight truncate ${mobileTitle ? 'text-fluid-13-5 sm:text-fluid-15' : 'text-fluid-12-5 sm:text-fluid-13-5'}`}>
                 {mobileTitle || 'CampusFlow'}
               </div>
               {!mobileTitle && (
-                <div className="text-[7px] sm:text-[8px] text-text-muted tracking-[0.06em] uppercase font-bold mt-0.5 whitespace-nowrap">
+                <div className="text-fluid-7 sm:text-fluid-8 text-text-muted tracking-[0.06em] uppercase font-bold mt-0.5 whitespace-nowrap">
                   Student Portal
                 </div>
               )}

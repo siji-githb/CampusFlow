@@ -79,12 +79,12 @@ export default function NotificationPromptBanner() {
 
           <div className="flex-1 min-w-0">
             <div className="flex items-center justify-between gap-2">
-              <h4 className="font-serif text-xs sm:text-[13.5px] font-bold text-maroon m-0 leading-tight">
+              <h4 className="font-serif text-xs sm:text-fluid-13-5 font-bold text-maroon m-0 leading-tight">
                 Notifications are off.
               </h4>
             </div>
 
-            <p className="text-[11px] sm:text-xs text-text-sub m-0 mt-1 leading-relaxed font-normal">
+            <p className="text-fluid-11 sm:text-xs text-text-sub m-0 mt-1 leading-relaxed font-normal">
               {pushStatus === 'denied' 
                 ? 'Enable them in your browser settings to receive real-time queue & claiming updates.'
                 : 'Turn on alerts to receive instant notifications when your number is called or documents are ready.'}
@@ -95,7 +95,7 @@ export default function NotificationPromptBanner() {
                 <button
                   type="button"
                   onClick={() => setShowHelpModal(true)}
-                  className="py-1.5 px-3 rounded-xl bg-gold hover:bg-gold-dark text-white text-[11px] sm:text-xs font-bold transition-all shadow-2xs cursor-pointer border-none"
+                  className="py-1.5 px-3 rounded-xl bg-gold hover:bg-gold-dark text-white text-fluid-11 sm:text-xs font-bold transition-all shadow-2xs cursor-pointer border-none"
                 >
                   How to Enable
                 </button>
@@ -103,7 +103,7 @@ export default function NotificationPromptBanner() {
                 <button
                   type="button"
                   onClick={handleEnable}
-                  className="py-1.5 px-3.5 rounded-xl bg-gold hover:bg-gold-dark text-white text-[11px] sm:text-xs font-bold transition-all shadow-2xs cursor-pointer border-none flex items-center gap-1.5"
+                  className="py-1.5 px-3.5 rounded-xl bg-gold hover:bg-gold-dark text-white text-fluid-11 sm:text-xs font-bold transition-all shadow-2xs cursor-pointer border-none flex items-center gap-1.5"
                 >
                   <Bell size={13} />
                   <span>Turn On Notifications</span>
@@ -145,15 +145,15 @@ export default function NotificationPromptBanner() {
 
             <div className="bg-off-white rounded-xl p-3.5 text-left border border-border mb-5 text-xs text-text-sub space-y-2">
               <div className="flex items-start gap-2">
-                <span className="w-5 h-5 rounded-full bg-maroon text-white font-bold flex items-center justify-center text-[10px] shrink-0 mt-0.5">1</span>
+                <span className="w-5 h-5 rounded-full bg-maroon text-white font-bold flex items-center justify-center text-fluid-10 shrink-0 mt-0.5">1</span>
                 <span>Tap the <strong>lock 🔒</strong> or <strong>settings 🎛️ icon</strong> in your browser address bar.</span>
               </div>
               <div className="flex items-start gap-2">
-                <span className="w-5 h-5 rounded-full bg-maroon text-white font-bold flex items-center justify-center text-[10px] shrink-0 mt-0.5">2</span>
+                <span className="w-5 h-5 rounded-full bg-maroon text-white font-bold flex items-center justify-center text-fluid-10 shrink-0 mt-0.5">2</span>
                 <span>Select <strong>Permissions</strong> or <strong>Notifications</strong>.</span>
               </div>
               <div className="flex items-start gap-2">
-                <span className="w-5 h-5 rounded-full bg-maroon text-white font-bold flex items-center justify-center text-[10px] shrink-0 mt-0.5">3</span>
+                <span className="w-5 h-5 rounded-full bg-maroon text-white font-bold flex items-center justify-center text-fluid-10 shrink-0 mt-0.5">3</span>
                 <span>Change setting to <strong>Allow</strong>, then refresh this page.</span>
               </div>
             </div>
@@ -161,7 +161,7 @@ export default function NotificationPromptBanner() {
             <button
               type="button"
               onClick={() => setShowHelpModal(false)}
-              className="w-full py-2.5 px-4 rounded-xl border-none bg-gold hover:bg-gold-dark text-white text-xs sm:text-[13px] font-bold cursor-pointer transition-colors shadow-2xs"
+              className="w-full py-2.5 px-4 rounded-xl border-none bg-gold hover:bg-gold-dark text-white text-xs sm:text-fluid-13 font-bold cursor-pointer transition-colors shadow-2xs"
             >
               Got It
             </button>

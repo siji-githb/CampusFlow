@@ -231,7 +231,7 @@ export default function MasterListPage() {
       
       {/* ── Toast Notification via Root Portal ── */}
       {toastMsg && createPortal((
-        <div className={`fixed bottom-10 right-8 z-99999 flex items-center gap-3 px-5 py-3.5 rounded-xl shadow-[0_12px_32px_rgba(0,0,0,0.25)] border text-[13.5px] font-bold animate-fade-up ${
+        <div className={`fixed bottom-10 right-8 z-99999 flex items-center gap-3 px-5 py-3.5 rounded-xl shadow-[0_12px_32px_rgba(0,0,0,0.25)] border text-fluid-13-5 font-bold animate-fade-up ${
           toastMsg.type === 'error' 
             ? 'bg-red-600 text-white border-red-700' 
             : 'bg-[#006600] text-white border-[#005200]'
@@ -251,11 +251,11 @@ export default function MasterListPage() {
       ), document.body)}
       
       <div className="mb-6">
-        <p className="text-[11px] font-bold text-gold tracking-widest uppercase m-0 mb-1.5">Directory Management</p>
-        <h1 className="font-serif text-[22px] sm:text-[26px] font-bold text-text-main m-0 mb-2 flex items-center gap-2.5 sm:gap-3">
+        <p className="text-fluid-11 font-bold text-gold tracking-widest uppercase m-0 mb-1.5">Directory Management</p>
+        <h1 className="font-serif text-fluid-22 sm:text-fluid-26 font-bold text-text-main m-0 mb-2 flex items-center gap-2.5 sm:gap-3">
           <ClipboardList size={26} className="text-maroon shrink-0" /> Student Master List
         </h1>
-        <p className="text-[12px] sm:text-[13px] text-text-sub mt-1.5 sm:mt-2 mb-0 leading-relaxed max-w-2xl">
+        <p className="text-fluid-12 sm:text-fluid-13 text-text-sub mt-1.5 sm:mt-2 mb-0 leading-relaxed max-w-2xl">
           Manage the official school directory. Bulk import student records via Excel or add them manually.
         </p>
       </div>
@@ -264,22 +264,22 @@ export default function MasterListPage() {
       {editingRecord && createPortal((
         <div className="fixed inset-0 bg-black/60 z-99999 flex items-center justify-center p-4 overflow-y-auto animate-fade-in" onClick={() => setEditingRecord(null)}>
           <div className="bg-white p-6 sm:p-7 rounded-2xl w-full max-w-100 my-auto shadow-[0_25px_70px_rgba(0,0,0,0.2)] border border-border animate-fade-up" onClick={e => e.stopPropagation()}>
-            <h3 className="text-[18px] font-bold text-maroon m-0 mb-4 font-serif">Edit Record: {editingRecord}</h3>
+            <h3 className="text-fluid-18 font-bold text-maroon m-0 mb-4 font-serif">Edit Record: {editingRecord}</h3>
             <form onSubmit={handleEditSubmit} className="grid gap-3">
               <div>
-                <label className="text-[11px] font-semibold text-text-sub mb-1 block">First Name</label>
-                <input type="text" required value={editForm.first_name} onChange={e => setEditForm({ ...editForm, first_name: e.target.value })} className="px-3.5 py-2.5 rounded-lg border border-border text-[13px] outline-none bg-white text-text-main w-full transition-colors focus:border-maroon" />
+                <label className="text-fluid-11 font-semibold text-text-sub mb-1 block">First Name</label>
+                <input type="text" required value={editForm.first_name} onChange={e => setEditForm({ ...editForm, first_name: e.target.value })} className="px-3.5 py-2.5 rounded-lg border border-border text-fluid-13 outline-none bg-white text-text-main w-full transition-colors focus:border-maroon" />
               </div>
               <div>
-                <label className="text-[11px] font-semibold text-text-sub mb-1 block">Last Name</label>
-                <input type="text" required value={editForm.last_name} onChange={e => setEditForm({ ...editForm, last_name: e.target.value })} className="px-3.5 py-2.5 rounded-lg border border-border text-[13px] outline-none bg-white text-text-main w-full transition-colors focus:border-maroon" />
+                <label className="text-fluid-11 font-semibold text-text-sub mb-1 block">Last Name</label>
+                <input type="text" required value={editForm.last_name} onChange={e => setEditForm({ ...editForm, last_name: e.target.value })} className="px-3.5 py-2.5 rounded-lg border border-border text-fluid-13 outline-none bg-white text-text-main w-full transition-colors focus:border-maroon" />
               </div>
               <div className="relative z-10">
-                <label className="text-[11px] font-semibold text-text-sub mb-1 block">Course</label>
+                <label className="text-fluid-11 font-semibold text-text-sub mb-1 block">Course</label>
                 <button
                   type="button"
                   onClick={() => setOpenDropdown(openDropdown === 'editCourse' ? null : 'editCourse')}
-                  className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-lg border border-border bg-white text-[13px] font-semibold cursor-pointer hover:border-maroon/30 transition-colors ${editForm.course ? 'text-text-main' : 'text-text-muted'}`}
+                  className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-lg border border-border bg-white text-fluid-13 font-semibold cursor-pointer hover:border-maroon/30 transition-colors ${editForm.course ? 'text-text-main' : 'text-text-muted'}`}
                 >
                   <span className="truncate pr-2">{editForm.course || 'Select Course...'}</span>
                   <ChevronDown size={16} className={`text-text-sub shrink-0 transition-transform duration-200 ${openDropdown === 'editCourse' ? 'rotate-180' : ''}`} />
@@ -301,7 +301,7 @@ export default function MasterListPage() {
                                <div className={`w-3 h-3 rounded-full border flex items-center justify-center shrink-0 ${isActive ? 'border-maroon' : 'border-text-muted/40'}`}>
                                  {isActive && <div className="w-1.5 h-1.5 bg-maroon rounded-full" />}
                                </div>
-                               <span className={`text-[12px] font-semibold truncate ${isActive ? 'text-maroon' : 'text-text-main'}`}>{c}</span>
+                               <span className={`text-fluid-12 font-semibold truncate ${isActive ? 'text-maroon' : 'text-text-main'}`}>{c}</span>
                             </div>
                           </div>
                         )
@@ -311,10 +311,10 @@ export default function MasterListPage() {
                 )}
               </div>
               <div>
-                <label className="text-[11px] font-semibold text-text-sub mb-2 block tracking-wide uppercase">Priority Class</label>
+                <label className="text-fluid-11 font-semibold text-text-sub mb-2 block tracking-wide uppercase">Priority Class</label>
                 <div className="flex items-center gap-4 py-1">
                   {PRIORITY_OPTIONS.map(opt => (
-                    <label key={opt.value} className={`flex items-center gap-2.5 px-4 py-2 rounded-xl text-[13px] font-semibold cursor-pointer select-none transition-all duration-300 ease-out border ${editForm.priority_class === opt.value ? 'text-maroon bg-maroon/5 border-maroon/20 shadow-[0_2px_8px_rgba(123,26,42,0.04)] scale-[1.02]' : 'text-text-sub bg-transparent border-transparent hover:bg-off-white hover:text-text-main'}`}>
+                    <label key={opt.value} className={`flex items-center gap-2.5 px-4 py-2 rounded-xl text-fluid-13 font-semibold cursor-pointer select-none transition-all duration-300 ease-out border ${editForm.priority_class === opt.value ? 'text-maroon bg-maroon/5 border-maroon/20 shadow-[0_2px_8px_rgba(123,26,42,0.04)] scale-[1.02]' : 'text-text-sub bg-transparent border-transparent hover:bg-off-white hover:text-text-main'}`}>
                       <input type="radio" name="editPriority" value={opt.value} checked={editForm.priority_class === opt.value} onChange={e => setEditForm({ ...editForm, priority_class: e.target.value })} className="accent-maroon w-4 h-4 cursor-pointer transition-transform duration-200 ease-out active:scale-90" />
                       <span className="transition-colors duration-300">{opt.label}</span>
                     </label>
@@ -337,8 +337,8 @@ export default function MasterListPage() {
             <div className="w-12 h-12 rounded-full bg-danger-light border-2 border-danger-border flex items-center justify-center mx-auto mb-4 text-danger">
               <Trash2 size={24} />
             </div>
-            <h3 className="text-[18px] font-bold text-text-main m-0 mb-2 font-serif">Delete Master List Entry?</h3>
-            <p className="text-[13px] text-text-sub m-0 mb-6 leading-relaxed">
+            <h3 className="text-fluid-18 font-bold text-text-main m-0 mb-2 font-serif">Delete Master List Entry?</h3>
+            <p className="text-fluid-13 text-text-sub m-0 mb-6 leading-relaxed">
               Are you sure you want to delete <span className="font-semibold text-text-main">{recordToDelete.first_name} {recordToDelete.last_name}</span> (<span className="text-maroon font-medium">{recordToDelete.student_id}</span>)? This action cannot be undone.
             </p>
             <div className="flex gap-2">
@@ -358,8 +358,8 @@ export default function MasterListPage() {
             <div className="w-12 h-12 rounded-full bg-danger-light border-2 border-danger-border flex items-center justify-center mx-auto mb-4 text-danger">
               <Trash2 size={24} />
             </div>
-            <h3 className="text-[18px] font-bold text-text-main m-0 mb-2 font-serif">Delete Selected Records?</h3>
-            <p className="text-[13px] text-text-sub m-0 mb-6">
+            <h3 className="text-fluid-18 font-bold text-text-main m-0 mb-2 font-serif">Delete Selected Records?</h3>
+            <p className="text-fluid-13 text-text-sub m-0 mb-6">
               You are about to delete {selectedRecords.size} student record(s). This action cannot be undone. Are you sure you want to proceed?
             </p>
             <div className="flex gap-2">
@@ -377,16 +377,16 @@ export default function MasterListPage() {
         {/* Upload Excel */}
         <div className="bg-white p-5 sm:p-6 rounded-2xl shadow-[0_4px_12px_rgba(0,0,0,0.05)] border border-border">
           <h3 className="text-base font-semibold text-text-main m-0 mb-3 font-serif">Bulk Import via Excel</h3>
-          <p className="text-[13px] text-text-sub mb-5">Upload an Excel file to quickly import multiple master list records.</p>
+          <p className="text-fluid-13 text-text-sub mb-5">Upload an Excel file to quickly import multiple master list records.</p>
 
           <div className="mb-5">
-            <label className="text-[11px] font-semibold text-text-sub mb-2 block tracking-wide uppercase">Priority for this import</label>
+            <label className="text-fluid-11 font-semibold text-text-sub mb-2 block tracking-wide uppercase">Priority for this import</label>
             <div className="flex flex-wrap items-center gap-3 sm:gap-4 py-1">
               {[
                 { value: 'regular', label: 'Regular Student' },
                 { value: 'alumni', label: 'Alumni' }
               ].map(opt => (
-                <label key={opt.value} className={`flex items-center gap-2.5 px-4 py-2 rounded-xl text-[13px] font-semibold cursor-pointer select-none transition-all duration-300 ease-out border ${uploadPriority === opt.value ? 'text-maroon bg-maroon/5 border-maroon/20 shadow-[0_2px_8px_rgba(123,26,42,0.04)] scale-[1.02]' : 'text-text-sub bg-transparent border-transparent hover:bg-off-white hover:text-text-main'}`}>
+                <label key={opt.value} className={`flex items-center gap-2.5 px-4 py-2 rounded-xl text-fluid-13 font-semibold cursor-pointer select-none transition-all duration-300 ease-out border ${uploadPriority === opt.value ? 'text-maroon bg-maroon/5 border-maroon/20 shadow-[0_2px_8px_rgba(123,26,42,0.04)] scale-[1.02]' : 'text-text-sub bg-transparent border-transparent hover:bg-off-white hover:text-text-main'}`}>
                   <input type="radio" name="uploadPriority" value={opt.value} checked={uploadPriority === opt.value} onChange={e => setUploadPriority(e.target.value)} className="accent-maroon w-4 h-4 cursor-pointer transition-transform duration-200 ease-out active:scale-90" />
                   <span className="transition-colors duration-300">{opt.label}</span>
                 </label>
@@ -411,19 +411,19 @@ export default function MasterListPage() {
           <h3 className="text-base font-semibold text-text-main m-0 mb-4 font-serif">Manually Add Student</h3>
           <form onSubmit={handleManualAdd} className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="sm:col-span-2">
-              <input type="text" placeholder="Student ID (e.g. 2020-20049 or 202020049)" pattern="[-0-9]{8,15}" title="Format: 8 to 15 numbers or hyphens" required value={form.student_id} onChange={e => setForm({ ...form, student_id: e.target.value })} className="px-3.5 py-2.5 rounded-lg border border-border text-[13px] outline-none bg-white text-text-main w-full transition-colors focus:border-maroon" />
+              <input type="text" placeholder="Student ID (e.g. 2020-20049 or 202020049)" pattern="[-0-9]{8,15}" title="Format: 8 to 15 numbers or hyphens" required value={form.student_id} onChange={e => setForm({ ...form, student_id: e.target.value })} className="px-3.5 py-2.5 rounded-lg border border-border text-fluid-13 outline-none bg-white text-text-main w-full transition-colors focus:border-maroon" />
             </div>
             <div>
-              <input type="text" placeholder="First Name" required value={form.first_name} onChange={e => setForm({ ...form, first_name: e.target.value })} className="px-3.5 py-2.5 rounded-lg border border-border text-[13px] outline-none bg-white text-text-main w-full transition-colors focus:border-maroon" />
+              <input type="text" placeholder="First Name" required value={form.first_name} onChange={e => setForm({ ...form, first_name: e.target.value })} className="px-3.5 py-2.5 rounded-lg border border-border text-fluid-13 outline-none bg-white text-text-main w-full transition-colors focus:border-maroon" />
             </div>
             <div>
-              <input type="text" placeholder="Last Name" required value={form.last_name} onChange={e => setForm({ ...form, last_name: e.target.value })} className="px-3.5 py-2.5 rounded-lg border border-border text-[13px] outline-none bg-white text-text-main w-full transition-colors focus:border-maroon" />
+              <input type="text" placeholder="Last Name" required value={form.last_name} onChange={e => setForm({ ...form, last_name: e.target.value })} className="px-3.5 py-2.5 rounded-lg border border-border text-fluid-13 outline-none bg-white text-text-main w-full transition-colors focus:border-maroon" />
             </div>
             <div className="sm:col-span-2 relative z-10">
               <button
                 type="button"
                 onClick={() => setOpenDropdown(openDropdown === 'addCourse' ? null : 'addCourse')}
-                className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-lg border border-border bg-white text-[13px] font-semibold cursor-pointer hover:border-maroon/30 transition-colors ${form.course ? 'text-text-main' : 'text-text-muted'}`}
+                className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-lg border border-border bg-white text-fluid-13 font-semibold cursor-pointer hover:border-maroon/30 transition-colors ${form.course ? 'text-text-main' : 'text-text-muted'}`}
               >
                 <span className="truncate pr-2">{form.course || 'Select Course...'}</span>
                 <ChevronDown size={16} className={`text-text-sub shrink-0 transition-transform duration-200 ${openDropdown === 'addCourse' ? 'rotate-180' : ''}`} />
@@ -445,7 +445,7 @@ export default function MasterListPage() {
                              <div className={`w-3 h-3 rounded-full border flex items-center justify-center shrink-0 ${isActive ? 'border-maroon' : 'border-text-muted/40'}`}>
                                {isActive && <div className="w-1.5 h-1.5 bg-maroon rounded-full" />}
                              </div>
-                             <span className={`text-[12px] font-semibold truncate ${isActive ? 'text-maroon' : 'text-text-main'}`}>{c}</span>
+                             <span className={`text-fluid-12 font-semibold truncate ${isActive ? 'text-maroon' : 'text-text-main'}`}>{c}</span>
                           </div>
                         </div>
                       )
@@ -455,13 +455,13 @@ export default function MasterListPage() {
               )}
             </div>
             <div className="sm:col-span-2">
-              <label className="text-[11px] font-semibold text-text-sub mb-2 block tracking-wide uppercase">Student Priority</label>
+              <label className="text-fluid-11 font-semibold text-text-sub mb-2 block tracking-wide uppercase">Student Priority</label>
               <div className="flex flex-wrap items-center gap-3 sm:gap-4 py-1">
                 {[
                   { value: 'regular', label: 'Regular Student' },
                   { value: 'alumni', label: 'Alumni' }
                 ].map(opt => (
-                  <label key={opt.value} className={`flex items-center gap-2.5 px-4 py-2 rounded-xl text-[13px] font-semibold cursor-pointer select-none transition-all duration-300 ease-out border ${form.priority_class === opt.value ? 'text-maroon bg-maroon/5 border-maroon/20 shadow-[0_2px_8px_rgba(123,26,42,0.04)] scale-[1.02]' : 'text-text-sub bg-transparent border-transparent hover:bg-off-white hover:text-text-main'}`}>
+                  <label key={opt.value} className={`flex items-center gap-2.5 px-4 py-2 rounded-xl text-fluid-13 font-semibold cursor-pointer select-none transition-all duration-300 ease-out border ${form.priority_class === opt.value ? 'text-maroon bg-maroon/5 border-maroon/20 shadow-[0_2px_8px_rgba(123,26,42,0.04)] scale-[1.02]' : 'text-text-sub bg-transparent border-transparent hover:bg-off-white hover:text-text-main'}`}>
                     <input type="radio" name="manualPriority" value={opt.value} checked={form.priority_class === opt.value} onChange={e => setForm({ ...form, priority_class: e.target.value })} className="accent-maroon w-4 h-4 cursor-pointer transition-transform duration-200 ease-out active:scale-90" />
                     <span className="transition-colors duration-300">{opt.label}</span>
                   </label>
@@ -469,7 +469,7 @@ export default function MasterListPage() {
               </div>
             </div>
             <div className="sm:col-span-2 mt-3">
-              <button type="submit" className="relative w-full overflow-hidden bg-maroon text-white border-none p-3.5 rounded-xl font-bold text-[14px] cursor-pointer font-sans transition-all duration-300 active:scale-[0.98] hover:bg-maroon-dark shadow-[0_6px_20px_rgba(123,26,42,0.2)] hover:shadow-[0_8px_25px_rgba(123,26,42,0.25)] group">
+              <button type="submit" className="relative w-full overflow-hidden bg-maroon text-white border-none p-3.5 rounded-xl font-bold text-fluid-14 cursor-pointer font-sans transition-all duration-300 active:scale-[0.98] hover:bg-maroon-dark shadow-[0_6px_20px_rgba(123,26,42,0.2)] hover:shadow-[0_8px_25px_rgba(123,26,42,0.25)] group">
                 <div className="absolute inset-0 bg-linear-to-r from-transparent via-white/10 to-transparent translate-x-[-150%] group-hover:translate-x-[150%] transition-transform duration-700 ease-out" />
                 <span className="relative z-10">Add to Master List</span>
               </button>
@@ -484,7 +484,7 @@ export default function MasterListPage() {
           <h3 className="text-base font-semibold text-text-main m-0 font-serif">School Directory</h3>
           <div className="flex flex-wrap items-center gap-2 sm:gap-3 w-full sm:w-auto">
             {selectedRecords.size > 0 && (
-              <button onClick={() => setShowBulkDeleteModal(true)} className="px-3 py-1.5 rounded-lg border border-danger bg-danger-light text-danger text-[12px] font-bold cursor-pointer hover:bg-danger hover:text-white transition-colors flex items-center gap-1.5">
+              <button onClick={() => setShowBulkDeleteModal(true)} className="px-3 py-1.5 rounded-lg border border-danger bg-danger-light text-danger text-fluid-12 font-bold cursor-pointer hover:bg-danger hover:text-white transition-colors flex items-center gap-1.5">
                 <Trash2 size={14} /> Delete Selected ({selectedRecords.size})
               </button>
             )}
@@ -494,14 +494,14 @@ export default function MasterListPage() {
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
                 placeholder="Search name or ID..."
-                className="py-1.5 pr-3 pl-8 rounded-lg border border-border bg-off-white text-[12px] text-text-main outline-none w-50 font-sans focus:border-maroon transition-colors"
+                className="py-1.5 pr-3 pl-8 rounded-lg border border-border bg-off-white text-fluid-12 text-text-main outline-none w-50 font-sans focus:border-maroon transition-colors"
               />
               <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-text-muted"><Search size={14} /></span>
             </div>
             <div className="relative z-10">
               <button
                 onClick={() => setOpenDropdown(openDropdown === 'courseFilter' ? null : 'courseFilter')}
-                className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-border bg-off-white text-[12px] text-text-main font-semibold cursor-pointer hover:border-maroon/30 transition-colors"
+                className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-border bg-off-white text-fluid-12 text-text-main font-semibold cursor-pointer hover:border-maroon/30 transition-colors"
               >
                 <span>{courseFilter === 'All' ? 'All Courses' : courseFilter.replace('Bachelor of Science in ', 'BS ').replace('Bachelor of ', 'B ')}</span>
                 <ChevronDown size={14} className={`text-text-muted transition-transform duration-200 ${openDropdown === 'courseFilter' ? 'rotate-180' : ''}`} />
@@ -522,7 +522,7 @@ export default function MasterListPage() {
                              <div className={`w-3 h-3 rounded-full border flex items-center justify-center ${isActive ? 'border-maroon' : 'border-text-muted/40'}`}>
                                {isActive && <div className="w-1.5 h-1.5 bg-maroon rounded-full" />}
                              </div>
-                             <span className="text-[12px] font-semibold">{c.l}</span>
+                             <span className="text-fluid-12 font-semibold">{c.l}</span>
                           </div>
                         </div>
                       )
@@ -538,7 +538,7 @@ export default function MasterListPage() {
         </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full border-collapse text-[13px] text-left">
+          <table className="w-full border-collapse text-fluid-13 text-left">
             <thead>
               <tr className="bg-off-white text-text-sub font-semibold border-b border-border">
                 <th className="px-4 py-3 w-10 text-center">
@@ -581,13 +581,13 @@ export default function MasterListPage() {
                     <td className="px-6 py-3 text-text-sub">{record.course}</td>
                     <td className="px-6 py-3">
                       {record.priority_class === 'alumni' ? (
-                        <span className="bg-maroon-light text-maroon font-bold px-2 py-1 rounded text-[11px] uppercase tracking-wide">Alumni</span>
+                        <span className="bg-maroon-light text-maroon font-bold px-2 py-1 rounded text-fluid-11 uppercase tracking-wide">Alumni</span>
                       ) : record.priority_class === 'pwd' ? (
-                        <span className="bg-[#fffbeb] text-gold font-bold px-2 py-1 rounded text-[11px] uppercase tracking-wide">PWD</span>
+                        <span className="bg-[#fffbeb] text-gold font-bold px-2 py-1 rounded text-fluid-11 uppercase tracking-wide">PWD</span>
                       ) : record.priority_class === 'pregnant' ? (
-                        <span className="bg-pink-50 text-pink-600 font-bold px-2 py-1 rounded text-[11px] uppercase tracking-wide">Pregnant</span>
+                        <span className="bg-pink-50 text-pink-600 font-bold px-2 py-1 rounded text-fluid-11 uppercase tracking-wide">Pregnant</span>
                       ) : (
-                        <span className="bg-slate-100 text-slate-500 font-bold px-2 py-1 rounded text-[11px] uppercase tracking-wide">Regular</span>
+                        <span className="bg-slate-100 text-slate-500 font-bold px-2 py-1 rounded text-fluid-11 uppercase tracking-wide">Regular</span>
                       )}
                     </td>
                     <td className="px-6 py-3 text-text-muted text-xs">{new Date(record.created_at).toLocaleDateString()}</td>
@@ -610,21 +610,21 @@ export default function MasterListPage() {
         
         {/* Pagination Controls */}
         <div className="px-6 py-4 border-t border-border flex justify-between items-center bg-off-white rounded-b-2xl">
-          <div className="text-[13px] text-text-sub font-medium">
+          <div className="text-fluid-13 text-text-sub font-medium">
             Showing <span className="font-bold text-text-main">{displayedRecords.length === 0 ? 0 : startIndex + 1}-{endIndex}</span> of <span className="font-bold text-text-main">{displayedRecords.length}</span> records
           </div>
           <div className="flex gap-2">
             <button 
               onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
               disabled={currentPage === 1}
-              className="px-3 py-1.5 rounded-lg border border-border bg-white text-text-main text-[12px] font-semibold cursor-pointer hover:bg-surface disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="px-3 py-1.5 rounded-lg border border-border bg-white text-text-main text-fluid-12 font-semibold cursor-pointer hover:bg-surface disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               Prev
             </button>
             <button 
               onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
               disabled={currentPage === totalPages}
-              className="px-3 py-1.5 rounded-lg border border-border bg-white text-text-main text-[12px] font-semibold cursor-pointer hover:bg-surface disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="px-3 py-1.5 rounded-lg border border-border bg-white text-text-main text-fluid-12 font-semibold cursor-pointer hover:bg-surface disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               Next
             </button>

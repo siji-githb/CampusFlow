@@ -34,6 +34,37 @@
   --font-sans: 'Poppins', sans-serif;
   --font-serif: 'Lora', serif;
   --font-mono: 'Poppins', sans-serif;
+
+  /* Fluid typography scale — smoothly scales between 380px and 1440px viewports */
+  --text-fluid-7: clamp(0.4025rem, 0.39rem + 0.0528vw, 0.4375rem);
+  --text-fluid-8: clamp(0.46rem, 0.4457rem + 0.0604vw, 0.5rem);
+  --text-fluid-9: clamp(0.5175rem, 0.5014rem + 0.0679vw, 0.5625rem);
+  --text-fluid-9-5: clamp(0.5463rem, 0.5292rem + 0.0717vw, 0.5938rem);
+  --text-fluid-10: clamp(0.575rem, 0.5571rem + 0.0755vw, 0.625rem);
+  --text-fluid-10-5: clamp(0.6038rem, 0.5849rem + 0.0792vw, 0.6562rem);
+  --text-fluid-11: clamp(0.605rem, 0.5754rem + 0.1245vw, 0.6875rem);
+  --text-fluid-11-5: clamp(0.6325rem, 0.6016rem + 0.1302vw, 0.7188rem);
+  --text-fluid-12: clamp(0.66rem, 0.6277rem + 0.1358vw, 0.75rem);
+  --text-fluid-12-5: clamp(0.6875rem, 0.6539rem + 0.1415vw, 0.7812rem);
+  --text-fluid-13: clamp(0.715rem, 0.68rem + 0.1472vw, 0.8125rem);
+  --text-fluid-13-5: clamp(0.7425rem, 0.7062rem + 0.1528vw, 0.8438rem);
+  --text-fluid-14: clamp(0.7438rem, 0.6967rem + 0.1981vw, 0.875rem);
+  --text-fluid-14-5: clamp(0.77rem, 0.7212rem + 0.2057vw, 0.9062rem);
+  --text-fluid-15: clamp(0.7969rem, 0.7465rem + 0.2123vw, 0.9375rem);
+  --text-fluid-16: clamp(0.85rem, 0.7962rem + 0.2264vw, 1.0rem);
+  --text-fluid-17: clamp(0.85rem, 0.7738rem + 0.3208vw, 1.0625rem);
+  --text-fluid-17-5: clamp(0.875rem, 0.7966rem + 0.3302vw, 1.0938rem);
+  --text-fluid-18: clamp(0.9rem, 0.8193rem + 0.3396vw, 1.125rem);
+  --text-fluid-19: clamp(0.95rem, 0.8649rem + 0.3585vw, 1.1875rem);
+  --text-fluid-20: clamp(1.0rem, 0.9104rem + 0.3774vw, 1.25rem);
+  --text-fluid-22: clamp(1.0312rem, 0.908rem + 0.5189vw, 1.375rem);
+  --text-fluid-24: clamp(1.125rem, 0.9906rem + 0.566vw, 1.5rem);
+  --text-fluid-26: clamp(1.2188rem, 1.0731rem + 0.6132vw, 1.625rem);
+  --text-fluid-28: clamp(1.3125rem, 1.1557rem + 0.6604vw, 1.75rem);
+  --text-fluid-32: clamp(1.4rem, 1.1849rem + 0.9057vw, 2.0rem);
+  --text-fluid-34: clamp(1.4875rem, 1.259rem + 0.9623vw, 2.125rem);
+  --text-fluid-36: clamp(1.575rem, 1.333rem + 1.0189vw, 2.25rem);
+  --text-fluid-42: clamp(1.8375rem, 1.5552rem + 1.1887vw, 2.625rem);
 }
 
 * {

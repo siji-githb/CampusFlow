@@ -110,16 +110,16 @@ const fmt12h = (t) => {
 const MiniStat = ({ icon, value, label, sub, subColorClass = 'text-text-muted', loading, delay = '0s' }) => (
   <div className="flex-1 bg-white rounded-xl sm:rounded-[14px] border border-border shadow-[0_1px_4px_rgba(0,0,0,0.02)] p-3.5 sm:px-5 sm:py-4.5 flex flex-col justify-between gap-2.5 sm:gap-3 animate-fade-up" style={{ animationDelay: delay }}>
     <div className="flex items-start justify-between gap-2">
-      <div className="text-[10.5px] sm:text-[11px] font-bold text-text-muted uppercase tracking-[0.06em] mt-0.5 sm:mt-1.5 leading-tight">{label}</div>
+      <div className="text-fluid-10-5 sm:text-fluid-11 font-bold text-text-muted uppercase tracking-[0.06em] mt-0.5 sm:mt-1.5 leading-tight">{label}</div>
       <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-lg sm:rounded-[10px] bg-maroon-light flex items-center justify-center text-maroon shrink-0">
         {icon}
       </div>
     </div>
     <div>
-      <div className="font-serif text-[22px] sm:text-[28px] font-extrabold text-text-main leading-none m-0 min-h-6 sm:min-h-7">
+      <div className="font-serif text-fluid-22 sm:text-fluid-28 font-extrabold text-text-main leading-none m-0 min-h-6 sm:min-h-7">
         {loading ? <div className="animate-pulse w-15 h-6 sm:h-7 rounded-md bg-border" /> : value}
       </div>
-      {sub && <div className={`text-[10.5px] sm:text-[11px] font-semibold mt-1 sm:mt-1.5 truncate ${subColorClass}`}>{sub}</div>}
+      {sub && <div className={`text-fluid-10-5 sm:text-fluid-11 font-semibold mt-1 sm:mt-1.5 truncate ${subColorClass}`}>{sub}</div>}
     </div>
   </div>
 )
@@ -133,7 +133,7 @@ const StepsBar = ({ steps, current, total }) => (
       const active  = stepNum === current
       return (
         <div key={i} className="flex items-center gap-1">
-          <div className={`w-5.5 h-5.5 rounded-full shrink-0 flex items-center justify-center text-[10px] font-bold ${done ? 'bg-success text-white' : active ? 'bg-maroon text-white border-2 border-maroon-dark' : 'bg-border text-text-muted'}`}>
+          <div className={`w-5.5 h-5.5 rounded-full shrink-0 flex items-center justify-center text-fluid-10 font-bold ${done ? 'bg-success text-white' : active ? 'bg-maroon text-white border-2 border-maroon-dark' : 'bg-border text-text-muted'}`}>
             {done ? <Check size={10} /> : stepNum}
           </div>
           {i < total - 1 && <div className={`w-3 h-0.5 rounded-[1px] ${done ? 'bg-success' : 'bg-border'}`} />}
@@ -152,7 +152,7 @@ const CustomDropdown = ({ value, onChange, options }) => {
     <div className="relative z-10 w-full group">
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="w-full flex items-center justify-between px-4 py-2 rounded-full border border-border bg-white text-[12.5px] text-text-main font-semibold outline-none cursor-pointer font-sans hover:border-maroon/30 transition-all shadow-sm"
+        className="w-full flex items-center justify-between px-4 py-2 rounded-full border border-border bg-white text-fluid-12-5 text-text-main font-semibold outline-none cursor-pointer font-sans hover:border-maroon/30 transition-all shadow-sm"
       >
         <span className="truncate pr-2">{currentLabel}</span>
         <ChevronDown size={14} className={`text-text-muted transition-transform duration-200 shrink-0 ${isOpen ? 'rotate-180' : 'group-hover:text-text-main'}`} />
@@ -173,7 +173,7 @@ const CustomDropdown = ({ value, onChange, options }) => {
                     <div className={`w-3 h-3 rounded-full border flex items-center justify-center shrink-0 ${isActive ? 'border-maroon' : 'border-text-muted/40'}`}>
                       {isActive && <div className="w-1.5 h-1.5 bg-maroon rounded-full" />}
                     </div>
-                    <span className="text-[12px] font-semibold whitespace-nowrap">{o.label}</span>
+                    <span className="text-fluid-12 font-semibold whitespace-nowrap">{o.label}</span>
                   </div>
                 </div>
               )
@@ -189,7 +189,7 @@ const CustomDropdown = ({ value, onChange, options }) => {
 const FilterBar = ({ filters, onChange, onReset, availableTxTypes = [] }) => {
   return (
     <div className="bg-white/80 backdrop-blur-md rounded-2xl border border-border shadow-[0_2px_8px_rgba(0,0,0,0.02)] px-5 py-4 flex flex-wrap items-center gap-4 animate-fade-up relative z-20" style={{ animationDelay: '0.4s' }}>
-      <div className="text-[11px] font-bold text-text-muted uppercase tracking-[0.08em] mr-2 flex items-center gap-1.5"><SlidersHorizontal size={14} /> Filters</div>
+      <div className="text-fluid-11 font-bold text-text-muted uppercase tracking-[0.08em] mr-2 flex items-center gap-1.5"><SlidersHorizontal size={14} /> Filters</div>
       
       {/* Status Dropdown */}
       <div className="flex-1 min-w-37.5">
@@ -230,7 +230,7 @@ const FilterBar = ({ filters, onChange, onReset, availableTxTypes = [] }) => {
         />
       </div>
 
-      <button onClick={onReset} className="px-5 py-2 rounded-full border border-border bg-off-white text-text-main text-[12.5px] font-bold cursor-pointer font-sans hover:bg-white hover:border-maroon-border hover:text-maroon hover:shadow-sm transition-all whitespace-nowrap">
+      <button onClick={onReset} className="px-5 py-2 rounded-full border border-border bg-off-white text-text-main text-fluid-12-5 font-bold cursor-pointer font-sans hover:bg-white hover:border-maroon-border hover:text-maroon hover:shadow-sm transition-all whitespace-nowrap">
         Reset
       </button>
     </div>
@@ -438,21 +438,21 @@ export default function LiveQueuePage({ onNavigate }) {
     }
 
     return (
-      <div key={ticket.id} className={`grid ${showWait ? 'grid-cols-[150px_1.5fr_1.2fr_220px_70px_160px]' : 'grid-cols-[150px_1.5fr_1.2fr_220px_160px]'} gap-6 px-5 py-4 items-center transition-all duration-300
+      <div key={ticket.id} className={`grid grid-cols-1 ${showWait ? 'lg:grid-cols-[150px_1.5fr_1.2fr_220px_70px_160px]' : 'lg:grid-cols-[150px_1.5fr_1.2fr_220px_160px]'} gap-6 px-5 py-4 items-center transition-all duration-300
         ${idx < arrLength - 1 ? 'border-b border-border/60' : ''}
         ${ticket.status === 'in_progress' ? 'bg-success-light/30' : 'bg-white hover:bg-off-white/80 hover:shadow-sm hover:-translate-y-px'}
       `}>
 
         {/* Queue No. */}
         <div>
-          <div className="font-serif text-[20px] font-extrabold text-maroon leading-none">{ticket.queue_number}</div>
+          <div className="font-serif text-fluid-20 font-extrabold text-maroon leading-none">{ticket.queue_number}</div>
           {isHighPrio && (
-            <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-danger-light text-danger border border-danger-border mt-1 inline-block uppercase tracking-[0.04em]">
+            <span className="text-fluid-9 font-bold px-1.5 py-0.5 rounded-full bg-danger-light text-danger border border-danger-border mt-1 inline-block uppercase tracking-[0.04em]">
               Priority
             </span>
           )}
           {ticket.status === 'in_progress' && inProgressStep?.location && getRequiresPresence(steps) && !inProgressStep.location.toLowerCase().includes('back office') && (
-            <div className="text-[11px] font-bold text-text-sub mt-1.5 flex items-center gap-1 uppercase tracking-[0.04em]">
+            <div className="text-fluid-11 font-bold text-text-sub mt-1.5 flex items-center gap-1 uppercase tracking-[0.04em]">
               {inProgressStep.location}
             </div>
           )}
@@ -460,10 +460,10 @@ export default function LiveQueuePage({ onNavigate }) {
 
         {/* Student Details */}
         <div>
-          <div className="text-[13px] font-semibold text-text-main mb-0.5">{name}</div>
-          <div className="text-[11px] text-text-muted font-mono">{sid}</div>
+          <div className="text-fluid-13 font-semibold text-text-main mb-0.5">{name}</div>
+          <div className="text-fluid-11 text-text-muted font-mono">{sid}</div>
           <div className="mt-1">
-            <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full capitalize bg-gold-light text-gold border border-gold-border">
+            <span className="text-fluid-10 font-semibold px-2 py-0.5 rounded-full capitalize bg-gold-light text-gold border border-gold-border">
               {pClass}
             </span>
           </div>
@@ -472,17 +472,17 @@ export default function LiveQueuePage({ onNavigate }) {
         {/* Transaction */}
         <div>
           <div className="text-xs font-semibold text-text-main leading-snug">{txName}</div>
-          <div className="text-[11px] text-text-muted mt-0.5">{fmt12h(appt?.time_slot) || '—'}</div>
+          <div className="text-fluid-11 text-text-muted mt-0.5">{fmt12h(appt?.time_slot) || '—'}</div>
 
         </div>
 
         {/* Status + Progress */}
         <div>
           <div className="flex items-center gap-1.5 mb-1.5 flex-wrap">
-            <span className={`text-[11px] font-semibold px-2.5 py-0.5 rounded-full border whitespace-nowrap ${statusCfg.bg} ${statusCfg.color} ${statusCfg.border}`}>
+            <span className={`text-fluid-11 font-semibold px-2.5 py-0.5 rounded-full border whitespace-nowrap ${statusCfg.bg} ${statusCfg.color} ${statusCfg.border}`}>
               {statusCfg.label}
             </span>
-            {inProgressStep && <span className="text-[11px] text-text-muted font-medium">Step {inProgressStep.step_number}</span>}
+            {inProgressStep && <span className="text-fluid-11 text-text-muted font-medium">Step {inProgressStep.step_number}</span>}
           </div>
           {steps && steps.length > 0 && (
             <StepsBar steps={steps} current={ticket.current_step} total={ticket.total_steps} />
@@ -504,7 +504,7 @@ export default function LiveQueuePage({ onNavigate }) {
                   <button
                     onClick={() => handleCallTicket(ticket.id)}
                     disabled={confirming === ticket.id}
-                    className={`px-4 py-2 rounded-full border text-[12px] font-bold cursor-pointer font-sans whitespace-nowrap transition-all shadow-sm hover:-translate-y-0.5
+                    className={`px-4 py-2 rounded-full border text-fluid-12 font-bold cursor-pointer font-sans whitespace-nowrap transition-all shadow-sm hover:-translate-y-0.5
                       ${confirming === ticket.id
                         ? 'border-border bg-off-white text-text-muted cursor-not-allowed'
                         : 'border-blue-border bg-blue-light text-blue hover:bg-blue hover:text-white'}
@@ -514,7 +514,7 @@ export default function LiveQueuePage({ onNavigate }) {
                   </button>
                   <button
                     onClick={() => setViewingTicketId(ticket.id)}
-                    className="px-4 py-2 rounded-full border border-border bg-white text-text-main text-[12px] font-bold cursor-pointer font-sans whitespace-nowrap hover:bg-surface transition-all shadow-sm hover:-translate-y-0.5"
+                    className="px-4 py-2 rounded-full border border-border bg-white text-text-main text-fluid-12 font-bold cursor-pointer font-sans whitespace-nowrap hover:bg-surface transition-all shadow-sm hover:-translate-y-0.5"
                   >
                     Details
                   </button>
@@ -524,7 +524,7 @@ export default function LiveQueuePage({ onNavigate }) {
 
                   <button
                     onClick={() => setViewingTicketId(ticket.id)}
-                    className="px-4 py-2 rounded-full border border-maroon-border bg-maroon-light text-maroon text-[12px] font-bold cursor-pointer font-sans whitespace-nowrap hover:bg-maroon hover:text-white transition-all shadow-sm hover:-translate-y-0.5"
+                    className="px-4 py-2 rounded-full border border-maroon-border bg-maroon-light text-maroon text-fluid-12 font-bold cursor-pointer font-sans whitespace-nowrap hover:bg-maroon hover:text-white transition-all shadow-sm hover:-translate-y-0.5"
                   >
                     Update Progress
                   </button>
@@ -551,17 +551,17 @@ export default function LiveQueuePage({ onNavigate }) {
       {/* ── Page Header ── */}
       <div className="flex items-start justify-between flex-wrap gap-3">
         <div>
-          <p className="text-[11px] font-bold text-gold tracking-widest uppercase m-0 mb-1.5">Real-Time</p>
-          <h1 className="font-serif text-[22px] sm:text-[26px] font-bold text-text-main m-0 flex items-center gap-2">
+          <p className="text-fluid-11 font-bold text-gold tracking-widest uppercase m-0 mb-1.5">Real-Time</p>
+          <h1 className="font-serif text-fluid-22 sm:text-fluid-26 font-bold text-text-main m-0 flex items-center gap-2">
             <Ticket size={24} className="text-maroon shrink-0" /> Live Queue Management
           </h1>
-          <p className="text-[12px] sm:text-[13px] text-text-sub mt-1.5 sm:mt-2 mb-0">
+          <p className="text-fluid-12 sm:text-fluid-13 text-text-sub mt-1.5 sm:mt-2 mb-0">
             Monitor and manage the active flow of student transactions.
           </p>
         </div>
         <div className="flex items-center gap-2.5">
           {/* Current time */}
-          <div className="bg-white border border-border shadow-xs text-text-main px-3.5 py-1.5 sm:px-4 sm:py-2.25 rounded-xl text-[13px] sm:text-[15px] font-bold font-sans flex items-center gap-2 mt-2 sm:mt-8">
+          <div className="bg-white border border-border shadow-xs text-text-main px-3.5 py-1.5 sm:px-4 sm:py-2.25 rounded-xl text-fluid-13 sm:text-fluid-15 font-bold font-sans flex items-center gap-2 mt-2 sm:mt-8">
             <Clock size={16} strokeWidth={2.5} className="text-maroon" />
             {currentTime}
           </div>
@@ -612,7 +612,7 @@ export default function LiveQueuePage({ onNavigate }) {
       />
 
       {error && (
-        <div className="px-4 py-3 rounded-[10px] bg-danger-light border border-danger-border text-danger text-[13px] flex items-center justify-between mb-4">
+        <div className="px-4 py-3 rounded-[10px] bg-danger-light border border-danger-border text-danger text-fluid-13 flex items-center justify-between mb-4">
           <div className="flex items-center"><AlertTriangle size={13} className="mr-1.5" /> {error}</div>
           <button onClick={() => setError('')} className="bg-transparent border-none text-danger cursor-pointer hover:opacity-70 flex"><X size={15} /></button>
         </div>
@@ -631,13 +631,13 @@ export default function LiveQueuePage({ onNavigate }) {
                 <Users size={20} className="text-maroon" />
               </div>
               <div>
-                <h2 className="text-[22px] font-serif font-extrabold text-text-main m-0 leading-tight">At the Counter</h2>
+                <h2 className="text-fluid-22 font-serif font-extrabold text-text-main m-0 leading-tight">At the Counter</h2>
               </div>
             </div>
             {!loading && atCounter.length > 0 && (
               <div className="flex items-center gap-2 bg-white px-4 py-2 rounded-full border border-border shadow-sm">
                 <div className="w-2 h-2 rounded-full bg-maroon animate-pulse" />
-                <span className="text-[13px] font-bold text-text-main tracking-wide">
+                <span className="text-fluid-13 font-bold text-text-main tracking-wide">
                   {atCounter.length} <span className="text-text-muted font-semibold">at the counter</span>
                 </span>
               </div>
@@ -646,9 +646,9 @@ export default function LiveQueuePage({ onNavigate }) {
 
           <div className="overflow-x-auto rounded-2xl border border-border shadow-[0_4px_16px_rgba(0,0,0,0.02)]">
             <div className="min-w-237.5">
-              <div className="grid grid-cols-[150px_1.5fr_1.2fr_220px_70px_160px] gap-6 px-5 py-3 bg-surface/50 backdrop-blur-sm border-b border-border">
+              <div className="hidden lg:grid grid-cols-[150px_1.5fr_1.2fr_220px_70px_160px] gap-6 px-5 py-3 bg-surface/50 backdrop-blur-sm border-b border-border">
                 {columnHeaders.map(col => (
-                  <div key={col} className="text-[10px] font-bold text-text-muted tracking-[0.06em] uppercase">{col}</div>
+                  <div key={col} className="text-fluid-10 font-bold text-text-muted tracking-[0.06em] uppercase">{col}</div>
                 ))}
               </div>
 
@@ -656,7 +656,7 @@ export default function LiveQueuePage({ onNavigate }) {
             {loading ? (
               <div className="flex flex-col">
                 {[1, 2, 3].map(i => (
-                  <div key={i} className={`grid grid-cols-[150px_1.5fr_1.2fr_220px_70px_160px] gap-6 p-4 ${i < 3 ? 'border-b border-border' : ''}`}>
+                  <div key={i} className={`grid grid-cols-1 lg:grid-cols-[150px_1.5fr_1.2fr_220px_70px_160px] gap-6 p-4 ${i < 3 ? 'border-b border-border' : ''}`}>
                     <div className="animate-pulse w-10 h-5 rounded bg-border" />
                     <div>
                       <div className="animate-pulse w-30 h-3.5 rounded bg-border mb-1.5" />
@@ -693,13 +693,13 @@ export default function LiveQueuePage({ onNavigate }) {
                   <Inbox size={20} className="text-text-muted" />
                 </div>
                 <div>
-                  <h2 className="text-[22px] font-serif font-extrabold text-text-main m-0 leading-tight">Processing</h2>
+                  <h2 className="text-fluid-22 font-serif font-extrabold text-text-main m-0 leading-tight">Processing</h2>
                 </div>
               </div>
               {!loading && processingQueue.length > 0 && (
                 <div className="flex items-center gap-2 bg-white px-4 py-2 rounded-full border border-border shadow-sm">
                   <div className="w-2 h-2 rounded-full bg-text-muted/50" />
-                  <span className="text-[13px] font-bold text-text-main tracking-wide">
+                  <span className="text-fluid-13 font-bold text-text-main tracking-wide">
                     {processingQueue.length} <span className="text-text-muted font-semibold">in processing</span>
                   </span>
                 </div>
@@ -711,7 +711,7 @@ export default function LiveQueuePage({ onNavigate }) {
                 {(loading || processingQueue.length > 0) && (
                   <div className="grid grid-cols-[150px_1.5fr_1.2fr_220px_160px] gap-6 px-5 py-3 bg-surface/50 backdrop-blur-sm border-b border-border">
                     {['QUEUE NO.', 'STUDENT DETAILS', 'TRANSACTION', 'STATUS / PROGRESS', 'ACTION'].map(col => (
-                      <div key={col} className="text-[10px] font-bold text-text-muted tracking-[0.06em] uppercase">{col}</div>
+                      <div key={col} className="text-fluid-10 font-bold text-text-muted tracking-[0.06em] uppercase">{col}</div>
                     ))}
                   </div>
                 )}
@@ -764,7 +764,7 @@ export default function LiveQueuePage({ onNavigate }) {
 
       {/* ── Toast Notification ── */}
       {toastMsg && (
-        <div className={`fixed bottom-10 right-8 z-9999 flex items-center gap-3 px-5 py-3.5 rounded-xl shadow-[0_12px_32px_rgba(0,0,0,0.18)] border text-[13.5px] font-bold animate-fade-up ${
+        <div className={`fixed bottom-10 right-8 z-9999 flex items-center gap-3 px-5 py-3.5 rounded-xl shadow-[0_12px_32px_rgba(0,0,0,0.18)] border text-fluid-13-5 font-bold animate-fade-up ${
           toastMsg.type === 'error'
             ? 'bg-danger text-white border-danger-border'
             : 'bg-[#006600] text-white border-[#005200]'

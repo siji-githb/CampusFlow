@@ -5,6 +5,7 @@ from datetime import date, datetime, timedelta
 from services.admin_service import log_audit_action
 from services.notification_service import create_system_notification
 from services.websocket_manager import manager
+from services.holiday_service import get_philippine_holiday
 from deps import get_supabase_admin as get_admin
 
 settings = get_settings()
@@ -83,8 +84,14 @@ def get_available_slots_for_date(appointment_date: date) -> list[str]:
     import json
     date_overrides = json.loads(config.get("date_overrides", "{}"))
     override = date_overrides.get(str(appointment_date), {})
+    
+    # Check manual override first, otherwise check automatic Philippine holiday
     if override.get("is_blocked"):
         return []
+    if "is_blocked" not in override:
+        ph_holiday = get_philippine_holiday(appointment_date)
+        if ph_holiday:
+            return []
 
     num_windows = int(config.get("num_windows", 2))
     lunch_start = config.get("lunch_break_start", "12:00")
@@ -132,14 +139,22 @@ def get_available_slots(transaction_type_id: str, appointment_date: date):
     date_overrides = json.loads(config.get("date_overrides", "{}"))
     override = date_overrides.get(str(appointment_date), {})
     
-    if override.get("is_blocked"):
+    # Check manual override or automatic Philippine holiday
+    ph_holiday = get_philippine_holiday(appointment_date)
+    is_blocked = override.get("is_blocked", False) if "is_blocked" in override else (ph_holiday is not None)
+    block_note = override.get("note") or (f"{ph_holiday['name']} ({ph_holiday['type']}) - Office Closed" if ph_holiday else None)
+
+    if is_blocked:
         return {
             "date": str(appointment_date),
             "transaction_type_id": transaction_type_id,
             "daily_cap": 0,
             "total_booked": 0,
             "slots": [],
-            "note": override.get("note")
+            "note": block_note,
+            "is_holiday": ph_holiday is not None,
+            "holiday_name": ph_holiday["name"] if ph_holiday else None,
+            "holiday_type": ph_holiday["type"] if ph_holiday else None
         }
 
 
@@ -214,8 +229,12 @@ def create_appointment(student_id: str, priority_class: str, data: AppointmentCr
     import json
     date_overrides = json.loads(config.get("date_overrides", "{}"))
     override = date_overrides.get(str(data.appointment_date), {})
-    if override.get("is_blocked"):
-        raise HTTPException(status_code=400, detail=f"This date is blocked: {override.get('note', '')}")
+    
+    ph_holiday = get_philippine_holiday(data.appointment_date)
+    is_blocked = override.get("is_blocked", False) if "is_blocked" in override else (ph_holiday is not None)
+    if is_blocked:
+        block_reason = override.get("note") or (f"a Philippine holiday ({ph_holiday['name']})" if ph_holiday else "blocked")
+        raise HTTPException(status_code=400, detail=f"Cannot book appointment: {data.appointment_date} is {block_reason}. The office is closed.")
 
 
     # Get transaction type
@@ -348,6 +367,28 @@ def get_student_appointments(student_id: str):
         
         data = res.data or []
         for appt in data:
+            tickets = appt.get("queue_tickets") or []
+            if not isinstance(tickets, list):
+                tickets = [tickets] if tickets else []
+            
+            # If appointment was erroneously cancelled but has an active or completed ticket, auto-heal
+            active_ticket = next((t for t in tickets if t and t.get("status") in ["waiting", "in_progress"]), None)
+            completed_ticket = next((t for t in tickets if t and t.get("status") == "completed"), None)
+            
+            if appt.get("status") == "cancelled":
+                if active_ticket:
+                    appt["status"] = "confirmed"
+                    try:
+                        admin.table("appointments").update({"status": "confirmed"}).eq("id", appt["id"]).execute()
+                    except Exception:
+                        pass
+                elif completed_ticket:
+                    appt["status"] = "completed"
+                    try:
+                        admin.table("appointments").update({"status": "completed"}).eq("id", appt["id"]).execute()
+                    except Exception:
+                        pass
+
             if not appt.get("priority_class") or appt.get("priority_class") == "regular":
                 if user_pc and user_pc != "regular":
                     appt["priority_class"] = user_pc
@@ -490,15 +531,31 @@ def get_all_appointments(date_str: str = None):
     global _last_global_cleanup_date
     admin = get_admin()
 
-    # Auto-cancel all past appointments globally — runs at most once per calendar day
+    # Auto-cancel only past unattended appointments globally (exclude those with active or completed queue tickets)
     try:
         today_str = str(date.today())
         if _last_global_cleanup_date != today_str:
-            admin.table("appointments") \
-                .update({"status": "cancelled"}) \
+            past_appts_res = admin.table("appointments") \
+                .select("id, queue_tickets(id, status)") \
                 .in_("status", ["pending", "confirmed"]) \
                 .lt("appointment_date", today_str) \
                 .execute()
+            
+            appts_to_cancel = []
+            for appt in (past_appts_res.data or []):
+                tickets = appt.get("queue_tickets") or []
+                if not isinstance(tickets, list):
+                    tickets = [tickets]
+                has_active_or_completed_ticket = any(t and t.get("status") in ["waiting", "in_progress", "completed"] for t in tickets)
+                if not has_active_or_completed_ticket:
+                    appts_to_cancel.append(appt["id"])
+
+            if appts_to_cancel:
+                admin.table("appointments") \
+                    .update({"status": "cancelled"}) \
+                    .in_("id", appts_to_cancel) \
+                    .execute()
+
             _last_global_cleanup_date = today_str
     except Exception:
         pass
@@ -607,6 +664,24 @@ def reschedule_appointment(appointment_id: str, new_date: str, new_time: str, ac
         tt_id = appt["transaction_type_id"]
         student_id = appt["student_id"]
         
+        # Check if date is Sunday
+        import datetime as dt_mod
+        try:
+            target_d = dt_mod.date.fromisoformat(new_date)
+            if target_d.weekday() == 6:
+                raise HTTPException(status_code=400, detail="Appointments cannot be scheduled on Sundays")
+        except ValueError:
+            pass
+
+        import json
+        date_overrides = json.loads(config.get("date_overrides", "{}"))
+        override = date_overrides.get(new_date, {})
+        ph_holiday = get_philippine_holiday(new_date)
+        is_blocked = override.get("is_blocked", False) if "is_blocked" in override else (ph_holiday is not None)
+        if is_blocked:
+            block_reason = override.get("note") or (f"a Philippine holiday ({ph_holiday['name']})" if ph_holiday else "blocked")
+            raise HTTPException(status_code=400, detail=f"Cannot reschedule: {new_date} is {block_reason}. The office is closed.")
+
         # Check student doesn't already have appointment same day same type (excluding this one)
         existing = admin.table("appointments").select("id").eq("student_id", student_id).eq("transaction_type_id", tt_id).eq("appointment_date", new_date).neq("status", "cancelled").neq("id", appointment_id).execute()
         if existing.data:

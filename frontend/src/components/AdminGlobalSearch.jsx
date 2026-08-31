@@ -81,7 +81,7 @@ export default function AdminGlobalSearch({ setActiveNav }) {
           if (query.trim() !== '') setIsOpen(true);
         }}
         onKeyDown={handleKeyDown}
-        className="w-full bg-white border border-slate-200 text-slate-700 placeholder:text-slate-400 text-[11.5px] sm:text-[13px] font-sans rounded-full py-1.5 pl-7 sm:pl-9 pr-2.5 sm:pr-4 focus:outline-none focus:bg-white focus:border-maroon/30 focus:ring-2 sm:focus:ring-4 focus:ring-maroon/5 transition-all shadow-2xs truncate"
+        className="w-full bg-white border border-slate-200 text-slate-700 placeholder:text-slate-400 text-fluid-11-5 sm:text-fluid-13 font-sans rounded-full py-1.5 pl-7 sm:pl-9 pr-2.5 sm:pr-4 focus:outline-none focus:bg-white focus:border-maroon/30 focus:ring-2 sm:focus:ring-4 focus:ring-maroon/5 transition-all shadow-2xs truncate"
       />
 
       {isOpen && displayItems.length > 0 && (
@@ -100,11 +100,11 @@ export default function AdminGlobalSearch({ setActiveNav }) {
                   <Icon size={16} />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <div className="text-[13.5px] font-semibold truncate text-text-main">
+                  <div className="text-fluid-13-5 font-semibold truncate text-text-main">
                     {item.label}
                   </div>
                   {item.desc && (
-                    <div className="text-[11px] text-text-sub truncate mt-0.5">{item.desc}</div>
+                    <div className="text-fluid-11 text-text-sub truncate mt-0.5">{item.desc}</div>
                   )}
                 </div>
                 <ChevronRight size={14} className="text-border" />

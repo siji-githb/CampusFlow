@@ -90,7 +90,7 @@ export default function RescheduleModal({ token, appointment, appt, onClose, onS
             <h2 className="font-serif text-base sm:text-lg font-bold m-0 text-maroon leading-tight">
               Reschedule Appointment
             </h2>
-            <p className="text-[11px] sm:text-xs text-text-sub m-0 mt-0.5 truncate">
+            <p className="text-fluid-11 sm:text-xs text-text-sub m-0 mt-0.5 truncate">
               {currentAppt.transaction_types?.name || 'Select a new date & time slot'}
             </p>
           </div>
@@ -144,9 +144,9 @@ export default function RescheduleModal({ token, appointment, appt, onClose, onS
                 <h3 className="font-serif text-xs sm:text-sm font-bold text-text-main m-0">
                   {new Date(selectedDate + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
                 </h3>
-                <span className="text-[10.5px] sm:text-[11.5px] text-text-sub flex items-center gap-1 font-medium">
+                <span className="text-fluid-10-5 sm:text-fluid-11-5 text-text-sub flex items-center gap-1 font-medium">
                   {slotsData.daily_cap === 0 ? (
-                    <span className="text-danger font-bold uppercase tracking-wider text-[9.5px]">Date Blocked</span>
+                    <span className="text-danger font-bold uppercase tracking-wider text-fluid-9-5">Date Blocked</span>
                   ) : (
                     <><Users size={12} /> {slotsData.daily_cap - slotsData.total_booked} of {slotsData.daily_cap} slots left</>
                   )}
@@ -157,10 +157,10 @@ export default function RescheduleModal({ token, appointment, appt, onClose, onS
                 <div className={`p-2.5 rounded-xl border mb-2.5 flex items-start gap-1.5 text-xs ${slotsData.daily_cap === 0 ? 'bg-danger-light border-danger-border text-danger' : 'bg-info-light border-info-border text-info'}`}>
                   {slotsData.daily_cap === 0 ? <AlertTriangle size={14} className="mt-0.5 shrink-0" /> : <Info size={14} className="mt-0.5 shrink-0" />}
                   <div>
-                    <p className="text-[10.5px] font-bold uppercase tracking-widest m-0 mb-0.5">
+                    <p className="text-fluid-10-5 font-bold uppercase tracking-widest m-0 mb-0.5">
                       {slotsData.daily_cap === 0 ? 'Date Blocked' : 'Notice'}
                     </p>
-                    <p className="text-[11.5px] m-0 font-medium leading-relaxed">
+                    <p className="text-fluid-11-5 m-0 font-medium leading-relaxed">
                       {slotsData.note}
                     </p>
                   </div>
@@ -175,7 +175,7 @@ export default function RescheduleModal({ token, appointment, appt, onClose, onS
 
               {morningSlots.length > 0 && (
                 <div className="mb-3">
-                  <p className="text-[10px] sm:text-[11px] font-bold text-text-sub m-0 mb-1.5 flex items-center gap-1 uppercase tracking-wider">
+                  <p className="text-fluid-10 sm:text-fluid-11 font-bold text-text-sub m-0 mb-1.5 flex items-center gap-1 uppercase tracking-wider">
                     <CloudSun size={12} className="text-gold" /> Morning Slots
                   </p>
                   <div className="grid grid-cols-3 sm:grid-cols-4 gap-1.5">
@@ -186,7 +186,7 @@ export default function RescheduleModal({ token, appointment, appt, onClose, onS
 
               {afternoonSlots.length > 0 && (
                 <div>
-                  <p className="text-[10px] sm:text-[11px] font-bold text-text-sub m-0 mb-1.5 flex items-center gap-1 uppercase tracking-wider">
+                  <p className="text-fluid-10 sm:text-fluid-11 font-bold text-text-sub m-0 mb-1.5 flex items-center gap-1 uppercase tracking-wider">
                     <Sun size={12} className="text-gold" /> Afternoon Slots
                   </p>
                   <div className="grid grid-cols-3 sm:grid-cols-4 gap-1.5">
@@ -203,7 +203,7 @@ export default function RescheduleModal({ token, appointment, appt, onClose, onS
           <button 
             type="button" 
             onClick={onClose}
-            className="flex-1 py-2 sm:py-2.5 px-3 rounded-xl border border-border bg-white text-text-main text-xs sm:text-[13px] font-bold font-sans transition-colors hover:bg-off-white cursor-pointer"
+            className="flex-1 py-2 sm:py-2.5 px-3 rounded-xl border border-border bg-white text-text-main text-xs sm:text-fluid-13 font-bold font-sans transition-colors hover:bg-off-white cursor-pointer"
           >
             Cancel
           </button>
@@ -211,7 +211,7 @@ export default function RescheduleModal({ token, appointment, appt, onClose, onS
             type="button" 
             onClick={handleConfirmClick} 
             disabled={!selectedSlot || loading}
-            className={`flex-2 py-2 sm:py-2.5 px-3.5 rounded-xl border-none text-xs sm:text-[13px] font-bold font-sans transition-all flex items-center justify-center gap-1.5 shadow-2xs ${
+            className={`flex-2 py-2 sm:py-2.5 px-3.5 rounded-xl border-none text-xs sm:text-fluid-13 font-bold font-sans transition-all flex items-center justify-center gap-1.5 shadow-2xs ${
               selectedSlot && !loading ? 'bg-maroon text-white cursor-pointer hover:bg-maroon-dark' : 'bg-gray-200 text-text-muted cursor-not-allowed opacity-60'
             }`}
           >

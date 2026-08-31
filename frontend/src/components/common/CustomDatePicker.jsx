@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react'
 import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, X } from 'lucide-react'
+import { getPhilippineHoliday } from '../../utils/philippineHolidays'
 
 const MONTHS = [
   'January', 'February', 'March', 'April', 'May', 'June',
@@ -247,14 +248,14 @@ export default function CustomDatePicker({
   return (
     <div className={`relative inline-block ${className}`} ref={containerRef}>
       {label && (
-        <label className="block text-[11px] font-extrabold text-text-muted uppercase tracking-wider mb-1.5">
+        <label className="block text-fluid-11 font-extrabold text-text-muted uppercase tracking-wider mb-1.5">
           {label}
         </label>
       )}
 
       {/* Manual Input Container */}
       <div
-        className={`w-full flex items-center justify-between bg-white rounded-xl border text-[13.5px] font-sans transition-all shadow-xs ${
+        className={`w-full flex items-center justify-between bg-white rounded-xl border text-fluid-13-5 font-sans transition-all shadow-xs ${
           isOpen
             ? 'border-maroon ring-2 ring-maroon/15 shadow-sm'
             : 'border-border hover:border-border-strong text-text-main'
@@ -269,7 +270,7 @@ export default function CustomDatePicker({
           onBlur={handleInputBlur}
           onFocus={() => !disabled && setIsOpen(true)}
           placeholder={placeholder}
-          className="w-full bg-transparent px-3.5 py-2.5 outline-none text-[13.5px] text-text-main font-medium placeholder:text-text-muted placeholder:font-normal"
+          className="w-full bg-transparent px-3.5 py-2.5 outline-none text-fluid-13-5 text-text-main font-medium placeholder:text-text-muted placeholder:font-normal"
         />
 
         <div className="flex items-center gap-1 pr-2.5 shrink-0">
@@ -309,8 +310,8 @@ export default function CustomDatePicker({
         >
           {/* Month & Year Navigation */}
           <div className="flex items-center justify-between mb-3 px-1">
-            <span className="font-serif text-[16px] font-bold text-text-main">
-              {MONTHS[month]} <span className="font-sans text-[14px] text-text-sub">{year}</span>
+            <span className="font-serif text-fluid-16 font-bold text-text-main">
+              {MONTHS[month]} <span className="font-sans text-fluid-14 text-text-sub">{year}</span>
             </span>
 
             <div className="flex items-center gap-1">
@@ -338,7 +339,7 @@ export default function CustomDatePicker({
             {DAYS.map((d, i) => (
               <div
                 key={i}
-                className={`text-[11px] font-bold py-1 ${
+                className={`text-fluid-11 font-bold py-1 ${
                   i === 0 ? 'text-text-muted/40' : 'text-text-muted'
                 }`}
               >
@@ -353,10 +354,17 @@ export default function CustomDatePicker({
               const isSunday = cell.date.getDay() === 0
               const isPast = cell.dateStr < todayStr
               const isOutOfBounds = (minDate && cell.dateStr < minDate) || (maxDate && cell.dateStr > maxDate)
-              const isDisabled = isSunday || isPast || isOutOfBounds
+              const phHoliday = getPhilippineHoliday(cell.dateStr)
+              const isDisabled = isSunday || isPast || isOutOfBounds || Boolean(phHoliday)
 
               const isSelected = value === cell.dateStr
               const isToday = cell.dateStr === todayStr
+
+              let cellTitle = ''
+              if (isSunday) cellTitle = 'Sundays are closed'
+              else if (phHoliday) cellTitle = `${phHoliday.name} (${phHoliday.type}) - Office Closed`
+              else if (isPast) cellTitle = 'Past date'
+              else if (isOutOfBounds) cellTitle = 'Outside booking window'
 
               return (
                 <button
@@ -364,12 +372,14 @@ export default function CustomDatePicker({
                   type="button"
                   disabled={isDisabled}
                   onClick={() => handleSelectDay(cell)}
-                  title={isSunday ? 'Sundays are closed' : isPast ? 'Past date' : ''}
-                  className={`h-8 w-8 mx-auto rounded-xl text-[12.5px] font-sans flex items-center justify-center transition-all duration-150 relative ${
+                  title={cellTitle}
+                  className={`h-8 w-8 mx-auto rounded-xl text-fluid-12-5 font-sans flex flex-col items-center justify-center transition-all duration-150 relative ${
                     isSelected
                       ? 'bg-maroon text-white font-extrabold shadow-sm scale-105 z-10 cursor-pointer'
                       : isToday
                       ? 'text-maroon font-bold hover:bg-maroon-light hover:text-maroon cursor-pointer'
+                      : phHoliday
+                      ? 'bg-danger-light/30 text-danger font-medium cursor-not-allowed opacity-75'
                       : isDisabled
                       ? 'text-text-muted/30 cursor-not-allowed bg-transparent font-normal'
                       : !cell.isCurrentMonth
@@ -377,14 +387,17 @@ export default function CustomDatePicker({
                       : 'text-text-main font-medium hover:bg-maroon-light hover:text-maroon cursor-pointer'
                   }`}
                 >
-                  {cell.day}
+                  <span>{cell.day}</span>
+                  {phHoliday && (
+                    <div className={`w-1 h-1 rounded-full ${isSelected ? 'bg-white' : 'bg-danger'}`} />
+                  )}
                 </button>
               )
             })}
           </div>
 
           {/* Footer details */}
-          <div className="mt-3 pt-2.5 border-t border-border flex items-center justify-between text-[11px] text-text-muted px-1">
+          <div className="mt-3 pt-2.5 border-t border-border flex items-center justify-between text-fluid-11 text-text-muted px-1">
             <span>
               {value ? (
                 <span className="text-maroon font-bold">Selected: {formatDateDisplay(value)}</span>

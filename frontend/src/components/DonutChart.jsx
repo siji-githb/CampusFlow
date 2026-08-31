@@ -44,10 +44,10 @@ export default function DonutChart({ data, total, colors, hideLegend = false }) 
           })}
         </svg>
         <div className="absolute inset-0 flex flex-col items-center justify-center text-center pointer-events-none transition-all duration-300">
-          <div className="text-[14px] font-semibold text-text-main transition-colors">
+          <div className="text-fluid-14 font-semibold text-text-main transition-colors">
             {hovered !== null ? data[hovered].name : 'Total'}
           </div>
-          <div className="text-[32px] font-bold text-text-main leading-tight transition-all">
+          <div className="text-fluid-32 font-bold text-text-main leading-tight transition-all">
             {hovered !== null ? data[hovered].count : total}
           </div>
         </div>
@@ -64,7 +64,7 @@ export default function DonutChart({ data, total, colors, hideLegend = false }) 
               onMouseLeave={() => setHovered(null)}
             >
               <div className="w-3.5 h-3.5 rounded-full shadow-sm shrink-0" style={{ backgroundColor: colors[i % colors.length] }} />
-              <div className="text-[13.5px] font-semibold text-text-main">{tx.name}</div>
+              <div className="text-fluid-13-5 font-semibold text-text-main">{tx.name}</div>
             </div>
           ))}
         </div>

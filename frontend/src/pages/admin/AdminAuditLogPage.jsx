@@ -101,7 +101,7 @@ function CustomFilterDropdown({
       <button
         type="button"
         onClick={onToggle}
-        className={`flex items-center gap-2 px-3.5 py-2.25 rounded-xl border bg-white text-[12.5px] font-bold text-text-main outline-none cursor-pointer font-sans transition-all shadow-[0_2px_8px_rgba(0,0,0,0.04)] ${
+        className={`flex items-center gap-2 px-3.5 py-2.25 rounded-xl border bg-white text-fluid-12-5 font-bold text-text-main outline-none cursor-pointer font-sans transition-all shadow-[0_2px_8px_rgba(0,0,0,0.04)] ${
           isOpen ? 'border-maroon ring-2 ring-maroon/10 bg-surface/50' : 'border-border hover:bg-surface hover:border-maroon/30'
         }`}
       >
@@ -117,7 +117,7 @@ function CustomFilterDropdown({
           <div className="fixed inset-0 z-40" onClick={onClose} />
           <div className="absolute right-0 sm:left-0 top-full mt-1.5 min-w-44 bg-white rounded-2xl border border-border shadow-[0_12px_32px_rgba(0,0,0,0.12)] p-1.5 z-50 animate-fade-up">
             {label && (
-              <div className="px-3 py-1.5 text-[10px] font-extrabold text-text-muted uppercase tracking-wider border-b border-border/50 mb-1">
+              <div className="px-3 py-1.5 text-fluid-10 font-extrabold text-text-muted uppercase tracking-wider border-b border-border/50 mb-1">
                 {label}
               </div>
             )}
@@ -132,7 +132,7 @@ function CustomFilterDropdown({
                       onChange(opt.value)
                       onClose()
                     }}
-                    className={`w-full px-3 py-2 rounded-xl text-left cursor-pointer flex items-center justify-between text-[12.5px] transition-all border-none font-sans ${
+                    className={`w-full px-3 py-2 rounded-xl text-left cursor-pointer flex items-center justify-between text-fluid-12-5 transition-all border-none font-sans ${
                       isSelected 
                         ? 'bg-maroon-light text-maroon font-bold' 
                         : 'bg-transparent text-text-main hover:bg-surface font-medium'
@@ -307,7 +307,7 @@ export default function AdminAuditLogPage() {
       
       {/* ── Standard Toast Notification (Only component utilizing #006600) ── */}
       {toastMsg && (
-        <div className={`fixed bottom-10 right-8 z-9999 flex items-center gap-3 px-5 py-3.5 rounded-xl shadow-[0_12px_32px_rgba(0,0,0,0.18)] border text-[13.5px] font-bold animate-fade-up ${
+        <div className={`fixed bottom-10 right-8 z-9999 flex items-center gap-3 px-5 py-3.5 rounded-xl shadow-[0_12px_32px_rgba(0,0,0,0.18)] border text-fluid-13-5 font-bold animate-fade-up ${
           toastMsg.type === 'error' 
             ? 'bg-red-600 text-white border-red-700' 
             : 'bg-[#006600] text-white border-[#005200]'
@@ -329,11 +329,11 @@ export default function AdminAuditLogPage() {
       {/* ── Page Header ── */}
       <div className="flex items-end justify-between mb-6 flex-wrap gap-3">
         <div>
-          <p className="text-[11px] font-bold text-gold tracking-widest uppercase m-0 mb-1.5">Security &amp; Compliance</p>
-          <h1 className="font-serif text-[22px] sm:text-[26px] font-bold text-text-main m-0 mb-2 flex items-center gap-2.5 sm:gap-3">
+          <p className="text-fluid-11 font-bold text-gold tracking-widest uppercase m-0 mb-1.5">Security &amp; Compliance</p>
+          <h1 className="font-serif text-fluid-22 sm:text-fluid-26 font-bold text-text-main m-0 mb-2 flex items-center gap-2.5 sm:gap-3">
             <Shield size={26} className="text-maroon shrink-0" /> System Audit Log
           </h1>
-          <p className="text-[12px] sm:text-[13px] text-text-sub mt-1.5 sm:mt-2 mb-0 leading-relaxed max-w-2xl">
+          <p className="text-fluid-12 sm:text-fluid-13 text-text-sub mt-1.5 sm:mt-2 mb-0 leading-relaxed max-w-2xl">
             Comprehensive chronological audit trail of all administrative actions, queue verifications, parameter modifications, and security events.
           </p>
         </div>
@@ -342,7 +342,7 @@ export default function AdminAuditLogPage() {
           <button 
             onClick={() => fetchLogs(true)} 
             disabled={refreshing}
-            className="flex items-center gap-1.5 px-3.5 py-2.25 rounded-xl border border-border bg-white text-text-main text-[12.5px] font-bold cursor-pointer font-sans hover:bg-surface hover:border-maroon/30 transition-all shadow-[0_2px_8px_rgba(0,0,0,0.04)]"
+            className="flex items-center gap-1.5 px-3.5 py-2.25 rounded-xl border border-border bg-white text-text-main text-fluid-12-5 font-bold cursor-pointer font-sans hover:bg-surface hover:border-maroon/30 transition-all shadow-[0_2px_8px_rgba(0,0,0,0.04)]"
           >
             <RefreshCw size={14} className={`text-text-muted ${refreshing ? 'animate-spin text-maroon' : ''}`} />
             <span>{refreshing ? 'Refreshing...' : 'Refresh Logs'}</span>
@@ -351,7 +351,7 @@ export default function AdminAuditLogPage() {
           <button 
             onClick={exportCSV} 
             disabled={filtered.length === 0}
-            className={`flex items-center gap-1.5 px-3.5 py-2.25 rounded-xl border border-border bg-white text-text-main text-[12.5px] font-bold cursor-pointer font-sans hover:bg-surface hover:border-maroon/30 transition-all shadow-[0_2px_8px_rgba(0,0,0,0.04)] ${
+            className={`flex items-center gap-1.5 px-3.5 py-2.25 rounded-xl border border-border bg-white text-text-main text-fluid-12-5 font-bold cursor-pointer font-sans hover:bg-surface hover:border-maroon/30 transition-all shadow-[0_2px_8px_rgba(0,0,0,0.04)] ${
               filtered.length ? '' : 'cursor-not-allowed opacity-60'
             }`}
           >
@@ -378,15 +378,15 @@ export default function AdminAuditLogPage() {
         ].map((c, idx) => (
           <div key={idx} className="animate-fade-up rounded-2xl p-[18px_20px] bg-white border border-border shadow-[0_1px_4px_rgba(0,0,0,0.04)] relative overflow-hidden" style={{ animationDelay: `${0.08 * (idx + 1)}s` }}>
             <div className="flex items-start justify-between mb-2">
-              <div className="text-[10px] font-extrabold uppercase tracking-[0.08em] text-text-muted mt-1">{c.label}</div>
+              <div className="text-fluid-10 font-extrabold uppercase tracking-[0.08em] text-text-muted mt-1">{c.label}</div>
               <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${c.bg} ${c.fg}`}>
                 {c.icon}
               </div>
             </div>
-            <div className="font-sans text-[36px] font-extrabold leading-none text-text-main m-0 min-h-9">
+            <div className="font-sans text-fluid-36 font-extrabold leading-none text-text-main m-0 min-h-9">
               {loading ? <div className="animate-pulse w-16 h-9 bg-border rounded-lg" /> : c.value.toLocaleString()}
             </div>
-            <div className="text-[11px] font-medium text-text-muted mt-1.5">{c.sub}</div>
+            <div className="text-fluid-11 font-medium text-text-muted mt-1.5">{c.sub}</div>
           </div>
         ))}
       </div>
@@ -403,7 +403,7 @@ export default function AdminAuditLogPage() {
               value={search}
               onChange={e => { setSearch(e.target.value); setPage(1) }}
               placeholder="Search actions, user names, table names, changes, record IDs…"
-              className="w-full py-2.5 pr-8 pl-10 rounded-full border border-border bg-white text-[13px] text-text-main outline-none font-sans box-border focus:border-maroon transition-colors"
+              className="w-full py-2.5 pr-8 pl-10 rounded-full border border-border bg-white text-fluid-13 text-text-main outline-none font-sans box-border focus:border-maroon transition-colors"
             />
             <span className="absolute left-3.5 top-1/2 -translate-y-1/2 flex items-center text-text-muted"><Search size={16} /></span>
             {search && (
@@ -453,14 +453,14 @@ export default function AdminAuditLogPage() {
             {(search || severityFilter !== 'all' || categoryFilter !== 'all' || timeFilter !== 'all') && (
               <button 
                 onClick={() => { setSearch(''); setSeverityFilter('all'); setCategoryFilter('all'); setTimeFilter('all'); setPage(1) }}
-                className="py-2.25 px-3 rounded-xl border border-border bg-white text-text-muted text-[12px] font-bold cursor-pointer hover:text-maroon hover:border-maroon/40 transition-colors shadow-2xs"
+                className="py-2.25 px-3 rounded-xl border border-border bg-white text-text-muted text-fluid-12 font-bold cursor-pointer hover:text-maroon hover:border-maroon/40 transition-colors shadow-2xs"
                 title="Reset all filters"
               >
                 Reset
               </button>
             )}
 
-            <span className="text-[12px] text-text-muted font-bold ml-1 pl-2 border-l border-border hidden sm:inline-block">
+            <span className="text-fluid-12 text-text-muted font-bold ml-1 pl-2 border-l border-border hidden sm:inline-block">
               {filtered.length} {filtered.length === 1 ? 'entry' : 'entries'}
             </span>
           </div>
@@ -468,7 +468,7 @@ export default function AdminAuditLogPage() {
         </div>
 
         {/* ── Table Header ── */}
-        <div className="hidden lg:grid grid-cols-[140px_1.4fr_1.8fr_130px_1.8fr_90px_45px] gap-3 px-5 py-3 bg-surface border-b border-border/60 text-[11px] font-extrabold text-text-muted uppercase tracking-[0.08em]">
+        <div className="hidden lg:grid grid-cols-[140px_1.4fr_1.8fr_130px_1.8fr_90px_45px] gap-3 px-5 py-3 bg-surface border-b border-border/60 text-fluid-11 font-extrabold text-text-muted uppercase tracking-[0.08em]">
           <span>Timestamp</span>
           <span>Actor / Performer</span>
           <span>Action Performed</span>
@@ -498,8 +498,8 @@ export default function AdminAuditLogPage() {
             <div className="w-16 h-16 rounded-2xl bg-surface border border-border flex items-center justify-center mx-auto mb-4 text-text-muted">
               <Shield size={32} strokeWidth={1.5} />
             </div>
-            <h3 className="font-serif text-[20px] font-bold text-text-main m-0 mb-1.5">No Audit Events Found</h3>
-            <p className="text-[13.5px] text-text-muted m-0 max-w-96 mx-auto leading-relaxed">
+            <h3 className="font-serif text-fluid-20 font-bold text-text-main m-0 mb-1.5">No Audit Events Found</h3>
+            <p className="text-fluid-13-5 text-text-muted m-0 max-w-96 mx-auto leading-relaxed">
               {search || severityFilter !== 'all' || categoryFilter !== 'all' || timeFilter !== 'all'
                 ? 'No system logs matched your current filter criteria. Try resetting your search or filters.'
                 : 'System actions, configurations, and verification logs will appear here automatically.'}
@@ -523,17 +523,17 @@ export default function AdminAuditLogPage() {
                   
                   {/* 1. Date & Time */}
                   <div>
-                    <span className="text-[12.5px] font-bold text-text-main block">
+                    <span className="text-fluid-12-5 font-bold text-text-main block">
                       {relTime}
                     </span>
-                    <span className="text-[11px] text-text-muted block font-mono mt-0.5">
+                    <span className="text-fluid-11 text-text-muted block font-mono mt-0.5">
                       {logDate ? logDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }) : ''}
                     </span>
                   </div>
 
                   {/* 2. Actor / User */}
                   <div className="flex items-center gap-2.5 min-w-0">
-                    <div className={`w-7 h-7 rounded-lg flex items-center justify-center font-bold text-[11px] shrink-0 border ${
+                    <div className={`w-7 h-7 rounded-lg flex items-center justify-center font-bold text-fluid-11 shrink-0 border ${
                       actorRole === 'ADMIN' ? 'bg-maroon-light text-maroon border-maroon-border' :
                       actorRole === 'STAFF' ? 'bg-gold-light text-gold border-gold-border' :
                       'bg-surface text-text-main border-border'
@@ -541,10 +541,10 @@ export default function AdminAuditLogPage() {
                       {actorName[0]?.toUpperCase() || 'S'}
                     </div>
                     <div className="min-w-0">
-                      <span className="text-[13px] font-bold text-text-main block truncate group-hover:text-maroon transition-colors">
+                      <span className="text-fluid-13 font-bold text-text-main block truncate group-hover:text-maroon transition-colors">
                         {actorName}
                       </span>
-                      <span className="text-[10px] font-extrabold uppercase tracking-wider text-text-muted block">
+                      <span className="text-fluid-10 font-extrabold uppercase tracking-wider text-text-muted block">
                         {actorRole}
                       </span>
                     </div>
@@ -552,7 +552,7 @@ export default function AdminAuditLogPage() {
 
                   {/* 3. Action Performed */}
                   <div className="min-w-0">
-                    <span className={`inline-flex items-center gap-1.5 text-[11px] font-bold px-2.5 py-1 rounded-lg border max-w-full truncate ${meta.bg}`}>
+                    <span className={`inline-flex items-center gap-1.5 text-fluid-11 font-bold px-2.5 py-1 rounded-lg border max-w-full truncate ${meta.bg}`}>
                       {meta.icon}
                       <span className="truncate">{log.action}</span>
                     </span>
@@ -560,11 +560,11 @@ export default function AdminAuditLogPage() {
 
                   {/* 4. Target Entity / Table */}
                   <div className="min-w-0">
-                    <span className="text-[12px] font-bold font-mono text-text-main block truncate">
+                    <span className="text-fluid-12 font-bold font-mono text-text-main block truncate">
                       {log.table_name || 'system'}
                     </span>
                     {log.record_id && (
-                      <span className="text-[10.5px] text-text-muted font-mono block truncate" title={log.record_id}>
+                      <span className="text-fluid-10-5 text-text-muted font-mono block truncate" title={log.record_id}>
                         ID: {log.record_id.slice(0, 8)}...
                       </span>
                     )}
@@ -572,14 +572,14 @@ export default function AdminAuditLogPage() {
 
                   {/* 5. Changes & Context */}
                   <div className="min-w-0">
-                    <p className="text-[12px] text-text-sub font-medium m-0 truncate" title={log.changes || 'No additional payload'}>
+                    <p className="text-fluid-12 text-text-sub font-medium m-0 truncate" title={log.changes || 'No additional payload'}>
                       {log.changes || '—'}
                     </p>
                   </div>
 
                   {/* 6. Severity Badge */}
                   <div className="text-center">
-                    <span className={`inline-block text-[10px] font-extrabold uppercase tracking-wider px-2.5 py-0.5 rounded-full border ${
+                    <span className={`inline-block text-fluid-10 font-extrabold uppercase tracking-wider px-2.5 py-0.5 rounded-full border ${
                       log.severity === 'Critical' ? 'bg-danger-light text-danger border-danger-border' :
                       log.severity === 'Warning' ? 'bg-gold-light text-gold border-gold-border' :
                       'bg-info-light text-info border-info-border'
@@ -608,7 +608,7 @@ export default function AdminAuditLogPage() {
         {/* ── Pagination Footer ── */}
         {filtered.length > 0 && (
           <div className="p-[14px_24px] border-t border-border bg-white flex items-center justify-between flex-wrap gap-3">
-            <span className="text-[12.5px] text-text-muted font-medium">
+            <span className="text-fluid-12-5 text-text-muted font-medium">
               Showing <strong className="text-text-main">{Math.min((page - 1) * PER_PAGE + 1, filtered.length)}</strong>–<strong className="text-text-main">{Math.min(page * PER_PAGE, filtered.length)}</strong> of <strong className="text-text-main">{filtered.length}</strong> events
             </span>
 
@@ -616,21 +616,21 @@ export default function AdminAuditLogPage() {
               <button 
                 onClick={() => setPage(p => Math.max(1, p - 1))} 
                 disabled={page === 1}
-                className={`flex items-center gap-1 py-1.5 px-3 rounded-lg border border-border bg-white text-[12.5px] font-bold font-sans transition-all ${
+                className={`flex items-center gap-1 py-1.5 px-3 rounded-lg border border-border bg-white text-fluid-12-5 font-bold font-sans transition-all ${
                   page === 1 ? 'cursor-not-allowed text-text-muted opacity-60' : 'cursor-pointer text-text-main hover:bg-surface hover:border-maroon/30'
                 }`}
               >
                 <ChevronLeft size={14} /> Previous
               </button>
 
-              <span className="text-[12px] font-bold text-text-muted px-2">
+              <span className="text-fluid-12 font-bold text-text-muted px-2">
                 Page {page} of {totalPages}
               </span>
 
               <button 
                 onClick={() => setPage(p => Math.min(totalPages, p + 1))} 
                 disabled={page === totalPages}
-                className={`flex items-center gap-1 py-1.5 px-3 rounded-lg border border-border bg-white text-[12.5px] font-bold font-sans transition-all ${
+                className={`flex items-center gap-1 py-1.5 px-3 rounded-lg border border-border bg-white text-fluid-12-5 font-bold font-sans transition-all ${
                   page === totalPages ? 'cursor-not-allowed text-text-muted opacity-60' : 'cursor-pointer text-text-main hover:bg-surface hover:border-maroon/30'
                 }`}
               >
@@ -657,10 +657,10 @@ export default function AdminAuditLogPage() {
                   <Shield size={24} />
                 </div>
                 <div className="min-w-0">
-                  <div className="text-[11px] font-bold text-gold uppercase tracking-[0.06em] mb-0.5">
+                  <div className="text-fluid-11 font-bold text-gold uppercase tracking-[0.06em] mb-0.5">
                     AUDIT EVENT DETAILS
                   </div>
-                  <h2 className="font-serif text-[19px] sm:text-[20px] font-bold text-maroon m-0 leading-snug truncate">
+                  <h2 className="font-serif text-fluid-19 sm:text-fluid-20 font-bold text-maroon m-0 leading-snug truncate">
                     {selectedLog.action}
                   </h2>
                 </div>
@@ -681,21 +681,21 @@ export default function AdminAuditLogPage() {
               {/* Actor & Timestamp Card */}
               <div className="p-4 rounded-2xl bg-surface border border-border grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                 <div>
-                  <span className="text-[11px] text-text-muted font-bold uppercase tracking-wider block">Performer / Actor</span>
-                  <strong className="text-[14px] text-text-main font-bold block mt-0.5">
+                  <span className="text-fluid-11 text-text-muted font-bold uppercase tracking-wider block">Performer / Actor</span>
+                  <strong className="text-fluid-14 text-text-main font-bold block mt-0.5">
                     {selectedLog.users ? `${selectedLog.users.first_name} ${selectedLog.users.last_name}` : 'System Automated'}
                   </strong>
-                  <span className="text-[11.5px] text-text-sub font-mono block mt-0.5">
+                  <span className="text-fluid-11-5 text-text-sub font-mono block mt-0.5">
                     Role: {selectedLog.users?.role?.toUpperCase() || 'SYSTEM'}
                   </span>
                 </div>
 
                 <div>
-                  <span className="text-[11px] text-text-muted font-bold uppercase tracking-wider block">Exact Timestamp</span>
-                  <strong className="text-[13px] text-text-main font-semibold block mt-0.5">
+                  <span className="text-fluid-11 text-text-muted font-bold uppercase tracking-wider block">Exact Timestamp</span>
+                  <strong className="text-fluid-13 text-text-main font-semibold block mt-0.5">
                     {selectedLog.created_at ? new Date(selectedLog.created_at).toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit', second: '2-digit' }) : '—'}
                   </strong>
-                  <span className="text-[11.5px] text-gold font-bold block mt-0.5">
+                  <span className="text-fluid-11-5 text-gold font-bold block mt-0.5">
                     {formatRelativeTime(selectedLog.created_at)}
                   </span>
                 </div>
@@ -704,19 +704,19 @@ export default function AdminAuditLogPage() {
               {/* Entity Target Card */}
               <div className="p-4 rounded-2xl bg-surface border border-border grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                 <div>
-                  <span className="text-[11px] text-text-muted font-bold uppercase tracking-wider block">Target Database Table</span>
-                  <span className="text-[13px] text-maroon font-mono font-bold block mt-0.5">
+                  <span className="text-fluid-11 text-text-muted font-bold uppercase tracking-wider block">Target Database Table</span>
+                  <span className="text-fluid-13 text-maroon font-mono font-bold block mt-0.5">
                     {selectedLog.table_name || 'system'}
                   </span>
                 </div>
 
                 <div>
-                  <span className="text-[11px] text-text-muted font-bold uppercase tracking-wider block">Severity &amp; Status</span>
+                  <span className="text-fluid-11 text-text-muted font-bold uppercase tracking-wider block">Severity &amp; Status</span>
                   <div className="flex items-center gap-2 mt-1">
-                    <span className="text-[10.5px] font-extrabold uppercase px-2.5 py-0.5 rounded-full bg-gold-light text-gold border border-gold-border">
+                    <span className="text-fluid-10-5 font-extrabold uppercase px-2.5 py-0.5 rounded-full bg-gold-light text-gold border border-gold-border">
                       {selectedLog.severity || 'Info'}
                     </span>
-                    <span className="text-[10.5px] font-extrabold uppercase px-2.5 py-0.5 rounded-full bg-success-light text-success border border-success-border">
+                    <span className="text-fluid-10-5 font-extrabold uppercase px-2.5 py-0.5 rounded-full bg-success-light text-success border border-success-border">
                       {selectedLog.status || 'Success'}
                     </span>
                   </div>
@@ -724,8 +724,8 @@ export default function AdminAuditLogPage() {
 
                 {selectedLog.record_id && (
                   <div className="sm:col-span-2 pt-2 border-t border-border">
-                    <span className="text-[11px] text-text-muted font-bold uppercase tracking-wider block">Record Primary Key</span>
-                    <code className="text-[12px] text-text-sub font-mono block mt-1 bg-white p-2 rounded-lg border border-border break-all">
+                    <span className="text-fluid-11 text-text-muted font-bold uppercase tracking-wider block">Record Primary Key</span>
+                    <code className="text-fluid-12 text-text-sub font-mono block mt-1 bg-white p-2 rounded-lg border border-border break-all">
                       {selectedLog.record_id}
                     </code>
                   </div>
@@ -734,8 +734,8 @@ export default function AdminAuditLogPage() {
 
               {/* Recorded Payload / Changes */}
               <div className="p-4 rounded-2xl bg-surface border border-border">
-                <span className="text-[11px] text-text-muted font-bold uppercase tracking-wider block mb-1.5">Recorded Changes &amp; Parameters</span>
-                <div className="text-[13px] text-text-main font-medium bg-white p-3.5 rounded-xl border border-border leading-relaxed wrap-break-word whitespace-pre-wrap font-sans">
+                <span className="text-fluid-11 text-text-muted font-bold uppercase tracking-wider block mb-1.5">Recorded Changes &amp; Parameters</span>
+                <div className="text-fluid-13 text-text-main font-medium bg-white p-3.5 rounded-xl border border-border leading-relaxed wrap-break-word whitespace-pre-wrap font-sans">
                   {selectedLog.changes || 'No structured modification payload attached to this event.'}
                 </div>
               </div>
@@ -747,7 +747,7 @@ export default function AdminAuditLogPage() {
               <button
                 type="button"
                 onClick={() => setSelectedLog(null)}
-                className="py-2.5 px-6 rounded-xl bg-maroon text-white font-sans font-semibold text-[13.5px] cursor-pointer hover:bg-maroon-dark transition-colors border-none shadow-sm"
+                className="py-2.5 px-6 rounded-xl bg-maroon text-white font-sans font-semibold text-fluid-13-5 cursor-pointer hover:bg-maroon-dark transition-colors border-none shadow-sm"
               >
                 Close
               </button>

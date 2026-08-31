@@ -54,8 +54,8 @@ function CompactQueuePreview({ queue, loading, onNavigate }) {
       <div className="w-13 h-13 rounded-2xl bg-surface border border-border flex items-center justify-center mb-3 text-text-muted/70 shadow-2xs">
         <Ticket size={24} strokeWidth={1.5} />
       </div>
-      <h3 className="font-serif text-[15px] font-bold text-text-main m-0 mb-1">Counter is Clear</h3>
-      <p className="text-[12px] text-text-muted m-0 max-w-xs leading-relaxed">
+      <h3 className="font-serif text-fluid-15 font-bold text-text-main m-0 mb-1">Counter is Clear</h3>
+      <p className="text-fluid-12 text-text-muted m-0 max-w-xs leading-relaxed">
         No active student tickets waiting at the counter right now.
       </p>
     </div>
@@ -84,21 +84,21 @@ function CompactQueuePreview({ queue, loading, onNavigate }) {
           >
             {/* Queue Number & Info */}
             <div className="flex items-center gap-3 min-w-0">
-              <div className="w-10 h-10 rounded-xl bg-maroon text-white flex items-center justify-center font-serif text-[14px] font-extrabold shrink-0 shadow-2xs">
+              <div className="w-10 h-10 rounded-xl bg-maroon text-white flex items-center justify-center font-serif text-fluid-14 font-extrabold shrink-0 shadow-2xs">
                 {ticket.queue_number}
               </div>
               <div className="min-w-0">
                 <div className="flex items-center gap-1.5 mb-0.5">
-                  <span className="text-[13px] font-bold text-text-main truncate group-hover:text-maroon transition-colors">
+                  <span className="text-fluid-13 font-bold text-text-main truncate group-hover:text-maroon transition-colors">
                     {name}
                   </span>
                   {isPriority && (
-                    <span className="shrink-0 text-[9px] font-extrabold px-1.5 py-0.2 rounded-full bg-maroon-light text-maroon border border-maroon-border/60 uppercase">
+                    <span className="shrink-0 text-fluid-9 font-extrabold px-1.5 py-0.2 rounded-full bg-maroon-light text-maroon border border-maroon-border/60 uppercase">
                       {priorityClass}
                     </span>
                   )}
                 </div>
-                <div className="text-[11.5px] text-text-muted font-medium truncate">
+                <div className="text-fluid-11-5 text-text-muted font-medium truncate">
                   {txName}
                 </div>
               </div>
@@ -106,7 +106,7 @@ function CompactQueuePreview({ queue, loading, onNavigate }) {
 
             {/* Serving / Waiting Status */}
             <div className="shrink-0 flex items-center gap-2">
-              <span className={`text-[11px] font-bold px-2.5 py-1 rounded-full border flex items-center gap-1.5 ${
+              <span className={`text-fluid-11 font-bold px-2.5 py-1 rounded-full border flex items-center gap-1.5 ${
                 isServing 
                   ? 'bg-success-light text-success border-success-border' 
                   : 'bg-gold-light text-gold border-gold-border'
@@ -121,7 +121,7 @@ function CompactQueuePreview({ queue, loading, onNavigate }) {
       
       {activeAll.length > 4 && (
         <div className="pt-2 text-right">
-          <span className="text-[11px] font-semibold text-text-muted">
+          <span className="text-fluid-11 font-semibold text-text-muted">
             + {activeAll.length - 4} more tickets in queue
           </span>
         </div>
@@ -135,7 +135,7 @@ const SideItem = ({ icon, label, active, onClick, badge, disabled }) => (
   <button 
     onClick={disabled ? undefined : onClick} 
     disabled={disabled}
-    className={`flex items-center gap-2.75 w-full px-3.5 py-2.5 rounded-[10px] border-none text-left text-[13.5px] font-sans relative transition-all duration-300 overflow-hidden
+    className={`flex items-center gap-2.75 w-full px-3.5 py-2.5 rounded-[10px] border-none text-left text-fluid-13-5 font-sans relative transition-all duration-300 overflow-hidden
       ${disabled ? 'cursor-not-allowed opacity-40' : 'cursor-pointer'}
       ${active ? 'bg-maroon-light/60 text-maroon font-bold' : 'bg-transparent text-text-sub font-medium'}
       ${!active && !disabled ? 'hover:bg-surface hover:text-text-main' : ''}
@@ -144,12 +144,12 @@ const SideItem = ({ icon, label, active, onClick, badge, disabled }) => (
     {active && (
       <div className="absolute left-0 top-[15%] bottom-[15%] w-0.75 bg-maroon rounded-r-full shadow-[1px_0_6px_rgba(123,26,42,0.3)]" />
     )}
-    <span className={`flex items-center justify-center text-[17px] w-5 shrink-0 transition-all duration-300 ${active ? 'opacity-100 scale-110 text-maroon' : 'opacity-70'}`}>
+    <span className={`flex items-center justify-center text-fluid-17 w-5 shrink-0 transition-all duration-300 ${active ? 'opacity-100 scale-110 text-maroon' : 'opacity-70'}`}>
       {icon}
     </span>
     <span className="flex-1 tracking-wide">{label}</span>
     {badge > 0 && (
-      <span className="bg-maroon text-white text-[10px] font-bold px-1.5 py-px rounded-full min-w-4.5 text-center z-10 relative shadow-sm">
+      <span className="bg-maroon text-white text-fluid-10 font-bold px-1.5 py-px rounded-full min-w-4.5 text-center z-10 relative shadow-sm">
         {badge}
       </span>
     )}
@@ -160,16 +160,16 @@ const SideItem = ({ icon, label, active, onClick, badge, disabled }) => (
 const StatCard = ({ icon, value, label, sub, subColorClass = "text-text-muted", colorClass, bgClass, loading, delay, className = "" }) => (
   <div className={`animate-fade-up bg-white rounded-xl sm:rounded-[14px] p-3.5 sm:px-5 sm:py-4.5 border border-border flex flex-col justify-between gap-2.5 sm:gap-3 shadow-[0_1px_4px_rgba(0,0,0,0.04)] ${className}`} style={{ animationDelay: delay || '0s' }}>
     <div className="flex items-start justify-between gap-2">
-      <div className="text-[10.5px] sm:text-xs font-semibold text-text-muted uppercase tracking-[0.06em] mt-0.5 sm:mt-1.5 leading-tight">{label}</div>
+      <div className="text-fluid-10-5 sm:text-xs font-semibold text-text-muted uppercase tracking-[0.06em] mt-0.5 sm:mt-1.5 leading-tight">{label}</div>
       <div className={`w-8 h-8 sm:w-9 sm:h-9 rounded-lg sm:rounded-[10px] flex items-center justify-center shrink-0 ${bgClass} ${colorClass}`}>
         {icon}
       </div>
     </div>
     <div>
-      <div className="font-serif text-[22px] sm:text-[28px] font-extrabold leading-none m-0 min-h-6 sm:min-h-7 text-text-main">
+      <div className="font-serif text-fluid-22 sm:text-fluid-28 font-extrabold leading-none m-0 min-h-6 sm:min-h-7 text-text-main">
         {loading ? <div className="animate-pulse w-15 h-6 sm:h-7 rounded-md bg-border" /> : value}
       </div>
-      {sub && <div className={`text-[10.5px] sm:text-[11px] font-semibold mt-1 sm:mt-1.5 truncate ${subColorClass}`}>{sub}</div>}
+      {sub && <div className={`text-fluid-10-5 sm:text-fluid-11 font-semibold mt-1 sm:mt-1.5 truncate ${subColorClass}`}>{sub}</div>}
     </div>
   </div>
 )
@@ -342,8 +342,8 @@ export default function StaffDashboard() {
           <div className="flex items-center gap-2.5">
             <img src={campusFlowLogo} alt="CampusFlow" className="w-8.5 h-8.5 rounded-full bg-white object-contain border border-slate-200" />
             <div>
-              <div className="font-serif text-[15px] font-bold text-maroon">CampusFlow</div>
-              <div className="text-[10px] text-text-muted tracking-[0.04em]"><strong>Staff Portal</strong></div>
+              <div className="font-serif text-fluid-15 font-bold text-maroon">CampusFlow</div>
+              <div className="text-fluid-10 text-text-muted tracking-[0.04em]"><strong>Staff Portal</strong></div>
             </div>
           </div>
           <button onClick={() => setMobileMenuOpen(false)} className="md:hidden p-1 text-text-muted hover:text-text-main border-none bg-transparent cursor-pointer">
@@ -355,7 +355,7 @@ export default function StaffDashboard() {
         <nav className="flex-1 flex flex-col gap-6 px-1 overflow-y-auto pb-6 scrollbar-hide">
           {navGroups.map((group, idx) => (
             <div key={idx} className="flex flex-col gap-1.5">
-              <div className="text-[10px] font-extrabold text-text-muted uppercase tracking-[0.15em] px-4 mb-1">
+              <div className="text-fluid-10 font-extrabold text-text-muted uppercase tracking-[0.15em] px-4 mb-1">
                 {group.title}
               </div>
               <div className="flex flex-col gap-1 pl-3 pr-2">
@@ -381,7 +381,7 @@ export default function StaffDashboard() {
         </nav>
         {/* Window required hint in sidebar */}
         {!myWindow && (
-          <div className="mx-1 mb-2 px-3 py-2.5 rounded-[10px] bg-gold-light border border-gold-border text-[11px] text-gold font-semibold leading-relaxed">
+          <div className="mx-1 mb-2 px-3 py-2.5 rounded-[10px] bg-gold-light border border-gold-border text-fluid-11 text-gold font-semibold leading-relaxed">
             ⚠ Claim a window to unlock navigation.
           </div>
         )}
@@ -414,12 +414,12 @@ export default function StaffDashboard() {
                   <span className="relative inline-flex rounded-full h-2 w-2 bg-success"></span>
                 </div>
                 <Monitor size={14} className="text-text-sub hidden sm:inline-block" strokeWidth={2.5} />
-                <span className="text-[12px] sm:text-[13px] font-bold text-text-main font-sans tracking-wide whitespace-nowrap">
+                <span className="text-fluid-12 sm:text-fluid-13 font-bold text-text-main font-sans tracking-wide whitespace-nowrap">
                   Window {myWindow}
                 </span>
               </div>
             ) : (
-              <div className="text-[11px] sm:text-xs text-text-muted font-semibold font-sans whitespace-nowrap">
+              <div className="text-fluid-11 sm:text-xs text-text-muted font-semibold font-sans whitespace-nowrap">
                 No window
               </div>
             )}
@@ -430,7 +430,7 @@ export default function StaffDashboard() {
             <div className="relative">
               {profileOpen && <div onClick={() => setProfileOpen(false)} className="fixed inset-0 z-105" />}
               <button onClick={() => setProfileOpen(!profileOpen)} className="flex items-center gap-1.5 sm:gap-2.5 p-0.5 sm:p-1 pr-1 sm:pr-2 rounded-full border-none bg-transparent cursor-pointer outline-none hover:bg-slate-50 transition-colors">
-                <div className="w-8 h-8 sm:w-9.5 sm:h-9.5 rounded-full bg-maroon-mid border-[1.5px] border-maroon-border flex items-center justify-center text-[13px] sm:text-[15px] font-bold text-maroon overflow-hidden">
+                <div className="w-8 h-8 sm:w-9.5 sm:h-9.5 rounded-full bg-maroon-mid border-[1.5px] border-maroon-border flex items-center justify-center text-fluid-13 sm:text-fluid-15 font-bold text-maroon overflow-hidden">
                   {user?.profile_image ? (
                     <img src={user.profile_image} alt="Profile" className="w-full h-full object-cover" />
                   ) : (
@@ -438,7 +438,7 @@ export default function StaffDashboard() {
                   )}
                 </div>
                 <div className="hidden sm:flex items-center gap-1.5 mr-1">
-                  <span className="text-[14px] font-bold text-text-main font-sans">
+                  <span className="text-fluid-14 font-bold text-text-main font-sans">
                     {user?.first_name || 'Staff'}
                   </span>
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={`text-text-sub transition-transform duration-300 ${profileOpen ? 'rotate-180' : ''}`}>
@@ -449,7 +449,7 @@ export default function StaffDashboard() {
               {profileOpen && (
                 <div className="absolute top-11 right-0 w-70 bg-white rounded-2xl shadow-[0_8px_30px_rgba(0,0,0,0.12)] p-4 z-110 border border-border">
                   <div className="flex gap-3 mb-4 items-start">
-                    <div className="w-10.5 h-10.5 rounded-full bg-maroon-mid border-[1.5px] border-maroon-border flex items-center justify-center text-[16px] font-bold text-maroon overflow-hidden shrink-0">
+                    <div className="w-10.5 h-10.5 rounded-full bg-maroon-mid border-[1.5px] border-maroon-border flex items-center justify-center text-fluid-16 font-bold text-maroon overflow-hidden shrink-0">
                       {user?.profile_image ? (
                         <img src={user.profile_image} alt="Profile" className="w-full h-full object-cover" />
                       ) : (
@@ -457,17 +457,17 @@ export default function StaffDashboard() {
                       )}
                     </div>
                     <div className="flex-1 min-w-0 pt-0.5">
-                      <div className="text-[14px] font-bold text-text-main leading-tight truncate">
+                      <div className="text-fluid-14 font-bold text-text-main leading-tight truncate">
                         {user?.first_name} {user?.last_name}
                       </div>
-                      <div className="text-[11px] text-text-muted mt-1 truncate">
+                      <div className="text-fluid-11 text-text-muted mt-1 truncate">
                         {user?.email}
                       </div>
                       <div className="flex gap-1.5 mt-2 flex-wrap">
-                        <span className="text-[9px] font-bold text-maroon bg-maroon-light border border-maroon-border rounded px-1.5 py-0.5 uppercase tracking-wider">
+                        <span className="text-fluid-9 font-bold text-maroon bg-maroon-light border border-maroon-border rounded px-1.5 py-0.5 uppercase tracking-wider">
                           ID: {user?.staff_id || user?.id?.substring(0,8) || 'STAFF'}
                         </span>
-                        <span className="text-[9px] font-bold text-gold bg-gold-light border border-gold-border rounded px-1.5 py-0.5 uppercase tracking-wider">
+                        <span className="text-fluid-9 font-bold text-gold bg-gold-light border border-gold-border rounded px-1.5 py-0.5 uppercase tracking-wider">
                           {user?.role === 'admin' ? 'ADMIN' : 'STAFF'}
                         </span>
                       </div>
@@ -479,11 +479,11 @@ export default function StaffDashboard() {
                   <div className="flex flex-col gap-1 py-2">
                     <button onClick={() => { setProfileOpen(false); handleNavChange('profile'); }} className="flex items-center gap-3 w-full px-3 py-2.5 rounded-lg border-none bg-transparent hover:bg-slate-50 cursor-pointer text-left transition-colors">
                       <User size={16} className="text-text-main" />
-                      <span className="text-[13px] font-semibold text-text-main">Manage Profile</span>
+                      <span className="text-fluid-13 font-semibold text-text-main">Manage Profile</span>
                     </button>
                     <button onClick={() => { setProfileOpen(false); handleNavChange('settings'); }} className="flex items-center gap-3 w-full px-3 py-2.5 rounded-lg border-none bg-transparent hover:bg-slate-50 cursor-pointer text-left transition-colors">
                       <Settings size={16} className="text-text-main" />
-                      <span className="text-[13px] font-semibold text-text-main">Account Settings</span>
+                      <span className="text-fluid-13 font-semibold text-text-main">Account Settings</span>
                     </button>
                   </div>
 
@@ -501,7 +501,7 @@ export default function StaffDashboard() {
                     } finally {
                       requestLogout();
                     }
-                  }} className="w-full mt-2 py-2.5 px-3 rounded-xl border-none bg-[#FFF0F0] text-[#D92D20] text-[13px] font-bold cursor-pointer flex items-center justify-center gap-2 font-sans hover:bg-[#FFE5E5] transition-colors">
+                  }} className="w-full mt-2 py-2.5 px-3 rounded-xl border-none bg-[#FFF0F0] text-[#D92D20] text-fluid-13 font-bold cursor-pointer flex items-center justify-center gap-2 font-sans hover:bg-[#FFE5E5] transition-colors">
                     <LogOut size={16} /> Log Out
                   </button>
                 </div>
@@ -523,13 +523,13 @@ export default function StaffDashboard() {
                 <div className="w-16 h-16 rounded-full bg-gold-light border-2 border-gold-border flex items-center justify-center mx-auto mb-5">
                   <Monitor size={28} className="text-gold" />
                 </div>
-                <p className="text-[11px] font-bold text-gold tracking-[0.12em] uppercase m-0 mb-2">Action Required</p>
-                <h2 className="font-serif text-[22px] sm:text-[26px] font-extrabold text-text-main m-0 mb-2.5">Claim Your Service Window</h2>
-                <p className="text-[13px] sm:text-[14px] text-text-sub m-0 mb-7 leading-relaxed">
+                <p className="text-fluid-11 font-bold text-gold tracking-[0.12em] uppercase m-0 mb-2">Action Required</p>
+                <h2 className="font-serif text-fluid-22 sm:text-fluid-26 font-extrabold text-text-main m-0 mb-2.5">Claim Your Service Window</h2>
+                <p className="text-fluid-13 sm:text-fluid-14 text-text-sub m-0 mb-7 leading-relaxed">
                   You must be assigned to a window before you can access the queue, appointments, or any other features.
                 </p>
                 {windowError && (
-                  <div className="px-3.5 py-2.5 rounded-lg bg-danger-light text-danger text-[13px] mb-5 border border-danger-border">
+                  <div className="px-3.5 py-2.5 rounded-lg bg-danger-light text-danger text-fluid-13 mb-5 border border-danger-border">
                     {windowError}
                   </div>
                 )}
@@ -554,7 +554,7 @@ export default function StaffDashboard() {
                         <span className={`flex transition-colors duration-200 ${occupiedByOther ? 'text-text-muted' : 'text-maroon group-hover:text-white'}`}>
                           {isClaiming ? <Loader2 size={24} className="animate-spin text-maroon" /> : occupiedByOther ? <MonitorX size={24} /> : <Monitor size={24} />}
                         </span>
-                        <span className={`text-[13px] font-bold transition-colors duration-200 flex items-center gap-1 ${occupiedByOther ? 'text-text-muted' : 'text-maroon group-hover:text-white'}`}>
+                        <span className={`text-fluid-13 font-bold transition-colors duration-200 flex items-center gap-1 ${occupiedByOther ? 'text-text-muted' : 'text-maroon group-hover:text-white'}`}>
                           {isClaiming ? 'Claiming...' : occupiedByOther ? 'Occupied' : `Window ${winNum}`}
                         </span>
                       </button>
@@ -570,11 +570,11 @@ export default function StaffDashboard() {
           {visitedTabs.has('overview') && (
             <div className={activeNav === 'overview' ? 'block' : 'hidden'}>
               <div className="mb-5 sm:mb-6">
-                <p className="text-[11px] font-bold text-gold tracking-widest uppercase m-0 mb-1.5">Today's Summary</p>
-                <h1 className="font-serif text-[22px] sm:text-[26px] font-bold text-text-main m-0 flex items-center gap-2">
+                <p className="text-fluid-11 font-bold text-gold tracking-widest uppercase m-0 mb-1.5">Today's Summary</p>
+                <h1 className="font-serif text-fluid-22 sm:text-fluid-26 font-bold text-text-main m-0 flex items-center gap-2">
                   <BarChart2 size={24} className="text-maroon shrink-0" /> Daily Overview
                 </h1>
-                <p className="text-[12px] text-text-sub mt-2 mb-0">
+                <p className="text-fluid-12 text-text-sub mt-2 mb-0">
                   A high-level view of today's queue, active operations, and urgent escalations.
                 </p>
               </div>
@@ -598,16 +598,16 @@ export default function StaffDashboard() {
                   <div>
                     <div className="flex items-center justify-between mb-4 sm:mb-5 pb-3.5 border-b border-border/80">
                       <div>
-                        <p className="text-[11px] font-extrabold text-gold tracking-[0.08em] uppercase m-0 mb-1 flex items-center gap-1.5">
+                        <p className="text-fluid-11 font-extrabold text-gold tracking-[0.08em] uppercase m-0 mb-1 flex items-center gap-1.5">
                           <span className="w-1.5 h-1.5 rounded-full bg-success animate-pulse shrink-0" />
                           Real-Time Queue
                         </p>
                         <div className="flex items-center gap-2.5">
-                          <h2 className="font-serif text-[18px] sm:text-[20px] font-bold text-text-main m-0">
+                          <h2 className="font-serif text-fluid-18 sm:text-fluid-20 font-bold text-text-main m-0">
                             Live Queue Management
                           </h2>
                           {queue.filter(q => q.ticket.status !== 'completed' && getRequiresPresence(q.steps)).length > 0 && (
-                            <span className="px-2 py-0.5 rounded-full bg-maroon-light text-maroon text-[11px] font-extrabold border border-maroon-border/60">
+                            <span className="px-2 py-0.5 rounded-full bg-maroon-light text-maroon text-fluid-11 font-extrabold border border-maroon-border/60">
                               {queue.filter(q => q.ticket.status !== 'completed' && getRequiresPresence(q.steps)).length} Active
                             </span>
                           )}
@@ -615,7 +615,7 @@ export default function StaffDashboard() {
                       </div>
                       <button 
                         onClick={() => handleNavChange('queue')} 
-                        className="group px-3 py-1.5 sm:px-3.5 sm:py-1.5 rounded-xl border border-border bg-white text-text-main hover:border-maroon/40 hover:text-maroon hover:bg-surface text-[11.5px] font-bold cursor-pointer font-sans transition-all duration-200 shadow-2xs hover:shadow-xs flex items-center gap-1.5 shrink-0"
+                        className="group px-3 py-1.5 sm:px-3.5 sm:py-1.5 rounded-xl border border-border bg-white text-text-main hover:border-maroon/40 hover:text-maroon hover:bg-surface text-fluid-11-5 font-bold cursor-pointer font-sans transition-all duration-200 shadow-2xs hover:shadow-xs flex items-center gap-1.5 shrink-0"
                       >
                         View All
                         <ChevronRight size={13} className="transition-transform duration-200 group-hover:translate-x-0.5 text-text-muted group-hover:text-maroon" />
@@ -631,15 +631,15 @@ export default function StaffDashboard() {
                   <div>
                     <div className="flex items-center justify-between mb-4 sm:mb-5 pb-3.5 border-b border-border/80">
                       <div>
-                        <p className="text-[11px] font-extrabold text-gold tracking-[0.08em] uppercase m-0 mb-1">
+                        <p className="text-fluid-11 font-extrabold text-gold tracking-[0.08em] uppercase m-0 mb-1">
                           Action Required
                         </p>
                         <div className="flex items-center gap-2.5">
-                          <h2 className="font-serif text-[18px] sm:text-[20px] font-bold text-text-main m-0">
+                          <h2 className="font-serif text-fluid-18 sm:text-fluid-20 font-bold text-text-main m-0">
                             Priority Requests
                           </h2>
                           {priorityData.length > 0 && (
-                            <span className="px-2 py-0.5 rounded-full bg-maroon-light text-maroon text-[11px] font-extrabold border border-maroon-border/60">
+                            <span className="px-2 py-0.5 rounded-full bg-maroon-light text-maroon text-fluid-11 font-extrabold border border-maroon-border/60">
                               {priorityData.length} Pending
                             </span>
                           )}
@@ -647,7 +647,7 @@ export default function StaffDashboard() {
                       </div>
                       <button 
                         onClick={() => handleNavChange('priority-requests')} 
-                        className="group px-3 py-1.5 sm:px-3.5 sm:py-1.5 rounded-xl border border-border bg-white text-text-main hover:border-maroon/40 hover:text-maroon hover:bg-surface text-[11.5px] font-bold cursor-pointer font-sans transition-all duration-200 shadow-2xs hover:shadow-xs flex items-center gap-1.5 shrink-0"
+                        className="group px-3 py-1.5 sm:px-3.5 sm:py-1.5 rounded-xl border border-border bg-white text-text-main hover:border-maroon/40 hover:text-maroon hover:bg-surface text-fluid-11-5 font-bold cursor-pointer font-sans transition-all duration-200 shadow-2xs hover:shadow-xs flex items-center gap-1.5 shrink-0"
                       >
                         View All
                         <ChevronRight size={13} className="transition-transform duration-200 group-hover:translate-x-0.5 text-text-muted group-hover:text-maroon" />
@@ -666,8 +666,8 @@ export default function StaffDashboard() {
                           <div className="w-13 h-13 rounded-2xl bg-surface border border-border flex items-center justify-center mb-3 text-text-muted/70 shadow-2xs">
                             <ShieldCheck size={24} strokeWidth={1.5} />
                           </div>
-                          <h3 className="font-serif text-[15px] font-bold text-text-main m-0 mb-1">All Requests Reviewed</h3>
-                          <p className="text-[12px] text-text-muted m-0 max-w-xs leading-relaxed">
+                          <h3 className="font-serif text-fluid-15 font-bold text-text-main m-0 mb-1">All Requests Reviewed</h3>
+                          <p className="text-fluid-12 text-text-muted m-0 max-w-xs leading-relaxed">
                             No pending student priority verification requests at the moment.
                           </p>
                         </div>
@@ -687,21 +687,21 @@ export default function StaffDashboard() {
                                 className="group flex items-center justify-between gap-3 p-3 sm:px-4 sm:py-3 rounded-xl border border-border bg-white hover:border-maroon-border hover:bg-surface/50 transition-all cursor-pointer shadow-2xs hover:shadow-xs"
                               >
                                 <div className="flex items-center gap-3 min-w-0">
-                                  <div className="w-9 h-9 rounded-full bg-maroon-light text-maroon border border-maroon-border/60 flex items-center justify-center font-bold text-[12.5px] shrink-0">
+                                  <div className="w-9 h-9 rounded-full bg-maroon-light text-maroon border border-maroon-border/60 flex items-center justify-center font-bold text-fluid-12-5 shrink-0">
                                     {initials}
                                   </div>
                                   <div className="min-w-0">
-                                    <div className="text-[13px] font-bold text-text-main truncate group-hover:text-maroon transition-colors">
+                                    <div className="text-fluid-13 font-bold text-text-main truncate group-hover:text-maroon transition-colors">
                                       {name}
                                     </div>
-                                    <div className="text-[11px] font-mono text-text-muted font-medium mt-0.5">
+                                    <div className="text-fluid-11 font-mono text-text-muted font-medium mt-0.5">
                                       ID: {studentId}
                                     </div>
                                   </div>
                                 </div>
 
                                 <div className="flex items-center gap-2 shrink-0">
-                                  <span className="text-[10px] font-extrabold px-2.5 py-1 rounded-full bg-maroon-light text-maroon border border-maroon-border/70 uppercase tracking-wider flex items-center gap-1">
+                                  <span className="text-fluid-10 font-extrabold px-2.5 py-1 rounded-full bg-maroon-light text-maroon border border-maroon-border/70 uppercase tracking-wider flex items-center gap-1">
                                     <ShieldCheck size={11} className="shrink-0" />
                                     <span>{pType}</span>
                                   </span>

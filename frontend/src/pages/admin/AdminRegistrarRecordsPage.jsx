@@ -19,7 +19,7 @@ const STATUS_CFG = {
 const StatusBadge = ({ status }) => {
   const cfg = STATUS_CFG[status] || STATUS_CFG.pending
   return (
-    <span className={`text-[10px] font-bold py-1 px-2.5 rounded-full border tracking-[0.04em] whitespace-nowrap ${cfg.bg} ${cfg.color} ${cfg.border}`}>
+    <span className={`text-fluid-10 font-bold py-1 px-2.5 rounded-full border tracking-[0.04em] whitespace-nowrap ${cfg.bg} ${cfg.color} ${cfg.border}`}>
       {cfg.label}
     </span>
   )
@@ -65,7 +65,7 @@ function TimeframeDropdown({ value, onChange }) {
     <div className="relative z-20">
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-2 px-3.5 py-2.25 rounded-xl border border-border bg-white text-[12.5px] font-bold text-text-main outline-none cursor-pointer font-sans hover:bg-surface hover:border-maroon/30 transition-all shadow-[0_2px_8px_rgba(0,0,0,0.04)]"
+        className="flex items-center gap-2 px-3.5 py-2.25 rounded-xl border border-border bg-white text-fluid-12-5 font-bold text-text-main outline-none cursor-pointer font-sans hover:bg-surface hover:border-maroon/30 transition-all shadow-[0_2px_8px_rgba(0,0,0,0.04)]"
       >
         <Calendar size={14} className="text-gold shrink-0" />
         <span>{currentLabel}</span>
@@ -76,14 +76,14 @@ function TimeframeDropdown({ value, onChange }) {
         <>
           <div className="fixed inset-0 z-40" onClick={() => setIsOpen(false)} />
           <div className="absolute right-0 top-full mt-1.5 w-48 bg-white rounded-xl border border-border shadow-lg p-1.5 z-50 animate-fade-up">
-            <div className="px-2.5 py-1 text-[10px] font-extrabold text-text-muted uppercase tracking-wider">Timeframe</div>
+            <div className="px-2.5 py-1 text-fluid-10 font-extrabold text-text-muted uppercase tracking-wider">Timeframe</div>
             {options.map(o => {
               const isActive = value === o.value
               return (
                 <div
                   key={o.value}
                   onClick={() => { onChange(o.value); setIsOpen(false); }}
-                  className={`px-3 py-2 rounded-lg cursor-pointer flex items-center justify-between text-[12px] font-medium transition-colors ${
+                  className={`px-3 py-2 rounded-lg cursor-pointer flex items-center justify-between text-fluid-12 font-medium transition-colors ${
                     isActive ? 'bg-maroon/5 text-maroon font-bold' : 'text-text-main hover:bg-off-white'
                   }`}
                 >
@@ -202,7 +202,7 @@ export default function AdminRegistrarRecordsPage() {
     <div className="animate-fade-up font-sans w-full pb-10">
       {/* ── Toast Notification ── */}
       {toastMsg && (
-        <div className={`fixed bottom-10 right-8 z-9999 flex items-center gap-3 px-5 py-3.5 rounded-xl shadow-[0_12px_32px_rgba(0,0,0,0.18)] border text-[13.5px] font-bold animate-fade-up ${
+        <div className={`fixed bottom-10 right-8 z-9999 flex items-center gap-3 px-5 py-3.5 rounded-xl shadow-[0_12px_32px_rgba(0,0,0,0.18)] border text-fluid-13-5 font-bold animate-fade-up ${
           toastMsg.type === 'error' 
             ? 'bg-red-600 text-white border-red-700' 
             : 'bg-[#006600] text-white border-[#005200]'
@@ -224,11 +224,11 @@ export default function AdminRegistrarRecordsPage() {
       {/* ── Header ── */}
       <div className="flex items-end justify-between mb-6 flex-wrap gap-3">
         <div>
-          <p className="text-[11px] font-bold text-gold tracking-widest uppercase m-0 mb-1.5">Record Management</p>
-          <h1 className="font-serif text-[22px] sm:text-[26px] font-bold text-text-main m-0 mb-2 flex items-center gap-2.5 sm:gap-3">
+          <p className="text-fluid-11 font-bold text-gold tracking-widest uppercase m-0 mb-1.5">Record Management</p>
+          <h1 className="font-serif text-fluid-22 sm:text-fluid-26 font-bold text-text-main m-0 mb-2 flex items-center gap-2.5 sm:gap-3">
             <FolderOpen size={26} className="text-maroon shrink-0" /> Registrar Records
           </h1>
-          <p className="text-[12px] sm:text-[13px] text-text-sub mt-1.5 sm:mt-2 mb-0 leading-relaxed max-w-2xl">
+          <p className="text-fluid-12 sm:text-fluid-13 text-text-sub mt-1.5 sm:mt-2 mb-0 leading-relaxed max-w-2xl">
             Review document issuance history, track fulfillment statuses, and export archival records.
           </p>
         </div>
@@ -243,7 +243,7 @@ export default function AdminRegistrarRecordsPage() {
               exportCSV(csvRows, 'registrar_records.csv')
               showToast('Exported registrar records to CSV!')
             }}
-            className="flex items-center gap-1.5 px-3.5 py-2.25 rounded-xl border border-border bg-white text-text-main text-[12.5px] font-bold cursor-pointer font-sans hover:bg-surface hover:border-maroon/30 transition-all shadow-[0_2px_8px_rgba(0,0,0,0.04)]"
+            className="flex items-center gap-1.5 px-3.5 py-2.25 rounded-xl border border-border bg-white text-text-main text-fluid-12-5 font-bold cursor-pointer font-sans hover:bg-surface hover:border-maroon/30 transition-all shadow-[0_2px_8px_rgba(0,0,0,0.04)]"
           >
             <Download size={14} className="text-text-muted" />
             <span>Export Records</span>
@@ -265,21 +265,21 @@ export default function AdminRegistrarRecordsPage() {
         ].map((c, i) => (
           <div key={i} className="animate-fade-up rounded-2xl p-[18px_20px] bg-white border border-border shadow-[0_1px_4px_rgba(0,0,0,0.04)] relative overflow-hidden" style={{ animationDelay: `${0.1 * (i + 1)}s` }}>
             <div className="flex items-start justify-between mb-2">
-              <div className="text-[10px] font-extrabold uppercase tracking-[0.08em] text-text-muted mt-1">{c.label}</div>
+              <div className="text-fluid-10 font-extrabold uppercase tracking-[0.08em] text-text-muted mt-1">{c.label}</div>
               <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${c.bg} ${c.fg}`}>
                 {c.icon}
               </div>
             </div>
-            <div className="font-sans text-[36px] font-extrabold leading-none m-0 min-h-9 text-text-main">
+            <div className="font-sans text-fluid-36 font-extrabold leading-none m-0 min-h-9 text-text-main">
               {loading ? <div className="animate-pulse w-15 h-9 bg-border rounded-lg" /> : c.value}
             </div>
-            <div className="text-[11px] font-medium text-text-muted mt-1.5">{c.sub}</div>
+            <div className="text-fluid-11 font-medium text-text-muted mt-1.5">{c.sub}</div>
           </div>
         ))}
       </div>
 
       {/* ── Main Grid: Table + Breakdown ── */}
-      <div className="animate-fade-up grid grid-cols-[1fr_220px] gap-5" style={{ animationDelay: '0.5s' }}>
+      <div className="animate-fade-up grid grid-cols-1 lg:grid-cols-[1fr_220px] gap-5" style={{ animationDelay: '0.5s' }}>
 
         {/* Left: Records Table */}
         <div>
@@ -290,7 +290,7 @@ export default function AdminRegistrarRecordsPage() {
               <input
                 value={search} onChange={e => { setSearch(e.target.value); setPage(1) }}
                 placeholder="Search by student name, record ID, or student ID…"
-                className="w-full py-2.5 pr-5 pl-10 rounded-full border border-border bg-white text-[13px] text-text-main outline-none font-sans box-border focus:border-maroon transition-colors"
+                className="w-full py-2.5 pr-5 pl-10 rounded-full border border-border bg-white text-fluid-13 text-text-main outline-none font-sans box-border focus:border-maroon transition-colors"
               />
               <span className="absolute left-3.5 top-1/2 -translate-y-1/2 flex items-center text-text-muted"><Search size={16} /></span>
               {search && (
@@ -303,7 +303,7 @@ export default function AdminRegistrarRecordsPage() {
             {/* Column headers */}
             <div className="hidden md:grid grid-cols-[110px_1fr_180px_110px_40px] px-5 pb-2 pt-1 border-b border-border/60">
               {['Record ID', 'Student & Document', 'Dates', 'Status', ''].map(h => (
-                <span key={h} className="text-[11px] font-extrabold text-text-muted uppercase tracking-[0.08em]">{h}</span>
+                <span key={h} className="text-fluid-11 font-extrabold text-text-muted uppercase tracking-[0.08em]">{h}</span>
               ))}
             </div>
 
@@ -318,8 +318,8 @@ export default function AdminRegistrarRecordsPage() {
             ) : paginated.length === 0 ? (
               <div className="p-[60px_24px] text-center bg-white rounded-2xl border border-border shadow-sm">
                 <div className="flex justify-center mb-4 text-text-muted/50"><FolderOpen size={52} strokeWidth={1.5} /></div>
-                <p className="font-serif text-[18px] font-bold text-text-main m-0 mb-1">No records found</p>
-                <p className="text-[13px] text-text-muted m-0 max-w-62.5 mx-auto">Try adjusting your search query or filters to find what you are looking for.</p>
+                <p className="font-serif text-fluid-18 font-bold text-text-main m-0 mb-1">No records found</p>
+                <p className="text-fluid-13 text-text-muted m-0 max-w-62.5 mx-auto">Try adjusting your search query or filters to find what you are looking for.</p>
               </div>
             ) : (
               paginated.map((rec) => {
@@ -328,26 +328,26 @@ export default function AdminRegistrarRecordsPage() {
 
                 return (
                   <div key={rec.id} className={`group bg-white rounded-2xl border transition-all duration-200 shadow-sm overflow-hidden ${isExpanded ? 'border-maroon ring-1 ring-maroon/20' : 'border-border hover:border-maroon/30 hover:shadow-md'}`}>
-                    <div className="grid grid-cols-[110px_1fr_180px_110px_40px] p-[16px_20px] items-center cursor-pointer bg-white"
+                    <div className="grid grid-cols-1 lg:grid-cols-[110px_1fr_180px_110px_40px] p-[16px_20px] items-center cursor-pointer bg-white"
                       onClick={() => setExpandedId(isExpanded ? null : rec.id)}
                     >
-                      <span className="font-mono text-[13px] font-bold text-maroon">{rec.id}</span>
+                      <span className="font-mono text-fluid-13 font-bold text-maroon">{rec.id}</span>
 
                       <div className="min-w-0 pr-4">
-                        <div className="text-[14px] font-bold text-text-main whitespace-nowrap overflow-hidden text-ellipsis group-hover:text-maroon transition-colors mb-1">{rec.student}</div>
+                        <div className="text-fluid-14 font-bold text-text-main whitespace-nowrap overflow-hidden text-ellipsis group-hover:text-maroon transition-colors mb-1">{rec.student}</div>
                         <div className="flex items-center gap-2">
-                          <div className="text-[11px] font-medium text-text-muted font-mono">{rec.studentId}</div>
+                          <div className="text-fluid-11 font-medium text-text-muted font-mono">{rec.studentId}</div>
                           <div className="w-1 h-1 rounded-full bg-border" />
                           <div className="flex items-center gap-1.5 min-w-0">
                             <div className="w-2 h-2 rounded-full shrink-0" style={{ background: typeColor }} />
-                            <span className="text-[12px] font-medium text-text-sub overflow-hidden text-ellipsis whitespace-nowrap">{rec.type}</span>
+                            <span className="text-fluid-12 font-medium text-text-sub overflow-hidden text-ellipsis whitespace-nowrap">{rec.type}</span>
                           </div>
                         </div>
                       </div>
 
                       <div className="flex flex-col gap-1 pr-4">
-                        <div className="text-[12px] font-medium text-text-sub"><span className="text-text-muted font-bold mr-1">Req:</span>{rec.requested}</div>
-                        <div className="text-[12px] font-medium text-text-sub"><span className="text-text-muted font-bold mr-1">Pro:</span>{rec.processed}</div>
+                        <div className="text-fluid-12 font-medium text-text-sub"><span className="text-text-muted font-bold mr-1">Req:</span>{rec.requested}</div>
+                        <div className="text-fluid-12 font-medium text-text-sub"><span className="text-text-muted font-bold mr-1">Pro:</span>{rec.processed}</div>
                       </div>
                       
                       <div className="flex items-center">
@@ -368,22 +368,22 @@ export default function AdminRegistrarRecordsPage() {
                             { l: 'Current Status', v: STATUS_CFG[rec.status]?.label || rec.status },
                           ].map((d, i) => (
                             <div key={i}>
-                              <div className="text-[10px] font-extrabold text-text-muted uppercase tracking-[0.08em] mb-1.5">{d.l}</div>
-                              <div className={`text-[14px] font-bold text-text-main ${d.mono ? 'font-mono' : 'font-sans'}`}>{d.v}</div>
+                              <div className="text-fluid-10 font-extrabold text-text-muted uppercase tracking-[0.08em] mb-1.5">{d.l}</div>
+                              <div className={`text-fluid-14 font-bold text-text-main ${d.mono ? 'font-mono' : 'font-sans'}`}>{d.v}</div>
                             </div>
                           ))}
                         </div>
                         <div className="flex gap-2 mt-4 pt-4 border-t border-border/60">
-                          <button onClick={() => setViewingRecord(rec)} className="py-2 px-4 rounded-xl border-none bg-maroon text-white text-[12px] font-bold cursor-pointer font-sans hover:bg-maroon-dark transition-colors shadow-sm">
+                          <button onClick={() => setViewingRecord(rec)} className="py-2 px-4 rounded-xl border-none bg-maroon text-white text-fluid-12 font-bold cursor-pointer font-sans hover:bg-maroon-dark transition-colors shadow-sm">
                             View Full Record
                           </button>
                           {(rec.status === 'completed' || rec.status === 'released') && (
-                            <button className="py-2 px-4 rounded-xl border border-border bg-white text-text-main text-[12px] font-semibold cursor-pointer font-sans flex items-center gap-1.5 hover:border-maroon/30 hover:text-maroon transition-all shadow-sm">
+                            <button className="py-2 px-4 rounded-xl border border-border bg-white text-text-main text-fluid-12 font-semibold cursor-pointer font-sans flex items-center gap-1.5 hover:border-maroon/30 hover:text-maroon transition-all shadow-sm">
                               <Printer size={14} /> Print Record
                             </button>
                           )}
                           {(rec.status === 'pending' || rec.status === 'processing') && (
-                            <button className="py-2 px-4 rounded-xl border border-success/30 bg-success-light text-success text-[12px] font-bold cursor-pointer font-sans flex items-center gap-1.5 hover:bg-success hover:text-white transition-all shadow-sm">
+                            <button className="py-2 px-4 rounded-xl border border-success/30 bg-success-light text-success text-fluid-12 font-bold cursor-pointer font-sans flex items-center gap-1.5 hover:bg-success hover:text-white transition-all shadow-sm">
                               <Check size={14} /> Mark as Released
                             </button>
                           )}
@@ -398,12 +398,12 @@ export default function AdminRegistrarRecordsPage() {
             {/* Pagination footer */}
             {filtered.length > 0 && (
               <div className="p-[16px_20px] flex items-center justify-between">
-                <span className="text-[12px] font-medium text-text-muted">
+                <span className="text-fluid-12 font-medium text-text-muted">
                   Showing {Math.min((page - 1) * PER_PAGE + 1, filtered.length)}–{Math.min(page * PER_PAGE, filtered.length)} of {filtered.length} records
                 </span>
                 <div className="flex gap-1.5">
                   <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}
-                    className={`py-1.5 px-3 rounded-lg border text-[12px] font-bold font-sans transition-colors ${page === 1 ? 'border-border/50 bg-surface/50 text-text-muted/50 cursor-not-allowed' : 'border-border bg-white text-text-main hover:bg-off-white hover:border-maroon/30 cursor-pointer shadow-sm'}`}>
+                    className={`py-1.5 px-3 rounded-lg border text-fluid-12 font-bold font-sans transition-colors ${page === 1 ? 'border-border/50 bg-surface/50 text-text-muted/50 cursor-not-allowed' : 'border-border bg-white text-text-main hover:bg-off-white hover:border-maroon/30 cursor-pointer shadow-sm'}`}>
                     Prev
                   </button>
                   {Array.from({ length: Math.min(totalPages, 7) }, (_, i) => {
@@ -412,13 +412,13 @@ export default function AdminRegistrarRecordsPage() {
                         : page >= totalPages - 3 ? totalPages - 6 + i
                           : page - 3 + i
                     return (
-                      <button key={p} onClick={() => setPage(p)} className={`w-8 h-8 rounded-lg text-[12px] font-bold cursor-pointer font-sans border transition-all ${page === p ? 'border-maroon bg-maroon text-white shadow-sm' : 'border-border bg-white text-text-main hover:bg-off-white hover:border-maroon/30 shadow-sm'}`}>
+                      <button key={p} onClick={() => setPage(p)} className={`w-8 h-8 rounded-lg text-fluid-12 font-bold cursor-pointer font-sans border transition-all ${page === p ? 'border-maroon bg-maroon text-white shadow-sm' : 'border-border bg-white text-text-main hover:bg-off-white hover:border-maroon/30 shadow-sm'}`}>
                         {p}
                       </button>
                     )
                   })}
                   <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages}
-                    className={`py-1.5 px-3 rounded-lg border text-[12px] font-bold font-sans transition-colors ${page === totalPages ? 'border-border/50 bg-surface/50 text-text-muted/50 cursor-not-allowed' : 'border-border bg-white text-text-main hover:bg-off-white hover:border-maroon/30 cursor-pointer shadow-sm'}`}>
+                    className={`py-1.5 px-3 rounded-lg border text-fluid-12 font-bold font-sans transition-colors ${page === totalPages ? 'border-border/50 bg-surface/50 text-text-muted/50 cursor-not-allowed' : 'border-border bg-white text-text-main hover:bg-off-white hover:border-maroon/30 cursor-pointer shadow-sm'}`}>
                     Next
                   </button>
                 </div>
@@ -432,15 +432,15 @@ export default function AdminRegistrarRecordsPage() {
 
           {/* Status Filter Panel */}
           <div className="bg-white rounded-2xl border border-border p-5 shadow-sm">
-            <p className="text-[11px] font-bold text-gold uppercase tracking-widest m-0 mb-3">Filter by Status</p>
+            <p className="text-fluid-11 font-bold text-gold uppercase tracking-widest m-0 mb-3">Filter by Status</p>
             <div className="relative">
               <button
                 onClick={() => setOpenDropdown(openDropdown === 'status' ? null : 'status')}
                 className="w-full flex items-center justify-between py-2.5 px-4 rounded-xl border border-border bg-white hover:border-maroon/30 transition-colors group"
               >
                 <div className="flex items-center gap-2">
-                  <span className="text-[13px] font-semibold text-text-main">{statusFilter === 'all' ? 'All Statuses' : STATUS_CFG[statusFilter]?.label || statusFilter}</span>
-                  <span className="text-[11px] font-bold text-text-muted bg-surface group-hover:bg-off-white px-2 py-0.5 rounded-full transition-colors">
+                  <span className="text-fluid-13 font-semibold text-text-main">{statusFilter === 'all' ? 'All Statuses' : STATUS_CFG[statusFilter]?.label || statusFilter}</span>
+                  <span className="text-fluid-11 font-bold text-text-muted bg-surface group-hover:bg-off-white px-2 py-0.5 rounded-full transition-colors">
                     {statusFilter === 'all' ? records.length : records.filter(r => r.status === statusFilter).length}
                   </span>
                 </div>
@@ -459,7 +459,7 @@ export default function AdminRegistrarRecordsPage() {
                         <div 
                           key={s} 
                           onClick={() => { setStatusFilter(s); setPage(1); setOpenDropdown(null); }}
-                          className={`px-4 py-2 text-[13px] font-medium cursor-pointer flex items-center justify-between transition-colors ${isActive ? 'bg-maroon/5 text-maroon' : 'text-text-main hover:bg-off-white'}`}
+                          className={`px-4 py-2 text-fluid-13 font-medium cursor-pointer flex items-center justify-between transition-colors ${isActive ? 'bg-maroon/5 text-maroon' : 'text-text-main hover:bg-off-white'}`}
                         >
                           <div className="flex items-center gap-2">
                              <div className={`w-3 h-3 rounded-full border flex items-center justify-center ${isActive ? 'border-maroon' : 'border-text-muted/40'}`}>
@@ -467,7 +467,7 @@ export default function AdminRegistrarRecordsPage() {
                              </div>
                              <span>{label}</span>
                           </div>
-                          <span className="text-[11px] font-bold text-text-muted bg-surface px-2 py-0.5 rounded-full">{count}</span>
+                          <span className="text-fluid-11 font-bold text-text-muted bg-surface px-2 py-0.5 rounded-full">{count}</span>
                         </div>
                       )
                     })}
@@ -479,14 +479,14 @@ export default function AdminRegistrarRecordsPage() {
 
           {/* Document Type Breakdown */}
           <div className="bg-white rounded-2xl border border-border p-5 shadow-sm">
-            <p className="text-[11px] font-bold text-gold uppercase tracking-widest m-0 mb-3.5">Document Types</p>
+            <p className="text-fluid-11 font-bold text-gold uppercase tracking-widest m-0 mb-3.5">Document Types</p>
             {loading ? (
-              <div className="text-text-muted text-[13px] py-5 text-center">Loading…</div>
+              <div className="text-text-muted text-fluid-13 py-5 text-center">Loading…</div>
             ) : (
               <div className="relative">
                 <button
                   onClick={() => setOpenDropdown(openDropdown === 'type' ? null : 'type')}
-                  className="w-full flex items-center justify-between py-2.5 px-4 rounded-xl border border-border bg-white text-[13px] text-text-main font-semibold hover:border-maroon/30 transition-colors"
+                  className="w-full flex items-center justify-between py-2.5 px-4 rounded-xl border border-border bg-white text-fluid-13 text-text-main font-semibold hover:border-maroon/30 transition-colors"
                 >
                   <span className="truncate pr-2">{activeType === 'all' ? 'All Documents' : activeType}</span>
                   <ChevronDown size={15} className={`transition-transform duration-200 shrink-0 ${openDropdown === 'type' ? 'rotate-180' : ''}`} />
@@ -504,7 +504,7 @@ export default function AdminRegistrarRecordsPage() {
                           <div className={`w-3 h-3 rounded-full border flex items-center justify-center shrink-0 ${activeType === 'all' ? 'border-maroon' : 'border-text-muted/40'}`}>
                             {activeType === 'all' && <div className="w-1.5 h-1.5 bg-maroon rounded-full" />}
                           </div>
-                          <span className={`text-[12px] font-semibold ${activeType === 'all' ? 'text-maroon' : 'text-text-main'}`}>All Documents</span>
+                          <span className={`text-fluid-12 font-semibold ${activeType === 'all' ? 'text-maroon' : 'text-text-main'}`}>All Documents</span>
                         </div>
                       </div>
                       {typeBreakdown.map((t, i) => {
@@ -520,14 +520,14 @@ export default function AdminRegistrarRecordsPage() {
                                 <div className={`w-3 h-3 rounded-full border flex items-center justify-center shrink-0 ${isActive ? 'border-maroon' : 'border-text-muted/40'}`}>
                                   {isActive && <div className="w-1.5 h-1.5 bg-maroon rounded-full" />}
                                 </div>
-                                <span className={`text-[12px] font-semibold truncate ${isActive ? 'text-maroon' : 'text-text-main'}`}>{t.name}</span>
+                                <span className={`text-fluid-12 font-semibold truncate ${isActive ? 'text-maroon' : 'text-text-main'}`}>{t.name}</span>
                               </div>
-                              <span className="text-[11px] font-bold shrink-0" style={{ color: t.color }}>{t.pct}%</span>
+                              <span className="text-fluid-11 font-bold shrink-0" style={{ color: t.color }}>{t.pct}%</span>
                             </div>
                             <div className="w-full h-1 bg-surface rounded-full mt-1.5 mb-1 ml-5" style={{ width: 'calc(100% - 20px)' }}>
                               <div className="h-1 rounded-full transition-[width] duration-600 ease-in-out" style={{ background: t.color, width: `${t.pct}%` }} />
                             </div>
-                            <div className="text-[10px] text-text-muted ml-5 font-medium">{t.count.toLocaleString()} records</div>
+                            <div className="text-fluid-10 text-text-muted ml-5 font-medium">{t.count.toLocaleString()} records</div>
                           </div>
                         );
                       })}
@@ -547,8 +547,8 @@ export default function AdminRegistrarRecordsPage() {
              {/* Header */}
              <div className="p-[24px_32px] bg-maroon-light border-b border-border flex justify-between items-center">
                <div>
-                 <h2 className="font-serif text-[24px] font-bold text-maroon m-0 mb-1">Record Details</h2>
-                 <p className="text-[13px] text-maroon/80 m-0">{viewingRecord.id}</p>
+                 <h2 className="font-serif text-fluid-24 font-bold text-maroon m-0 mb-1">Record Details</h2>
+                 <p className="text-fluid-13 text-maroon/80 m-0">{viewingRecord.id}</p>
                </div>
                <button onClick={() => setViewingRecord(null)} className="bg-transparent border-none flex items-center text-maroon cursor-pointer opacity-60 hover:opacity-100 transition-opacity"><XIcon size={24} /></button>
              </div>
@@ -558,18 +558,18 @@ export default function AdminRegistrarRecordsPage() {
                 <div className="grid grid-cols-2 gap-6">
                   {/* Student Info */}
                   <div>
-                    <h3 className="text-[11px] font-bold text-text-muted uppercase tracking-[0.06em] m-0 mb-3">Student Information</h3>
-                    <div className="text-[16px] font-semibold text-text-main">{viewingRecord.student}</div>
-                    <div className="text-[13px] text-text-sub font-mono mt-1">ID: {viewingRecord.studentId}</div>
-                    <div className="text-[13px] text-text-sub mt-1">Course: BS Information Technology</div>
-                    <div className="text-[13px] text-text-sub mt-1">Year Level: 3rd Year</div>
+                    <h3 className="text-fluid-11 font-bold text-text-muted uppercase tracking-[0.06em] m-0 mb-3">Student Information</h3>
+                    <div className="text-fluid-16 font-semibold text-text-main">{viewingRecord.student}</div>
+                    <div className="text-fluid-13 text-text-sub font-mono mt-1">ID: {viewingRecord.studentId}</div>
+                    <div className="text-fluid-13 text-text-sub mt-1">Course: BS Information Technology</div>
+                    <div className="text-fluid-13 text-text-sub mt-1">Year Level: 3rd Year</div>
                   </div>
                   {/* Document Info */}
                   <div>
-                    <h3 className="text-[11px] font-bold text-text-muted uppercase tracking-[0.06em] m-0 mb-3">Document Details</h3>
-                    <div className="text-[15px] font-semibold text-text-main">{viewingRecord.type}</div>
-                    <div className="text-[13px] text-text-sub mt-1">Copies Requested: {viewingRecord.copies}</div>
-                    <div className="text-[13px] text-text-sub mt-1">Purpose: Employment / Reference</div>
+                    <h3 className="text-fluid-11 font-bold text-text-muted uppercase tracking-[0.06em] m-0 mb-3">Document Details</h3>
+                    <div className="text-fluid-15 font-semibold text-text-main">{viewingRecord.type}</div>
+                    <div className="text-fluid-13 text-text-sub mt-1">Copies Requested: {viewingRecord.copies}</div>
+                    <div className="text-fluid-13 text-text-sub mt-1">Purpose: Employment / Reference</div>
                   </div>
                 </div>
 
@@ -577,7 +577,7 @@ export default function AdminRegistrarRecordsPage() {
 
                 {/* Timeline */}
                 <div>
-                   <h3 className="text-[11px] font-bold text-text-muted uppercase tracking-[0.06em] m-0 mb-4">Processing Timeline</h3>
+                   <h3 className="text-fluid-11 font-bold text-text-muted uppercase tracking-[0.06em] m-0 mb-4">Processing Timeline</h3>
                    <div className="flex flex-col gap-5 relative">
                      {/* Connecting Line */}
                      <div className="absolute left-1.75 top-2.5 bottom-2.5 w-0.5 bg-border" />
@@ -585,16 +585,16 @@ export default function AdminRegistrarRecordsPage() {
                      <div className="flex gap-4 relative">
                        <div className="w-4 h-4 rounded-full bg-white border-[3px] border-maroon z-10 mt-0.5" />
                        <div>
-                         <div className="text-[13px] font-bold text-text-main">Request Submitted</div>
-                         <div className="text-[12px] text-text-muted mt-0.5">{viewingRecord.requested} • Verified via Student Portal</div>
+                         <div className="text-fluid-13 font-bold text-text-main">Request Submitted</div>
+                         <div className="text-fluid-12 text-text-muted mt-0.5">{viewingRecord.requested} • Verified via Student Portal</div>
                        </div>
                      </div>
                      
                      <div className="flex gap-4 relative">
                        <div className="w-4 h-4 rounded-full bg-white border-[3px] border-gold z-10 mt-0.5" />
                        <div>
-                         <div className="text-[13px] font-bold text-text-main">Processing Started</div>
-                         <div className="text-[12px] text-text-muted mt-0.5">Reviewing clearance and generating document.</div>
+                         <div className="text-fluid-13 font-bold text-text-main">Processing Started</div>
+                         <div className="text-fluid-12 text-text-muted mt-0.5">Reviewing clearance and generating document.</div>
                        </div>
                      </div>
 
@@ -602,8 +602,8 @@ export default function AdminRegistrarRecordsPage() {
                        <div className="flex gap-4 relative">
                          <div className="w-4 h-4 rounded-full bg-white border-[3px] border-success z-10 mt-0.5" />
                          <div>
-                           <div className="text-[13px] font-bold text-success">Ready for Release</div>
-                           <div className="text-[12px] text-text-muted mt-0.5">{viewingRecord.processed} • Available at Window 2</div>
+                           <div className="text-fluid-13 font-bold text-success">Ready for Release</div>
+                           <div className="text-fluid-12 text-text-muted mt-0.5">{viewingRecord.processed} • Available at Window 2</div>
                          </div>
                        </div>
                      )}
@@ -613,11 +613,11 @@ export default function AdminRegistrarRecordsPage() {
              
              {/* Footer */}
              <div className="p-[20px_32px] bg-surface border-t border-border flex justify-end gap-3">
-               <button onClick={() => setViewingRecord(null)} className="py-2.5 px-5 rounded-[10px] border border-border bg-white text-text-main text-[13px] font-semibold cursor-pointer font-sans transition-colors hover:bg-off-white">
+               <button onClick={() => setViewingRecord(null)} className="py-2.5 px-5 rounded-[10px] border border-border bg-white text-text-main text-fluid-13 font-semibold cursor-pointer font-sans transition-colors hover:bg-off-white">
                  Close
                </button>
                {(viewingRecord.status === 'completed' || viewingRecord.status === 'released') && (
-                 <button className="py-2.5 px-5 rounded-[10px] border-none bg-maroon text-white text-[13px] font-bold cursor-pointer font-sans flex items-center gap-2 hover:bg-maroon-dark transition-colors">
+                 <button className="py-2.5 px-5 rounded-[10px] border-none bg-maroon text-white text-fluid-13 font-bold cursor-pointer font-sans flex items-center gap-2 hover:bg-maroon-dark transition-colors">
                    <Printer size={15} /> Print Record
                  </button>
                )}

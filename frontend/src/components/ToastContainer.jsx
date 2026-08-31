@@ -64,7 +64,7 @@ export default function ToastContainer({ toasts = [], onDismiss }) {
               <IconComponent size={16} className="sm:w-4.5 sm:h-4.5" />
             </div>
             <div className="flex-1 min-w-0 pr-1">
-              <p className="text-[12px] sm:text-[13px] font-semibold text-slate-100 m-0 leading-snug tracking-normal">
+              <p className="text-fluid-12 sm:text-fluid-13 font-semibold text-slate-100 m-0 leading-snug tracking-normal">
                 {toast.message}
               </p>
             </div>

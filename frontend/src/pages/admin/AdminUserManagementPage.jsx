@@ -42,17 +42,17 @@ const RoleBadge = ({ role }) => {
   return (
     <div className="flex items-center gap-1.5">
       <div className={`w-1.5 h-1.5 rounded-full ${cfg.dotBg}`} />
-      <span className="text-[13px] font-semibold text-text-main">{cfg.label}</span>
+      <span className="text-fluid-13 font-semibold text-text-main">{cfg.label}</span>
     </div>
   )
 }
 
 // ── Priority Badge ─────────────────────────────────────────────────────────────
 const PriorityBadge = ({ label }) => {
-  if (!label || label === 'N/A') return <span className="text-[12px] text-text-muted">N/A</span>
+  if (!label || label === 'N/A') return <span className="text-fluid-12 text-text-muted">N/A</span>
   const colorMap = { Alumni: 'text-maroon', PWD: 'text-gold', Regular: 'text-text-sub', Pregnant: 'text-pink-600' }
   const color = colorMap[label] || 'text-text-sub'
-  return <span className={`text-[12px] font-semibold ${color}`}>{label}</span>
+  return <span className={`text-fluid-12 font-semibold ${color}`}>{label}</span>
 }
 
 // ── Edit Role Modal ────────────────────────────────────────────────────────────
@@ -69,8 +69,8 @@ function EditRoleModal({ user, onSave, onClose, saving }) {
           <div className="flex items-center gap-3.5 min-w-0">
             <Avatar name={`${user.first_name} ${user.last_name}`} role={user.role} size={46} />
             <div className="min-w-0">
-              <div className="font-serif text-[18px] font-bold text-text-main leading-snug truncate">{user.first_name} {user.last_name}</div>
-              <div className="text-[12px] text-text-muted truncate">{user.email}</div>
+              <div className="font-serif text-fluid-18 font-bold text-text-main leading-snug truncate">{user.first_name} {user.last_name}</div>
+              <div className="text-fluid-12 text-text-muted truncate">{user.email}</div>
             </div>
           </div>
           <button 
@@ -83,7 +83,7 @@ function EditRoleModal({ user, onSave, onClose, saving }) {
           </button>
         </div>
 
-        <label className="text-[11px] font-bold text-text-muted uppercase tracking-[0.08em] block mb-2.5">Assign Role</label>
+        <label className="text-fluid-11 font-bold text-text-muted uppercase tracking-[0.08em] block mb-2.5">Assign Role</label>
         <div className="grid grid-cols-3 gap-2.5 mb-6">
           {['student', 'staff', 'admin'].map(r => {
             const cfg = ROLE_CFG[r]
@@ -93,7 +93,7 @@ function EditRoleModal({ user, onSave, onClose, saving }) {
                 key={r} 
                 type="button"
                 onClick={() => setRole(r)} 
-                className={`p-[14px_10px] rounded-2xl border-2 text-[13px] font-sans capitalize transition-all duration-150 cursor-pointer flex flex-col items-center justify-center ${active ? `${cfg.bg} ${cfg.color} font-bold shadow-xs` : 'bg-off-white text-text-sub font-medium border-border hover:bg-surface'} ${active && r === 'student' ? 'border-maroon/40' : active && r === 'staff' ? 'border-gold' : active && r === 'admin' ? 'border-maroon' : ''}`}
+                className={`p-[14px_10px] rounded-2xl border-2 text-fluid-13 font-sans capitalize transition-all duration-150 cursor-pointer flex flex-col items-center justify-center ${active ? `${cfg.bg} ${cfg.color} font-bold shadow-xs` : 'bg-off-white text-text-sub font-medium border-border hover:bg-surface'} ${active && r === 'student' ? 'border-maroon/40' : active && r === 'staff' ? 'border-gold' : active && r === 'admin' ? 'border-maroon' : ''}`}
               >
                 <div className="mb-1.5 flex justify-center">
                   {r === 'student' ? <GraduationCap size={24} /> : r === 'staff' ? <Briefcase size={24} /> : <Shield size={24} />}
@@ -108,7 +108,7 @@ function EditRoleModal({ user, onSave, onClose, saving }) {
           <button 
             type="button"
             onClick={onClose} 
-            className="flex-1 py-3 px-4 rounded-xl border border-border bg-white text-text-main text-[13.5px] font-semibold cursor-pointer font-sans hover:bg-surface transition-colors shadow-2xs"
+            className="flex-1 py-3 px-4 rounded-xl border border-border bg-white text-text-main text-fluid-13-5 font-semibold cursor-pointer font-sans hover:bg-surface transition-colors shadow-2xs"
           >
             Cancel
           </button>
@@ -116,7 +116,7 @@ function EditRoleModal({ user, onSave, onClose, saving }) {
             type="button"
             onClick={() => onSave(user.id, role)} 
             disabled={saving || role === user.role}
-            className={`flex-2 py-3 px-4 rounded-xl border-none text-[13.5px] font-bold font-sans transition-colors shadow-2xs ${saving || role === user.role ? 'bg-border text-text-muted cursor-not-allowed' : 'bg-maroon text-white cursor-pointer hover:bg-maroon-dark'}`}
+            className={`flex-2 py-3 px-4 rounded-xl border-none text-fluid-13-5 font-bold font-sans transition-colors shadow-2xs ${saving || role === user.role ? 'bg-border text-text-muted cursor-not-allowed' : 'bg-maroon text-white cursor-pointer hover:bg-maroon-dark'}`}
           >
             {saving ? 'Saving…' : 'Save Changes'}
           </button>
@@ -236,7 +236,7 @@ export default function AdminUserManagementPage() {
     <div className="animate-fade-up font-sans w-full pb-10">
       {/* ── Toast Notification ── */}
       {toastMsg && (
-        <div className={`fixed bottom-10 right-8 z-9999 flex items-center gap-3 px-5 py-3.5 rounded-xl shadow-[0_12px_32px_rgba(0,0,0,0.18)] border text-[13.5px] font-bold animate-fade-up ${
+        <div className={`fixed bottom-10 right-8 z-9999 flex items-center gap-3 px-5 py-3.5 rounded-xl shadow-[0_12px_32px_rgba(0,0,0,0.18)] border text-fluid-13-5 font-bold animate-fade-up ${
           toastMsg.type === 'error' 
             ? 'bg-red-600 text-white border-red-700' 
             : 'bg-[#006600] text-white border-[#005200]'
@@ -257,11 +257,11 @@ export default function AdminUserManagementPage() {
 
       {/* ── Header ── */}
       <div className="mb-6">
-        <p className="text-[11px] font-bold text-gold tracking-widest uppercase m-0 mb-1.5">User Management</p>
-        <h1 className="font-serif text-[22px] sm:text-[26px] font-bold text-text-main m-0 mb-2 flex items-center gap-2.5 sm:gap-3">
+        <p className="text-fluid-11 font-bold text-gold tracking-widest uppercase m-0 mb-1.5">User Management</p>
+        <h1 className="font-serif text-fluid-22 sm:text-fluid-26 font-bold text-text-main m-0 mb-2 flex items-center gap-2.5 sm:gap-3">
           <Users size={26} className="text-maroon shrink-0" /> User Management
         </h1>
-        <p className="text-[12px] sm:text-[13px] text-text-sub mt-1.5 sm:mt-2 mb-0 leading-relaxed max-w-2xl">
+        <p className="text-fluid-12 sm:text-fluid-13 text-text-sub mt-1.5 sm:mt-2 mb-0 leading-relaxed max-w-2xl">
           Manage user accounts, adjust system permissions, and audit role access.
         </p>
       </div>
@@ -276,12 +276,12 @@ export default function AdminUserManagementPage() {
         ].map((c, i) => (
           <div key={i} className="animate-fade-up rounded-2xl p-[18px_20px] bg-white border border-border shadow-[0_1px_4px_rgba(0,0,0,0.04)] relative overflow-hidden" style={{ animationDelay: `${0.1 * (i + 1)}s` }}>
             <div className="flex items-start justify-between mb-2">
-              <div className="text-[10px] font-extrabold uppercase tracking-[0.08em] text-text-muted mt-1">{c.label}</div>
+              <div className="text-fluid-10 font-extrabold uppercase tracking-[0.08em] text-text-muted mt-1">{c.label}</div>
               <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${c.bg} ${c.fg}`}>
                 {c.icon}
               </div>
             </div>
-            <div className="font-sans text-[36px] font-extrabold leading-none m-0 min-h-9 text-text-main">
+            <div className="font-sans text-fluid-36 font-extrabold leading-none m-0 min-h-9 text-text-main">
               {statsLoading ? <div className="animate-pulse w-15 h-9 rounded-lg bg-border" /> : c.value}
             </div>
           </div>
@@ -296,9 +296,9 @@ export default function AdminUserManagementPage() {
           {/* Tabs */}
           <div className="flex gap-1">
             {TABS.map(t => (
-              <button key={t.key} onClick={() => { setActiveTab(t.key); setPage(1) }} className={`py-3.5 px-4 bg-transparent border-none border-b-2 text-[13px] cursor-pointer font-sans transition-colors duration-150 whitespace-nowrap flex items-center gap-1.5 ${activeTab === t.key ? 'border-maroon text-maroon font-bold' : 'border-transparent text-text-muted font-normal hover:text-maroon/80'}`}>
+              <button key={t.key} onClick={() => { setActiveTab(t.key); setPage(1) }} className={`py-3.5 px-4 bg-transparent border-none border-b-2 text-fluid-13 cursor-pointer font-sans transition-colors duration-150 whitespace-nowrap flex items-center gap-1.5 ${activeTab === t.key ? 'border-maroon text-maroon font-bold' : 'border-transparent text-text-muted font-normal hover:text-maroon/80'}`}>
                 {t.label}
-                <span className={`text-[11px] font-bold py-px px-1.75 rounded-full ${activeTab === t.key ? 'bg-maroon-light text-maroon' : 'bg-surface text-text-muted'}`}>{counts[t.key]}</span>
+                <span className={`text-fluid-11 font-bold py-px px-1.75 rounded-full ${activeTab === t.key ? 'bg-maroon-light text-maroon' : 'bg-surface text-text-muted'}`}>{counts[t.key]}</span>
               </button>
             ))}
           </div>
@@ -309,7 +309,7 @@ export default function AdminUserManagementPage() {
               <input
                 value={search} onChange={e => { setSearch(e.target.value); setPage(1) }}
                 placeholder="Search by name, ID, email…"
-                className="py-2 pr-3.5 pl-8.5 rounded-[9px] border border-border bg-off-white text-[13px] text-text-main outline-none w-55 font-sans focus:border-maroon transition-colors"
+                className="py-2 pr-3.5 pl-8.5 rounded-[9px] border border-border bg-off-white text-fluid-13 text-text-main outline-none w-55 font-sans focus:border-maroon transition-colors"
               />
               <span className="absolute left-2.5 top-1/2 -translate-y-1/2 flex items-center text-text-muted"><Search size={14} /></span>
               {search && (
@@ -320,16 +320,16 @@ export default function AdminUserManagementPage() {
         </div>
 
         {/* Table header */}
-        <div className="grid grid-cols-[120px_1.6fr_1.4fr_130px_100px] p-[14px_24px] bg-off-white border-b border-border">
+        <div className="hidden lg:grid grid-cols-[120px_1.6fr_1.4fr_130px_100px] p-[14px_24px] bg-off-white border-b border-border">
           {['ID', 'NAME', 'EMAIL', 'ROLE', 'ACTIONS'].map(h => (
-            <span key={h} className="text-[11px] font-bold text-text-muted uppercase tracking-[0.08em]">{h}</span>
+            <span key={h} className="text-fluid-11 font-bold text-text-muted uppercase tracking-[0.08em]">{h}</span>
           ))}
         </div>
 
         {/* Rows */}
         {loading ? (
           [1, 2, 3, 4, 5].map((n, idx) => (
-            <div key={n} className={`grid grid-cols-[120px_1.6fr_1.4fr_130px_100px] p-[16px_24px] items-center ${idx === 4 ? 'border-none' : 'border-b border-border/60'} bg-white`}>
+            <div key={n} className={`grid grid-cols-1 lg:grid-cols-[120px_1.6fr_1.4fr_130px_100px] p-[16px_24px] items-center ${idx === 4 ? 'border-none' : 'border-b border-border/60'} bg-white`}>
               <div className="animate-pulse h-4 w-17.5 rounded bg-border" />
               <div className="flex items-center gap-4">
                 <div className="animate-pulse w-10 h-10 rounded-full bg-border" />
@@ -343,8 +343,8 @@ export default function AdminUserManagementPage() {
         ) : paginated.length === 0 ? (
           <div className="p-[60px_24px] text-center">
             <div className="flex justify-center mb-4 text-text-muted/50"><Users size={52} strokeWidth={1.5} /></div>
-            <p className="font-serif text-[18px] font-bold text-text-main m-0 mb-1">No users found</p>
-            <p className="text-[13px] text-text-muted m-0 max-w-62.5 mx-auto">
+            <p className="font-serif text-fluid-18 font-bold text-text-main m-0 mb-1">No users found</p>
+            <p className="text-fluid-13 text-text-muted m-0 max-w-62.5 mx-auto">
               {search ? 'Try adjusting your search query or filters to find what you are looking for.' : 'No accounts have been registered in the system yet.'}
             </p>
           </div>
@@ -355,21 +355,21 @@ export default function AdminUserManagementPage() {
             const isLast   = idx === paginated.length - 1
 
             return (
-              <div key={user.id} className={`grid grid-cols-[120px_1.6fr_1.4fr_130px_100px] p-[16px_24px] items-center transition-all duration-200 hover:bg-surface group ${isLast ? 'border-none' : 'border-b border-border'} bg-white ${user.is_active === false ? 'opacity-60 grayscale-[0.2]' : 'opacity-100'}`}>
+              <div key={user.id} className={`grid grid-cols-1 lg:grid-cols-[120px_1.6fr_1.4fr_130px_100px] p-[16px_24px] items-center transition-all duration-200 hover:bg-surface group ${isLast ? 'border-none' : 'border-b border-border'} bg-white ${user.is_active === false ? 'opacity-60 grayscale-[0.2]' : 'opacity-100'}`}>
                 {/* ID */}
-                <div className="text-[12.5px] text-text-muted font-mono font-medium">{uid}</div>
+                <div className="text-fluid-12-5 text-text-muted font-mono font-medium">{uid}</div>
 
                 {/* Name */}
                 <div className="flex items-center gap-3.5 min-w-0 pr-4">
                   <div className="shadow-sm rounded-full bg-white"><Avatar name={name} role={user.role} size={38} /></div>
                   <div className="flex flex-col gap-0.5 min-w-0">
-                    <div className="text-[14px] font-bold text-text-main whitespace-nowrap overflow-hidden text-ellipsis group-hover:text-maroon transition-colors">{name}</div>
-                    {user.is_active === false && <span className="text-[10px] font-bold text-danger bg-danger-light py-0.5 px-1.5 rounded-sm w-fit border border-danger-border leading-none">SUSPENDED</span>}
+                    <div className="text-fluid-14 font-bold text-text-main whitespace-nowrap overflow-hidden text-ellipsis group-hover:text-maroon transition-colors">{name}</div>
+                    {user.is_active === false && <span className="text-fluid-10 font-bold text-danger bg-danger-light py-0.5 px-1.5 rounded-sm w-fit border border-danger-border leading-none">SUSPENDED</span>}
                   </div>
                 </div>
 
                 {/* Email */}
-                <div className="text-[13px] font-medium text-text-sub whitespace-nowrap overflow-hidden text-ellipsis pr-4">{user.email}</div>
+                <div className="text-fluid-13 font-medium text-text-sub whitespace-nowrap overflow-hidden text-ellipsis pr-4">{user.email}</div>
 
                 {/* Role */}
                 <div className="flex items-center">
@@ -395,7 +395,7 @@ export default function AdminUserManagementPage() {
                     <div className="absolute top-full right-0 mt-2 bg-white border border-border rounded-xl shadow-[0_8px_24px_rgba(0,0,0,0.12)] p-1.5 z-10 min-w-35 animate-fade-up" style={{ animationDuration: '0.15s' }}>
                       <button
                         onClick={() => handleToggleStatus(user.id, user.is_active !== false)}
-                        className={`w-full py-2 px-3 border-none bg-transparent text-left text-[13px] cursor-pointer rounded-lg flex items-center gap-2.5 transition-colors duration-150 font-sans font-semibold ${user.is_active !== false ? 'text-danger hover:bg-danger-light' : 'text-success hover:bg-success-light'}`}
+                        className={`w-full py-2 px-3 border-none bg-transparent text-left text-fluid-13 cursor-pointer rounded-lg flex items-center gap-2.5 transition-colors duration-150 font-sans font-semibold ${user.is_active !== false ? 'text-danger hover:bg-danger-light' : 'text-success hover:bg-success-light'}`}
                       >
                         <span className="flex items-center shrink-0">{user.is_active !== false ? <Ban size={15} /> : <CheckCircle size={15} />}</span> 
                         {user.is_active !== false ? 'Suspend User' : 'Reactivate User'}
@@ -411,12 +411,12 @@ export default function AdminUserManagementPage() {
         {/* Pagination footer */}
         {filtered.length > 0 && (
           <div className="p-[13px_24px] border-t border-border flex items-center justify-between bg-surface">
-            <span className="text-[12px] text-text-muted">
+            <span className="text-fluid-12 text-text-muted">
               Showing {filtered.length === 0 ? 0 : (page - 1) * PER_PAGE + 1}–{Math.min(page * PER_PAGE, filtered.length)} of {filtered.length} entries
             </span>
             <div className="flex gap-1 items-center">
               <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}
-                className={`py-1 px-3 rounded-md border border-border bg-white text-[12px] font-semibold font-sans ${page === 1 ? 'cursor-not-allowed text-text-muted' : 'cursor-pointer text-text-main hover:bg-off-white'}`}>
+                className={`py-1 px-3 rounded-md border border-border bg-white text-fluid-12 font-semibold font-sans ${page === 1 ? 'cursor-not-allowed text-text-muted' : 'cursor-pointer text-text-main hover:bg-off-white'}`}>
                 Prev
               </button>
               {Array.from({ length: Math.min(totalPages, 7) }, (_, i) => {
@@ -426,13 +426,13 @@ export default function AdminUserManagementPage() {
                   : page - 3 + i
                 if (p < 1 || p > totalPages) return null
                 return (
-                  <button key={p} onClick={() => setPage(p)} className={`w-7.5 h-7.5 rounded-md text-[12px] font-semibold cursor-pointer font-sans border ${page === p ? 'border-maroon bg-maroon text-white' : 'border-border bg-white text-text-main hover:bg-off-white'}`}>
+                  <button key={p} onClick={() => setPage(p)} className={`w-7.5 h-7.5 rounded-md text-fluid-12 font-semibold cursor-pointer font-sans border ${page === p ? 'border-maroon bg-maroon text-white' : 'border-border bg-white text-text-main hover:bg-off-white'}`}>
                     {p}
                   </button>
                 )
               })}
               <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages}
-                className={`py-1 px-3 rounded-md border border-border bg-white text-[12px] font-semibold font-sans ${page === totalPages ? 'cursor-not-allowed text-text-muted' : 'cursor-pointer text-text-main hover:bg-off-white'}`}>
+                className={`py-1 px-3 rounded-md border border-border bg-white text-fluid-12 font-semibold font-sans ${page === totalPages ? 'cursor-not-allowed text-text-muted' : 'cursor-pointer text-text-main hover:bg-off-white'}`}>
                 Next
               </button>
             </div>

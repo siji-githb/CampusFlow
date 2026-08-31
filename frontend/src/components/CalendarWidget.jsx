@@ -1,4 +1,5 @@
 import React, { useState } from 'react'
+import { getPhilippineHoliday } from '../utils/philippineHolidays'
 
 export function CalendarWidget({ selectedDate, onDateSelect, minDateStr, maxDateStr, dateOverrides = {} }) {
   const [currentMonth, setCurrentMonth] = useState(() => {
@@ -33,14 +34,14 @@ export function CalendarWidget({ selectedDate, onDateSelect, minDateStr, maxDate
     <div className="w-full max-w-xs sm:max-w-sm mx-auto">
       {/* Month header */}
       <div className="flex justify-between items-center mb-3 sm:mb-4">
-        <h3 className="font-serif text-base sm:text-lg md:text-[19px] font-bold text-text-main m-0">
+        <h3 className="font-serif text-base sm:text-lg md:text-fluid-19 font-bold text-text-main m-0">
           {MONTHS[month]} {year}
         </h3>
         <div className="flex gap-1">
           {[['‹', -1], ['›', 1]].map(([label, dir]) => (
             <button key={dir} type="button"
               onClick={() => setCurrentMonth(new Date(year, month + dir, 1))}
-              className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg border border-border bg-white cursor-pointer text-base sm:text-[18px] leading-none text-text-sub flex items-center justify-center font-serif transition-colors hover:bg-off-white"
+              className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg border border-border bg-white cursor-pointer text-base sm:text-fluid-18 leading-none text-text-sub flex items-center justify-center font-serif transition-colors hover:bg-off-white"
             >{label}</button>
           ))}
         </div>
@@ -49,7 +50,7 @@ export function CalendarWidget({ selectedDate, onDateSelect, minDateStr, maxDate
       {/* Day headers */}
       <div className="grid grid-cols-7 gap-0.5 sm:gap-1 mb-1.5 sm:mb-2 text-center">
         {DAY_NAMES.map(d => (
-          <div key={d} className="text-[11px] sm:text-[12px] font-semibold text-text-muted py-0.5 sm:py-1">{d}</div>
+          <div key={d} className="text-fluid-11 sm:text-fluid-12 font-semibold text-text-muted py-0.5 sm:py-1">{d}</div>
         ))}
       </div>
 
@@ -61,23 +62,32 @@ export function CalendarWidget({ selectedDate, onDateSelect, minDateStr, maxDate
           const dateObj    = new Date(year, month, d)
           const t          = dateObj.getTime()
           const dow        = dateObj.getDay()
-          const isDisabled = dow === 0 || t < minD || t > maxD
+          const override   = dateOverrides[dateStr]
+          const phHoliday  = getPhilippineHoliday(dateStr)
+          const isBlocked  = override ? override.is_blocked : Boolean(phHoliday)
+          const isDisabled = dow === 0 || t < minD || t > maxD || isBlocked
           const isSelected = selectedDate === dateStr
-          const override = dateOverrides[dateStr]
+
+          let buttonTitle = ""
+          if (dow === 0) buttonTitle = "Sundays are closed"
+          else if (phHoliday) buttonTitle = `${phHoliday.name} (${phHoliday.type}) - Office Closed`
+          else if (override?.is_blocked) buttonTitle = override.note || "Date Blocked"
+          else if (t < minD || t > maxD) buttonTitle = "Outside booking window"
+
           return (
             <button key={i} type="button" disabled={isDisabled}
-              title={isDisabled ? "Outside booking window or unavailable" : ""}
+              title={buttonTitle}
               onClick={() => !isDisabled && onDateSelect(dateStr)}
-              className={`aspect-square rounded-full border-none text-xs sm:text-[13px] font-sans flex flex-col items-center justify-center gap-0.5 transition-all duration-150 ${
+              className={`aspect-square rounded-full border-none text-xs sm:text-fluid-13 font-sans flex flex-col items-center justify-center gap-0.5 transition-all duration-150 ${
                 isSelected ? 'bg-maroon text-white font-bold' : 
-                isDisabled ? 'bg-[#F5F5F5] text-text-sub font-normal opacity-50 cursor-not-allowed' : 
+                isDisabled ? (phHoliday || override?.is_blocked ? 'bg-danger-light/30 text-danger font-medium cursor-not-allowed opacity-75' : 'bg-[#F5F5F5] text-text-sub font-normal opacity-50 cursor-not-allowed') : 
                 'bg-transparent text-text-main font-normal cursor-pointer hover:bg-maroon-light hover:text-maroon'
               }`}
             >
               <span>{d}</span>
               <div className="flex justify-center w-full h-1">
-                {override && (
-                  <div className={`w-1 h-1 rounded-full ${override.is_blocked ? (isSelected ? 'bg-white' : 'bg-danger') : (isSelected ? 'bg-white' : 'bg-info')}`} />
+                {(override || phHoliday) && (
+                  <div className={`w-1 h-1 rounded-full ${isBlocked ? (isSelected ? 'bg-white' : 'bg-danger') : (isSelected ? 'bg-white' : 'bg-info')}`} />
                 )}
               </div>
             </button>
@@ -140,7 +150,7 @@ export function SlotBtn({ slot, selected, onSelect, selectedDate }) {
     <button
       type="button"
       onClick={() => isAvailable && onSelect(slot.time_slot)}
-      className={`py-2 sm:py-2.5 px-1 sm:px-1.5 rounded-xl text-[11px] sm:text-[12px] font-semibold font-sans border sm:border-[1.5px] border-solid transition-all duration-150 text-center ${bgClass} ${textClass} ${borderClass} ${cursorClass} ${opacityClass}`}
+      className={`py-2 sm:py-2.5 px-1 sm:px-1.5 rounded-xl text-fluid-11 sm:text-fluid-12 font-semibold font-sans border sm:border-[1.5px] border-solid transition-all duration-150 text-center ${bgClass} ${textClass} ${borderClass} ${cursorClass} ${opacityClass}`}
     >
       {text}
     </button>

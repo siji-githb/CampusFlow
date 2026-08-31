@@ -46,12 +46,12 @@ export default function PriorityPromptBanner() {
 
         <div className="flex-1 min-w-0">
           <div className="flex items-center justify-between gap-2">
-            <h4 className="font-serif text-xs sm:text-[13.5px] font-bold text-maroon m-0 leading-tight">
+            <h4 className="font-serif text-xs sm:text-fluid-13-5 font-bold text-maroon m-0 leading-tight">
               Priority Lane Access
             </h4>
           </div>
 
-          <p className="text-[11px] sm:text-xs text-text-sub m-0 mt-1 leading-relaxed font-normal">
+          <p className="text-fluid-11 sm:text-xs text-text-sub m-0 mt-1 leading-relaxed font-normal">
             PWD and pregnant students can apply for priority lane access.
           </p>
 
@@ -59,7 +59,7 @@ export default function PriorityPromptBanner() {
             <button
               type="button"
               onClick={handleInquire}
-              className="py-1.5 px-3.5 rounded-xl bg-gold hover:bg-gold-dark text-white text-[11px] sm:text-xs font-bold transition-all shadow-2xs cursor-pointer border-none flex items-center gap-1"
+              className="py-1.5 px-3.5 rounded-xl bg-gold hover:bg-gold-dark text-white text-fluid-11 sm:text-xs font-bold transition-all shadow-2xs cursor-pointer border-none flex items-center gap-1"
             >
               <span>Inquire</span>
               <ChevronRight size={13} />
@@ -68,7 +68,7 @@ export default function PriorityPromptBanner() {
             <button
               type="button"
               onClick={handleNeverShowAgain}
-              className="py-1.5 px-2 rounded-xl bg-transparent hover:bg-off-white text-text-muted hover:text-text-main text-[10.5px] sm:text-[11px] font-medium transition-colors cursor-pointer border-none"
+              className="py-1.5 px-2 rounded-xl bg-transparent hover:bg-off-white text-text-muted hover:text-text-main text-fluid-10-5 sm:text-fluid-11 font-medium transition-colors cursor-pointer border-none"
             >
               Never show again
             </button>

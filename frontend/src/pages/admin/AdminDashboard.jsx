@@ -25,7 +25,7 @@ import { getDocumentColor } from '../../utils/colors'
 const SideItem = ({ icon, label, active, onClick }) => (
   <button 
     onClick={onClick} 
-    className={`relative flex items-center gap-3 w-full py-2.5 px-4 rounded-[10px] border-none cursor-pointer text-left font-sans text-[13.5px] transition-all duration-300 overflow-hidden
+    className={`relative flex items-center gap-3 w-full py-2.5 px-4 rounded-[10px] border-none cursor-pointer text-left font-sans text-fluid-13-5 transition-all duration-300 overflow-hidden
       ${active ? 'bg-maroon-light/60 text-maroon font-bold' : 'bg-transparent text-text-sub font-medium hover:bg-surface hover:text-text-main'}`}
   >
     {active && (
@@ -173,8 +173,8 @@ const LineChart = ({ actualData, labels }) => {
             transform: 'translate(-50%, -110%)'
           }}
         >
-          <div className="text-[11px] font-semibold text-text-muted mb-1 border-b border-border pb-1.5">{labels[hoverIndex]}</div>
-          <div className="flex items-center gap-2 text-[12px] font-semibold text-text-main">
+          <div className="text-fluid-11 font-semibold text-text-muted mb-1 border-b border-border pb-1.5">{labels[hoverIndex]}</div>
+          <div className="flex items-center gap-2 text-fluid-12 font-semibold text-text-main">
             <span className="w-2.5 h-2.5 rounded-full bg-maroon"></span>
             <span>Appointments: {actualData[hoverIndex]}</span>
           </div>
@@ -329,11 +329,11 @@ function OverviewTab() {
     <div>
       {/* Page heading */}
       <div className="mb-7">
-        <div className="text-[11px] font-bold text-gold uppercase tracking-[0.06em] mb-2">SYSTEM DASHBOARD</div>
-        <h1 className="font-serif text-[22px] sm:text-[26px] font-bold text-maroon m-0 mb-2 flex items-center gap-2.5 sm:gap-3">
+        <div className="text-fluid-11 font-bold text-gold uppercase tracking-[0.06em] mb-2">SYSTEM DASHBOARD</div>
+        <h1 className="font-serif text-fluid-22 sm:text-fluid-26 font-bold text-maroon m-0 mb-2 flex items-center gap-2.5 sm:gap-3">
           <LayoutDashboard size={26} className="text-maroon shrink-0" /> Admin Overview
         </h1>
-        <p className="text-[12px] text-text-sub m-0 leading-relaxed max-w-162.5">
+        <p className="text-fluid-12 text-text-sub m-0 leading-relaxed max-w-162.5">
           Monitor active queues, review completion rates, and track system health.
         </p>
       </div>
@@ -349,29 +349,29 @@ function OverviewTab() {
               </div>
             </div>
             <div>
-              <div className="font-serif text-[28px] font-extrabold leading-none m-0 min-h-7 text-text-main">
+              <div className="font-serif text-fluid-28 font-extrabold leading-none m-0 min-h-7 text-text-main">
                 {c.value === null ? <div className="animate-pulse w-15 h-7 rounded-md bg-border" /> : c.value}
               </div>
-              <div className={`text-[11px] font-semibold mt-1.5 ${c.subColorClass || 'text-text-muted'}`}>{c.sub}</div>
+              <div className={`text-fluid-11 font-semibold mt-1.5 ${c.subColorClass || 'text-text-muted'}`}>{c.sub}</div>
             </div>
           </div>
         ))}
       </div>
 
       {/* Bottom row: Chart + Distribution */}
-      <div className="grid grid-cols-[1fr_300px] gap-5 items-start">
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-5 items-start">
 
         {/* Appointments Chart */}
         <div className="animate-fade-up bg-white rounded-2xl p-6 border border-border shadow-sm" style={{ animationDelay: '0.4s' }}>
           <div className="flex flex-wrap items-start justify-between gap-4 mb-5">
             <div className="shrink-0">
-              <p className="text-[11px] font-bold text-gold uppercase tracking-widest m-0 mb-1">Daily Volume</p>
-              <h2 className="font-serif text-[18px] font-bold text-text-main m-0">Daily Appointments</h2>
+              <p className="text-fluid-11 font-bold text-gold uppercase tracking-widest m-0 mb-1">Daily Volume</p>
+              <h2 className="font-serif text-fluid-18 font-bold text-text-main m-0">Daily Appointments</h2>
             </div>
             <div className="flex flex-wrap items-center gap-4">
               <div className="relative">
                 <div 
-                  className="py-2 px-3.5 rounded-[10px] border border-border text-[13px] font-semibold text-text-main bg-white flex items-center gap-2.5 shadow-sm whitespace-nowrap cursor-pointer hover:bg-surface transition-colors"
+                  className="py-2 px-3.5 rounded-[10px] border border-border text-fluid-13 font-semibold text-text-main bg-white flex items-center gap-2.5 shadow-sm whitespace-nowrap cursor-pointer hover:bg-surface transition-colors"
                   onClick={() => setIsCalendarOpen(!isCalendarOpen)}
                 >
                   <Calendar size={16} className="text-text-sub shrink-0" /> {chartLabels.length > 0 ? `${chartLabels[0]} to ${chartLabels[chartLabels.length - 1]}` : 'Loading...'}
@@ -381,7 +381,7 @@ function OverviewTab() {
                   <div className="absolute top-full right-0 mt-2 p-4 bg-white rounded-2xl shadow-[0_10px_40px_rgba(0,0,0,0.12)] border border-border z-20 w-75">
                     <div className="flex items-center justify-between mb-5">
                       <button onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1))} className="text-text-sub hover:text-text-main"><ChevronLeft size={16} /></button>
-                      <div className="font-bold text-text-main text-[15px] tracking-wide">
+                      <div className="font-bold text-text-main text-fluid-15 tracking-wide">
                         {["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"][currentMonth.getMonth()]} {currentMonth.getFullYear()}
                       </div>
                       <button onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1))} className="text-text-sub hover:text-text-main"><ChevronRight size={16} /></button>
@@ -389,13 +389,13 @@ function OverviewTab() {
                     
                     <div className="grid grid-cols-7 mb-3">
                       {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(d => (
-                        <div key={d} className={`text-center text-[12px] font-bold ${d === 'Sun' ? 'text-text-muted/40' : d === 'Sat' ? 'text-maroon' : 'text-text-sub'}`}>
+                        <div key={d} className={`text-center text-fluid-12 font-bold ${d === 'Sun' ? 'text-text-muted/40' : d === 'Sat' ? 'text-maroon' : 'text-text-sub'}`}>
                           {d}
                         </div>
                       ))}
                     </div>
                     
-                    <div className="grid grid-cols-7 gap-y-1 text-[13px] font-bold">
+                    <div className="grid grid-cols-7 gap-y-1 text-fluid-13 font-bold">
                       {/* Previous month (empty padding) */}
                       {Array.from({ length: currentMonth.getDay() }, (_, i) => <div key={`prev-${i}`} />)}
                       
@@ -443,7 +443,7 @@ function OverviewTab() {
                   </div>
                 )}
               </div>
-              <div className="flex items-center gap-1.5 text-[12px] text-text-sub whitespace-nowrap">
+              <div className="flex items-center gap-1.5 text-fluid-12 text-text-sub whitespace-nowrap">
                 <div className="w-5 h-[2.5px] bg-maroon rounded-sm shrink-0" /> Daily Appointments
               </div>
             </div>
@@ -451,7 +451,7 @@ function OverviewTab() {
           <div className="relative pt-2">
             {chartLoading && (
               <div className="absolute inset-0 bg-white/70 z-10 flex items-center justify-center min-h-37.5">
-                <div className="typing-indicator font-bold text-[24px] text-maroon">Loading</div>
+                <div className="typing-indicator font-bold text-fluid-24 text-maroon">Loading</div>
               </div>
             )}
             <LineChart actualData={actualData} labels={chartLabels} />
@@ -461,8 +461,8 @@ function OverviewTab() {
         {/* Transaction Distribution */}
         <div className="animate-fade-up bg-white rounded-2xl p-6 border border-border shadow-sm" style={{ animationDelay: '0.5s' }}>
           <div className="mb-5">
-            <p className="text-[11px] font-bold text-gold uppercase tracking-widest m-0 mb-1">Breakdown</p>
-            <h2 className="font-serif text-[18px] font-bold text-text-main m-0">Transaction Distribution</h2>
+            <p className="text-fluid-11 font-bold text-gold uppercase tracking-widest m-0 mb-1">Breakdown</p>
+            <h2 className="font-serif text-fluid-18 font-bold text-text-main m-0">Transaction Distribution</h2>
           </div>
 
           {chartLoading ? (
@@ -478,7 +478,7 @@ function OverviewTab() {
               ))}
             </div>
           ) : txTypes.length === 0 ? (
-            <div className="text-center py-8 text-text-muted text-[13px]">No transaction data</div>
+            <div className="text-center py-8 text-text-muted text-fluid-13">No transaction data</div>
           ) : (
             <DonutChart data={txTypes} total={txTotal} colors={donutColors} />
           )}
@@ -541,8 +541,8 @@ export default function AdminDashboard() {
       <div className="flex items-center gap-2.5 px-2 mb-8">
         <img src={campusFlowLogo} alt="CampusFlow" className="w-9.5 h-9.5 rounded-full bg-white object-contain border border-slate-200" />
         <div>
-          <div className="font-serif text-[14px] font-bold text-maroon leading-[1.2]">CampusFlow</div>
-          <div className="text-[10px] text-text-muted tracking-[0.04em]"><strong>Admin Portal</strong></div>
+          <div className="font-serif text-fluid-14 font-bold text-maroon leading-[1.2]">CampusFlow</div>
+          <div className="text-fluid-10 text-text-muted tracking-[0.04em]"><strong>Admin Portal</strong></div>
         </div>
       </div>
 
@@ -550,7 +550,7 @@ export default function AdminDashboard() {
       <nav className="flex-1 flex flex-col gap-6 px-1 overflow-y-auto pb-6 scrollbar-hide">
         {navGroups.map((group, idx) => (
           <div key={idx} className="flex flex-col gap-1.5">
-            <div className="text-[10px] font-extrabold text-text-muted uppercase tracking-[0.15em] px-4 mb-1">
+            <div className="text-fluid-10 font-extrabold text-text-muted uppercase tracking-[0.15em] px-4 mb-1">
               {group.title}
             </div>
             <div className="flex flex-col gap-1 pl-3 pr-2">
@@ -582,7 +582,7 @@ export default function AdminDashboard() {
             <div className="flex items-center justify-between mb-4 px-2">
               <div className="flex items-center gap-2">
                 <img src={campusFlowLogo} alt="CampusFlow" className="w-8 h-8 rounded-full bg-white object-contain border border-slate-200" />
-                <span className="font-serif text-[14px] font-bold text-maroon">CampusFlow Admin</span>
+                <span className="font-serif text-fluid-14 font-bold text-maroon">CampusFlow Admin</span>
               </div>
               <button onClick={() => setIsMobileOpen(false)} className="w-8 h-8 rounded-lg bg-surface border-none flex items-center justify-center text-text-muted hover:text-text-main cursor-pointer">
                 <X size={18} />
@@ -619,7 +619,7 @@ export default function AdminDashboard() {
             <div className="relative">
               {profileOpen && <div onClick={() => setProfileOpen(false)} className="fixed inset-0 z-105" />}
               <button onClick={() => setProfileOpen(!profileOpen)} className="flex items-center gap-2.5 p-1 pr-2 rounded-full border-none bg-transparent cursor-pointer outline-none hover:bg-slate-50 transition-colors">
-                <div className="w-9.5 h-9.5 rounded-full bg-maroon-mid border-[1.5px] border-maroon-border flex items-center justify-center text-[15px] font-bold text-maroon overflow-hidden">
+                <div className="w-9.5 h-9.5 rounded-full bg-maroon-mid border-[1.5px] border-maroon-border flex items-center justify-center text-fluid-15 font-bold text-maroon overflow-hidden">
                   {user?.profile_image ? (
                     <img src={user.profile_image} alt="Profile" className="w-full h-full object-cover" />
                   ) : (
@@ -627,7 +627,7 @@ export default function AdminDashboard() {
                   )}
                 </div>
                 <div className="hidden sm:flex items-center gap-1.5 mr-1">
-                  <span className="text-[14px] font-bold text-text-main font-sans">
+                  <span className="text-fluid-14 font-bold text-text-main font-sans">
                     {user?.first_name || 'Admin'}
                   </span>
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={`text-text-sub transition-transform duration-300 ${profileOpen ? 'rotate-180' : ''}`}>
@@ -638,7 +638,7 @@ export default function AdminDashboard() {
               {profileOpen && (
                 <div className="absolute top-13 right-0 w-70 bg-white rounded-2xl shadow-[0_8px_30px_rgba(0,0,0,0.12)] p-4 z-110 border border-border animate-fade-up">
                   <div className="flex gap-3 mb-4 items-start">
-                    <div className="w-10.5 h-10.5 rounded-full bg-maroon-mid border-[1.5px] border-maroon-border flex items-center justify-center text-[16px] font-bold text-maroon overflow-hidden shrink-0">
+                    <div className="w-10.5 h-10.5 rounded-full bg-maroon-mid border-[1.5px] border-maroon-border flex items-center justify-center text-fluid-16 font-bold text-maroon overflow-hidden shrink-0">
                       {user?.profile_image ? (
                         <img src={user.profile_image} alt="Profile" className="w-full h-full object-cover" />
                       ) : (
@@ -646,24 +646,24 @@ export default function AdminDashboard() {
                       )}
                     </div>
                     <div className="flex-1 min-w-0 pt-0.5">
-                      <div className="text-[14px] font-bold text-text-main leading-tight truncate">
+                      <div className="text-fluid-14 font-bold text-text-main leading-tight truncate">
                         {user?.first_name ? `${user?.first_name} ${user?.last_name || ''}` : 'Admin CampusFlow'}
                       </div>
-                      <div className="text-[11px] text-text-muted mt-1 truncate">
+                      <div className="text-fluid-11 text-text-muted mt-1 truncate">
                         {user?.email || 'admin@campusflow.com'}
                       </div>
                       <div className="flex gap-1.5 mt-2 flex-wrap">
-                        <span className="text-[9px] font-bold text-maroon bg-maroon-light border border-maroon-border rounded px-1.5 py-0.5 uppercase tracking-wider">
+                        <span className="text-fluid-9 font-bold text-maroon bg-maroon-light border border-maroon-border rounded px-1.5 py-0.5 uppercase tracking-wider">
                           ID: {user?.id?.substring(0,8) || 'ADMIN'}
                         </span>
-                        <span className="text-[9px] font-bold text-gold bg-gold-light border border-gold-border rounded px-1.5 py-0.5 uppercase tracking-wider">
+                        <span className="text-fluid-9 font-bold text-gold bg-gold-light border border-gold-border rounded px-1.5 py-0.5 uppercase tracking-wider">
                           Role: Administrator
                         </span>
                       </div>
                     </div>
                   </div>
                   <div className="h-px bg-border mb-3" />
-                  <button onClick={() => { requestLogout(); }} className="w-full py-2.5 px-3 rounded-xl border-none bg-danger-light text-danger text-[13px] font-bold cursor-pointer flex items-center justify-center gap-2 font-sans hover:bg-danger-border transition-colors">
+                  <button onClick={() => { requestLogout(); }} className="w-full py-2.5 px-3 rounded-xl border-none bg-danger-light text-danger text-fluid-13 font-bold cursor-pointer flex items-center justify-center gap-2 font-sans hover:bg-danger-border transition-colors">
                     <LogOut size={16} strokeWidth={2.5} /> Log Out
                   </button>
                 </div>

@@ -54,7 +54,7 @@ function ImageModal({ url, onClose }) {
       </div>
 
       {/* Close button */}
-      <button onClick={onClose} className="absolute top-6 right-6 bg-white/10 border-none text-white rounded-full w-12 h-12 flex items-center justify-center cursor-pointer hover:bg-danger hover:text-white transition-colors z-50 text-[28px] leading-none">×</button>
+      <button onClick={onClose} className="absolute top-6 right-6 bg-white/10 border-none text-white rounded-full w-12 h-12 flex items-center justify-center cursor-pointer hover:bg-danger hover:text-white transition-colors z-50 text-fluid-28 leading-none">×</button>
       
       {/* Image Container */}
       <div 
@@ -145,17 +145,17 @@ export default function PriorityRequestsPage() {
 
       {/* ── Page Header (Always visible) ── */}
       <div className="animate-fade-up mb-6">
-        <p className="text-[11px] font-bold text-gold tracking-widest uppercase m-0 mb-1.5">Verification</p>
-        <h1 className="font-serif text-[22px] sm:text-[26px] font-bold text-text-main m-0 flex items-center gap-2">
+        <p className="text-fluid-11 font-bold text-gold tracking-widest uppercase m-0 mb-1.5">Verification</p>
+        <h1 className="font-serif text-fluid-22 sm:text-fluid-26 font-bold text-text-main m-0 flex items-center gap-2">
           <ShieldCheck size={24} className="text-maroon shrink-0" /> Priority Requests
         </h1>
-        <p className="text-[12px] sm:text-[13px] text-text-sub mt-1.5 sm:mt-2 mb-0">
+        <p className="text-fluid-12 sm:text-fluid-13 text-text-sub mt-1.5 sm:mt-2 mb-0">
           Review documents submitted by students for PWD or Pregnancy priority status.
         </p>
       </div>
 
       {error && (
-        <div className="animate-fade-up py-3 px-4 rounded-xl bg-danger-light border border-danger-border text-danger text-[13px] mb-6">
+        <div className="animate-fade-up py-3 px-4 rounded-xl bg-danger-light border border-danger-border text-danger text-fluid-13 mb-6">
           {error}
         </div>
       )}
@@ -203,7 +203,7 @@ export default function PriorityRequestsPage() {
           ))}
         </div>
       ) : requests.length === 0 ? (
-        <div className="animate-fade-up bg-white rounded-2xl border border-border p-10 text-center text-text-muted text-[14px] mb-8 shadow-sm">
+        <div className="animate-fade-up bg-white rounded-2xl border border-border p-10 text-center text-text-muted text-fluid-14 mb-8 shadow-sm">
           No pending priority requests.
         </div>
       ) : (
@@ -224,18 +224,18 @@ export default function PriorityRequestsPage() {
                   <div>
                     <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
                       <div className="flex items-center gap-3 flex-wrap">
-                        <h3 className="text-[18px] font-bold text-text-main m-0 font-serif tracking-tight">
+                        <h3 className="text-fluid-18 font-bold text-text-main m-0 font-serif tracking-tight">
                           {req.users?.last_name}, {req.users?.first_name}
                         </h3>
-                        <span className="text-[11px] text-text-muted font-bold tracking-wider uppercase bg-off-white px-2 py-1 rounded-md border border-border">ID: {req.users?.student_id}</span>
+                        <span className="text-fluid-11 text-text-muted font-bold tracking-wider uppercase bg-off-white px-2 py-1 rounded-md border border-border">ID: {req.users?.student_id}</span>
                       </div>
                     </div>
                     
                     <div className="flex items-center gap-3 mb-6">
-                      <span className={`px-3 py-1 rounded-md text-[11px] font-bold uppercase tracking-wider ${req.priority_type === 'pwd' ? 'bg-maroon-light/50 text-maroon border border-maroon-border/50' : 'bg-purple-50 text-purple-700 border border-purple-200'}`}>
+                      <span className={`px-3 py-1 rounded-md text-fluid-11 font-bold uppercase tracking-wider ${req.priority_type === 'pwd' ? 'bg-maroon-light/50 text-maroon border border-maroon-border/50' : 'bg-purple-50 text-purple-700 border border-purple-200'}`}>
                         {req.priority_type === 'pwd' ? 'PWD' : 'Pregnant'}
                       </span>
-                      <span className="text-[12px] text-text-muted flex items-center gap-1.5 font-medium">
+                      <span className="text-fluid-12 text-text-muted flex items-center gap-1.5 font-medium">
                         <Clock size={13} className="text-text-muted/70" />
                         Requested {new Date(req.created_at).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}
                       </span>
@@ -247,13 +247,13 @@ export default function PriorityRequestsPage() {
                     <div className="flex items-center justify-between mb-2">
                       <div className="flex items-center gap-2">
                         <Sparkles size={14} className={score >= 70 ? 'text-success' : score >= 40 ? 'text-amber-600' : 'text-danger'} />
-                        <span className="text-[11px] font-extrabold text-text-main uppercase tracking-[0.08em]">AI Confidence Score</span>
+                        <span className="text-fluid-11 font-extrabold text-text-main uppercase tracking-[0.08em]">AI Confidence Score</span>
                       </div>
-                      <span className={`px-2.5 py-0.5 rounded-full text-[11px] font-bold border ${scoreColor} shadow-sm`}>
+                      <span className={`px-2.5 py-0.5 rounded-full text-fluid-11 font-bold border ${scoreColor} shadow-sm`}>
                         {score}%
                       </span>
                     </div>
-                    <p className="text-[13px] text-text-sub m-0 leading-relaxed pl-6">
+                    <p className="text-fluid-13 text-text-sub m-0 leading-relaxed pl-6">
                       <strong className="text-text-main font-semibold">Reasoning:</strong>{' '}
                       {(() => {
                         const r = req.ocr_reasoning || ''
@@ -271,7 +271,7 @@ export default function PriorityRequestsPage() {
                 <div className="flex flex-col gap-3 shrink-0 w-full md:w-55 p-6 justify-center">
                   <button
                     onClick={() => setPreviewUrl(req.document_url)}
-                    className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-white text-text-main font-bold text-[13px] border border-border shadow-sm cursor-pointer hover:bg-slate-50 hover:shadow-md hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-200"
+                    className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-white text-text-main font-bold text-fluid-13 border border-border shadow-sm cursor-pointer hover:bg-slate-50 hover:shadow-md hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-200"
                   >
                     <ImageIcon size={15} className="text-text-muted" /> View Document
                   </button>
@@ -283,15 +283,15 @@ export default function PriorityRequestsPage() {
                         value={rejectReason} 
                         onChange={e => setRejectReason(e.target.value)} 
                         placeholder="Reason for rejection..." 
-                        className="w-full px-3 py-2.5 rounded-xl border border-border text-[12px] outline-none focus:border-danger transition-colors box-border bg-white shadow-inner"
+                        className="w-full px-3 py-2.5 rounded-xl border border-border text-fluid-12 outline-none focus:border-danger transition-colors box-border bg-white shadow-inner"
                         autoFocus
                       />
                       <div className="flex gap-3">
-                        <button onClick={() => setRejectingId(null)} disabled={isConfirming === req.id} className="flex-1 py-2.5 rounded-xl border border-border bg-white text-text-main text-[12px] font-bold cursor-pointer hover:bg-slate-50 hover:shadow-md hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-200 disabled:opacity-50">Cancel</button>
+                        <button onClick={() => setRejectingId(null)} disabled={isConfirming === req.id} className="flex-1 py-2.5 rounded-xl border border-border bg-white text-text-main text-fluid-12 font-bold cursor-pointer hover:bg-slate-50 hover:shadow-md hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-200 disabled:opacity-50">Cancel</button>
                         <button
                           onClick={() => handleReject(req.id)}
                           disabled={isConfirming === req.id || !rejectReason.trim()}
-                          className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl border-none bg-danger text-white text-[12px] font-bold cursor-pointer hover:bg-danger-dark shadow-sm hover:shadow-md hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                          className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl border-none bg-danger text-white text-fluid-12 font-bold cursor-pointer hover:bg-danger-dark shadow-sm hover:shadow-md hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                           {isConfirming === req.id ? (
                             <>
@@ -308,7 +308,7 @@ export default function PriorityRequestsPage() {
                       <button
                         onClick={() => handleApprove(req.id)}
                         disabled={isConfirming === req.id}
-                        className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-success text-white font-bold text-[13px] border-none cursor-pointer hover:bg-success-dark shadow-sm hover:shadow-md hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-success text-white font-bold text-fluid-13 border-none cursor-pointer hover:bg-success-dark shadow-sm hover:shadow-md hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         {isConfirming === req.id ? (
                           <>
@@ -323,7 +323,7 @@ export default function PriorityRequestsPage() {
                       <button
                         onClick={() => { setRejectingId(req.id); setRejectReason('') }}
                         disabled={isConfirming === req.id}
-                        className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-white text-danger border border-danger-border font-bold text-[13px] cursor-pointer hover:bg-danger-light shadow-sm hover:shadow-md hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-white text-danger border border-danger-border font-bold text-fluid-13 cursor-pointer hover:bg-danger-light shadow-sm hover:shadow-md hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         <X size={15} /> Reject
                       </button>

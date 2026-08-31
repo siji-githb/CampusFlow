@@ -14,13 +14,13 @@ const FilterSelect = ({ label, value, options, onChange, disabled, widthClass = 
 
   return (
     <div className={`flex items-center gap-2.5 mr-1 ${disabled ? 'opacity-40 pointer-events-none' : ''}`}>
-      <span className="text-[10px] font-extrabold text-text-muted uppercase tracking-[0.08em] whitespace-nowrap">{label}</span>
+      <span className="text-fluid-10 font-extrabold text-text-muted uppercase tracking-[0.08em] whitespace-nowrap">{label}</span>
       <div className="relative z-30 group">
         <button
           type="button"
           onClick={() => setIsOpen(!isOpen)}
           disabled={disabled}
-          className={`flex items-center justify-between py-2 px-3.5 rounded-xl border border-border bg-white shadow-2xs text-[12.5px] font-bold text-text-main outline-none cursor-pointer font-sans ${widthClass} transition-all hover:border-maroon/40 hover:shadow-xs disabled:bg-gray-50 disabled:text-gray-400`}
+          className={`flex items-center justify-between py-2 px-3.5 rounded-xl border border-border bg-white shadow-2xs text-fluid-12-5 font-bold text-text-main outline-none cursor-pointer font-sans ${widthClass} transition-all hover:border-maroon/40 hover:shadow-xs disabled:bg-gray-50 disabled:text-gray-400`}
         >
           <span className="truncate pr-2 text-left">{currentLabel}</span>
           <ChevronDown size={14} className={`text-text-muted transition-transform duration-200 shrink-0 ${isOpen ? 'rotate-180 text-maroon' : 'group-hover:text-text-main'}`} />
@@ -35,7 +35,7 @@ const FilterSelect = ({ label, value, options, onChange, disabled, widthClass = 
                   <div
                     key={o.value}
                     onClick={() => { onChange(o.value); setIsOpen(false); }}
-                    className={`px-3 py-2 rounded-lg cursor-pointer flex items-center justify-between text-[12px] font-medium transition-colors ${isActive ? 'bg-maroon/5 text-maroon font-bold' : 'text-text-main hover:bg-off-white'}`}
+                    className={`px-3 py-2 rounded-lg cursor-pointer flex items-center justify-between text-fluid-12 font-medium transition-colors ${isActive ? 'bg-maroon/5 text-maroon font-bold' : 'text-text-main hover:bg-off-white'}`}
                   >
                     <span className="truncate pr-2">{o.label}</span>
                     {isActive && <Check size={13} className="text-maroon shrink-0" />}
@@ -242,7 +242,7 @@ function StackedBarChart({ bars, typeNames, colors, yAxisLabel }) {
               {/* Header */}
               <div className="flex items-center gap-2 mb-3 pb-2.5 border-b border-border">
                 <div className="w-1 h-5 rounded-full bg-maroon" />
-                <span className="text-[11px] font-extrabold text-maroon uppercase tracking-[0.09em]">
+                <span className="text-fluid-11 font-extrabold text-maroon uppercase tracking-[0.09em]">
                   {tooltip.bar.label}
                 </span>
               </div>
@@ -250,16 +250,16 @@ function StackedBarChart({ bars, typeNames, colors, yAxisLabel }) {
               {typeNames.map((name, i) => (
                 <div key={i} className="flex items-center gap-2.5 py-1">
                   <div className="w-2.5 h-2.5 rounded-[3px] shrink-0 shadow-sm" style={{ background: colors[i] }} />
-                  <span className="text-[11px] text-text-sub flex-1 leading-none">{name}</span>
-                  <span className="text-[13px] font-bold text-text-main tabular-nums">
+                  <span className="text-fluid-11 text-text-sub flex-1 leading-none">{name}</span>
+                  <span className="text-fluid-13 font-bold text-text-main tabular-nums">
                     {(tooltip.bar.segments[i] || 0).toLocaleString()}
                   </span>
                 </div>
               ))}
               {/* Total */}
               <div className="flex items-center justify-between mt-3 pt-2.5 border-t border-border">
-                <span className="text-[10px] font-extrabold text-text-muted uppercase tracking-[0.08em]">Total</span>
-                <span className="text-[16px] font-bold text-maroon tabular-nums leading-none">{tooltip.total.toLocaleString()}</span>
+                <span className="text-fluid-10 font-extrabold text-text-muted uppercase tracking-[0.08em]">Total</span>
+                <span className="text-fluid-16 font-bold text-maroon tabular-nums leading-none">{tooltip.total.toLocaleString()}</span>
               </div>
             </div>
           </div>
@@ -599,11 +599,11 @@ export default function AdminAnalyticsPage() {
       {/* ── Page Header ── */}
       <div className="flex items-end justify-between mb-6 flex-wrap gap-3">
         <div>
-          <p className="text-[11px] font-bold text-gold tracking-widest uppercase m-0 mb-1.5">System Analytics</p>
-          <h1 className="font-serif text-[22px] sm:text-[26px] font-bold text-text-main m-0 mb-2 flex items-center gap-2.5 sm:gap-3">
+          <p className="text-fluid-11 font-bold text-gold tracking-widest uppercase m-0 mb-1.5">System Analytics</p>
+          <h1 className="font-serif text-fluid-22 sm:text-fluid-26 font-bold text-text-main m-0 mb-2 flex items-center gap-2.5 sm:gap-3">
             <BarChart2 size={26} className="text-maroon shrink-0" /> Analytics &amp; Reports
           </h1>
-          <p className="text-[12px] sm:text-[13px] text-text-sub mt-1.5 sm:mt-2 mb-0 leading-relaxed max-w-2xl">
+          <p className="text-fluid-12 sm:text-fluid-13 text-text-sub mt-1.5 sm:mt-2 mb-0 leading-relaxed max-w-2xl">
             Review AI insights, analyze processing trends, and download annual reports.
           </p>
         </div>
@@ -617,14 +617,14 @@ export default function AdminAnalyticsPage() {
               <Bot size={22} />
             </div>
             <div>
-              <div className="text-[10px] font-extrabold text-maroon uppercase tracking-[0.08em]">AI Analytics Insight</div>
-              <div className="text-[12px] font-medium text-text-sub mt-0.5">
+              <div className="text-fluid-10 font-extrabold text-maroon uppercase tracking-[0.08em]">AI Analytics Insight</div>
+              <div className="text-fluid-12 font-medium text-text-sub mt-0.5">
                 {insights?.date || new Date().toLocaleDateString('en-PH', { month: 'long', day: 'numeric', year: 'numeric' })}
               </div>
             </div>
           </div>
           <button onClick={loadInsights} disabled={insightLoading}
-            className={`py-2 px-4 rounded-xl border border-border bg-white shadow-sm text-text-main text-[12px] font-bold cursor-pointer font-sans transition-all ${insightLoading ? 'opacity-70 cursor-not-allowed' : 'opacity-100 hover:bg-surface hover:-translate-y-0.5'}`}>
+            className={`py-2 px-4 rounded-xl border border-border bg-white shadow-sm text-text-main text-fluid-12 font-bold cursor-pointer font-sans transition-all ${insightLoading ? 'opacity-70 cursor-not-allowed' : 'opacity-100 hover:bg-surface hover:-translate-y-0.5'}`}>
             {insightLoading ? (
               <span className="flex items-center gap-1.5"><Loader2 size={14} className="text-maroon animate-spin" /> Generating…</span>
             ) : (
@@ -676,8 +676,8 @@ export default function AdminAnalyticsPage() {
           </div>
         ) : insights ? (
           <>
-            <p className="text-[15px] text-text-main font-medium leading-[1.65] m-0 mb-6">{insights.insight}</p>
-            <div className="text-[10px] font-extrabold text-text-muted uppercase tracking-[0.08em] mb-3 mt-1">Predictive Intelligence</div>
+            <p className="text-fluid-15 text-text-main font-medium leading-[1.65] m-0 mb-6">{insights.insight}</p>
+            <div className="text-fluid-10 font-extrabold text-text-muted uppercase tracking-[0.08em] mb-3 mt-1">Predictive Intelligence</div>
             <div className="grid grid-cols-3 gap-3 mb-3">
               {/* Peak Hour */}
               <div className="bg-white rounded-2xl p-4 border border-border shadow-sm hover:-translate-y-0.5 transition-transform">
@@ -685,12 +685,12 @@ export default function AdminAnalyticsPage() {
                   <div className="w-7 h-7 rounded-lg bg-info-light flex items-center justify-center">
                     <Clock size={14} className="text-info" />
                   </div>
-                  <span className="text-[10px] font-extrabold text-text-muted uppercase tracking-[0.08em]">Peak Hour</span>
+                  <span className="text-fluid-10 font-extrabold text-text-muted uppercase tracking-[0.08em]">Peak Hour</span>
                 </div>
-                <div className="font-serif text-[26px] font-bold text-info leading-none mb-1">
+                <div className="font-serif text-fluid-26 font-bold text-info leading-none mb-1">
                   {insights.peak_hour && insights.peak_hour !== 'N/A' ? insights.peak_hour : '—'}
                 </div>
-                <div className="text-[11px] text-text-sub font-medium">
+                <div className="text-fluid-11 text-text-sub font-medium">
                   {insights.peak_hour && insights.peak_hour !== 'N/A' ? 'Busiest time slot today' : 'No appointments today'}
                 </div>
               </div>
@@ -701,12 +701,12 @@ export default function AdminAnalyticsPage() {
                   <div className="w-7 h-7 rounded-lg bg-gold-light flex items-center justify-center">
                     <FileText size={14} className="text-gold" />
                   </div>
-                  <span className="text-[10px] font-extrabold text-text-muted uppercase tracking-[0.08em]">Busiest Document</span>
+                  <span className="text-fluid-10 font-extrabold text-text-muted uppercase tracking-[0.08em]">Busiest Document</span>
                 </div>
-                <div className="font-serif text-[18px] font-bold text-gold leading-tight mb-1 line-clamp-2">
+                <div className="font-serif text-fluid-18 font-bold text-gold leading-tight mb-1 line-clamp-2">
                   {insights.busiest_document && insights.busiest_document !== 'N/A' ? insights.busiest_document : '—'}
                 </div>
-                <div className="text-[11px] text-text-sub font-medium">
+                <div className="text-fluid-11 text-text-sub font-medium">
                   {insights.busiest_document && insights.busiest_document !== 'N/A' ? 'Most requested doc type' : 'No requests today'}
                 </div>
               </div>
@@ -717,12 +717,12 @@ export default function AdminAnalyticsPage() {
                   <div className="w-7 h-7 rounded-lg bg-success-light flex items-center justify-center">
                     <CheckCircle size={14} className="text-success" />
                   </div>
-                  <span className="text-[10px] font-extrabold text-text-muted uppercase tracking-[0.08em]">Served Today</span>
+                  <span className="text-fluid-10 font-extrabold text-text-muted uppercase tracking-[0.08em]">Served Today</span>
                 </div>
-                <div className="font-serif text-[26px] font-bold text-success leading-none mb-1">
+                <div className="font-serif text-fluid-26 font-bold text-success leading-none mb-1">
                   {insights.served_today ?? 0}
                 </div>
-                <div className="text-[11px] text-text-sub font-medium">
+                <div className="text-fluid-11 text-text-sub font-medium">
                   {insights.total > 0 ? `out of ${insights.total} total appointments` : 'No appointments today'}
                 </div>
               </div>
@@ -736,19 +736,19 @@ export default function AdminAnalyticsPage() {
                   <div className="w-7 h-7 rounded-lg bg-maroon-light flex items-center justify-center">
                     <Activity size={14} className="text-maroon" />
                   </div>
-                  <span className="text-[10px] font-extrabold text-text-muted uppercase tracking-[0.08em]">Tomorrow's Forecast</span>
+                  <span className="text-fluid-10 font-extrabold text-text-muted uppercase tracking-[0.08em]">Tomorrow's Forecast</span>
                 </div>
                 {insights.forecast?.insufficient_data ? (
                   <>
-                    <div className="font-serif text-[26px] font-bold text-text-muted leading-none mb-1">—</div>
-                    <div className="text-[11px] text-text-sub font-medium">Not enough history yet</div>
+                    <div className="font-serif text-fluid-26 font-bold text-text-muted leading-none mb-1">—</div>
+                    <div className="text-fluid-11 text-text-sub font-medium">Not enough history yet</div>
                   </>
                 ) : (
                   <>
-                    <div className="font-serif text-[26px] font-bold text-maroon leading-none mb-1">
-                      {insights.forecast?.predicted_count ?? '—'} <span className="text-[14px] font-sans font-semibold text-text-muted">expected</span>
+                    <div className="font-serif text-fluid-26 font-bold text-maroon leading-none mb-1">
+                      {insights.forecast?.predicted_count ?? '—'} <span className="text-fluid-14 font-sans font-semibold text-text-muted">expected</span>
                     </div>
-                    <div className="text-[11px] text-text-sub font-medium">
+                    <div className="text-fluid-11 text-text-sub font-medium">
                       {insights.forecast?.weekday}{insights.forecast?.top_transaction_type ? ` · Top: ${insights.forecast.top_transaction_type}` : ''}
                     </div>
                   </>
@@ -767,22 +767,22 @@ export default function AdminAnalyticsPage() {
                       insights.trend?.direction === 'down' ? 'text-danger' : 'text-text-muted'
                     } />
                   </div>
-                  <span className="text-[10px] font-extrabold text-text-muted uppercase tracking-[0.08em]">14-Day Trend</span>
+                  <span className="text-fluid-10 font-extrabold text-text-muted uppercase tracking-[0.08em]">14-Day Trend</span>
                 </div>
                 {insights.trend?.insufficient_data ? (
                   <>
-                    <div className="font-serif text-[26px] font-bold text-text-muted leading-none mb-1">—</div>
-                    <div className="text-[11px] text-text-sub font-medium">Not enough history yet</div>
+                    <div className="font-serif text-fluid-26 font-bold text-text-muted leading-none mb-1">—</div>
+                    <div className="text-fluid-11 text-text-sub font-medium">Not enough history yet</div>
                   </>
                 ) : (
                   <>
-                    <div className={`font-serif text-[26px] font-bold leading-none mb-1 ${
+                    <div className={`font-serif text-fluid-26 font-bold leading-none mb-1 ${
                       insights.trend?.direction === 'up' ? 'text-success' :
                       insights.trend?.direction === 'down' ? 'text-danger' : 'text-text-main'
                     }`}>
                       {insights.trend?.direction === 'up' ? '↑' : insights.trend?.direction === 'down' ? '↓' : '→'} {Math.round(Math.abs(insights.trend?.percent_change ?? 0))}%
                     </div>
-                    <div className="text-[11px] text-text-sub font-medium">
+                    <div className="text-fluid-11 text-text-sub font-medium">
                       {insights.trend?.recent_count} recent vs {insights.trend?.prior_count} prior
                     </div>
                   </>
@@ -795,26 +795,26 @@ export default function AdminAnalyticsPage() {
                   <div className="w-7 h-7 rounded-lg bg-[#EDE9FE] flex items-center justify-center">
                     <Sparkles size={14} className="text-[#6D28D9]" />
                   </div>
-                  <span className="text-[10px] font-extrabold text-text-muted uppercase tracking-[0.08em]">Most In-Demand</span>
+                  <span className="text-fluid-10 font-extrabold text-text-muted uppercase tracking-[0.08em]">Most In-Demand</span>
                 </div>
                 {insights.trend?.driving_type ? (
                   <>
-                    <div className="font-serif text-[18px] font-bold text-[#6D28D9] leading-tight mb-1 line-clamp-2">
+                    <div className="font-serif text-fluid-18 font-bold text-[#6D28D9] leading-tight mb-1 line-clamp-2">
                       {insights.trend.driving_type}
                     </div>
-                    <div className="text-[11px] text-text-sub font-medium">Highest student demand lately</div>
+                    <div className="text-fluid-11 text-text-sub font-medium">Highest student demand lately</div>
                   </>
                 ) : (
                   <>
-                    <div className="font-serif text-[26px] font-bold text-text-muted leading-none mb-1">—</div>
-                    <div className="text-[11px] text-text-sub font-medium">{insights.trend?.direction === 'down' ? 'Volume is decreasing' : 'Demand is evenly spread'}</div>
+                    <div className="font-serif text-fluid-26 font-bold text-text-muted leading-none mb-1">—</div>
+                    <div className="text-fluid-11 text-text-sub font-medium">{insights.trend?.direction === 'down' ? 'Volume is decreasing' : 'Demand is evenly spread'}</div>
                   </>
                 )}
               </div>
             </div>
           </>
         ) : (
-          <p className="text-[14px] text-text-sub font-medium m-0">Click Refresh to generate today's AI-powered insight.</p>
+          <p className="text-fluid-14 text-text-sub font-medium m-0">Click Refresh to generate today's AI-powered insight.</p>
         )}
       </div>
 
@@ -847,10 +847,10 @@ export default function AdminAnalyticsPage() {
 
         <div className="ml-auto flex items-center gap-2.5">
           <button onClick={() => exportCSV(tableRows, 'campusflow_annual_report.csv')}
-            className="py-2 px-4 rounded-xl border border-border bg-white shadow-sm text-text-main text-[13px] font-bold cursor-pointer font-sans flex items-center gap-2 hover:bg-off-white hover:-translate-y-0.5 transition-all">
+            className="py-2 px-4 rounded-xl border border-border bg-white shadow-sm text-text-main text-fluid-13 font-bold cursor-pointer font-sans flex items-center gap-2 hover:bg-off-white hover:-translate-y-0.5 transition-all">
             <Download size={14} /> Export Data
           </button>
-          <button onClick={load} className="py-2 px-4 rounded-xl border border-border bg-white shadow-sm text-text-main text-[13px] font-bold cursor-pointer font-sans flex items-center gap-2 hover:bg-off-white hover:-translate-y-0.5 transition-all">
+          <button onClick={load} className="py-2 px-4 rounded-xl border border-border bg-white shadow-sm text-text-main text-fluid-13 font-bold cursor-pointer font-sans flex items-center gap-2 hover:bg-off-white hover:-translate-y-0.5 transition-all">
             <RotateCcw size={14} /> Refresh Data
           </button>
         </div>
@@ -870,15 +870,15 @@ export default function AdminAnalyticsPage() {
         ].map((c, i) => (
           <div key={i} className="animate-fade-up rounded-2xl p-[18px_20px] bg-white border border-border shadow-[0_1px_4px_rgba(0,0,0,0.04)] relative overflow-hidden" style={{ animationDelay: `${i * 0.1}s` }}>
             <div className="flex items-start justify-between mb-3">
-              <div className="text-[10px] font-extrabold text-text-muted uppercase tracking-[0.08em]">{c.label}</div>
+              <div className="text-fluid-10 font-extrabold text-text-muted uppercase tracking-[0.08em]">{c.label}</div>
               <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${c.bg} ${c.fg}`}>
                 {c.icon}
               </div>
             </div>
-            <div className="font-sans text-[28px] font-bold text-text-main leading-none">
+            <div className="font-sans text-fluid-28 font-bold text-text-main leading-none">
               {loading ? <div className="animate-pulse w-15 h-9 bg-border rounded-lg" /> : c.value}
             </div>
-            <div className="text-[11px] font-medium text-text-muted mt-1.5">{c.sub}</div>
+            <div className="text-fluid-11 font-medium text-text-muted mt-1.5">{c.sub}</div>
           </div>
         ))}
       </div>
@@ -887,14 +887,14 @@ export default function AdminAnalyticsPage() {
       <div className="animate-fade-up bg-white rounded-2xl border border-border p-7 mb-7 shadow-[0_2px_8px_rgba(0,0,0,0.04)]" style={{ animationDelay: '0.5s' }}>
         <div className="flex items-start justify-between mb-5 flex-wrap gap-3 border-b border-border pb-4">
           <div>
-            <p className="text-[10px] font-extrabold text-gold uppercase tracking-[0.08em] m-0 mb-1.5">Trends</p>
-            <h2 className="font-serif text-[20px] font-bold text-text-main m-0">Document Volume — {trendTitle}</h2>
+            <p className="text-fluid-10 font-extrabold text-gold uppercase tracking-[0.08em] m-0 mb-1.5">Trends</p>
+            <h2 className="font-serif text-fluid-20 font-bold text-text-main m-0">Document Volume — {trendTitle}</h2>
           </div>
           <div className="flex flex-wrap gap-3 items-center">
             {activeTypeNames.map((name, i) => (
               <div key={i} className="flex items-center gap-2">
                 <div className="w-3 h-3 rounded-sm shrink-0" style={{ background: activeColors[i] }} />
-                <span className="text-[12px] text-text-sub font-semibold">{name}</span>
+                <span className="text-fluid-12 text-text-sub font-semibold">{name}</span>
               </div>
             ))}
           </div>
@@ -909,7 +909,7 @@ export default function AdminAnalyticsPage() {
         ) : activeBars.length < 1 ? (
           <div className="h-40 flex items-center justify-center text-text-muted flex-col gap-2.5">
             <BarChart2 size={40} />
-            <p className="m-0 text-[14px]">Not enough data to plot trends yet.</p>
+            <p className="m-0 text-fluid-14">Not enough data to plot trends yet.</p>
           </div>
         ) : (
           <StackedBarChart
@@ -925,8 +925,8 @@ export default function AdminAnalyticsPage() {
       {!loading && filteredReportByType.length > 0 && (
         <div className="animate-fade-up mt-7 bg-white rounded-2xl border border-border p-7 shadow-[0_2px_8px_rgba(0,0,0,0.04)] mb-8" style={{ animationDelay: '0.5s' }}>
           <div className="mb-6 border-b border-border pb-4">
-            <p className="text-[10px] font-extrabold text-gold uppercase tracking-[0.08em] m-0 mb-1.5">Breakdown</p>
-            <h2 className="font-serif text-[20px] font-bold text-text-main m-0">By Transaction Type</h2>
+            <p className="text-fluid-10 font-extrabold text-gold uppercase tracking-[0.08em] m-0 mb-1.5">Breakdown</p>
+            <h2 className="font-serif text-fluid-20 font-bold text-text-main m-0">By Transaction Type</h2>
           </div>
           <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-8 items-center">
             <div className="flex justify-center lg:border-r border-border/50 lg:pr-4">
@@ -966,8 +966,8 @@ export default function AdminAnalyticsPage() {
                 <div key={i} className="bg-white shadow-sm rounded-2xl p-5 border border-border hover:-translate-y-0.5 transition-transform">
                   <div className="flex items-center justify-between gap-4">
                     <div className="flex-1">
-                      <div className="text-[13.5px] font-bold text-text-main mb-1.5 leading-tight">{type.name}</div>
-                      <div className="text-[11.5px] font-medium text-text-muted">{type.count.toLocaleString()} records</div>
+                      <div className="text-fluid-13-5 font-bold text-text-main mb-1.5 leading-tight">{type.name}</div>
+                      <div className="text-fluid-11-5 font-medium text-text-muted">{type.count.toLocaleString()} records</div>
                     </div>
                     <div className="relative shrink-0 flex items-center justify-center" style={{ width: 54, height: 54 }}>
                       <svg width="54" height="54" className="-rotate-90 drop-shadow-sm">
@@ -980,7 +980,7 @@ export default function AdminAnalyticsPage() {
                           className="transition-all duration-1000 ease-out" 
                         />
                       </svg>
-                      <span className="absolute inset-0 flex items-center justify-center font-serif text-[13px] font-bold" style={{ color }}>
+                      <span className="absolute inset-0 flex items-center justify-center font-serif text-fluid-13 font-bold" style={{ color }}>
                         {pct}%
                       </span>
                     </div>
@@ -999,20 +999,20 @@ export default function AdminAnalyticsPage() {
         {/* Section Header */}
         <div className="flex items-center justify-between p-6 sm:p-7 bg-white border-b border-border/60 flex-wrap gap-4">
           <div>
-            <p className="text-[10px] font-extrabold text-gold uppercase tracking-widest m-0 mb-1.5">ANNUAL METRICS</p>
-            <h2 className="font-serif text-[22px] font-bold text-maroon m-0 flex items-center gap-3">
+            <p className="text-fluid-10 font-extrabold text-gold uppercase tracking-widest m-0 mb-1.5">ANNUAL METRICS</p>
+            <h2 className="font-serif text-fluid-22 font-bold text-maroon m-0 flex items-center gap-3">
               Monthly Performance &amp; Fulfillment
-              <span className="px-2.5 py-1 rounded-lg bg-maroon-light border border-maroon-border text-[11px] font-sans font-bold text-maroon tracking-wider shadow-xs">
+              <span className="px-2.5 py-1 rounded-lg bg-maroon-light border border-maroon-border text-fluid-11 font-sans font-bold text-maroon tracking-wider shadow-xs">
                 {new Date().getFullYear()}
               </span>
             </h2>
-            <p className="text-[12px] text-text-sub m-0 mt-1">
+            <p className="text-fluid-12 text-text-sub m-0 mt-1">
               Annual breakdown of appointment outcomes, cancellation rates, and monthly fulfillment totals.
             </p>
           </div>
           <button 
             onClick={() => exportCSV(tableRows, 'campusflow_monthly_performance.csv')}
-            className="py-2.5 px-4.5 rounded-xl border border-border bg-white shadow-xs text-text-main text-[12.5px] font-bold cursor-pointer font-sans flex items-center gap-2 hover:bg-surface hover:border-maroon/30 transition-all"
+            className="py-2.5 px-4.5 rounded-xl border border-border bg-white shadow-xs text-text-main text-fluid-12-5 font-bold cursor-pointer font-sans flex items-center gap-2 hover:bg-surface hover:border-maroon/30 transition-all"
           >
             <Download size={15} className="text-text-muted" /> Export CSV
           </button>
@@ -1026,10 +1026,10 @@ export default function AdminAnalyticsPage() {
             <div className="lg:col-span-5 bg-white p-6 rounded-2xl border border-border shadow-xs flex flex-col items-center justify-center">
               <div className="w-full flex items-center justify-between mb-2">
                 <div>
-                  <span className="text-[10px] font-extrabold text-gold uppercase tracking-wider block">OUTCOME REPORT</span>
-                  <h3 className="font-serif text-[16px] font-bold text-text-main m-0">Appointment Status </h3>
+                  <span className="text-fluid-10 font-extrabold text-gold uppercase tracking-wider block">OUTCOME REPORT</span>
+                  <h3 className="font-serif text-fluid-16 font-bold text-text-main m-0">Appointment Status </h3>
                 </div>
-                <span className="text-[11px] font-bold text-text-muted bg-surface px-2.5 py-1 rounded-full border border-border/80">
+                <span className="text-fluid-11 font-bold text-text-muted bg-surface px-2.5 py-1 rounded-full border border-border/80">
                   {performanceTotals.total} Total
                 </span>
               </div>
@@ -1055,24 +1055,24 @@ export default function AdminAnalyticsPage() {
               {/* Custom Status Legend Row */}
               <div className="grid grid-cols-3 gap-2.5 w-full mt-4 pt-3 border-t border-border">
                 <div className="p-2 rounded-xl bg-success/5 border border-success/15 text-center">
-                  <div className="text-[10px] font-extrabold text-success uppercase tracking-wider flex items-center justify-center gap-1">
+                  <div className="text-fluid-10 font-extrabold text-success uppercase tracking-wider flex items-center justify-center gap-1">
                     <span className="w-1.5 h-1.5 rounded-full bg-success inline-block" /> Completed
                   </div>
-                  <div className="font-serif text-[15px] font-bold text-success mt-0.5">{performanceTotals.completed} <span className="text-[11px] font-sans text-text-muted">({completionPct}%)</span></div>
+                  <div className="font-serif text-fluid-15 font-bold text-success mt-0.5">{performanceTotals.completed} <span className="text-fluid-11 font-sans text-text-muted">({completionPct}%)</span></div>
                 </div>
 
                 <div className="p-2 rounded-xl bg-danger/5 border border-danger/15 text-center">
-                  <div className="text-[10px] font-extrabold text-danger uppercase tracking-wider flex items-center justify-center gap-1">
+                  <div className="text-fluid-10 font-extrabold text-danger uppercase tracking-wider flex items-center justify-center gap-1">
                     <span className="w-1.5 h-1.5 rounded-full bg-danger inline-block" /> Cancelled
                   </div>
-                  <div className="font-serif text-[15px] font-bold text-danger mt-0.5">{performanceTotals.cancelled} <span className="text-[11px] font-sans text-text-muted">({cancellationPct}%)</span></div>
+                  <div className="font-serif text-fluid-15 font-bold text-danger mt-0.5">{performanceTotals.cancelled} <span className="text-fluid-11 font-sans text-text-muted">({cancellationPct}%)</span></div>
                 </div>
 
                 <div className="p-2 rounded-xl bg-gold/5 border border-gold/20 text-center">
-                  <div className="text-[10px] font-extrabold text-gold-dark uppercase tracking-wider flex items-center justify-center gap-1">
+                  <div className="text-fluid-10 font-extrabold text-gold-dark uppercase tracking-wider flex items-center justify-center gap-1">
                     <span className="w-1.5 h-1.5 rounded-full bg-gold inline-block" /> No Show
                   </div>
-                  <div className="font-serif text-[15px] font-bold text-gold-dark mt-0.5">{performanceTotals.noShow} <span className="text-[11px] font-sans text-text-muted">({noShowPct}%)</span></div>
+                  <div className="font-serif text-fluid-15 font-bold text-gold-dark mt-0.5">{performanceTotals.noShow} <span className="text-fluid-11 font-sans text-text-muted">({noShowPct}%)</span></div>
                 </div>
               </div>
             </div>
@@ -1087,17 +1087,17 @@ export default function AdminAnalyticsPage() {
                     <CheckCircle2 size={24} />
                   </div>
                   <div>
-                    <div className="text-[10px] font-extrabold text-text-muted uppercase tracking-wider">Overall Completion Rate</div>
-                    <div className="font-serif text-[26px] font-extrabold text-success leading-tight mt-0.5">
+                    <div className="text-fluid-10 font-extrabold text-text-muted uppercase tracking-wider">Overall Completion Rate</div>
+                    <div className="font-serif text-fluid-26 font-extrabold text-success leading-tight mt-0.5">
                       {completionPct}%
                     </div>
-                    <div className="text-[11.5px] text-text-sub font-medium mt-0.5">
+                    <div className="text-fluid-11-5 text-text-sub font-medium mt-0.5">
                       {performanceTotals.completed} out of {performanceTotals.total} scheduled appointments successfully completed
                     </div>
                   </div>
                 </div>
                 <div className="hidden sm:block">
-                  <span className={`text-[11px] font-bold px-3 py-1.5 rounded-full border ${completionPct >= 80 ? 'bg-success-light text-success border-success-border' : 'bg-gold-light text-gold border-gold-border'}`}>
+                  <span className={`text-fluid-11 font-bold px-3 py-1.5 rounded-full border ${completionPct >= 80 ? 'bg-success-light text-success border-success-border' : 'bg-gold-light text-gold border-gold-border'}`}>
                     {completionPct >= 80 ? 'High Fulfillment' : 'Moderate Fulfillment'}
                   </span>
                 </div>
@@ -1109,16 +1109,16 @@ export default function AdminAnalyticsPage() {
                 {/* Drop-off breakdown */}
                 <div className="bg-white p-4.5 rounded-2xl border border-border shadow-xs flex flex-col justify-between">
                   <div className="flex items-center justify-between mb-2">
-                    <span className="text-[10px] font-extrabold text-text-muted uppercase tracking-wider">Total Drop-Off</span>
+                    <span className="text-fluid-10 font-extrabold text-text-muted uppercase tracking-wider">Total Drop-Off</span>
                     <div className="w-7 h-7 rounded-lg bg-danger-light text-danger flex items-center justify-center border border-danger-border">
                       <XCircle size={15} />
                     </div>
                   </div>
                   <div>
-                    <div className="font-serif text-[22px] font-bold text-danger leading-none mb-1">
+                    <div className="font-serif text-fluid-22 font-bold text-danger leading-none mb-1">
                       {cancellationPct + noShowPct}%
                     </div>
-                    <div className="text-[11px] text-text-sub font-medium">
+                    <div className="text-fluid-11 text-text-sub font-medium">
                       {performanceTotals.cancelled + performanceTotals.noShow} missed appointments
                     </div>
                   </div>
@@ -1127,16 +1127,16 @@ export default function AdminAnalyticsPage() {
                 {/* Peak Month */}
                 <div className="bg-white p-4.5 rounded-2xl border border-border shadow-xs flex flex-col justify-between">
                   <div className="flex items-center justify-between mb-2">
-                    <span className="text-[10px] font-extrabold text-text-muted uppercase tracking-wider">Peak Month</span>
+                    <span className="text-fluid-10 font-extrabold text-text-muted uppercase tracking-wider">Peak Month</span>
                     <div className="w-7 h-7 rounded-lg bg-gold/10 text-gold flex items-center justify-center border border-gold/20">
                       <Award size={15} />
                     </div>
                   </div>
                   <div>
-                    <div className="font-serif text-[18px] font-bold text-text-main leading-none mb-1 truncate">
+                    <div className="font-serif text-fluid-18 font-bold text-text-main leading-none mb-1 truncate">
                       {bestMonth ? bestMonth.month : '—'}
                     </div>
-                    <div className="text-[11px] text-text-sub font-medium">
+                    <div className="text-fluid-11 text-text-sub font-medium">
                       {bestMonth ? `${bestMonth.completed} completed (${bestMonth.total > 0 ? Math.round((bestMonth.completed / bestMonth.total) * 100) : 0}%)` : 'No completed appointments yet'}
                     </div>
                   </div>
@@ -1150,8 +1150,8 @@ export default function AdminAnalyticsPage() {
                   <Sparkles size={16} />
                 </div>
                 <div>
-                  <div className="text-[12px] font-bold text-maroon">Performance Summary</div>
-                  <p className="text-[12px] text-text-main font-medium leading-relaxed m-0 mt-0.5">
+                  <div className="text-fluid-12 font-bold text-maroon">Performance Summary</div>
+                  <p className="text-fluid-12 text-text-main font-medium leading-relaxed m-0 mt-0.5">
                     {performanceTotals.total === 0 
                       ? "No appointments have been recorded for this year yet. Historical completion trends will display as students book and attend appointments."
                       : `The office maintains a ${completionPct}% completion rate across ${performanceTotals.total} total bookings. Cancellations (${cancellationPct}%) and no-shows (${noShowPct}%) remain within normal registrar operating thresholds.`
@@ -1167,12 +1167,12 @@ export default function AdminAnalyticsPage() {
 
         {/* ── Monthly Breakdown Table ── */}
         <div className="p-5 px-6 sm:px-7 bg-white border-b border-border flex items-center justify-between">
-          <h3 className="font-serif text-[16px] font-bold text-text-main m-0">Month-by-Month Breakdown</h3>
-          <span className="text-[11.5px] text-text-muted font-medium">Showing all 12 months</span>
+          <h3 className="font-serif text-fluid-16 font-bold text-text-main m-0">Month-by-Month Breakdown</h3>
+          <span className="text-fluid-11-5 text-text-muted font-medium">Showing all 12 months</span>
         </div>
 
         {/* Column Headers */}
-        <div className="grid grid-cols-[140px_repeat(4,1fr)_160px] p-[14px_28px] bg-surface/60 border-b border-border text-[10.5px] font-extrabold text-text-muted uppercase tracking-[0.08em]">
+        <div className="hidden lg:grid grid-cols-[140px_repeat(4,1fr)_160px] p-[14px_28px] bg-surface/60 border-b border-border text-fluid-10-5 font-extrabold text-text-muted uppercase tracking-[0.08em]">
           <span>Month</span>
           <span>Total</span>
           <span>Completed</span>
@@ -1186,7 +1186,7 @@ export default function AdminAnalyticsPage() {
           {loading ? (
             <div>
               {[1, 2, 3, 4].map((i) => (
-                <div key={i} className="grid grid-cols-[140px_repeat(4,1fr)_160px] p-[18px_28px] border-b border-border/50">
+                <div key={i} className="grid grid-cols-1 lg:grid-cols-[140px_repeat(4,1fr)_160px] p-[18px_28px] border-b border-border/50">
                   <div className="flex items-center gap-3">
                     <div className="w-2 h-2 bg-border rounded-full animate-pulse" />
                     <div className="animate-pulse h-4.5 w-[60%] bg-border rounded" />
@@ -1205,26 +1205,26 @@ export default function AdminAnalyticsPage() {
               const barColor = compRate >= 90 ? 'bg-success' : compRate >= 70 ? 'bg-gold' : 'bg-danger'
               const textColor = compRate >= 90 ? 'text-success' : compRate >= 70 ? 'text-gold' : 'text-danger'
               return (
-                <div key={i} className={`group grid grid-cols-[140px_repeat(4,1fr)_160px] p-[16px_28px] items-center transition-all duration-200 hover:bg-off-white/70 ${i < tableRows.length - 1 ? 'border-b border-border/50' : 'border-none'} bg-white`}>
+                <div key={i} className={`group grid grid-cols-1 lg:grid-cols-[140px_repeat(4,1fr)_160px] p-[16px_28px] items-center transition-all duration-200 hover:bg-off-white/70 ${i < tableRows.length - 1 ? 'border-b border-border/50' : 'border-none'} bg-white`}>
                   <div className="flex items-center gap-3">
                     <div className="w-2 h-2 rounded-full bg-border group-hover:bg-maroon transition-colors" />
-                    <span className="font-serif text-[14.5px] font-bold text-text-main group-hover:text-maroon transition-colors">{row.Period}</span>
+                    <span className="font-serif text-fluid-14-5 font-bold text-text-main group-hover:text-maroon transition-colors">{row.Period}</span>
                   </div>
-                  <span className="text-[14.5px] font-bold text-text-main">{row.Total.toLocaleString()}</span>
+                  <span className="text-fluid-14-5 font-bold text-text-main">{row.Total.toLocaleString()}</span>
                   <div className="flex items-center gap-2">
                     <div className="w-1.5 h-1.5 rounded-full bg-success"></div>
-                    <span className="text-[13.5px] font-semibold text-text-sub">{row.Completed.toLocaleString()}</span>
+                    <span className="text-fluid-13-5 font-semibold text-text-sub">{row.Completed.toLocaleString()}</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <div className="w-1.5 h-1.5 rounded-full bg-danger"></div>
-                    <span className="text-[13.5px] font-semibold text-text-sub">{row.Cancelled.toLocaleString()}</span>
+                    <span className="text-fluid-13-5 font-semibold text-text-sub">{row.Cancelled.toLocaleString()}</span>
                   </div>
-                  <span className="text-[13.5px] font-medium text-text-sub pl-2">{row['No Show'].toLocaleString()}</span>
+                  <span className="text-fluid-13-5 font-medium text-text-sub pl-2">{row['No Show'].toLocaleString()}</span>
                   <div className="flex items-center gap-3">
                     <div className="flex-1 h-2 bg-surface rounded-full overflow-hidden">
                       <div className={`h-full rounded-full transition-all duration-700 ${barColor}`} style={{ width: `${compRate}%` }} />
                     </div>
-                    <span className={`text-[12.5px] font-bold min-w-9 ${textColor}`}>{row['Completion Rate']}</span>
+                    <span className={`text-fluid-12-5 font-bold min-w-9 ${textColor}`}>{row['Completion Rate']}</span>
                   </div>
                 </div>
               )
@@ -1237,17 +1237,17 @@ export default function AdminAnalyticsPage() {
           <div className="grid grid-cols-[140px_repeat(4,1fr)_160px] p-[18px_28px] bg-maroon-light border-t border-maroon-border items-center">
             <div className="flex items-center gap-3">
               <div className="w-2.5 h-2.5 rounded-full bg-maroon shadow-xs" />
-              <span className="text-[11px] font-extrabold text-maroon uppercase tracking-widest pt-0.5">Annual Total</span>
+              <span className="text-fluid-11 font-extrabold text-maroon uppercase tracking-widest pt-0.5">Annual Total</span>
             </div>
-            <span className="font-serif text-[17px] font-bold text-maroon">{performanceTotals.total.toLocaleString()}</span>
-            <span className="font-serif text-[17px] font-bold text-success">{performanceTotals.completed.toLocaleString()}</span>
-            <span className="font-serif text-[17px] font-bold text-danger">{performanceTotals.cancelled.toLocaleString()}</span>
-            <span className="font-serif text-[17px] font-bold text-text-main pl-2">{performanceTotals.noShow.toLocaleString()}</span>
+            <span className="font-serif text-fluid-17 font-bold text-maroon">{performanceTotals.total.toLocaleString()}</span>
+            <span className="font-serif text-fluid-17 font-bold text-success">{performanceTotals.completed.toLocaleString()}</span>
+            <span className="font-serif text-fluid-17 font-bold text-danger">{performanceTotals.cancelled.toLocaleString()}</span>
+            <span className="font-serif text-fluid-17 font-bold text-text-main pl-2">{performanceTotals.noShow.toLocaleString()}</span>
             <div className="flex items-center gap-3">
               <div className="flex-1 h-2 bg-maroon-border rounded-full overflow-hidden">
                 <div className="h-full rounded-full bg-maroon transition-all duration-700" style={{ width: `${completionPct}%` }} />
               </div>
-              <span className="font-serif text-[16px] font-bold text-maroon">{completionPct}%</span>
+              <span className="font-serif text-fluid-16 font-bold text-maroon">{completionPct}%</span>
             </div>
           </div>
         )}

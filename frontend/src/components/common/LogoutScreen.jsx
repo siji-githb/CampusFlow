@@ -38,25 +38,25 @@ export default function LogoutScreen({ isConfirming, onConfirm, onCancel }) {
                   <line x1="21" y1="12" x2="9" y2="12"></line>
                 </svg>
               </div>
-              <h3 className="text-[19px] sm:text-[20px] font-serif font-bold text-text-main m-0 tracking-tight leading-snug">
+              <h3 className="text-fluid-19 sm:text-fluid-20 font-serif font-bold text-text-main m-0 tracking-tight leading-snug">
                 Log out of CampusFlow?
               </h3>
             </div>
             
-            <p className="text-[13.5px] text-text-sub m-0 mb-6 leading-relaxed">
+            <p className="text-fluid-13-5 text-text-sub m-0 mb-6 leading-relaxed">
               Are you sure you want to log out? You will need to sign in again to access your portal.
             </p>
             
             <div className="flex flex-col sm:flex-row gap-2.5">
               <button 
                 onClick={onCancel}
-                className="flex-1 py-3 px-4 rounded-xl border border-border bg-white text-text-main font-bold text-[14px] hover:bg-slate-50 hover:border-slate-300 transition-all cursor-pointer shadow-xs active:scale-[0.98]"
+                className="flex-1 py-3 px-4 rounded-xl border border-border bg-white text-text-main font-bold text-fluid-14 hover:bg-slate-50 hover:border-slate-300 transition-all cursor-pointer shadow-xs active:scale-[0.98]"
               >
                 Cancel
               </button>
               <button 
                 onClick={onConfirm}
-                className="flex-1 py-3 px-4 rounded-xl border-none bg-maroon text-white font-bold text-[14px] hover:bg-maroon-dark shadow-sm transition-all cursor-pointer active:scale-[0.98]"
+                className="flex-1 py-3 px-4 rounded-xl border-none bg-maroon text-white font-bold text-fluid-14 hover:bg-maroon-dark shadow-sm transition-all cursor-pointer active:scale-[0.98]"
               >
                 Log Out
               </button>
@@ -74,10 +74,10 @@ export default function LogoutScreen({ isConfirming, onConfirm, onCancel }) {
                 <path d="M12 2a10 10 0 0 1 10 10" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
             </div>
-            <h2 className="text-text-main text-[17px] font-serif font-bold tracking-tight m-0 mb-1 leading-tight">
+            <h2 className="text-text-main text-fluid-17 font-serif font-bold tracking-tight m-0 mb-1 leading-tight">
               CampusFlow
             </h2>
-            <div className="text-text-muted text-[11px] tracking-[0.2em] uppercase font-bold m-0 leading-tight w-25 text-center">
+            <div className="text-text-muted text-fluid-11 tracking-[0.2em] uppercase font-bold m-0 leading-tight w-25 text-center">
               <span>Logging out{dots}</span>
             </div>
           </div>

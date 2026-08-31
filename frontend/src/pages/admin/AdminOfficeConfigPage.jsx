@@ -88,20 +88,20 @@ export default function AdminOfficeConfigPage() {
       return (
         <div key={key} className={`flex items-center justify-between p-[24px_28px] gap-6 flex-wrap transition-colors duration-200 ${i < keys.length - 1 ? 'border-b border-border' : 'border-none'} ${isChanged ? 'bg-maroon-light' : 'bg-transparent'}`}>
           <div className="flex-1 min-w-50">
-            <p className="text-[15px] font-semibold text-text-main m-0 mb-1">{LABELS[key]?.title || key}</p>
-            <p className="text-[13px] text-text-sub m-0 leading-snug">{LABELS[key]?.desc}</p>
+            <p className="text-fluid-15 font-semibold text-text-main m-0 mb-1">{LABELS[key]?.title || key}</p>
+            <p className="text-fluid-13 text-text-sub m-0 leading-snug">{LABELS[key]?.desc}</p>
           </div>
           <div className="flex gap-3 items-center">
             <input
               type={isTimeField ? 'time' : 'number'}
               value={edited[key] ?? ''}
               onChange={e => setEdited({ ...edited, [key]: e.target.value })}
-              className={`py-2.75 px-4 rounded-[10px] bg-white text-[14px] outline-none font-sans text-text-main transition-all duration-200 border-[1.5px] focus:border-maroon ${isTimeField ? 'w-32.5 text-left' : 'w-25 text-center'} ${isChanged ? 'border-maroon shadow-[0_0_0_3px_rgba(123,26,42,0.1)]' : 'border-border'}`}
+              className={`py-2.75 px-4 rounded-[10px] bg-white text-fluid-14 outline-none font-sans text-text-main transition-all duration-200 border-[1.5px] focus:border-maroon ${isTimeField ? 'w-32.5 text-left' : 'w-25 text-center'} ${isChanged ? 'border-maroon shadow-[0_0_0_3px_rgba(123,26,42,0.1)]' : 'border-border'}`}
             />
             <button
               onClick={() => handleSave(key)}
               disabled={saving === key || !isChanged}
-              className={`py-2.75 px-6 rounded-[10px] border-none text-[14px] font-bold font-sans transition-all duration-200 flex items-center justify-center gap-2 min-w-24 ${saving === key ? 'bg-[#B8667A] text-white cursor-not-allowed' : isChanged ? 'bg-maroon text-white cursor-pointer shadow-[0_4px_12px_rgba(123,26,42,0.2)]' : 'bg-border text-text-muted cursor-not-allowed'}`}>
+              className={`py-2.75 px-6 rounded-[10px] border-none text-fluid-14 font-bold font-sans transition-all duration-200 flex items-center justify-center gap-2 min-w-24 ${saving === key ? 'bg-[#B8667A] text-white cursor-not-allowed' : isChanged ? 'bg-maroon text-white cursor-pointer shadow-[0_4px_12px_rgba(123,26,42,0.2)]' : 'bg-border text-text-muted cursor-not-allowed'}`}>
               {saving === key ? (
                 <>
                   <Loader2 size={16} className="animate-spin text-white shrink-0" />
@@ -121,7 +121,7 @@ export default function AdminOfficeConfigPage() {
     <div className="animate-fade-up font-sans w-full pb-10">
       {/* Toast Notification */}
       {toast && (
-        <div className={`fixed bottom-10 right-8 z-9999 flex items-center gap-3 px-5 py-3.5 rounded-xl shadow-[0_12px_32px_rgba(0,0,0,0.18)] border text-[13.5px] font-bold animate-fade-up ${
+        <div className={`fixed bottom-10 right-8 z-9999 flex items-center gap-3 px-5 py-3.5 rounded-xl shadow-[0_12px_32px_rgba(0,0,0,0.18)] border text-fluid-13-5 font-bold animate-fade-up ${
           toast.type === 'error' 
             ? 'bg-red-600 text-white border-red-700' 
             : 'bg-[#006600] text-white border-[#005200]'
@@ -142,11 +142,11 @@ export default function AdminOfficeConfigPage() {
 
       {/* Header */}
       <div className="mb-6">
-        <p className="text-[11px] font-bold text-gold tracking-widest uppercase m-0 mb-1.5">System Configuration</p>
-        <h1 className="font-serif text-[22px] sm:text-[26px] font-bold text-text-main m-0 mb-2 flex items-center gap-2.5 sm:gap-3">
+        <p className="text-fluid-11 font-bold text-gold tracking-widest uppercase m-0 mb-1.5">System Configuration</p>
+        <h1 className="font-serif text-fluid-22 sm:text-fluid-26 font-bold text-text-main m-0 mb-2 flex items-center gap-2.5 sm:gap-3">
           <Settings size={26} className="text-maroon shrink-0" /> Office Configuration
         </h1>
-        <p className="text-[12px] sm:text-[13px] text-text-sub mt-1.5 sm:mt-2 mb-0 leading-relaxed max-w-2xl">
+        <p className="text-fluid-12 sm:text-fluid-13 text-text-sub mt-1.5 sm:mt-2 mb-0 leading-relaxed max-w-2xl">
           Manage operational hours, daily request caps, holiday dates, and appointment rules.
         </p>
       </div>
@@ -182,7 +182,7 @@ export default function AdminOfficeConfigPage() {
           
           {/* General Office Settings */}
           <section className="animate-fade-up" style={{ animationDelay: '0.1s' }}>
-            <h2 className="text-[12px] font-bold text-gold uppercase tracking-widest m-0 mb-3 ml-1">General Operations</h2>
+            <h2 className="text-fluid-12 font-bold text-gold uppercase tracking-widest m-0 mb-3 ml-1">General Operations</h2>
             <div className="bg-white rounded-2xl border border-border overflow-hidden shadow-[0_2px_8px_rgba(0,0,0,0.03)]">
               {renderGroup(SETTINGS_CATEGORIES.general)}
             </div>
@@ -190,7 +190,7 @@ export default function AdminOfficeConfigPage() {
 
           {/* Appointment Settings */}
           <section className="animate-fade-up" style={{ animationDelay: '0.2s' }}>
-            <h2 className="text-[12px] font-bold text-gold uppercase tracking-widest m-0 mb-3 ml-1">Appointments & Scheduling</h2>
+            <h2 className="text-fluid-12 font-bold text-gold uppercase tracking-widest m-0 mb-3 ml-1">Appointments & Scheduling</h2>
             <div className="bg-white rounded-2xl border border-border overflow-hidden shadow-[0_2px_8px_rgba(0,0,0,0.03)]">
               {renderGroup(SETTINGS_CATEGORIES.appointments)}
             </div>
@@ -198,7 +198,7 @@ export default function AdminOfficeConfigPage() {
 
           {/* Staffing */}
           <section className="animate-fade-up" style={{ animationDelay: '0.3s' }}>
-            <h2 className="text-[12px] font-bold text-gold uppercase tracking-widest m-0 mb-3 ml-1">Staffing & Capacity</h2>
+            <h2 className="text-fluid-12 font-bold text-gold uppercase tracking-widest m-0 mb-3 ml-1">Staffing & Capacity</h2>
             <div className="bg-white rounded-2xl border border-border overflow-hidden shadow-[0_2px_8px_rgba(0,0,0,0.03)]">
               {renderGroup(SETTINGS_CATEGORIES.staffing)}
             </div>
@@ -214,8 +214,8 @@ export default function AdminOfficeConfigPage() {
             <div className="w-14 h-14 rounded-2xl bg-emerald-900/50 border border-emerald-700/50 flex items-center justify-center mx-auto mb-4 text-gold">
               <Settings size={26} />
             </div>
-            <h3 className="m-0 mb-2 font-serif text-[22px] font-bold text-white">Confirm Changes</h3>
-            <p className="m-0 mb-6 text-[14px] text-emerald-200/90 leading-relaxed">
+            <h3 className="m-0 mb-2 font-serif text-fluid-22 font-bold text-white">Confirm Changes</h3>
+            <p className="m-0 mb-6 text-fluid-14 text-emerald-200/90 leading-relaxed">
               Are you sure you want to save changes to <br/>
               <strong className="text-gold">{LABELS[confirmSave]?.title || confirmSave}</strong>?
             </p>
@@ -223,7 +223,7 @@ export default function AdminOfficeConfigPage() {
               <button 
                 type="button"
                 onClick={() => setConfirmSave(null)}
-                className="flex-1 py-3 px-4 rounded-xl bg-white/10 text-white/80 border-none text-[13.5px] font-semibold cursor-pointer transition-colors duration-200 hover:bg-white/20 hover:text-white"
+                className="flex-1 py-3 px-4 rounded-xl bg-white/10 text-white/80 border-none text-fluid-13-5 font-semibold cursor-pointer transition-colors duration-200 hover:bg-white/20 hover:text-white"
               >
                 Cancel
               </button>
@@ -231,7 +231,7 @@ export default function AdminOfficeConfigPage() {
                 type="button"
                 onClick={() => handleSave(confirmSave)}
                 disabled={saving === confirmSave}
-                className={`flex-1 py-3 px-4 rounded-xl bg-gold text-[#061811] border-none text-[13.5px] font-extrabold transition-colors duration-200 shadow-md flex items-center justify-center gap-2 ${saving === confirmSave ? 'opacity-80 cursor-not-allowed' : 'cursor-pointer hover:bg-yellow-400'}`}
+                className={`flex-1 py-3 px-4 rounded-xl bg-gold text-[#061811] border-none text-fluid-13-5 font-extrabold transition-colors duration-200 shadow-md flex items-center justify-center gap-2 ${saving === confirmSave ? 'opacity-80 cursor-not-allowed' : 'cursor-pointer hover:bg-yellow-400'}`}
               >
                 {saving === confirmSave ? (
                   <>

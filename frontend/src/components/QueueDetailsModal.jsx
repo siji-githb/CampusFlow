@@ -147,21 +147,21 @@ export default function QueueDetailsModal({ ticketData, onClose, onConfirm, conf
         <div className="flex justify-between items-start mb-6 pb-5 border-b border-border gap-4">
           <div>
             <div className="flex items-center gap-2 mb-2 flex-wrap">
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-gold-light text-gold text-[11px] font-extrabold uppercase tracking-wider border border-gold-border">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-gold-light text-gold text-fluid-11 font-extrabold uppercase tracking-wider border border-gold-border">
                 <Ticket size={13} /> Queue Ticket Details
               </span>
               {priority && priority !== 'regular' && (
-                <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-maroon-light text-maroon text-[11px] font-extrabold uppercase tracking-wider border border-maroon-border">
+                <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-maroon-light text-maroon text-fluid-11 font-extrabold uppercase tracking-wider border border-maroon-border">
                   <ShieldCheck size={13} /> {priority} Priority
                 </span>
               )}
             </div>
             
             <div className="flex items-baseline gap-4 flex-wrap">
-              <h2 className="font-serif text-[36px] sm:text-[42px] font-extrabold text-maroon m-0 leading-none tracking-tight">
+              <h2 className="font-serif text-fluid-36 sm:text-fluid-42 font-extrabold text-maroon m-0 leading-none tracking-tight">
                 {ticket.queue_number}
               </h2>
-              <span className={`text-[12px] font-extrabold px-3 py-1 rounded-full border ${
+              <span className={`text-fluid-12 font-extrabold px-3 py-1 rounded-full border ${
                 ticket.status === 'in_progress' 
                   ? 'bg-maroon-light text-maroon border-maroon-border' 
                   : ticket.status === 'completed'
@@ -190,17 +190,17 @@ export default function QueueDetailsModal({ ticketData, onClose, onConfirm, conf
               <Users size={22} />
             </div>
             <div className="flex-1 min-w-0">
-              <span className="text-[10.5px] text-text-muted uppercase font-extrabold tracking-wider block mb-1">
+              <span className="text-fluid-10-5 text-text-muted uppercase font-extrabold tracking-wider block mb-1">
                 Student Information
               </span>
-              <div className="text-[16px] font-bold text-text-main leading-snug truncate mb-2">
+              <div className="text-fluid-16 font-bold text-text-main leading-snug truncate mb-2">
                 {name}
               </div>
               <div className="flex items-center gap-2 flex-wrap">
-                <span className="text-[12px] text-text-main font-mono font-bold bg-surface px-2.5 py-1 rounded-lg border border-border">
+                <span className="text-fluid-12 text-text-main font-mono font-bold bg-surface px-2.5 py-1 rounded-lg border border-border">
                   ID: {student?.student_id || '—'}
                 </span>
-                <span className={`text-[11.5px] font-bold capitalize px-2.5 py-1 rounded-lg border ${
+                <span className={`text-fluid-11-5 font-bold capitalize px-2.5 py-1 rounded-lg border ${
                   priority !== 'regular' 
                     ? 'bg-maroon-light text-maroon border-maroon-border font-extrabold' 
                     : 'bg-surface text-text-sub border-border'
@@ -208,7 +208,7 @@ export default function QueueDetailsModal({ ticketData, onClose, onConfirm, conf
                   Priority: <span className="uppercase">{priority}</span>
                 </span>
                 {student?.email && (
-                  <span className="text-[12px] text-text-sub truncate max-w-64 font-medium">
+                  <span className="text-fluid-12 text-text-sub truncate max-w-64 font-medium">
                     Email: <span className="text-text-main">{student.email}</span>
                   </span>
                 )}
@@ -222,13 +222,13 @@ export default function QueueDetailsModal({ ticketData, onClose, onConfirm, conf
               <FileText size={22} />
             </div>
             <div className="flex-1 min-w-0">
-              <span className="text-[10.5px] text-text-muted uppercase font-extrabold tracking-wider block mb-1">
+              <span className="text-fluid-10-5 text-text-muted uppercase font-extrabold tracking-wider block mb-1">
                 Requested Document
               </span>
-              <div className="text-[16px] font-bold text-text-main leading-snug mb-1.5">
+              <div className="text-fluid-16 font-bold text-text-main leading-snug mb-1.5">
                 {txType?.name || 'Standard Service'}
               </div>
-              <div className="text-[12px] text-text-sub flex items-center gap-1.5 font-medium mb-2">
+              <div className="text-fluid-12 text-text-sub flex items-center gap-1.5 font-medium mb-2">
                 <Calendar size={13} className="text-gold shrink-0" />
                 <span>
                   {appt?.appointment_date ? new Date(appt.appointment_date).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' }) : 'Walk-in Ticket'}
@@ -236,7 +236,7 @@ export default function QueueDetailsModal({ ticketData, onClose, onConfirm, conf
                 </span>
               </div>
               {docDescription && (
-                <p className="text-[12.5px] text-text-sub font-normal m-0 leading-relaxed">
+                <p className="text-fluid-12-5 text-text-sub font-normal m-0 leading-relaxed">
                   {docDescription}
                 </p>
               )}
@@ -249,14 +249,14 @@ export default function QueueDetailsModal({ ticketData, onClose, onConfirm, conf
           <div className="mb-7 p-5 bg-white rounded-2xl border border-border shadow-sm flex flex-col gap-4">
             {requiredDocs.length > 0 && (
               <div>
-                <span className="text-[10.5px] font-extrabold text-text-muted uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                <span className="text-fluid-10-5 font-extrabold text-text-muted uppercase tracking-wider mb-2 flex items-center gap-1.5">
                   <ClipboardList size={14} className="text-gold" /> Required Document Attachments
                 </span>
                 <div className="flex flex-wrap gap-2">
                   {requiredDocs.map((doc, i) => (
                     <span 
                       key={i} 
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-surface/60 border border-border text-[12px] font-semibold text-text-main shadow-2xs"
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-surface/60 border border-border text-fluid-12 font-semibold text-text-main shadow-2xs"
                     >
                       <CheckCircle2 size={13} className="text-success shrink-0" />
                       <span>{doc}</span>
@@ -268,10 +268,10 @@ export default function QueueDetailsModal({ ticketData, onClose, onConfirm, conf
 
             {appt?.notes && (
               <div className={requiredDocs.length > 0 ? "pt-3.5 border-t border-border" : ""}>
-                <span className="text-[10.5px] font-extrabold text-text-muted uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
+                <span className="text-fluid-10-5 font-extrabold text-text-muted uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
                   <Info size={14} className="text-maroon" /> Student Remarks / Purpose
                 </span>
-                <p className="text-[13px] text-text-main font-medium m-0 whitespace-pre-wrap leading-relaxed">
+                <p className="text-fluid-13 text-text-main font-medium m-0 whitespace-pre-wrap leading-relaxed">
                   {appt.notes}
                 </p>
               </div>
@@ -300,10 +300,10 @@ export default function QueueDetailsModal({ ticketData, onClose, onConfirm, conf
               return (
                 <>
                   <div className="flex items-center justify-between mb-5">
-                    <h3 className="text-[11px] font-extrabold text-text-muted uppercase tracking-[0.08em] flex items-center gap-1.5 m-0">
+                    <h3 className="text-fluid-11 font-extrabold text-text-muted uppercase tracking-[0.08em] flex items-center gap-1.5 m-0">
                       <Clock size={14} className="text-maroon" /> Workflow Processing Steps
                     </h3>
-                    <span className="text-[12px] font-bold text-text-sub">
+                    <span className="text-fluid-12 font-bold text-text-sub">
                       {`${displaySteps.filter(s => s.status === 'completed').length} of ${displaySteps.length} completed`}
                     </span>
                   </div>
@@ -378,7 +378,7 @@ export default function QueueDetailsModal({ ticketData, onClose, onConfirm, conf
                         <div key={step.id} className="flex gap-4 sm:gap-6">
                           {/* Step Indicator & Spine */}
                           <div className="flex flex-col items-center">
-                            <div className={`w-10 h-10 rounded-full shrink-0 flex items-center justify-center text-[13.5px] font-extrabold transition-all duration-300 ${
+                            <div className={`w-10 h-10 rounded-full shrink-0 flex items-center justify-center text-fluid-13-5 font-extrabold transition-all duration-300 ${
                               isCompleted 
                                 ? 'bg-success text-white ring-4 ring-success-light shadow-xs' 
                                 : isCurrent && !isRelease
@@ -418,7 +418,7 @@ export default function QueueDetailsModal({ ticketData, onClose, onConfirm, conf
                               <div className="flex justify-between items-start gap-4 flex-wrap">
                                 <div className="flex-1 min-w-0">
                                   <div className="flex items-center gap-2 flex-wrap mb-1.5">
-                                    <span className={`text-[15px] font-bold ${
+                                    <span className={`text-fluid-15 font-bold ${
                                       isCompleted ? 'text-success' : isCurrent && !isRelease ? 'text-text-main' : isRelease && isPrevCompleted ? 'text-emerald-950 font-extrabold' : 'text-text-sub'
                                     }`}>
                                       {isRelease ? 'Document Release & Claiming' : step.step_name}
@@ -426,7 +426,7 @@ export default function QueueDetailsModal({ ticketData, onClose, onConfirm, conf
 
                                     {/* Current Action badge only on active processing intake steps */}
                                     {isCurrent && !isRelease && (
-                                      <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-maroon-light text-maroon border border-maroon-border">
+                                      <span className="text-fluid-10 font-extrabold uppercase px-2 py-0.5 rounded-full bg-maroon-light text-maroon border border-maroon-border">
                                         Current Action
                                       </span>
                                     )}
@@ -434,11 +434,11 @@ export default function QueueDetailsModal({ ticketData, onClose, onConfirm, conf
                                     {/* Primary Status Badge for Release step */}
                                     {isRelease && isPrevCompleted && !isCompleted && (
                                       isFutureScheduled ? (
-                                        <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-gold-light text-gold-dark border border-gold-border shadow-2xs">
+                                        <span className="inline-flex items-center gap-1 text-fluid-11 font-bold px-2.5 py-0.5 rounded-full bg-gold-light text-gold-dark border border-gold-border shadow-2xs">
                                           <Calendar size={11} /> Scheduled for {formatDisplayDate(effectiveReleaseDate)}
                                         </span>
                                       ) : (
-                                        <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-900 border border-emerald-300 shadow-2xs">
+                                        <span className="inline-flex items-center gap-1 text-fluid-11 font-bold px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-900 border border-emerald-300 shadow-2xs">
                                           <CheckCircle2 size={11} className="text-emerald-700" /> Ready to Claim
                                         </span>
                                       )
@@ -447,11 +447,11 @@ export default function QueueDetailsModal({ ticketData, onClose, onConfirm, conf
                                     {/* Presence Badge (hidden on ready release to keep it neat) */}
                                     {!(isRelease && isPrevCompleted) && (
                                       step.requires_presence === false ? (
-                                        <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-gold-light text-gold-dark border border-gold-border">
+                                        <span className="inline-flex items-center gap-1 text-fluid-10 font-bold px-2 py-0.5 rounded-full bg-gold-light text-gold-dark border border-gold-border">
                                           <Sparkles size={11} /> Back-Office Processing
                                         </span>
                                       ) : (
-                                        <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-surface border border-border text-text-muted">
+                                        <span className="inline-flex items-center gap-1 text-fluid-10 font-bold px-2 py-0.5 rounded-full bg-surface border border-border text-text-muted">
                                           <UserCheck size={11} /> Student In-Person
                                         </span>
                                       )
@@ -459,14 +459,14 @@ export default function QueueDetailsModal({ ticketData, onClose, onConfirm, conf
 
                                     {/* Location Badge (only when clean and distinct) */}
                                     {cleanLocation && !(isRelease && isPrevCompleted) && (
-                                      <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-surface border border-border text-text-muted">
+                                      <span className="inline-flex items-center gap-1 text-fluid-10 font-bold px-2 py-0.5 rounded-full bg-surface border border-border text-text-muted">
                                         <MapPin size={10.5} /> {cleanLocation}
                                       </span>
                                     )}
                                   </div>
 
                                   {/* Step Description */}
-                                  <p className="text-[12.5px] text-text-sub font-normal m-0 leading-relaxed mt-1">
+                                  <p className="text-fluid-12-5 text-text-sub font-normal m-0 leading-relaxed mt-1">
                                     {isRelease && isPrevCompleted && !isCompleted
                                       ? (isFutureScheduled 
                                           ? `Document preparation is complete. Scheduled for student pickup on ${formatDisplayDate(effectiveReleaseDate)} in Document Releases.` 
@@ -475,7 +475,7 @@ export default function QueueDetailsModal({ ticketData, onClose, onConfirm, conf
                                   </p>
                                   
                                   {isCompleted && step.confirmed_at && (
-                                    <div className="text-[12px] font-medium text-text-muted mt-2 flex items-center gap-1.5">
+                                    <div className="text-fluid-12 font-medium text-text-muted mt-2 flex items-center gap-1.5">
                                       <CheckCircle2 size={13} className="text-success" />
                                       Completed on {new Date(step.confirmed_at).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
                                     </div>
@@ -483,7 +483,7 @@ export default function QueueDetailsModal({ ticketData, onClose, onConfirm, conf
 
                                   {/* Active Instruction Text only for active processing steps */}
                                   {isCurrent && !isRelease && (
-                                    <div className="text-[12.5px] text-maroon font-semibold mt-2 flex items-center gap-1.5">
+                                    <div className="text-fluid-12-5 text-maroon font-semibold mt-2 flex items-center gap-1.5">
                                       <span className="w-1.5 h-1.5 rounded-full bg-maroon animate-ping inline-block" />
                                       {instructionText}
                                     </div>
@@ -503,7 +503,7 @@ export default function QueueDetailsModal({ ticketData, onClose, onConfirm, conf
                                           navigate('/staff/releases')
                                         }
                                       }}
-                                      className="px-4 py-2.5 rounded-xl text-[12.5px] font-bold bg-maroon hover:bg-maroon-dark text-white shadow-xs inline-flex items-center gap-2 transition-all cursor-pointer border-none active:scale-98"
+                                      className="px-4 py-2.5 rounded-xl text-fluid-12-5 font-bold bg-maroon hover:bg-maroon-dark text-white shadow-xs inline-flex items-center gap-2 transition-all cursor-pointer border-none active:scale-98"
                                     >
                                       <span>Go to Document Releases</span>
                                       <ArrowRight size={13} />
@@ -616,7 +616,7 @@ export default function QueueDetailsModal({ ticketData, onClose, onConfirm, conf
                                         (isPrepDoc && releaseDate !== getTodayStr() && !releaseDate) || 
                                         (isDocPrepared && !documentVerified)
                                       }
-                                      className={`px-5 py-2.5 rounded-xl text-[13px] font-extrabold font-sans transition-all shadow-xs inline-flex items-center gap-2 ${
+                                      className={`px-5 py-2.5 rounded-xl text-fluid-13 font-extrabold font-sans transition-all shadow-xs inline-flex items-center gap-2 ${
                                         isConfirming || isReleasing || (isPrepDoc && releaseDate === getTodayStr() && !documentVerified) || (isPrepDoc && releaseDate !== getTodayStr() && !releaseDate) || (isDocPrepared && !documentVerified)
                                           ? 'bg-border text-text-muted cursor-not-allowed shadow-none' 
                                           : 'bg-maroon hover:bg-maroon-dark text-white cursor-pointer hover:shadow-sm active:scale-98'
@@ -642,7 +642,7 @@ export default function QueueDetailsModal({ ticketData, onClose, onConfirm, conf
                               {isCurrent && isPrepDoc && (
                                 <div className="mt-3 pt-4 border-t border-border flex flex-col gap-3">
                                   <div className="flex flex-col gap-3">
-                                    <label className="block text-[11px] font-extrabold text-text-muted uppercase tracking-wider mb-0.5">
+                                    <label className="block text-fluid-11 font-extrabold text-text-muted uppercase tracking-wider mb-0.5">
                                       Select Document Release Date:
                                     </label>
                                     
@@ -651,7 +651,7 @@ export default function QueueDetailsModal({ ticketData, onClose, onConfirm, conf
                                         <button 
                                           type="button"
                                           onClick={() => setReleaseDate(getTodayStr())}
-                                          className={`px-4 py-2 rounded-lg text-[12.5px] font-bold transition-all cursor-pointer flex items-center gap-2 ${
+                                          className={`px-4 py-2 rounded-lg text-fluid-12-5 font-bold transition-all cursor-pointer flex items-center gap-2 ${
                                             releaseDate === getTodayStr() 
                                               ? 'bg-maroon text-white shadow-xs' 
                                               : 'bg-transparent text-text-sub hover:text-text-main'
@@ -664,7 +664,7 @@ export default function QueueDetailsModal({ ticketData, onClose, onConfirm, conf
                                         <button 
                                           type="button"
                                           onClick={() => setReleaseDate('')}
-                                          className={`px-4 py-2 rounded-lg text-[12.5px] font-bold transition-all cursor-pointer flex items-center gap-2 ${
+                                          className={`px-4 py-2 rounded-lg text-fluid-12-5 font-bold transition-all cursor-pointer flex items-center gap-2 ${
                                             releaseDate !== getTodayStr() 
                                               ? 'bg-maroon text-white shadow-xs' 
                                               : 'bg-transparent text-text-sub hover:text-text-main'
@@ -700,7 +700,7 @@ export default function QueueDetailsModal({ ticketData, onClose, onConfirm, conf
                                         onChange={e => setDocumentVerified(e.target.checked)}
                                         className="mt-0.5 w-5 h-5 accent-maroon rounded cursor-pointer shrink-0"
                                       />
-                                      <label htmlFor="verifyReadyTodayDoc" className="text-[13.5px] text-text-main font-semibold leading-snug cursor-pointer select-none">
+                                      <label htmlFor="verifyReadyTodayDoc" className="text-fluid-13-5 text-text-main font-semibold leading-snug cursor-pointer select-none">
                                         I confirm that the requested document is verified, printed, and prepared for release.
                                       </label>
                                     </div>
@@ -727,7 +727,7 @@ export default function QueueDetailsModal({ ticketData, onClose, onConfirm, conf
                                       onChange={e => setDocumentVerified(e.target.checked)}
                                       className="mt-0.5 w-5 h-5 accent-maroon rounded cursor-pointer shrink-0"
                                     />
-                                    <label htmlFor="verifyDocPrepared" className="text-[13.5px] text-text-main font-semibold leading-snug cursor-pointer select-none">
+                                    <label htmlFor="verifyDocPrepared" className="text-fluid-13-5 text-text-main font-semibold leading-snug cursor-pointer select-none">
                                       I confirm that the requested document is verified, printed, and prepared for release.
                                     </label>
                                   </div>
@@ -747,35 +747,35 @@ export default function QueueDetailsModal({ ticketData, onClose, onConfirm, conf
         ) : (
           /* Additional Details for Pending / Waiting Tickets */
           <div>
-            <h3 className="text-[11px] font-extrabold text-text-muted uppercase tracking-[0.08em] mb-4 flex items-center gap-1.5">
+            <h3 className="text-fluid-11 font-extrabold text-text-muted uppercase tracking-[0.08em] mb-4 flex items-center gap-1.5">
               <Calendar size={14} className="text-maroon" /> Additional Ticket Details
             </h3>
             
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3.5 mb-4">
               <div className="p-4 bg-white rounded-2xl border border-border shadow-sm flex flex-col gap-1">
-                <label className="text-[10px] text-text-muted uppercase font-extrabold tracking-wider">Appointment Date</label>
-                <div className="text-[14px] font-bold text-text-main">
+                <label className="text-fluid-10 text-text-muted uppercase font-extrabold tracking-wider">Appointment Date</label>
+                <div className="text-fluid-14 font-bold text-text-main">
                   {appt?.appointment_date ? new Date(appt.appointment_date).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' }) : 'Walk-in'}
                 </div>
               </div>
 
               <div className="p-4 bg-white rounded-2xl border border-border shadow-sm flex flex-col gap-1">
-                <label className="text-[10px] text-text-muted uppercase font-extrabold tracking-wider">Time Slot</label>
-                <div className="text-[14px] font-bold text-text-main">
+                <label className="text-fluid-10 text-text-muted uppercase font-extrabold tracking-wider">Time Slot</label>
+                <div className="text-fluid-14 font-bold text-text-main">
                   {appt?.time_slot ? fmt12hTime(appt.time_slot) : 'Any time'}
                 </div>
               </div>
 
               <div className="p-4 bg-white rounded-2xl border border-border shadow-sm flex flex-col gap-1">
-                <label className="text-[10px] text-text-muted uppercase font-extrabold tracking-wider">Priority Category</label>
-                <div className="text-[14px] font-bold text-text-main capitalize">
+                <label className="text-fluid-10 text-text-muted uppercase font-extrabold tracking-wider">Priority Category</label>
+                <div className="text-fluid-14 font-bold text-text-main capitalize">
                   {priority || 'Regular'}
                 </div>
               </div>
 
               <div className="p-4 bg-white rounded-2xl border border-border shadow-sm flex flex-col gap-1">
-                <label className="text-[10px] text-text-muted uppercase font-extrabold tracking-wider">Ticket Issued At</label>
-                <div className="text-[14px] font-bold text-text-main">
+                <label className="text-fluid-10 text-text-muted uppercase font-extrabold tracking-wider">Ticket Issued At</label>
+                <div className="text-fluid-14 font-bold text-text-main">
                   {ticket.created_at ? new Date(ticket.created_at).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }) : '—'}
                 </div>
               </div>
@@ -785,8 +785,8 @@ export default function QueueDetailsModal({ ticketData, onClose, onConfirm, conf
               <div className="space-y-3.5">
                 {appt?.notes && (
                   <div className="p-4.5 bg-white rounded-2xl border border-border shadow-sm flex flex-col gap-1.5">
-                    <label className="text-[10px] text-text-muted uppercase font-extrabold tracking-wider">Purpose / Remarks</label>
-                    <div className="text-[13.5px] font-medium text-text-main whitespace-pre-wrap leading-relaxed">
+                    <label className="text-fluid-10 text-text-muted uppercase font-extrabold tracking-wider">Purpose / Remarks</label>
+                    <div className="text-fluid-13-5 font-medium text-text-main whitespace-pre-wrap leading-relaxed">
                       {appt.notes}
                     </div>
                   </div>
@@ -794,12 +794,12 @@ export default function QueueDetailsModal({ ticketData, onClose, onConfirm, conf
                 
                 {requiredDocs.length > 0 && (
                   <div className="p-4.5 bg-white rounded-2xl border border-border shadow-sm flex flex-col gap-2">
-                    <label className="text-[10px] text-text-muted uppercase font-extrabold tracking-wider">Required Documents</label>
+                    <label className="text-fluid-10 text-text-muted uppercase font-extrabold tracking-wider">Required Documents</label>
                     <div className="flex flex-wrap gap-2">
                       {requiredDocs.map((doc, idx) => (
                         <span 
                           key={idx} 
-                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-surface/60 border border-border text-[12px] font-semibold text-text-main shadow-2xs"
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-surface/60 border border-border text-fluid-12 font-semibold text-text-main shadow-2xs"
                         >
                           <CheckCircle2 size={13} className="text-success shrink-0" />
                           <span>{doc}</span>
@@ -816,7 +816,7 @@ export default function QueueDetailsModal({ ticketData, onClose, onConfirm, conf
       
       {/* Toast Notification (Adhering to strict #006600 rule) */}
       {toastMsg && (
-        <div className={`fixed bottom-10 right-8 z-10000 flex items-center gap-3 px-5 py-3.5 rounded-xl shadow-[0_12px_32px_rgba(0,0,0,0.18)] border text-[13.5px] font-bold animate-fade-up ${
+        <div className={`fixed bottom-10 right-8 z-10000 flex items-center gap-3 px-5 py-3.5 rounded-xl shadow-[0_12px_32px_rgba(0,0,0,0.18)] border text-fluid-13-5 font-bold animate-fade-up ${
           toastMsg.type === 'error'
             ? 'bg-danger text-white border-danger-border'
             : 'bg-[#006600] text-white border-[#005200]'

@@ -104,9 +104,9 @@ export default function GlobalSearch({ isMobile = false, onAiPrompt }) {
         }}
         onKeyDown={handleKeyDown}
         className={isMobile ? (
-          "w-full bg-white border border-slate-200 text-slate-700 placeholder:text-slate-400 text-[12px] sm:text-[12.5px] rounded-full py-1.5 sm:py-2 pl-7 sm:pl-8 pr-2.5 focus:outline-none focus:bg-white focus:border-maroon/30 focus:ring-2 focus:ring-maroon/5 transition-all shadow-2xs"
+          "w-full bg-white border border-slate-200 text-slate-700 placeholder:text-slate-400 text-fluid-12 sm:text-fluid-12-5 rounded-full py-1.5 sm:py-2 pl-7 sm:pl-8 pr-2.5 focus:outline-none focus:bg-white focus:border-maroon/30 focus:ring-2 focus:ring-maroon/5 transition-all shadow-2xs"
         ) : (
-          "bg-slate-50 border border-slate-200 text-slate-700 text-[13.5px] font-sans rounded-full py-2.5 pl-10 pr-4 w-[320px] focus:outline-none focus:bg-white focus:border-maroon/30 focus:ring-4 focus:ring-maroon/5 transition-all shadow-[inset_0_2px_4px_rgba(0,0,0,0.02)]"
+          "bg-slate-50 border border-slate-200 text-slate-700 text-fluid-13-5 font-sans rounded-full py-2.5 pl-10 pr-4 w-[320px] focus:outline-none focus:bg-white focus:border-maroon/30 focus:ring-4 focus:ring-maroon/5 transition-all shadow-[inset_0_2px_4px_rgba(0,0,0,0.02)]"
         )}
       />
 
@@ -126,11 +126,11 @@ export default function GlobalSearch({ isMobile = false, onAiPrompt }) {
                   <Icon size={16} />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <div className={`text-[13.5px] font-semibold truncate ${item.isPrompt ? 'text-maroon font-serif' : 'text-slate-700'}`}>
+                  <div className={`text-fluid-13-5 font-semibold truncate ${item.isPrompt ? 'text-maroon font-serif' : 'text-slate-700'}`}>
                     {item.label}
                   </div>
                   {item.desc && (
-                    <div className="text-[11px] text-slate-500 truncate mt-0.5">{item.desc}</div>
+                    <div className="text-fluid-11 text-slate-500 truncate mt-0.5">{item.desc}</div>
                   )}
                 </div>
                 <ChevronRight size={14} className={item.isPrompt ? 'text-maroon opacity-50' : 'text-slate-300'} />

@@ -56,10 +56,10 @@ const CustomDropdown = ({ value, onChange, options, label }) => {
 
   return (
     <div className="relative z-20 group min-w-36">
-      {label && <div className="text-[10px] font-extrabold text-text-muted uppercase tracking-[0.08em] mb-1">{label}</div>}
+      {label && <div className="text-fluid-10 font-extrabold text-text-muted uppercase tracking-[0.08em] mb-1">{label}</div>}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="w-full flex items-center justify-between px-3.5 py-2 rounded-xl border border-border bg-white text-[12px] text-text-main font-semibold outline-none cursor-pointer font-sans hover:border-maroon/30 transition-all shadow-xs"
+        className="w-full flex items-center justify-between px-3.5 py-2 rounded-xl border border-border bg-white text-fluid-12 text-text-main font-semibold outline-none cursor-pointer font-sans hover:border-maroon/30 transition-all shadow-xs"
       >
         <span className="truncate pr-2">{currentLabel}</span>
         <ChevronDown size={14} className={`text-text-muted transition-transform duration-200 shrink-0 ${isOpen ? 'rotate-180' : 'group-hover:text-text-main'}`} />
@@ -74,7 +74,7 @@ const CustomDropdown = ({ value, onChange, options, label }) => {
                 <div
                   key={o.value}
                   onClick={() => { onChange(o.value); setIsOpen(false); }}
-                  className={`px-3 py-2 rounded-lg cursor-pointer flex items-center justify-between text-[12px] font-medium transition-colors ${isActive ? 'bg-maroon/5 text-maroon font-bold' : 'text-text-main hover:bg-off-white'}`}
+                  className={`px-3 py-2 rounded-lg cursor-pointer flex items-center justify-between text-fluid-12 font-medium transition-colors ${isActive ? 'bg-maroon/5 text-maroon font-bold' : 'text-text-main hover:bg-off-white'}`}
                 >
                   <span>{o.label}</span>
                   {isActive && <Check size={13} className="text-maroon shrink-0" />}
@@ -124,14 +124,14 @@ function AdminTicketDetailsModal({ item, onClose }) {
         {/* Modal Header: Pinned */}
         <div className="flex justify-between items-start mb-5 pb-4 border-b border-border shrink-0">
           <div>
-            <div className="text-[11px] font-extrabold text-gold uppercase tracking-wider mb-1 flex items-center gap-1.5">
+            <div className="text-fluid-11 font-extrabold text-gold uppercase tracking-wider mb-1 flex items-center gap-1.5">
               <Ticket size={14} /> Queue Ticket Details
             </div>
             <div className="flex items-center gap-3 flex-wrap">
-              <h2 className="font-serif text-[28px] sm:text-[32px] font-extrabold text-maroon m-0 leading-none">
+              <h2 className="font-serif text-fluid-28 sm:text-fluid-32 font-extrabold text-maroon m-0 leading-none">
                 {item.queue_number}
               </h2>
-              <span className={`text-[11px] font-bold uppercase tracking-wider px-3 py-1 rounded-full border ${
+              <span className={`text-fluid-11 font-bold uppercase tracking-wider px-3 py-1 rounded-full border ${
                 item.statusKey === 'serving' ? 'bg-success-light text-success border-success-border' :
                 item.statusKey === 'waiting' ? 'bg-gold-light text-gold border-gold-border' :
                 item.statusKey === 'prep' ? 'bg-blue-light text-blue border-blue-border' :
@@ -142,7 +142,7 @@ function AdminTicketDetailsModal({ item, onClose }) {
                 {item.statusLabel}
               </span>
               {item.priority_class && item.priority_class !== 'regular' && (
-                <span className="text-[11px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full bg-maroon-light text-maroon border border-maroon-border">
+                <span className="text-fluid-11 font-bold uppercase tracking-wider px-2.5 py-1 rounded-full bg-maroon-light text-maroon border border-maroon-border">
                   {item.priority_class} Priority
                 </span>
               )}
@@ -163,30 +163,30 @@ function AdminTicketDetailsModal({ item, onClose }) {
           
           {/* 1. Student Information */}
           <div className="p-4.5 sm:p-5 rounded-2xl bg-surface border border-border">
-            <div className="text-[11px] font-extrabold text-maroon uppercase tracking-wider mb-3 flex items-center gap-1.5">
+            <div className="text-fluid-11 font-extrabold text-maroon uppercase tracking-wider mb-3 flex items-center gap-1.5">
               <Users size={14} className="text-gold" /> Student Information
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <span className="text-[11.5px] text-text-muted font-medium block">Full Name</span>
-                <strong className="text-[14px] text-text-main font-bold block mt-0.5">{studentName}</strong>
+                <span className="text-fluid-11-5 text-text-muted font-medium block">Full Name</span>
+                <strong className="text-fluid-14 text-text-main font-bold block mt-0.5">{studentName}</strong>
               </div>
               <div>
-                <span className="text-[11.5px] text-text-muted font-medium block">Student ID Number</span>
-                <strong className="text-[13px] text-text-main font-mono font-bold mt-0.5 bg-white px-2.5 py-1 rounded-lg border border-border inline-block">
+                <span className="text-fluid-11-5 text-text-muted font-medium block">Student ID Number</span>
+                <strong className="text-fluid-13 text-text-main font-mono font-bold mt-0.5 bg-white px-2.5 py-1 rounded-lg border border-border inline-block">
                   {item.student_id || user.student_id || '—'}
                 </strong>
               </div>
               <div>
-                <span className="text-[11.5px] text-text-muted font-medium block">Priority Category</span>
-                <span className="text-[13px] text-text-main font-semibold block mt-0.5 capitalize">
+                <span className="text-fluid-11-5 text-text-muted font-medium block">Priority Category</span>
+                <span className="text-fluid-13 text-text-main font-semibold block mt-0.5 capitalize">
                   {item.priority_class || 'Regular'}
                 </span>
               </div>
               {user.email && (
                 <div>
-                  <span className="text-[11.5px] text-text-muted font-medium block">Email Address</span>
-                  <span className="text-[13px] text-text-sub font-medium block mt-0.5 truncate">{user.email}</span>
+                  <span className="text-fluid-11-5 text-text-muted font-medium block">Email Address</span>
+                  <span className="text-fluid-13 text-text-sub font-medium block mt-0.5 truncate">{user.email}</span>
                 </div>
               )}
             </div>
@@ -194,28 +194,28 @@ function AdminTicketDetailsModal({ item, onClose }) {
 
           {/* 2. Document & Service Details */}
           <div className="p-4.5 sm:p-5 rounded-2xl bg-surface border border-border">
-            <div className="text-[11px] font-extrabold text-maroon uppercase tracking-wider mb-3 flex items-center gap-1.5">
+            <div className="text-fluid-11 font-extrabold text-maroon uppercase tracking-wider mb-3 flex items-center gap-1.5">
               <FileText size={14} className="text-gold" /> Document &amp; Service Details
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="sm:col-span-2">
-                <span className="text-[11.5px] text-text-muted font-medium block">Requested Document</span>
-                <strong className="text-[14.5px] text-maroon font-bold block mt-0.5">{item.transaction_type}</strong>
+                <span className="text-fluid-11-5 text-text-muted font-medium block">Requested Document</span>
+                <strong className="text-fluid-14-5 text-maroon font-bold block mt-0.5">{item.transaction_type}</strong>
               </div>
               {appt.notes && (
                 <div className="sm:col-span-2">
-                  <span className="text-[11.5px] text-text-muted font-medium block">Purpose / Student Remarks</span>
-                  <p className="text-[12.5px] text-text-main font-medium mt-1 bg-white p-3 rounded-xl border border-border m-0">
+                  <span className="text-fluid-11-5 text-text-muted font-medium block">Purpose / Student Remarks</span>
+                  <p className="text-fluid-12-5 text-text-main font-medium mt-1 bg-white p-3 rounded-xl border border-border m-0">
                     {appt.notes}
                   </p>
                 </div>
               )}
               {reqDocs.length > 0 && (
                 <div className="sm:col-span-2">
-                  <span className="text-[11.5px] text-text-muted font-medium block mb-1.5">Required Documents</span>
+                  <span className="text-fluid-11-5 text-text-muted font-medium block mb-1.5">Required Documents</span>
                   <div className="flex flex-wrap gap-2">
                     {reqDocs.map((doc, idx) => (
-                      <span key={idx} className="text-[11.5px] font-semibold bg-white text-text-main px-3 py-1 rounded-lg border border-border flex items-center gap-1.5">
+                      <span key={idx} className="text-fluid-11-5 font-semibold bg-white text-text-main px-3 py-1 rounded-lg border border-border flex items-center gap-1.5">
                         <CheckCircle2 size={12} className="text-success" /> {doc}
                       </span>
                     ))}
@@ -227,33 +227,33 @@ function AdminTicketDetailsModal({ item, onClose }) {
 
           {/* 3. Queue Schedule & Release Timeline */}
           <div className="p-4.5 sm:p-5 rounded-2xl bg-surface border border-border">
-            <div className="text-[11px] font-extrabold text-maroon uppercase tracking-wider mb-3 flex items-center gap-1.5">
+            <div className="text-fluid-11 font-extrabold text-maroon uppercase tracking-wider mb-3 flex items-center gap-1.5">
               <Clock size={14} className="text-gold" /> Queue Timeline &amp; Release Schedule
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <span className="text-[11.5px] text-text-muted font-medium block">Ticket Generated At</span>
-                <span className="text-[13px] text-text-main font-semibold block mt-0.5">
+                <span className="text-fluid-11-5 text-text-muted font-medium block">Ticket Generated At</span>
+                <span className="text-fluid-13 text-text-main font-semibold block mt-0.5">
                   {item.rawDate ? new Date(item.rawDate).toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' }) : '—'}
                 </span>
               </div>
               <div>
-                <span className="text-[11.5px] text-text-muted font-medium block">Target Release Date</span>
-                <span className="text-[13px] text-gold font-bold block mt-0.5 items-center gap-1.5">
+                <span className="text-fluid-11-5 text-text-muted font-medium block">Target Release Date</span>
+                <span className="text-fluid-13 text-gold font-bold block mt-0.5 items-center gap-1.5">
                   <Calendar size={13} className="text-gold" />
                   {item.releaseDate ? new Date(item.releaseDate + "T00:00:00").toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'Not scheduled yet'}
                 </span>
               </div>
               <div className="sm:col-span-2">
-                <span className="text-[11.5px] text-text-muted font-medium block">Queue Wait Time</span>
-                <span className="text-[13px] text-text-main font-semibold block mt-0.5">
+                <span className="text-fluid-11-5 text-text-muted font-medium block">Queue Wait Time</span>
+                <span className="text-fluid-13 text-text-main font-semibold block mt-0.5">
                   {item.elapsedText}
                 </span>
               </div>
               {lastConfirmedStep && (
                 <div className="sm:col-span-2 pt-3 border-t border-border">
-                  <span className="text-[11.5px] text-text-muted font-medium block">Last Confirmed Step</span>
-                  <span className="text-[13px] text-success font-bold block mt-0.5">
+                  <span className="text-fluid-11-5 text-text-muted font-medium block">Last Confirmed Step</span>
+                  <span className="text-fluid-13 text-success font-bold block mt-0.5">
                     ✓ {lastConfirmedStep.step_name} at {new Date(lastConfirmedStep.confirmed_at).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
                   </span>
                 </div>
@@ -268,7 +268,7 @@ function AdminTicketDetailsModal({ item, onClose }) {
           <button
             type="button"
             onClick={onClose}
-            className="px-6 py-2.5 rounded-xl bg-maroon text-white font-sans font-semibold text-[13px] cursor-pointer hover:bg-maroon-dark transition-colors border-none shadow-sm"
+            className="px-6 py-2.5 rounded-xl bg-maroon text-white font-sans font-semibold text-fluid-13 cursor-pointer hover:bg-maroon-dark transition-colors border-none shadow-sm"
           >
             Close Details
           </button>
@@ -815,7 +815,7 @@ export default function AdminQueueMonitoringPage() {
       
       {/* ── Toast Notification ── */}
       {toastMsg && (
-        <div className={`fixed bottom-10 right-8 z-9999 flex items-center gap-3 px-5 py-3.5 rounded-xl shadow-[0_12px_32px_rgba(0,0,0,0.18)] border text-[13.5px] font-bold animate-fade-up ${
+        <div className={`fixed bottom-10 right-8 z-9999 flex items-center gap-3 px-5 py-3.5 rounded-xl shadow-[0_12px_32px_rgba(0,0,0,0.18)] border text-fluid-13-5 font-bold animate-fade-up ${
           toastMsg.type === 'error' 
             ? 'bg-red-600 text-white border-red-700' 
             : 'bg-[#006600] text-white border-[#005200]'
@@ -838,37 +838,37 @@ export default function AdminQueueMonitoringPage() {
       <div className="flex items-end justify-between mb-2 flex-wrap gap-4">
         <div>
           <div className="flex items-center gap-2 mb-1.5">
-            <p className="text-[11px] font-bold text-gold tracking-widest uppercase m-0">Queue &amp; Releases</p>
+            <p className="text-fluid-11 font-bold text-gold tracking-widest uppercase m-0">Queue &amp; Releases</p>
             <span className="text-border-strong">•</span>
-            <span className="flex items-center gap-1.5 text-[10px] font-bold text-success bg-success/10 px-2 py-0.5 rounded-full border border-success/20">
+            <span className="flex items-center gap-1.5 text-fluid-10 font-bold text-success bg-success/10 px-2 py-0.5 rounded-full border border-success/20">
               <span className="w-1.5 h-1.5 rounded-full bg-success animate-pulse" /> LIVE
             </span>
           </div>
-          <h1 className="font-serif text-[22px] sm:text-[26px] font-bold text-text-main m-0 mb-2 flex items-center gap-2.5 sm:gap-3">
+          <h1 className="font-serif text-fluid-22 sm:text-fluid-26 font-bold text-text-main m-0 mb-2 flex items-center gap-2.5 sm:gap-3">
             <Activity className="text-maroon shrink-0" size={26} /> Queue &amp; Document Monitoring
           </h1>
-          <p className="text-[12px] sm:text-[13px] text-text-sub mt-1.5 sm:mt-2 mb-0 leading-relaxed max-w-2xl">
+          <p className="text-fluid-12 sm:text-fluid-13 text-text-sub mt-1.5 sm:mt-2 mb-0 leading-relaxed max-w-2xl">
             Real-time monitoring for counter windows, document processing, and student pickups.
           </p>
         </div>
 
         <div className="flex items-center gap-2.5 flex-wrap">
           {lastUpdated && (
-            <span className="text-[11px] text-text-muted font-medium bg-white px-3 py-2 rounded-xl border border-border shadow-[0_2px_8px_rgba(0,0,0,0.04)]">
+            <span className="text-fluid-11 text-text-muted font-medium bg-white px-3 py-2 rounded-xl border border-border shadow-[0_2px_8px_rgba(0,0,0,0.04)]">
               Updated: <strong className="text-text-main">{lastUpdated}</strong>
             </span>
           )}
           <button
             onClick={() => fetchAllData(true)}
             disabled={refreshing}
-            className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-border bg-white text-text-main text-[12.5px] font-bold cursor-pointer hover:bg-surface transition-all shadow-[0_2px_8px_rgba(0,0,0,0.04)] disabled:opacity-50"
+            className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-border bg-white text-text-main text-fluid-12-5 font-bold cursor-pointer hover:bg-surface transition-all shadow-[0_2px_8px_rgba(0,0,0,0.04)] disabled:opacity-50"
           >
             <RefreshCw size={14} className={refreshing ? 'animate-spin text-maroon' : 'text-text-muted'} />
             <span>Refresh</span>
           </button>
           <button
             onClick={exportToCSV}
-            className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-border bg-white text-text-main text-[12.5px] font-bold cursor-pointer hover:bg-surface transition-all shadow-[0_2px_8px_rgba(0,0,0,0.04)]"
+            className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-border bg-white text-text-main text-fluid-12-5 font-bold cursor-pointer hover:bg-surface transition-all shadow-[0_2px_8px_rgba(0,0,0,0.04)]"
           >
             <Download size={14} className="text-text-muted" />
             <span>Export CSV</span>
@@ -891,85 +891,85 @@ export default function AdminQueueMonitoringPage() {
         {/* At Windows */}
         <div className="animate-fade-up bg-white rounded-2xl p-4.5 border border-border shadow-2xs flex flex-col justify-between" style={{ animationDelay: '0.1s' }}>
           <div className="flex justify-between items-start mb-2">
-            <span className="text-[10px] font-extrabold text-text-muted uppercase tracking-wider">Serving Now</span>
+            <span className="text-fluid-10 font-extrabold text-text-muted uppercase tracking-wider">Serving Now</span>
             <div className="w-8 h-8 rounded-lg bg-success-light text-success flex items-center justify-center">
               <UserCheck size={16} />
             </div>
           </div>
           <div>
-            <div className="font-serif text-[28px] font-extrabold text-text-main leading-none mb-1">
+            <div className="font-serif text-fluid-28 font-extrabold text-text-main leading-none mb-1">
               {loading ? <div className="animate-pulse w-10 h-7 bg-border rounded" /> : atWindows.length}
             </div>
-            <div className="text-[10.5px] text-text-sub font-medium">Students at counter</div>
+            <div className="text-fluid-10-5 text-text-sub font-medium">Students at counter</div>
           </div>
         </div>
 
         {/* Waiting in Line */}
         <div className="animate-fade-up bg-white rounded-2xl p-4.5 border border-border shadow-2xs flex flex-col justify-between" style={{ animationDelay: '0.15s' }}>
           <div className="flex justify-between items-start mb-2">
-            <span className="text-[10px] font-extrabold text-text-muted uppercase tracking-wider">Waiting in Line</span>
+            <span className="text-fluid-10 font-extrabold text-text-muted uppercase tracking-wider">Waiting in Line</span>
             <div className="w-8 h-8 rounded-lg bg-gold-light text-gold flex items-center justify-center">
               <Users size={16} />
             </div>
           </div>
           <div>
-            <div className="font-serif text-[28px] font-extrabold text-text-main leading-none mb-1">
+            <div className="font-serif text-fluid-28 font-extrabold text-text-main leading-none mb-1">
               {loading ? <div className="animate-pulse w-10 h-7 bg-border rounded" /> : waitingInLine.length}
             </div>
-            <div className="text-[10.5px] text-text-sub font-medium">Next in queue line</div>
+            <div className="text-fluid-10-5 text-text-sub font-medium">Next in queue line</div>
           </div>
         </div>
 
         {/* In Document Prep */}
         <div className="animate-fade-up bg-white rounded-2xl p-4.5 border border-border shadow-2xs flex flex-col justify-between" style={{ animationDelay: '0.2s' }}>
           <div className="flex justify-between items-start mb-2">
-            <span className="text-[10px] font-extrabold text-text-muted uppercase tracking-wider">Preparing Docs</span>
+            <span className="text-fluid-10 font-extrabold text-text-muted uppercase tracking-wider">Preparing Docs</span>
             <div className="w-8 h-8 rounded-lg bg-blue-light text-blue flex items-center justify-center">
               <FileEdit size={16} />
             </div>
           </div>
           <div>
-            <div className="font-serif text-[28px] font-extrabold text-text-main leading-none mb-1">
+            <div className="font-serif text-fluid-28 font-extrabold text-text-main leading-none mb-1">
               {loading ? <div className="animate-pulse w-10 h-7 bg-border rounded" /> : inPreparation.length}
             </div>
-            <div className="text-[10.5px] text-text-sub font-medium">Processing records</div>
+            <div className="text-fluid-10-5 text-text-sub font-medium">Processing records</div>
           </div>
         </div>
 
         {/* Ready for Pickup */}
         <div className="animate-fade-up bg-white rounded-2xl p-4.5 border border-border shadow-2xs flex flex-col justify-between" style={{ animationDelay: '0.25s' }}>
           <div className="flex justify-between items-start mb-2">
-            <span className="text-[10px] font-extrabold text-text-muted uppercase tracking-wider">Ready for Pickup</span>
+            <span className="text-fluid-10 font-extrabold text-text-muted uppercase tracking-wider">Ready for Pickup</span>
             <div className="w-8 h-8 rounded-lg bg-success-light text-success flex items-center justify-center">
               <FolderOpen size={16} />
             </div>
           </div>
           <div>
-            <div className="font-serif text-[28px] font-extrabold text-text-main leading-none mb-1 flex items-baseline gap-2">
+            <div className="font-serif text-fluid-28 font-extrabold text-text-main leading-none mb-1 flex items-baseline gap-2">
               {loading ? <div className="animate-pulse w-10 h-7 bg-border rounded" /> : readyReleases.length}
               {overdueReleases.length > 0 && (
-                <span className="text-[10px] font-bold text-danger bg-danger-light px-1.5 py-0.5 rounded border border-danger-border">
+                <span className="text-fluid-10 font-bold text-danger bg-danger-light px-1.5 py-0.5 rounded border border-danger-border">
                   {overdueReleases.length} overdue
                 </span>
               )}
             </div>
-            <div className="text-[10.5px] text-text-sub font-medium">Waiting for student claim</div>
+            <div className="text-fluid-10-5 text-text-sub font-medium">Waiting for student claim</div>
           </div>
         </div>
 
         {/* Finished Today */}
         <div className="animate-fade-up bg-white rounded-2xl p-4.5 border border-border shadow-2xs flex flex-col justify-between" style={{ animationDelay: '0.3s' }}>
           <div className="flex justify-between items-start mb-2">
-            <span className="text-[10px] font-extrabold text-text-muted uppercase tracking-wider">Finished Today</span>
+            <span className="text-fluid-10 font-extrabold text-text-muted uppercase tracking-wider">Finished Today</span>
             <div className="w-8 h-8 rounded-lg bg-maroon-light text-maroon flex items-center justify-center">
               <CheckCircle2 size={16} />
             </div>
           </div>
           <div>
-            <div className="font-serif text-[28px] font-extrabold text-maroon leading-none mb-1">
+            <div className="font-serif text-fluid-28 font-extrabold text-maroon leading-none mb-1">
               {loading ? <div className="animate-pulse w-10 h-7 bg-border rounded" /> : completedTodayCount}
             </div>
-            <div className="text-[10.5px] text-text-sub font-medium">Completed transactions</div>
+            <div className="text-fluid-10-5 text-text-sub font-medium">Completed transactions</div>
           </div>
         </div>
 
@@ -983,10 +983,10 @@ export default function AdminQueueMonitoringPage() {
           <div>
             <div className="flex items-center justify-between mb-3">
               <div>
-                <p className="text-[9.5px] font-extrabold text-gold uppercase tracking-wider m-0 mb-0.5">QUEUE OVERVIEW</p>
-                <h3 className="font-serif text-[15px] font-bold text-text-main m-0">Where Students Are Now</h3>
+                <p className="text-fluid-9-5 font-extrabold text-gold uppercase tracking-wider m-0 mb-0.5">QUEUE OVERVIEW</p>
+                <h3 className="font-serif text-fluid-15 font-bold text-text-main m-0">Where Students Are Now</h3>
               </div>
-              <span className="text-[10px] font-bold text-text-muted bg-off-white px-2 py-0.5 rounded-full border border-border">
+              <span className="text-fluid-10 font-bold text-text-muted bg-off-white px-2 py-0.5 rounded-full border border-border">
                 {pipelineDonut.total} Active Total
               </span>
             </div>
@@ -1013,10 +1013,10 @@ export default function AdminQueueMonitoringPage() {
           <div>
             <div className="flex items-center justify-between mb-3">
               <div>
-                <p className="text-[9.5px] font-extrabold text-gold uppercase tracking-wider m-0 mb-0.5">DOCUMENTS &amp; SERVICES</p>
-                <h3 className="font-serif text-[15px] font-bold text-text-main m-0">Requests by Document Type</h3>
+                <p className="text-fluid-9-5 font-extrabold text-gold uppercase tracking-wider m-0 mb-0.5">DOCUMENTS &amp; SERVICES</p>
+                <h3 className="font-serif text-fluid-15 font-bold text-text-main m-0">Requests by Document Type</h3>
               </div>
-              <span className="text-[10px] font-bold text-text-muted bg-off-white px-2 py-0.5 rounded-full border border-border">
+              <span className="text-fluid-10 font-bold text-text-muted bg-off-white px-2 py-0.5 rounded-full border border-border">
                 {docDistributionDonut.total} Tracked
               </span>
             </div>
@@ -1043,9 +1043,9 @@ export default function AdminQueueMonitoringPage() {
           <div>
             <div className="flex items-center gap-2 mb-2">
               <Sparkles size={17} className="text-gold shrink-0" />
-              <h3 className="font-serif text-[16px] font-bold text-maroon m-0">AI Summary</h3>
+              <h3 className="font-serif text-fluid-16 font-bold text-maroon m-0">AI Summary</h3>
             </div>
-            <p className="text-[12px] text-text-sub leading-relaxed mb-4">
+            <p className="text-fluid-12 text-text-sub leading-relaxed mb-4">
               Important updates on student wait times, counter workload, and pickups.
             </p>
 
@@ -1069,8 +1069,8 @@ export default function AdminQueueMonitoringPage() {
                     <Clock size={15} />
                   </div>
                   <div>
-                    <div className="text-[12.5px] font-bold text-text-main">Busiest Hours Expected</div>
-                    <div className="text-[11.5px] text-text-sub mt-1 leading-relaxed">
+                    <div className="text-fluid-12-5 font-bold text-text-main">Busiest Hours Expected</div>
+                    <div className="text-fluid-11-5 text-text-sub mt-1 leading-relaxed">
                       Highest queue traffic expected around <strong className="text-text-main">{queueStats?.peak_forecast === 'No Data' ? 'None scheduled' : (queueStats?.peak_forecast || 'None')}</strong>.
                     </div>
                   </div>
@@ -1082,10 +1082,10 @@ export default function AdminQueueMonitoringPage() {
                     {overdueReleases.length > 0 ? <AlertTriangle size={15} /> : <CheckCircle2 size={15} />}
                   </div>
                   <div>
-                    <div className={`text-[12.5px] font-bold ${overdueReleases.length > 0 ? 'text-danger' : 'text-success'}`}>
+                    <div className={`text-fluid-12-5 font-bold ${overdueReleases.length > 0 ? 'text-danger' : 'text-success'}`}>
                       {overdueReleases.length > 0 ? `${overdueReleases.length} Overdue Pickups` : 'Pickups On Schedule'}
                     </div>
-                    <div className="text-[11.5px] text-text-sub mt-1 leading-relaxed">
+                    <div className="text-fluid-11-5 text-text-sub mt-1 leading-relaxed">
                       {overdueReleases.length > 0 
                         ? 'You can click "Remind" in the table below to alert students.' 
                         : 'Students are picking up their prepared documents on time.'}
@@ -1099,8 +1099,8 @@ export default function AdminQueueMonitoringPage() {
                     <UserCheck size={15} />
                   </div>
                   <div>
-                    <div className="text-[12.5px] font-bold text-text-main">Priority Lane Active</div>
-                    <div className="text-[11.5px] text-text-sub mt-1 leading-relaxed">
+                    <div className="text-fluid-12-5 font-bold text-text-main">Priority Lane Active</div>
+                    <div className="text-fluid-11-5 text-text-sub mt-1 leading-relaxed">
                       PWD, Pregnant, and Alumni students are automatically prioritized in the queue.
                     </div>
                   </div>
@@ -1132,12 +1132,12 @@ export default function AdminQueueMonitoringPage() {
                 <button
                   key={tab.id}
                   onClick={() => { setActiveTab(tab.id); setCurrentPage(1); }}
-                  className={`relative pb-3.5 px-3.5 text-[13px] font-bold cursor-pointer transition-all flex items-center gap-2 border-none bg-transparent whitespace-nowrap ${
+                  className={`relative pb-3.5 px-3.5 text-fluid-13 font-bold cursor-pointer transition-all flex items-center gap-2 border-none bg-transparent whitespace-nowrap ${
                     isActive ? 'text-maroon' : 'text-text-muted hover:text-text-main'
                   }`}
                 >
                   <span>{tab.label}</span>
-                  <span className={`text-[11px] font-extrabold px-2 py-0.5 rounded-full transition-all ${
+                  <span className={`text-fluid-11 font-extrabold px-2 py-0.5 rounded-full transition-all ${
                     isActive 
                       ? 'bg-maroon text-white shadow-2xs' 
                       : 'bg-surface text-text-sub border border-border/80'
@@ -1162,7 +1162,7 @@ export default function AdminQueueMonitoringPage() {
                 placeholder="Search queue number, student name, ID..."
                 value={search}
                 onChange={e => { setSearch(e.target.value); setCurrentPage(1); }}
-                className="w-full pl-9 pr-8 py-2 rounded-xl border border-border bg-white text-[12.5px] font-medium outline-none text-text-main focus:border-maroon focus:ring-1 focus:ring-maroon transition-all shadow-2xs"
+                className="w-full pl-9 pr-8 py-2 rounded-xl border border-border bg-white text-fluid-12-5 font-medium outline-none text-text-main focus:border-maroon focus:ring-1 focus:ring-maroon transition-all shadow-2xs"
               />
               {search && (
                 <button onClick={() => setSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-text-muted hover:text-text-main bg-transparent border-none cursor-pointer">
@@ -1200,7 +1200,7 @@ export default function AdminQueueMonitoringPage() {
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse min-w-240">
             <thead>
-              <tr className="border-b border-border bg-off-white/80 text-[10.5px] font-extrabold text-text-muted uppercase tracking-[0.08em]">
+              <tr className="border-b border-border bg-off-white/80 text-fluid-10-5 font-extrabold text-text-muted uppercase tracking-[0.08em]">
                 <th className="py-3.5 px-5 whitespace-nowrap">Queue No.</th>
                 <th className="py-3.5 px-5 whitespace-nowrap">Student Name &amp; ID</th>
                 <th className="py-3.5 px-5 whitespace-nowrap">Document / Service</th>
@@ -1215,7 +1215,7 @@ export default function AdminQueueMonitoringPage() {
                 <tr>
                   <td colSpan={7} className="py-16 text-center text-text-muted">
                     <RefreshCw className="animate-spin mx-auto mb-2 text-maroon" size={24} />
-                    <p className="text-[13px] m-0 font-medium">Loading live queue and pickup records...</p>
+                    <p className="text-fluid-13 m-0 font-medium">Loading live queue and pickup records...</p>
                   </td>
                 </tr>
               ) : paginatedItems.length === 0 ? (
@@ -1224,8 +1224,8 @@ export default function AdminQueueMonitoringPage() {
                     <div className="w-14 h-14 bg-surface rounded-full flex items-center justify-center mx-auto mb-3 border border-border text-text-muted">
                       <Layers size={24} />
                     </div>
-                    <h4 className="text-[15px] font-bold text-text-main m-0 mb-1">No Queue Records Found</h4>
-                    <p className="text-[12.5px] text-text-sub m-0 max-w-sm mx-auto">
+                    <h4 className="text-fluid-15 font-bold text-text-main m-0 mb-1">No Queue Records Found</h4>
+                    <p className="text-fluid-12-5 text-text-sub m-0 max-w-sm mx-auto">
                       {search ? 'No tickets match your search.' : 'There are currently no tickets in this tab.'}
                     </p>
                   </td>
@@ -1238,11 +1238,11 @@ export default function AdminQueueMonitoringPage() {
                       
                       {/* Queue Number */}
                       <td className="py-4 px-5 whitespace-nowrap">
-                        <div className="font-serif text-[17.5px] font-bold text-maroon leading-none">
+                        <div className="font-serif text-fluid-17-5 font-bold text-maroon leading-none">
                           {item.queue_number}
                         </div>
                         {isHighPrio && (
-                          <span className="inline-block mt-1 text-[9px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-full bg-maroon-light text-maroon border border-maroon-border whitespace-nowrap">
+                          <span className="inline-block mt-1 text-fluid-9 font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-full bg-maroon-light text-maroon border border-maroon-border whitespace-nowrap">
                             {item.priority_class}
                           </span>
                         )}
@@ -1250,10 +1250,10 @@ export default function AdminQueueMonitoringPage() {
 
                       {/* Student Details */}
                       <td className="py-4 px-5 whitespace-nowrap">
-                        <div className="text-[13.5px] font-bold text-text-main leading-snug group-hover:text-maroon transition-colors">
+                        <div className="text-fluid-13-5 font-bold text-text-main leading-snug group-hover:text-maroon transition-colors">
                           {item.student_name}
                         </div>
-                        <div className="text-[11.5px] text-text-muted font-mono mt-0.5">
+                        <div className="text-fluid-11-5 text-text-muted font-mono mt-0.5">
                           ID: {item.student_id}
                         </div>
                       </td>
@@ -1261,7 +1261,7 @@ export default function AdminQueueMonitoringPage() {
                       {/* Document / Service */}
                       <td className="py-4 px-5 whitespace-nowrap">
                         <span
-                          className="inline-flex items-center gap-1.5 text-[12px] font-semibold px-2.5 py-1 rounded-lg border whitespace-nowrap"
+                          className="inline-flex items-center gap-1.5 text-fluid-12 font-semibold px-2.5 py-1 rounded-lg border whitespace-nowrap"
                           style={{
                             backgroundColor: `${getDocumentColor(item.transaction_type)}12`,
                             color: getDocumentColor(item.transaction_type),
@@ -1276,12 +1276,12 @@ export default function AdminQueueMonitoringPage() {
                       {/* Target Release Date */}
                       <td className="py-4 px-5 whitespace-nowrap">
                         {item.releaseDate ? (
-                          <div className="text-[13px] font-semibold text-text-main flex items-center gap-1.5 whitespace-nowrap">
+                          <div className="text-fluid-13 font-semibold text-text-main flex items-center gap-1.5 whitespace-nowrap">
                             <Calendar size={13.5} className="text-text-muted shrink-0" />
                             <span>{new Date(item.releaseDate + "T00:00:00").toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
                           </div>
                         ) : (
-                          <span className="text-[12px] text-text-muted italic whitespace-nowrap">
+                          <span className="text-fluid-12 text-text-muted italic whitespace-nowrap">
                             Not set yet
                           </span>
                         )}
@@ -1290,11 +1290,11 @@ export default function AdminQueueMonitoringPage() {
                       {/* Elapsed / Waiting */}
                       <td className="py-4 px-5 whitespace-nowrap">
                         {item.statusKey === 'completed' ? (
-                          <span className="text-[12px] text-text-muted font-medium italic">
+                          <span className="text-fluid-12 text-text-muted font-medium italic">
                             Completed
                           </span>
                         ) : (
-                          <div className="text-[12.5px] font-semibold text-text-main flex items-center gap-1.5 whitespace-nowrap">
+                          <div className="text-fluid-12-5 font-semibold text-text-main flex items-center gap-1.5 whitespace-nowrap">
                             <Clock size={13.5} className="text-text-muted shrink-0" />
                             <span>{item.elapsedText}</span>
                           </div>
@@ -1304,27 +1304,27 @@ export default function AdminQueueMonitoringPage() {
                       {/* Status Badge */}
                       <td className="py-4 px-5 whitespace-nowrap">
                         {item.statusKey === 'serving' ? (
-                          <span className="inline-flex items-center gap-1 text-[10.5px] font-extrabold uppercase tracking-wider px-2.5 py-1 rounded-full bg-success-light text-success border border-success-border whitespace-nowrap">
+                          <span className="inline-flex items-center gap-1 text-fluid-10-5 font-extrabold uppercase tracking-wider px-2.5 py-1 rounded-full bg-success-light text-success border border-success-border whitespace-nowrap">
                             <span className="w-1.5 h-1.5 rounded-full bg-success animate-pulse shrink-0" /> Serving Now
                           </span>
                         ) : item.statusKey === 'waiting' ? (
-                          <span className="inline-flex items-center gap-1 text-[10.5px] font-extrabold uppercase tracking-wider px-2.5 py-1 rounded-full bg-gold-light text-gold border border-gold-border whitespace-nowrap">
+                          <span className="inline-flex items-center gap-1 text-fluid-10-5 font-extrabold uppercase tracking-wider px-2.5 py-1 rounded-full bg-gold-light text-gold border border-gold-border whitespace-nowrap">
                             <Clock size={11} className="shrink-0" /> In Line
                           </span>
                         ) : item.statusKey === 'prep' ? (
-                          <span className="inline-flex items-center gap-1 text-[10.5px] font-extrabold uppercase tracking-wider px-2.5 py-1 rounded-full bg-blue-light text-blue border border-blue-border whitespace-nowrap">
+                          <span className="inline-flex items-center gap-1 text-fluid-10-5 font-extrabold uppercase tracking-wider px-2.5 py-1 rounded-full bg-blue-light text-blue border border-blue-border whitespace-nowrap">
                             <Cog size={11} className="animate-spin shrink-0" style={{ animationDuration: '3s' }} /> Preparing
                           </span>
                         ) : item.statusKey === 'overdue' ? (
-                          <span className="inline-flex items-center gap-1 text-[10.5px] font-extrabold uppercase tracking-wider px-2.5 py-1 rounded-full bg-danger-light text-danger border border-danger-border animate-pulse whitespace-nowrap">
+                          <span className="inline-flex items-center gap-1 text-fluid-10-5 font-extrabold uppercase tracking-wider px-2.5 py-1 rounded-full bg-danger-light text-danger border border-danger-border animate-pulse whitespace-nowrap">
                             <AlertTriangle size={11} className="shrink-0" /> Overdue Pickup
                           </span>
                         ) : item.statusKey === 'ready' ? (
-                          <span className="inline-flex items-center gap-1 text-[10.5px] font-extrabold uppercase tracking-wider px-2.5 py-1 rounded-full bg-success-light text-success border border-success-border whitespace-nowrap">
+                          <span className="inline-flex items-center gap-1 text-fluid-10-5 font-extrabold uppercase tracking-wider px-2.5 py-1 rounded-full bg-success-light text-success border border-success-border whitespace-nowrap">
                             <FolderOpen size={11} className="shrink-0" /> Ready for Pickup
                           </span>
                         ) : (
-                          <span className="inline-flex items-center gap-1 text-[10.5px] font-extrabold uppercase tracking-wider px-2.5 py-1 rounded-full bg-success-light text-success border border-success-border whitespace-nowrap">
+                          <span className="inline-flex items-center gap-1 text-fluid-10-5 font-extrabold uppercase tracking-wider px-2.5 py-1 rounded-full bg-success-light text-success border border-success-border whitespace-nowrap">
                             <CheckCircle2 size={11} className="shrink-0" /> Completed
                           </span>
                         )}
@@ -1338,7 +1338,7 @@ export default function AdminQueueMonitoringPage() {
                             type="button"
                             onClick={() => setViewingTicketData(item)}
                             title="View full ticket details and schedule"
-                            className="flex items-center gap-1 px-3 py-1.5 rounded-lg border border-border bg-white text-text-main text-[11.5px] font-bold cursor-pointer hover:bg-maroon hover:text-white hover:border-maroon transition-all shadow-2xs"
+                            className="flex items-center gap-1 px-3 py-1.5 rounded-lg border border-border bg-white text-text-main text-fluid-11-5 font-bold cursor-pointer hover:bg-maroon hover:text-white hover:border-maroon transition-all shadow-2xs"
                           >
                             <Eye size={12} className="shrink-0" />
                             <span>Details</span>
@@ -1351,7 +1351,7 @@ export default function AdminQueueMonitoringPage() {
                               onClick={() => handleRemindStudent(item.id, item.student_name)}
                               disabled={remindingId === item.id}
                               title="Send reminder notification to student"
-                              className="flex items-center gap-1 px-3 py-1.5 rounded-lg border border-gold-border bg-gold-light text-gold text-[11.5px] font-bold cursor-pointer hover:bg-gold hover:text-white transition-all shadow-2xs disabled:opacity-50"
+                              className="flex items-center gap-1 px-3 py-1.5 rounded-lg border border-gold-border bg-gold-light text-gold text-fluid-11-5 font-bold cursor-pointer hover:bg-gold hover:text-white transition-all shadow-2xs disabled:opacity-50"
                             >
                               <Bell size={12} className={remindingId === item.id ? 'animate-spin text-gold shrink-0' : 'text-gold shrink-0'} />
                               <span>{remindingId === item.id ? 'Sending...' : 'Remind'}</span>
@@ -1360,7 +1360,7 @@ export default function AdminQueueMonitoringPage() {
 
                           {/* Tag for completed items */}
                           {item.statusKey === 'completed' && (
-                            <span className="text-[11px] text-text-muted font-medium italic">
+                            <span className="text-fluid-11 text-text-muted font-medium italic">
                               Done
                             </span>
                           )}
@@ -1377,7 +1377,7 @@ export default function AdminQueueMonitoringPage() {
 
         {/* ── Table Footer & Pagination ── */}
         <div className="p-4 border-t border-border bg-surface/40 flex flex-col sm:flex-row justify-between items-center gap-3">
-          <span className="text-[12px] text-text-muted">
+          <span className="text-fluid-12 text-text-muted">
             Showing <strong className="text-text-main">{allUnifiedItems.length > 0 ? (currentPage - 1) * PER_PAGE + 1 : 0}</strong> to <strong className="text-text-main">{Math.min(currentPage * PER_PAGE, allUnifiedItems.length)}</strong> of <strong className="text-text-main">{allUnifiedItems.length}</strong> tickets
           </span>
 
@@ -1399,7 +1399,7 @@ export default function AdminQueueMonitoringPage() {
                 key={num}
                 type="button"
                 onClick={() => setCurrentPage(num)}
-                className={`w-8 h-8 rounded-lg text-[12px] font-bold cursor-pointer transition-colors shadow-2xs ${currentPage === num ? 'bg-maroon text-white border border-maroon' : 'bg-white text-text-main border border-border hover:bg-surface'}`}
+                className={`w-8 h-8 rounded-lg text-fluid-12 font-bold cursor-pointer transition-colors shadow-2xs ${currentPage === num ? 'bg-maroon text-white border border-maroon' : 'bg-white text-text-main border border-border hover:bg-surface'}`}
               >
                 {num}
               </button>

@@ -76,10 +76,10 @@ function EmailModal({ req, token, onClose, onSentAndResolve }) {
         {/* Header - White */}
         <div className="bg-white border-b border-border px-6 py-5 flex items-start justify-between gap-4">
           <div>
-            <p className="text-[10px] font-bold text-gold tracking-widest uppercase m-0 mb-1">ID Request Response</p>
-            <h2 className="text-text-main font-serif text-[20px] font-bold m-0">Send Student ID</h2>
+            <p className="text-fluid-10 font-bold text-gold tracking-widest uppercase m-0 mb-1">ID Request Response</p>
+            <h2 className="text-text-main font-serif text-fluid-20 font-bold m-0">Send Student ID</h2>
           </div>
-          <button onClick={onClose} className="bg-slate-100 border-none text-text-sub hover:text-text-main rounded-full w-8 h-8 flex items-center justify-center cursor-pointer hover:bg-slate-200 transition-colors shrink-0 text-[18px] leading-none">
+          <button onClick={onClose} className="bg-slate-100 border-none text-text-sub hover:text-text-main rounded-full w-8 h-8 flex items-center justify-center cursor-pointer hover:bg-slate-200 transition-colors shrink-0 text-fluid-18 leading-none">
             ×
           </button>
         </div>
@@ -90,19 +90,19 @@ function EmailModal({ req, token, onClose, onSentAndResolve }) {
           <div className="flex flex-col">
             {/* Student Info */}
             <div className="bg-off-white border border-border rounded-xl p-4 mb-6 grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div className="flex items-center gap-2 text-[13px] text-text-sub">
+              <div className="flex items-center gap-2 text-fluid-13 text-text-sub">
                 <User size={14} className="text-maroon shrink-0" />
                 <span><span className="font-semibold text-text-main">{req.first_name} {req.last_name}</span></span>
               </div>
-              <div className="flex items-center gap-2 text-[13px] text-text-sub">
+              <div className="flex items-center gap-2 text-fluid-13 text-text-sub">
                 <BookOpen size={14} className="text-maroon shrink-0" />
                 <span>{req.course}</span>
               </div>
-              <div className="flex items-center gap-2 text-[13px] text-text-sub sm:col-span-2">
+              <div className="flex items-center gap-2 text-fluid-13 text-text-sub sm:col-span-2">
                 <AtSign size={14} className="text-maroon shrink-0" />
                 <span className="truncate">{req.email}</span>
               </div>
-              <div className="flex items-center gap-2 text-[13px] text-text-sub sm:col-span-2">
+              <div className="flex items-center gap-2 text-fluid-13 text-text-sub sm:col-span-2">
                 <Calendar size={14} className="text-maroon shrink-0" />
                 <span>Requested {new Date(req.created_at).toLocaleString()}</span>
               </div>
@@ -110,7 +110,7 @@ function EmailModal({ req, token, onClose, onSentAndResolve }) {
 
             {/* Directory Search */}
             <div className="mb-6 flex-1">
-              <label className="block text-[11px] font-bold text-text-sub tracking-wider uppercase mb-1.5">
+              <label className="block text-fluid-11 font-bold text-text-sub tracking-wider uppercase mb-1.5">
                 <span className="flex items-center gap-1.5"><Search size={12} /> Search School Directory</span>
               </label>
               <div className="relative">
@@ -120,18 +120,18 @@ function EmailModal({ req, token, onClose, onSentAndResolve }) {
                   value={query}
                   onChange={e => { setQuery(e.target.value); if (studentId) { setStudentId(''); setMessage(defaultMessage('')) } }}
                   placeholder="Type name or student ID to search…"
-                  className="w-full pl-9 pr-3.5 py-2.5 rounded-lg border-[1.5px] border-border text-[13px] text-text-main outline-none focus:border-maroon transition-colors"
+                  className="w-full pl-9 pr-3.5 py-2.5 rounded-lg border-[1.5px] border-border text-fluid-13 text-text-main outline-none focus:border-maroon transition-colors"
                 />
                 <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted pointer-events-none" />
               </div>
 
               {/* Loading / error state */}
               {loadingDir && (
-                <p className="text-[11px] text-text-muted mt-1.5 flex items-center gap-1.5">
+                <p className="text-fluid-11 text-text-muted mt-1.5 flex items-center gap-1.5">
                   <span className="inline-block w-3 h-3 border-2 border-maroon border-t-transparent rounded-full animate-spin" /> Loading directory…
                 </p>
               )}
-              {dirError && <p className="text-[11px] text-danger mt-1.5">{dirError}</p>}
+              {dirError && <p className="text-fluid-11 text-danger mt-1.5">{dirError}</p>}
 
               {/* Live results dropdown */}
               {filtered.length > 0 && (
@@ -145,22 +145,22 @@ function EmailModal({ req, token, onClose, onSentAndResolve }) {
                         ${i !== filtered.length - 1 ? 'border-b border-border' : ''}`}
                     >
                       <div>
-                        <div className="text-[13px] font-semibold text-text-main">{r.last_name}, {r.first_name}</div>
-                        <div className="text-[11px] text-text-sub mt-0.5">{r.course}</div>
+                        <div className="text-fluid-13 font-semibold text-text-main">{r.last_name}, {r.first_name}</div>
+                        <div className="text-fluid-11 text-text-sub mt-0.5">{r.course}</div>
                       </div>
-                      <span className="text-[12px] font-bold text-maroon shrink-0 ml-4">{r.student_id}</span>
+                      <span className="text-fluid-12 font-bold text-maroon shrink-0 ml-4">{r.student_id}</span>
                     </button>
                   ))}
                 </div>
               )}
               {trimmedQuery.length >= 2 && !loadingDir && filtered.length === 0 && (
-                <p className="text-[11px] text-text-muted mt-1.5">No matching records found in the directory.</p>
+                <p className="text-fluid-11 text-text-muted mt-1.5">No matching records found in the directory.</p>
               )}
             </div>
 
             {/* Selected / manual Student ID */}
             <div>
-              <label className="block text-[11px] font-bold text-text-sub tracking-wider uppercase mb-1.5">
+              <label className="block text-fluid-11 font-bold text-text-sub tracking-wider uppercase mb-1.5">
                 Student ID to Send <span className="text-danger">*</span>
               </label>
               <input
@@ -168,7 +168,7 @@ function EmailModal({ req, token, onClose, onSentAndResolve }) {
                 value={studentId}
                 onChange={e => handleIdChange(e.target.value)}
                 placeholder="Auto-filled from search, or type manually"
-                className={`w-full px-3.5 py-2.5 rounded-lg border-[1.5px] text-[14px] text-text-main outline-none transition-colors
+                className={`w-full px-3.5 py-2.5 rounded-lg border-[1.5px] text-fluid-14 text-text-main outline-none transition-colors
                   ${studentId ? 'border-success bg-success-light font-bold text-success' : 'border-border focus:border-maroon'}`}
               />
             </div>
@@ -177,22 +177,22 @@ function EmailModal({ req, token, onClose, onSentAndResolve }) {
           {/* Right Column: Email body & Actions */}
           <div className="flex flex-col h-full min-h-65">
             <div className="mb-4 flex-1 flex flex-col">
-              <label className="block text-[11px] font-bold text-text-sub tracking-wider uppercase mb-1.5">Email Message</label>
+              <label className="block text-fluid-11 font-bold text-text-sub tracking-wider uppercase mb-1.5">Email Message</label>
               <textarea
                 value={message}
                 onChange={e => setMessage(e.target.value)}
-                className="w-full flex-1 min-h-45 px-3.5 py-3 rounded-lg border-[1.5px] border-border text-[13px] text-text-main outline-none focus:border-maroon transition-colors resize-none font-[inherit] leading-relaxed"
+                className="w-full flex-1 min-h-45 px-3.5 py-3 rounded-lg border-[1.5px] border-border text-fluid-13 text-text-main outline-none focus:border-maroon transition-colors resize-none font-[inherit] leading-relaxed"
               />
             </div>
 
             {sendError && (
-              <div className="mb-4 py-2.5 px-3.5 rounded-lg bg-danger-light border border-danger-border text-danger text-[13px]">
+              <div className="mb-4 py-2.5 px-3.5 rounded-lg bg-danger-light border border-danger-border text-danger text-fluid-13">
                 {sendError}
               </div>
             )}
 
             {sent && (
-              <div className="mb-4 py-2.5 px-3.5 rounded-lg bg-success-light border border-success-border text-success text-[13px] flex items-center gap-2">
+              <div className="mb-4 py-2.5 px-3.5 rounded-lg bg-success-light border border-success-border text-success text-fluid-13 flex items-center gap-2">
                 <Check size={15} /> Email sent and request marked resolved.
               </div>
             )}
@@ -202,7 +202,7 @@ function EmailModal({ req, token, onClose, onSentAndResolve }) {
                 <button
                   onClick={handleSend}
                   disabled={!studentId.trim() || sending}
-                  className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-[14px] border-none transition-colors
+                  className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-fluid-14 border-none transition-colors
                     ${(studentId.trim() && !sending) ? 'bg-maroon text-white cursor-pointer hover:bg-maroon-dark' : 'bg-border text-text-muted cursor-not-allowed'}`}
                 >
                   <Mail size={16} /> {sending ? 'Sending Email...' : 'Send Email Now'}
@@ -335,29 +335,29 @@ export default function IdRequestsPage() {
 
       {/* ── Page Header (Always visible) ── */}
       <div className="animate-fade-up mb-6">
-        <p className="text-[11px] font-bold text-gold tracking-widest uppercase m-0 mb-1.5">User Management</p>
-        <h1 className="font-serif text-[22px] sm:text-[26px] font-bold text-text-main m-0 flex items-center gap-2">
+        <p className="text-fluid-11 font-bold text-gold tracking-widest uppercase m-0 mb-1.5">User Management</p>
+        <h1 className="font-serif text-fluid-22 sm:text-fluid-26 font-bold text-text-main m-0 flex items-center gap-2">
           <HelpCircle size={24} className="text-maroon shrink-0" /> Student ID Requests
         </h1>
-        <p className="text-[12px] sm:text-[13px] text-text-sub mt-1.5 sm:mt-2 mb-0">
+        <p className="text-fluid-12 sm:text-fluid-13 text-text-sub mt-1.5 sm:mt-2 mb-0">
           Manage requests from students who forgot their Student ID.
           Click <strong>Send Email</strong> to compose a reply, then mark as resolved.
         </p>
       </div>
 
       {error && (
-        <div className="animate-fade-up py-3 px-4 rounded-xl bg-danger-light border border-danger-border text-danger text-[13px] mb-6">
+        <div className="animate-fade-up py-3 px-4 rounded-xl bg-danger-light border border-danger-border text-danger text-fluid-13 mb-6">
           {error}
         </div>
       )}
 
       {/* PENDING */}
       <div className="animate-fade-up" style={{ animationDelay: '0.1s' }}>
-        <h2 className="text-[15px] font-bold text-text-main mb-3 flex items-center gap-2">
+        <h2 className="text-fluid-15 font-bold text-text-main mb-3 flex items-center gap-2">
           <Clock size={18} className="text-gold" />
           <span>Needs Action</span>
           {!loading ? (
-            <span className="px-2 py-0.5 rounded-full bg-surface border border-border text-text-sub text-[11px] font-bold">
+            <span className="px-2 py-0.5 rounded-full bg-surface border border-border text-text-sub text-fluid-11 font-bold">
               {pending.length}
             </span>
           ) : (
@@ -382,7 +382,7 @@ export default function IdRequestsPage() {
             ))}
           </div>
         ) : pending.length === 0 ? (
-          <div className="bg-white rounded-2xl border border-border p-10 text-center text-text-muted text-[14px] mb-8 shadow-sm">
+          <div className="bg-white rounded-2xl border border-border p-10 text-center text-text-muted text-fluid-14 mb-8 shadow-sm">
             No pending ID requests.
           </div>
         ) : (
@@ -391,17 +391,17 @@ export default function IdRequestsPage() {
               {currentPending.map(req => (
                 <div key={req.id} className="animate-fade-up bg-white rounded-2xl border-[1.5px] border-maroon-border p-5 shadow-sm flex flex-col sm:flex-row sm:items-start justify-between gap-4 transition-shadow hover:shadow-md">
                   <div>
-                    <div className="font-bold text-[16px] text-text-main">{req.first_name} {req.last_name}</div>
-                    <div className="flex flex-wrap items-center gap-4 mt-1.5 text-[12px] text-text-sub">
+                    <div className="font-bold text-fluid-16 text-text-main">{req.first_name} {req.last_name}</div>
+                    <div className="flex flex-wrap items-center gap-4 mt-1.5 text-fluid-12 text-text-sub">
                       <span><strong>Email:</strong> {req.email}</span>
                       <span><strong>Course:</strong> {req.course}</span>
                     </div>
-                    <div className="text-[11px] text-text-muted mt-2">Requested: {new Date(req.created_at).toLocaleString()}</div>
+                    <div className="text-fluid-11 text-text-muted mt-2">Requested: {new Date(req.created_at).toLocaleString()}</div>
                   </div>
 
                   <button
                     onClick={() => setEmailTarget(req)}
-                    className="px-4 py-2.5 bg-maroon text-white text-[13px] font-bold rounded-xl border-none cursor-pointer hover:bg-maroon-dark transition-colors flex items-center justify-center gap-2 shadow-xs shrink-0 w-full sm:w-auto"
+                    className="px-4 py-2.5 bg-maroon text-white text-fluid-13 font-bold rounded-xl border-none cursor-pointer hover:bg-maroon-dark transition-colors flex items-center justify-center gap-2 shadow-xs shrink-0 w-full sm:w-auto"
                   >
                     <Mail size={15} /> Send Email
                   </button>
@@ -412,21 +412,21 @@ export default function IdRequestsPage() {
             {/* Pending Pagination */}
             {totalPendingPages > 1 && (
               <div className="flex items-center justify-between mt-4 px-2">
-                <span className="text-[12px] text-text-muted">
+                <span className="text-fluid-12 text-text-muted">
                   Showing {startPending + 1}–{endPending} of {pending.length}
                 </span>
                 <div className="flex gap-2">
                   <button
                     disabled={pendingPage === 1}
                     onClick={() => setPendingPage(p => p - 1)}
-                    className="px-3 py-1.5 rounded-lg border border-border bg-white text-[12px] font-semibold text-text-sub hover:bg-off-white disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                    className="px-3 py-1.5 rounded-lg border border-border bg-white text-fluid-12 font-semibold text-text-sub hover:bg-off-white disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                   >
                     Previous
                   </button>
                   <button
                     disabled={pendingPage === totalPendingPages}
                     onClick={() => setPendingPage(p => p + 1)}
-                    className="px-3 py-1.5 rounded-lg border border-border bg-white text-[12px] font-semibold text-text-sub hover:bg-off-white disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                    className="px-3 py-1.5 rounded-lg border border-border bg-white text-fluid-12 font-semibold text-text-sub hover:bg-off-white disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                   >
                     Next
                   </button>
@@ -440,7 +440,7 @@ export default function IdRequestsPage() {
       {/* HISTORY */}
       <div className="animate-fade-up" style={{ animationDelay: '0.15s' }}>
         <div className="flex items-center justify-between mb-3 mt-4">
-          <h2 className="text-[15px] font-bold text-text-main m-0 flex items-center gap-2">
+          <h2 className="text-fluid-15 font-bold text-text-main m-0 flex items-center gap-2">
             <Check size={18} className="text-success" /> History
           </h2>
           {!loading && history.length > 0 && (
@@ -449,7 +449,7 @@ export default function IdRequestsPage() {
                 setIsSelectMode(!isSelectMode)
                 setSelectedIds(new Set())
               }}
-              className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border text-[12px] font-bold cursor-pointer transition-colors ${
+              className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border text-fluid-12 font-bold cursor-pointer transition-colors ${
                 isSelectMode 
                   ? 'bg-off-white border-border text-text-sub hover:bg-border'
                   : 'bg-danger-light border-danger-border text-danger hover:bg-danger hover:text-white'
@@ -462,11 +462,11 @@ export default function IdRequestsPage() {
 
         {isSelectMode && selectedIds.size > 0 && (
           <div className="mb-3 p-3 bg-danger-light/50 border border-danger-border rounded-xl flex items-center justify-between animate-fade-in">
-            <span className="text-[13px] text-danger font-semibold">{selectedIds.size} selected</span>
+            <span className="text-fluid-13 text-danger font-semibold">{selectedIds.size} selected</span>
             <button
               onClick={handleDeleteSelected}
               disabled={isDeleting}
-            className="px-4 py-1.5 bg-danger text-white border-none rounded-lg text-[12px] font-bold cursor-pointer hover:bg-danger-dark transition-colors disabled:opacity-50"
+            className="px-4 py-1.5 bg-danger text-white border-none rounded-lg text-fluid-12 font-bold cursor-pointer hover:bg-danger-dark transition-colors disabled:opacity-50"
           >
             {isDeleting ? 'Deleting...' : 'Confirm Delete'}
           </button>
@@ -492,7 +492,7 @@ export default function IdRequestsPage() {
           ))}
         </div>
       ) : history.length === 0 ? (
-        <div className="bg-white rounded-2xl border border-border p-6 text-center text-text-muted text-[13px] shadow-sm">
+        <div className="bg-white rounded-2xl border border-border p-6 text-center text-text-muted text-fluid-13 shadow-sm">
           No resolved requests yet.
         </div>
       ) : (
@@ -523,14 +523,14 @@ export default function IdRequestsPage() {
                   )}
                   <div className="flex-1 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                     <div>
-                      <div className="text-[14px] font-semibold text-text-main">{req.last_name}, {req.first_name}</div>
-                      <div className="text-[12px] text-text-sub mt-0.5 break-all">{req.email} • {req.course}</div>
+                      <div className="text-fluid-14 font-semibold text-text-main">{req.last_name}, {req.first_name}</div>
+                      <div className="text-fluid-12 text-text-sub mt-0.5 break-all">{req.email} • {req.course}</div>
                     </div>
                     <div className="text-left sm:text-right shrink-0">
-                      <span className={`inline-block px-2 py-1 rounded-md text-[10px] font-bold mb-1 ${req.status === 'resolved' ? 'bg-success-light text-success' : 'bg-surface text-text-muted'}`}>
+                      <span className={`inline-block px-2 py-1 rounded-md text-fluid-10 font-bold mb-1 ${req.status === 'resolved' ? 'bg-success-light text-success' : 'bg-surface text-text-muted'}`}>
                         {req.status.toUpperCase()}
                       </span>
-                      <div className="text-[11px] text-text-muted">
+                      <div className="text-fluid-11 text-text-muted">
                         {req.resolved_at ? new Date(req.resolved_at).toLocaleString() : '—'}
                       </div>
                     </div>
@@ -542,21 +542,21 @@ export default function IdRequestsPage() {
 
           {/* Pagination Controls for History */}
           <div className="px-2 py-4 mt-1 flex justify-between items-center">
-            <div className="text-[13px] text-text-sub font-medium">
+            <div className="text-fluid-13 text-text-sub font-medium">
               Showing <span className="font-bold text-text-main">{startHistory + 1}-{endHistory}</span> of <span className="font-bold text-text-main">{history.length}</span> requests
             </div>
             <div className="flex gap-2">
               <button 
                 onClick={() => setHistoryPage(p => Math.max(1, p - 1))}
                 disabled={historyPage === 1}
-                className="px-3 py-1.5 rounded-lg border border-border bg-white text-text-main text-[12px] font-semibold cursor-pointer hover:bg-surface disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                className="px-3 py-1.5 rounded-lg border border-border bg-white text-text-main text-fluid-12 font-semibold cursor-pointer hover:bg-surface disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
                 Prev
               </button>
               <button 
                 onClick={() => setHistoryPage(p => Math.min(totalHistoryPages, p + 1))}
                 disabled={historyPage === totalHistoryPages}
-                className="px-3 py-1.5 rounded-lg border border-border bg-white text-text-main text-[12px] font-semibold cursor-pointer hover:bg-surface disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                className="px-3 py-1.5 rounded-lg border border-border bg-white text-text-main text-fluid-12 font-semibold cursor-pointer hover:bg-surface disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
                 Next
               </button>

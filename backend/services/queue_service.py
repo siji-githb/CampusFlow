@@ -238,7 +238,11 @@ def get_student_queue(student_id: str):
             tx_name = (appt.get("transaction_types") or {}).get("name", "")
             
             # If the queue ticket itself is cancelled or deleted transaction type, skip
-            if t.get("status") == "cancelled" or "(deleted" in tx_name or appt_status == "cancelled":
+            if t.get("status") == "cancelled" or "(deleted" in tx_name:
+                continue
+
+            # If appointment was explicitly cancelled AND the ticket is not active, skip
+            if appt_status == "cancelled" and t.get("status") not in ["waiting", "in_progress"]:
                 continue
                 
             valid_tickets.append(t)
@@ -844,9 +848,12 @@ def get_live_queue_stats():
             "peak_forecast": peak_hour_str
         }
     except Exception as e:
-        import traceback
-        traceback.print_exc()
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.warning(f"Error fetching live queue stats: {e}. Returning fallback stats.")
+        return {
+            "avg_wait_minutes": 5,
+            "avg_wait_seconds": 300,
+            "peak_forecast": "10:00 AM"
+        }
 
 
 def get_uncollected_documents(threshold_days: int = 0):
