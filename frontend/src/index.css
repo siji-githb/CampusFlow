@@ -67,6 +67,10 @@
   --text-fluid-42: clamp(1.8375rem, 1.5552rem + 1.1887vw, 2.625rem);
 }
 
+html {
+  scroll-behavior: smooth;
+}
+
 * {
   font-family: 'Poppins', sans-serif;
 }

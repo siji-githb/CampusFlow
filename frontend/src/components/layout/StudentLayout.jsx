@@ -261,6 +261,18 @@ export default function StudentLayout({ children, activeTab, mobileTitle, backTo
   const hasDragged = useRef(false);
   const startPos = useRef({ x: 0, y: 0, btnX: 0, btnY: 0 });
 
+  // Sync sidebar width CSS variable for layout-aligned overlays (like ToastContainer)
+  useEffect(() => {
+    if (isDesktop) {
+      document.documentElement.style.setProperty('--cf-sidebar-width', sidebarCollapsed ? '80px' : '260px');
+    } else {
+      document.documentElement.style.setProperty('--cf-sidebar-width', '0px');
+    }
+    return () => {
+      document.documentElement.style.removeProperty('--cf-sidebar-width');
+    };
+  }, [isDesktop, sidebarCollapsed]);
+
   // Update bounds on resize or chat toggle
   useEffect(() => {
     const enforceBounds = () => {
@@ -593,9 +605,16 @@ export default function StudentLayout({ children, activeTab, mobileTitle, backTo
         )}
 
         {/* Floating Portal Banners (Notifications & Priority Lane) */}
-        <div className="fixed bottom-19 left-3.5 right-3.5 sm:bottom-auto sm:top-21 sm:right-8 sm:left-auto sm:max-w-sm z-45 flex flex-col gap-2.5 pointer-events-none">
-          <NotificationPromptBanner />
-          <PriorityPromptBanner />
+        <div 
+          className="fixed bottom-19 left-3.5 right-3.5 sm:bottom-auto sm:top-20.5 sm:inset-x-0 z-45 pointer-events-none transition-[padding] duration-300"
+          style={{ paddingLeft: 'var(--cf-sidebar-width, 0px)' }}
+        >
+          <div className="w-full max-w-300 mx-auto px-0 sm:px-4 md:px-10 flex justify-center sm:justify-end">
+            <div className="w-full max-w-sm flex flex-col items-center sm:items-end gap-2.5">
+              <NotificationPromptBanner />
+              <PriorityPromptBanner />
+            </div>
+          </div>
         </div>
 
         {chatModal}

@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { createPortal } from 'react-dom'
 import { useAuth } from '../../context/useAuth'
+import { useToast } from '../../context/ToastContext'
 import { useStaffEvent } from '../../context/WebSocketContext'
 import { getDashboardStats, getAllAppointments, updateAppointmentStatus, getOfficeConfig, setDateOverride } from '../../services/adminService'
 import { rescheduleAppointment, getAvailableSlots } from '../../services/appointmentService'
@@ -643,11 +644,14 @@ export default function AdminAppointmentsPage() {
   const [dateOverrides, setDateOverrides] = useState({})
   const [overrideModal, setOverrideModal] = useState({ isOpen: false, type: null })
   const [overrideSaving, setOverrideSaving] = useState(false)
-  const [toastMsg, setToastMsg]           = useState(null)
+  const toast = useToast()
 
   const showToast = (msg, type = 'success') => {
-    setToastMsg({ text: typeof msg === 'string' ? msg : JSON.stringify(msg), type })
-    setTimeout(() => setToastMsg(null), 3500)
+    const text = typeof msg === 'string' ? msg : JSON.stringify(msg)
+    if (type === 'error') toast.error(text)
+    else if (type === 'warning') toast.warning(text)
+    else if (type === 'info') toast.info(text)
+    else toast.success(text)
   }
 
   const PER_PAGE = 6
@@ -794,27 +798,6 @@ export default function AdminAppointmentsPage() {
 
   return (
     <div className="animate-fade-up font-sans w-full pb-12">
-      {/* ── Toast Notification ── */}
-      {toastMsg && (
-        <div className={`fixed bottom-10 right-8 z-9999 flex items-center gap-3 px-5 py-3.5 rounded-xl shadow-[0_12px_32px_rgba(0,0,0,0.18)] border text-fluid-13-5 font-bold animate-fade-up ${
-          toastMsg.type === 'error' 
-            ? 'bg-red-600 text-white border-red-700' 
-            : 'bg-[#006600] text-white border-[#005200]'
-        }`}>
-          {toastMsg.type === 'error' ? (
-            <AlertTriangle size={17} className="shrink-0 text-white" />
-          ) : (
-            <div className="w-5 h-5 rounded-full bg-white/20 flex items-center justify-center shrink-0">
-              <Check size={13} className="text-white stroke-3" />
-            </div>
-          )}
-          <span className="text-white">{toastMsg.text}</span>
-          <button onClick={() => setToastMsg(null)} className="ml-2.5 bg-transparent border-none text-white/80 hover:text-white cursor-pointer p-0 flex items-center shrink-0 transition-opacity">
-            <XIcon size={14} strokeWidth={2.5} />
-          </button>
-        </div>
-      )}
-
       {/* ── Page Header ── */}
       <div className="mb-5 sm:mb-6">
         <p className="text-fluid-11 font-extrabold text-gold tracking-[0.08em] uppercase m-0 mb-1.5 flex items-center gap-1.5">
@@ -1150,13 +1133,30 @@ export default function AdminAppointmentsPage() {
 
                         {/* Transaction */}
                         <td className="py-3.5 px-3.5 sm:px-4">
-                          <div className="text-fluid-13 font-bold text-text-main leading-snug line-clamp-2">
-                            {txName}
-                          </div>
-                          {appt.transaction_types?.required_documents?.length > 0 && (
-                            <span className="text-fluid-10-5 text-text-muted font-medium mt-0.5 block">
-                              {appt.transaction_types.required_documents.length} required document{appt.transaction_types.required_documents.length !== 1 ? 's' : ''}
-                            </span>
+                          {appt.selected_documents && appt.selected_documents.length > 1 ? (
+                            <div>
+                              <div className="flex flex-wrap gap-1 mb-1">
+                                {appt.selected_documents.map((d, idx) => (
+                                  <span key={d.id || idx} className="text-[11px] font-bold text-maroon bg-maroon-light py-0.5 px-2 rounded-md border border-maroon-border/40">
+                                    {d.name}
+                                  </span>
+                                ))}
+                              </div>
+                              <span className="text-fluid-10-5 text-text-muted font-medium block">
+                                {appt.selected_documents.length} requested documents
+                              </span>
+                            </div>
+                          ) : (
+                            <>
+                              <div className="text-fluid-13 font-bold text-text-main leading-snug line-clamp-2">
+                                {txName}
+                              </div>
+                              {appt.transaction_types?.required_documents?.length > 0 && (
+                                <span className="text-fluid-10-5 text-text-muted font-medium mt-0.5 block">
+                                  {appt.transaction_types.required_documents.length} required document{appt.transaction_types.required_documents.length !== 1 ? 's' : ''}
+                                </span>
+                              )}
+                            </>
                           )}
                         </td>
 
@@ -1319,8 +1319,23 @@ export default function AdminAppointmentsPage() {
 
         const queueTicket = viewDetailsModal.queue_tickets?.[0] || viewDetailsModal.queue_tickets || null
         const txType = viewDetailsModal.transaction_types || viewDetailsModal.transaction_type || {}
+        
+        const docList = viewDetailsModal.selected_documents && viewDetailsModal.selected_documents.length > 0
+          ? viewDetailsModal.selected_documents
+          : (txType && txType.name ? [txType] : []);
+
+        const mergedRequiredDocs = (() => {
+          const reqs = [];
+          docList.forEach(d => {
+            (d.required_documents || []).forEach(r => {
+              if (r && !reqs.includes(r)) reqs.push(r);
+            });
+          });
+          return reqs;
+        })();
+
         const processingSteps = txType?.processing_steps || []
-        const requiredDocs = txType?.required_documents || []
+        const requiredDocs = mergedRequiredDocs.length > 0 ? mergedRequiredDocs : (txType?.required_documents || [])
 
         const formattedDate = new Date(viewDetailsModal.appointment_date + 'T00:00:00').toLocaleDateString('en-US', {
           weekday: 'short',
@@ -1413,11 +1428,21 @@ export default function AdminAppointmentsPage() {
                   </div>
                   <div className="flex-1 min-w-0">
                     <span className="text-fluid-10-5 text-text-muted uppercase font-extrabold tracking-wider block mb-1">
-                      Requested Document
+                      {docList.length > 1 ? `Requested Documents (${docList.length})` : 'Requested Document'}
                     </span>
-                    <div className="text-fluid-16 font-bold text-text-main leading-snug mb-1.5">
-                      {txType?.name || 'Document Transaction'}
-                    </div>
+                    {docList.length > 1 ? (
+                      <div className="flex flex-wrap gap-1.5 mb-2 mt-1">
+                        {docList.map((d, idx) => (
+                          <span key={d.id || idx} className="text-xs font-bold text-maroon bg-maroon-light py-0.5 px-2 rounded-md border border-maroon-border/40">
+                            {d.name}
+                          </span>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-fluid-16 font-bold text-text-main leading-snug mb-1.5">
+                        {txType?.name || 'Document Transaction'}
+                      </div>
+                    )}
                     <div className="text-fluid-12 text-text-sub flex items-center gap-1.5 font-medium mb-1">
                       <Calendar size={13} className="text-gold shrink-0" />
                       <span>

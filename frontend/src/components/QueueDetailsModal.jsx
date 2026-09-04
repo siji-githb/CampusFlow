@@ -114,29 +114,91 @@ export default function QueueDetailsModal({ ticketData, onClose, onConfirm, conf
   
   const priority = ticket.priority_class || appt?.priority_class || student?.priority_class || 'regular'
   
+  const docList = appt?.selected_documents && appt.selected_documents.length > 0 
+    ? appt.selected_documents 
+    : (txType ? [txType] : []);
+
+  const mergedRequiredDocs = React.useMemo(() => {
+    const reqs = [];
+    docList.forEach(d => {
+      (d.required_documents || []).forEach(r => {
+        if (r && !reqs.includes(r)) reqs.push(r);
+      });
+    });
+    return reqs;
+  }, [docList]);
+
   const docDescription = getCleanDocDescription(txType?.description)
-  const requiredDocs = txType?.required_documents || []
+  const requiredDocs = mergedRequiredDocs.length > 0 ? mergedRequiredDocs : (txType?.required_documents || [])
   
   const getTodayStr = () => {
-    const d = new Date();
-    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    const now = new Date()
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
   }
-  const [releaseDate, setReleaseDate] = useState(appt?.release_date || getTodayStr())
+
+  // Pre-fill release date if exists on appointment or step
+  const [releaseDate, setReleaseDate] = useState(
+    appt?.release_date || ''
+  )
+  const [isSettingDate, setIsSettingDate] = useState(false)
+  const [dateError, setDateError] = useState('')
+  const [documentVerified, setDocumentVerified] = useState(false)
+  const [isReleasing, setIsReleasing] = useState(false)
   const [toastMsg, setToastMsg] = useState(null)
+  const toastTimerRef = React.useRef(null)
 
   const showToast = (msg, type = 'success') => {
     setToastMsg({ text: typeof msg === 'string' ? msg : JSON.stringify(msg), type })
-    setTimeout(() => setToastMsg(null), 3000)
+    if (toastTimerRef.current) clearTimeout(toastTimerRef.current)
+    toastTimerRef.current = setTimeout(() => setToastMsg(null), 3500)
   }
-  
-  const [documentVerified, setDocumentVerified] = useState(false)
-  const [isReleasing, setIsReleasing] = useState(false)
+
+  React.useEffect(() => {
+    return () => {
+      if (toastTimerRef.current) clearTimeout(toastTimerRef.current)
+    }
+  }, [])
+
+  // Map step icon depending on location / step name
+  const getStepIcon = (step, idx) => {
+    const name = (step.step_name || '').toLowerCase()
+    if (name.includes('receipt') || name.includes('payment')) return <ShieldCheck size={16} />
+    if (name.includes('form') || name.includes('filing')) return <FileText size={16} />
+    if (name.includes('verification') || name.includes('evaluation')) return <UserCheck size={16} />
+    if (name.includes('release') || name.includes('claim')) return <Sparkles size={16} />
+    return <CircleDot size={16} />
+  }
+
+  const handleSaveDate = async () => {
+    if (!releaseDate) {
+      setDateError('Please choose a valid release date.')
+      return
+    }
+    setDateError('')
+    setIsSettingDate(true)
+    try {
+      if (onSetReleaseDate) {
+        await onSetReleaseDate(ticket.id, releaseDate)
+        setLocalTicket(prev => ({
+          ...prev,
+          appointments: {
+            ...prev.appointments,
+            release_date: releaseDate
+          }
+        }))
+      }
+    } catch (err) {
+      setDateError(err.message || 'Failed to update release date')
+    } finally {
+      setIsSettingDate(false)
+    }
+  }
 
   return createPortal((
     <div className="fixed inset-0 z-1000 flex items-center justify-center p-4 sm:p-6 md:p-8">
       {/* Backdrop */}
       <div 
-        className="fixed inset-0 bg-black/60 transition-opacity duration-300" 
+        className="fixed inset-0 bg-black/60 backdrop-blur-xs transition-opacity duration-300" 
         onClick={onClose} 
       />
 
@@ -223,11 +285,21 @@ export default function QueueDetailsModal({ ticketData, onClose, onConfirm, conf
             </div>
             <div className="flex-1 min-w-0">
               <span className="text-fluid-10-5 text-text-muted uppercase font-extrabold tracking-wider block mb-1">
-                Requested Document
+                {docList.length > 1 ? `Requested Documents (${docList.length})` : 'Requested Document'}
               </span>
-              <div className="text-fluid-16 font-bold text-text-main leading-snug mb-1.5">
-                {txType?.name || 'Standard Service'}
-              </div>
+              {docList.length > 1 ? (
+                <div className="flex flex-wrap gap-1.5 mb-2 mt-1">
+                  {docList.map((d, idx) => (
+                    <span key={d.id || idx} className="text-xs font-bold text-maroon bg-maroon-light py-0.5 px-2 rounded-md border border-maroon-border/40">
+                      {d.name}
+                    </span>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-fluid-16 font-bold text-text-main leading-snug mb-1.5">
+                  {txType?.name || 'Standard Service'}
+                </div>
+              )}
               <div className="text-fluid-12 text-text-sub flex items-center gap-1.5 font-medium mb-2">
                 <Calendar size={13} className="text-gold shrink-0" />
                 <span>
@@ -235,7 +307,7 @@ export default function QueueDetailsModal({ ticketData, onClose, onConfirm, conf
                   {appt?.time_slot && ` • ${fmt12hTime(appt.time_slot)}`}
                 </span>
               </div>
-              {docDescription && (
+              {docDescription && docList.length <= 1 && (
                 <p className="text-fluid-12-5 text-text-sub font-normal m-0 leading-relaxed">
                   {docDescription}
                 </p>
@@ -250,7 +322,7 @@ export default function QueueDetailsModal({ ticketData, onClose, onConfirm, conf
             {requiredDocs.length > 0 && (
               <div>
                 <span className="text-fluid-10-5 font-extrabold text-text-muted uppercase tracking-wider mb-2 flex items-center gap-1.5">
-                  <ClipboardList size={14} className="text-gold" /> Required Document Attachments
+                  <ClipboardList size={14} className="text-gold" /> Required Document Clearances & Attachments
                 </span>
                 <div className="flex flex-wrap gap-2">
                   {requiredDocs.map((doc, i) => (

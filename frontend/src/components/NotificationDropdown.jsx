@@ -47,7 +47,7 @@ export default function NotificationDropdown({ isMobile = false }) {
   }, []);
 
   const handleMarkRead = async (id, e) => {
-    e.stopPropagation();
+    if (e?.stopPropagation) e.stopPropagation();
     try {
       await markNotificationRead(token, id);
       setNotifications(prev => prev.map(n => n.id === id ? { ...n, is_read: true } : n));
@@ -171,7 +171,11 @@ export default function NotificationDropdown({ isMobile = false }) {
               ) : (
                 <div className="flex flex-col divide-y divide-border/60">
                   {notifications.map(n => (
-                    <div key={n.id} className={`flex gap-3 p-3.5 sm:p-3.5 transition-colors ${!n.is_read ? 'bg-maroon/5' : 'bg-white hover:bg-off-white'}`}>
+                    <div 
+                      key={n.id} 
+                      onClick={() => !n.is_read && handleMarkRead(n.id)}
+                      className={`flex gap-3 p-3.5 sm:p-3.5 transition-colors cursor-pointer ${!n.is_read ? 'bg-maroon/5 hover:bg-maroon/10' : 'bg-white hover:bg-off-white'}`}
+                    >
                       <div className="shrink-0 mt-0.5">
                         {getIcon(n.type)}
                       </div>

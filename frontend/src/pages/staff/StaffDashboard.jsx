@@ -98,9 +98,19 @@ function CompactQueuePreview({ queue, loading, onNavigate }) {
                     </span>
                   )}
                 </div>
-                <div className="text-fluid-11-5 text-text-muted font-medium truncate">
-                  {txName}
-                </div>
+                {ticket.appointments?.selected_documents && ticket.appointments.selected_documents.length > 1 ? (
+                  <div className="flex flex-wrap gap-1 mt-0.5">
+                    {ticket.appointments.selected_documents.map((d, idx) => (
+                      <span key={idx} className="text-fluid-9 font-bold px-1.5 py-0.2 rounded bg-maroon-light text-maroon border border-maroon-border/40">
+                        {d.name}
+                      </span>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-fluid-11-5 text-text-muted font-medium truncate">
+                    {txName}
+                  </div>
+                )}
               </div>
             </div>
 
@@ -181,6 +191,23 @@ export default function StaffDashboard() {
   const [visitedTabs, setVisitedTabs] = useState(new Set(['overview']))
   const [profileOpen, setProfileOpen] = useState(false)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+
+  // Sync sidebar width CSS variable for layout-aligned overlays (like ToastContainer)
+  useEffect(() => {
+    const checkWidth = () => {
+      if (window.innerWidth >= 768) {
+        document.documentElement.style.setProperty('--cf-sidebar-width', '240px')
+      } else {
+        document.documentElement.style.setProperty('--cf-sidebar-width', '0px')
+      }
+    }
+    checkWidth()
+    window.addEventListener('resize', checkWidth)
+    return () => {
+      window.removeEventListener('resize', checkWidth)
+      document.documentElement.style.removeProperty('--cf-sidebar-width')
+    }
+  }, [])
 
   const handleNavChange = useCallback((tabId) => {
     setActiveNav(tabId)

@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react'
 import { createPortal } from 'react-dom'
 import { useAuth } from '../../context/useAuth'
 import { useStaffEvent } from '../../context/WebSocketContext'
+import { useToast } from '../../context/ToastContext'
 import { getTodaysQueue, confirmStep, callTicket, remindStudent, getLiveQueueStats } from '../../services/queueService'
 import { updateReleaseDate } from '../../services/adminService'
 import { getTransactionTypes } from '../../services/appointmentService'
@@ -251,14 +252,17 @@ export default function LiveQueuePage({ onNavigate }) {
   const [filters, setFilters]   = useState({ status: 'active', priority: 'all', transactionType: 'all' })
   const [viewingTicketId, setViewingTicketId] = useState(null)
   const [completedPage, setCompletedPage] = useState(1)
-  const [toastMsg, setToastMsg] = useState(null)
   const [availableTxTypes, setAvailableTxTypes] = useState([])
+  const toast = useToast()
 
   const [queueStats, setQueueStats] = useState({ avg_wait_minutes: 0, peak_forecast: 'No Data' })
 
   const showToast = (msg, type = 'success') => {
-    setToastMsg({ text: typeof msg === 'string' ? msg : JSON.stringify(msg), type })
-    setTimeout(() => setToastMsg(null), 3500)
+    const text = typeof msg === 'string' ? msg : JSON.stringify(msg)
+    if (type === 'error') toast.error(text)
+    else if (type === 'warning') toast.warning(text)
+    else if (type === 'info') toast.info(text)
+    else toast.success(text)
   }
 
   useEffect(() => {
@@ -471,9 +475,18 @@ export default function LiveQueuePage({ onNavigate }) {
 
         {/* Transaction */}
         <div>
-          <div className="text-xs font-semibold text-text-main leading-snug">{txName}</div>
+          {appt?.selected_documents && appt.selected_documents.length > 1 ? (
+            <div className="flex flex-wrap gap-1 mb-1">
+              {appt.selected_documents.map((d, idx) => (
+                <span key={d.id || idx} className="text-[11px] font-semibold text-maroon bg-maroon-light py-0.5 px-2 rounded-md border border-maroon-border/30">
+                  {d.name}
+                </span>
+              ))}
+            </div>
+          ) : (
+            <div className="text-xs font-semibold text-text-main leading-snug">{txName}</div>
+          )}
           <div className="text-fluid-11 text-text-muted mt-0.5">{fmt12h(appt?.time_slot) || '—'}</div>
-
         </div>
 
         {/* Status + Progress */}
@@ -760,27 +773,6 @@ export default function LiveQueuePage({ onNavigate }) {
           onSetReleaseDate={handleSetReleaseDate}
           onNavigate={onNavigate}
         />
-      )}
-
-      {/* ── Toast Notification ── */}
-      {toastMsg && (
-        <div className={`fixed bottom-10 right-8 z-9999 flex items-center gap-3 px-5 py-3.5 rounded-xl shadow-[0_12px_32px_rgba(0,0,0,0.18)] border text-fluid-13-5 font-bold animate-fade-up ${
-          toastMsg.type === 'error'
-            ? 'bg-danger text-white border-danger-border'
-            : 'bg-[#006600] text-white border-[#005200]'
-        }`}>
-          {toastMsg.type === 'error' ? (
-            <AlertTriangle size={17} className="shrink-0 text-white" />
-          ) : (
-            <div className="w-5 h-5 rounded-full bg-white/20 flex items-center justify-center shrink-0">
-              <Check size={13} className="text-white stroke-3" />
-            </div>
-          )}
-          <span className="text-white">{toastMsg.text}</span>
-          <button onClick={() => setToastMsg(null)} className="ml-2.5 bg-transparent border-none text-white/80 hover:text-white cursor-pointer p-0 flex items-center shrink-0 transition-opacity">
-            <X size={14} strokeWidth={2.5} />
-          </button>
-        </div>
       )}
 
     </div>

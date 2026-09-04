@@ -7,7 +7,7 @@ import { useToast } from '../../context/ToastContext'
 import StudentLayout from '../../components/layout/StudentLayout'
 import { getMyQueue, activateQueue, getTimeEstimate, getMyDocumentsToClaim } from '../../services/queueService'
 import { getMyAppointments, cancelAppointment } from '../../services/appointmentService'
-import { Clock, Hourglass, PartyPopper, Ticket, Calendar, Inbox, Cog, FileCheck, FileSignature, Loader2 } from 'lucide-react'
+import { Clock, Hourglass, PartyPopper, Ticket, Calendar, Inbox, Cog, FileCheck, FileSignature, Loader2, FileText, MapPin, Tag } from 'lucide-react'
 
 const STEP_STYLE = {
   pending:     { bg: '#F9F9F9', color: '#706B65' }, // text-text-sub
@@ -109,6 +109,11 @@ export default function MyQueue({ embedded = false }) {
 
         // If NOT activated, only show if today or future (removes unactivated past due tickets)
         return a.appointment_date >= currentToday;
+      }).sort((a, b) => {
+        const dateA = a.appointment_date || '';
+        const dateB = b.appointment_date || '';
+        if (dateA !== dateB) return dateA.localeCompare(dateB);
+        return (a.time_slot || '').localeCompare(b.time_slot || '');
       }))
     } catch {
       // non-fatal
@@ -315,7 +320,7 @@ export default function MyQueue({ embedded = false }) {
           onClick={() => setActiveTab('upcoming')}
           className={`flex-1 py-2 sm:py-2.5 px-3 sm:px-4 rounded-xl border-none text-xs sm:text-sm font-bold cursor-pointer transition-all duration-200 font-sans ${activeTab === 'upcoming' ? 'bg-maroon-light text-maroon shadow-2xs' : 'bg-transparent text-text-sub hover:bg-off-white'}`}
         >
-          Upcoming Tickets
+          Upcoming Appointment Tickets
         </button>
       </div>
 
@@ -411,16 +416,33 @@ export default function MyQueue({ embedded = false }) {
                 
                 <div className="flex flex-col sm:flex-row sm:justify-between sm:items-end gap-3 sm:gap-0 pt-2 border-t border-border/70">
                   <div>
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="text-xs sm:text-[13px] font-bold text-text-main">
-                        {ticket.appointments?.transaction_types?.name || ticket.transaction_type || 'Registrar Service'}
-                      </span>
-                      {ticket.priority_class && ticket.priority_class !== 'regular' && (
-                        <span className="text-[10px] bg-maroon-light text-maroon font-extrabold px-2 py-0.5 rounded-md uppercase border border-maroon-border/60">
-                          {ticket.priority_class === 'pwd' ? 'PWD' : ticket.priority_class}
+                    {ticket.appointments?.selected_documents && ticket.appointments.selected_documents.length > 1 ? (
+                      <div className="mb-1.5">
+                        <div className="flex flex-wrap items-center gap-1.5 mb-1">
+                          {ticket.appointments.selected_documents.map((d, idx) => (
+                            <span key={d.id || idx} className="text-xs font-bold text-maroon bg-maroon-light py-0.5 px-2 rounded-md border border-maroon-border/40">
+                              {d.name}
+                            </span>
+                          ))}
+                          {ticket.priority_class && ticket.priority_class !== 'regular' && (
+                            <span className="text-[10px] bg-maroon-light text-maroon font-extrabold px-2 py-0.5 rounded-md uppercase border border-maroon-border/60">
+                              {ticket.priority_class === 'pwd' ? 'PWD' : ticket.priority_class}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="text-xs sm:text-[13px] font-bold text-text-main">
+                          {ticket.appointments?.transaction_types?.name || ticket.transaction_type || 'Registrar Service'}
                         </span>
-                      )}
-                    </div>
+                        {ticket.priority_class && ticket.priority_class !== 'regular' && (
+                          <span className="text-[10px] bg-maroon-light text-maroon font-extrabold px-2 py-0.5 rounded-md uppercase border border-maroon-border/60">
+                            {ticket.priority_class === 'pwd' ? 'PWD' : ticket.priority_class}
+                          </span>
+                        )}
+                      </div>
+                    )}
                     <p className="text-[11px] sm:text-xs text-text-sub m-0 font-medium">
                       Location: <strong className="text-text-main font-bold">{getStepLocationLabel(currentStep)}</strong> &bull; Step {ticket.current_step || 1} of {steps.length || ticket.total_steps || 1} ({currentStep?.step_name || 'Processing'})
                     </p>
@@ -791,6 +813,11 @@ export default function MyQueue({ embedded = false }) {
               const isCurrent = ticket && (ticket.appointment_id === appt.id || ticket.appointments?.id === appt.id);
               if (hasActive || isCurrent) return true;
               return appt.appointment_date >= today;
+            }).sort((a, b) => {
+              const dateA = a.appointment_date || '';
+              const dateB = b.appointment_date || '';
+              if (dateA !== dateB) return dateA.localeCompare(dateB);
+              return (a.time_slot || '').localeCompare(b.time_slot || '');
             });
             if (validUpcoming.length === 0) {
               return (
@@ -826,98 +853,248 @@ export default function MyQueue({ embedded = false }) {
                     const isAnotherTicketActiveForToday = ticket && ticket.status !== 'completed' && !isCurrentTicketForThisAppt && ((ticket.appointments?.appointment_date || ticket.appointment_date) === today);
 
                     return (
-                      <div key={appt.id} className="bg-white rounded-2xl border border-border p-6 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden group">
-                        <div className={`absolute top-0 left-0 w-1.5 h-full transition-colors ${
-                          isReadyForPickup ? 'bg-success' : (isFutureApptScheduled || isActivated) ? 'bg-gold' : 'bg-border group-hover:bg-maroon'
+                      <div 
+                        key={appt.id} 
+                        className={`bg-white rounded-3xl border shadow-sm transition-all relative overflow-hidden group mb-5 ${
+                          isReadyForPickup 
+                            ? 'border-success-border/80 shadow-[0_4px_16px_rgba(21,128,61,0.08)]' 
+                            : isToday 
+                            ? 'border-gold-border shadow-[0_4px_20px_rgba(184,144,10,0.12)] ring-1 ring-gold/20' 
+                            : 'border-border shadow-[0_4px_16px_rgba(0,0,0,0.04)] hover:shadow-[0_6px_20px_rgba(0,0,0,0.07)]'
+                        }`}
+                      >
+                        {/* Top Accent Ticket Stripe */}
+                        <div className={`h-1.5 w-full ${
+                          isReadyForPickup ? 'bg-success' : isToday ? 'bg-linear-to-r from-gold via-gold-dark to-gold' : 'bg-maroon'
                         }`} />
-                        
-                        <div className="flex flex-col sm:flex-row justify-between items-start gap-3 sm:gap-0 mb-4 pl-1">
-                          <div>
-                            <h3 className="text-[16px] font-bold text-text-main m-0 mb-1.5 leading-tight">{appt.transaction_types?.name}</h3>
-                            <span className="inline-flex items-center gap-1.5 text-[12px] font-semibold py-1 px-3 rounded-full bg-surface text-text-muted border border-border">
-                              <Calendar size={12} className="text-text-muted" /> {new Date(appt.appointment_date).toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' })} at {fmt12h(appt.time_slot)}
-                            </span>
+
+                        <div className="grid grid-cols-1 md:grid-cols-12 relative">
+                          {/* ── Left Ticket Section (Main Body) ── */}
+                          <div className="md:col-span-8 p-5 sm:p-6 flex flex-col justify-between">
+                            <div>
+                              {/* Header Meta Row */}
+                              <div className="flex items-center justify-between gap-2 mb-3">
+                                <div className="flex items-center gap-1.5 text-text-muted">
+                                  <Ticket size={12} className={isToday ? "text-gold" : "text-maroon"} />
+                                  <span className="text-[10px] font-extrabold uppercase tracking-widest">
+                                    CAMPUSFLOW QUEUE NUMBER
+                                  </span>
+                                  <span className="text-text-muted/60">•</span>
+                                  <span className="font-mono text-[10.5px] text-text-sub font-semibold">
+                                    #APT-{appt.id.slice(0, 8).toUpperCase()}
+                                  </span>
+                                </div>
+
+                                {/* Dynamic Status Badge */}
+                                {isReadyForPickup ? (
+                                  <span className="shrink-0 text-[10.5px] font-extrabold py-1 px-3 rounded-full bg-success-light text-success border border-success-border uppercase tracking-wider flex items-center gap-1.5 shadow-2xs">
+                                    <FileCheck size={12} /> Ready for Pickup
+                                  </span>
+                                ) : isFutureApptScheduled ? (
+                                  <span className="shrink-0 text-[10.5px] font-extrabold py-1 px-3 rounded-full bg-gold-light text-gold border border-gold-border uppercase tracking-wider flex items-center gap-1.5 shadow-2xs">
+                                    <Calendar size={12} /> Scheduled Release
+                                  </span>
+                                ) : isActivated ? (
+                                  <span className="shrink-0 text-[10.5px] font-extrabold py-1 px-3 rounded-full bg-gold-light text-gold border border-gold-border uppercase tracking-wider flex items-center gap-1.5 shadow-2xs">
+                                    <Clock size={12} /> In Progress
+                                  </span>
+                                ) : isToday ? (
+                                  <span className="shrink-0 text-[10.5px] font-extrabold py-1 px-3 rounded-full bg-gold text-white uppercase tracking-wider shadow-xs animate-pulse">
+                                    Today
+                                  </span>
+                                ) : (
+                                  <span className="shrink-0 text-[10.5px] font-bold py-1 px-3 rounded-full bg-off-white text-text-sub border border-border uppercase tracking-wider">
+                                    Confirmed
+                                  </span>
+                                )}
+                              </div>
+
+                              {/* Title */}
+                              <h3 className="font-serif text-[18px] sm:text-[20px] font-bold text-text-main m-0 mb-2 leading-tight">
+                                {appt.selected_documents && appt.selected_documents.length > 1
+                                  ? `${appt.selected_documents.length} Requested Documents`
+                                  : (appt.transaction_types?.name || 'Transaction')?.replace(/([a-zA-Z])\(/g, '$1 (')
+                                }
+                              </h3>
+
+                              {/* Itemized Requested Documents */}
+                              {appt.selected_documents && appt.selected_documents.length > 1 && (
+                                <div className="flex flex-col gap-1.5 mb-3.5">
+                                  {appt.selected_documents.map((d, idx) => (
+                                    <div key={d.id || idx} className="flex items-center gap-2 py-1 px-2.5 rounded-lg bg-off-white/80 border border-border/70 text-xs font-semibold text-text-main shadow-2xs">
+                                      <div className="w-4.5 h-4.5 rounded-md bg-maroon-light text-maroon flex items-center justify-center shrink-0">
+                                        <FileText size={11} />
+                                      </div>
+                                      <span className="truncate leading-tight">
+                                        {d.name?.replace(/([a-zA-Z])\(/g, '$1 (')}
+                                      </span>
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+
+                              {/* Ticket Stamp Info Box (Date, Time, Location) */}
+                              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 p-3 rounded-2xl bg-surface/80 border border-border/80 shadow-2xs mt-2">
+                                <div>
+                                  <span className="text-[9.5px] font-extrabold text-text-muted uppercase tracking-wider block">Appointment Date</span>
+                                  <span className="font-bold text-text-main text-[12.5px] flex items-center gap-1.5 mt-0.5">
+                                    <Calendar size={12} className="text-gold shrink-0" />
+                                    {new Date(appt.appointment_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                                  </span>
+                                </div>
+                                <div>
+                                  <span className="text-[9.5px] font-extrabold text-text-muted uppercase tracking-wider block">Time Window</span>
+                                  <span className="font-bold text-maroon text-[12.5px] flex items-center gap-1.5 mt-0.5">
+                                    <Clock size={12} className="text-maroon shrink-0" />
+                                    {fmt12h(appt.time_slot)}
+                                  </span>
+                                </div>
+                                <div className="col-span-2 sm:col-span-1">
+                                  <span className="text-[9.5px] font-extrabold text-text-muted uppercase tracking-wider block">Location</span>
+                                  <span className="font-semibold text-text-sub text-[11.5px] flex items-center gap-1.5 mt-0.5 truncate">
+                                    <MapPin size={12} className="text-text-muted shrink-0" />
+                                    Registrar's Office
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+
                           </div>
 
-                          {/* Dynamic Status Badge */}
-                          {isReadyForPickup ? (
-                            <span className="shrink-0 text-[11px] font-extrabold py-1 px-3 rounded-full bg-success-light text-success border border-success-border uppercase tracking-wider self-start flex items-center gap-1.5">
-                              <FileCheck size={13} /> Ready for Pickup
-                            </span>
-                          ) : isFutureApptScheduled ? (
-                            <span className="shrink-0 text-[11px] font-extrabold py-1 px-3 rounded-full bg-gold-light text-gold border border-gold-border uppercase tracking-wider self-start flex items-center gap-1.5">
-                              <Calendar size={13} /> Scheduled ({new Date(relDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })})
-                            </span>
-                          ) : isActivated ? (
-                            <span className="shrink-0 text-[11px] font-extrabold py-1 px-3 rounded-full bg-gold-light text-gold border border-gold-border uppercase tracking-wider self-start flex items-center gap-1.5">
-                              <Clock size={13} /> In Progress
-                            </span>
-                          ) : (
-                            <span className="shrink-0 text-[11px] font-bold py-1 px-3 rounded-full bg-surface text-text-sub border border-border uppercase tracking-wider self-start">
-                              Confirmed
-                            </span>
-                          )}
+                          {/* ── Perforation & Right Ticket Stub ── */}
+                          <div className="md:col-span-4 border-t md:border-t-0 md:border-l border-dashed border-border/80 relative bg-off-white/60 p-5 sm:p-6 flex flex-col justify-between items-center text-center">
+                            {/* Desktop Semicircular Punch Notches */}
+                            <div className="hidden md:block absolute -top-3.5 -left-3.5 w-7 h-7 rounded-full bg-surface border border-border/80 z-10" />
+                            <div className="hidden md:block absolute -bottom-3.5 -left-3.5 w-7 h-7 rounded-full bg-surface border border-border/80 z-10" />
+                            {/* Mobile Semicircular Punch Notches */}
+                            <div className="md:hidden absolute -top-3.5 -left-3.5 w-7 h-7 rounded-full bg-surface border border-border/80 z-10" />
+                            <div className="md:hidden absolute -top-3.5 -right-3.5 w-7 h-7 rounded-full bg-surface border border-border/80 z-10" />
+
+                            {/* Stub Content */}
+                            <div className="w-full flex flex-col items-center justify-center my-auto py-2">
+                              {isReadyForPickup ? (
+                                <>
+                                  <div className="w-12 h-12 rounded-2xl bg-success-light text-success border border-success-border flex items-center justify-center mb-2.5 shadow-2xs">
+                                    <FileCheck size={22} />
+                                  </div>
+                                  <span className="text-[11px] font-extrabold text-success tracking-wider uppercase">Claiming Open</span>
+                                  <p className="text-[11.5px] text-text-sub mt-1 mb-4 leading-snug">
+                                    Your requested documents are ready for counter release.
+                                  </p>
+                                </>
+                              ) : isFutureApptScheduled && liveTicketForAppt ? (
+                                <>
+                                  <div className="w-12 h-12 rounded-2xl bg-gold-light text-gold border border-gold-border flex items-center justify-center mb-2.5 shadow-2xs">
+                                    <Calendar size={22} />
+                                  </div>
+                                  <span className="text-[11px] font-extrabold text-gold tracking-wider uppercase">Scheduled Release</span>
+                                  <p className="text-[11.5px] text-text-sub mt-1 mb-4 leading-snug">
+                                    Scheduled for release on {new Date(relDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}.
+                                  </p>
+                                </>
+                              ) : isActivated ? (
+                                <>
+                                  <div className="w-12 h-12 rounded-2xl bg-gold-light text-gold border border-gold-border flex items-center justify-center mb-2.5 shadow-2xs">
+                                    <Ticket size={22} />
+                                  </div>
+                                  <span className="text-[10px] font-extrabold text-gold tracking-widest uppercase">ACTIVE NUMBER</span>
+                                  <div className="font-serif text-[24px] font-extrabold text-maroon my-0.5">
+                                    {liveTicketForAppt.queue_number}
+                                  </div>
+                                  <p className="text-[11px] text-text-sub mb-3 leading-tight">Currently queued in waiting list</p>
+                                </>
+                              ) : isToday ? (
+                                <>
+                                  <div className="w-12 h-12 rounded-2xl bg-gold text-white flex items-center justify-center mb-2.5 shadow-sm">
+                                    <Ticket size={22} />
+                                  </div>
+                                  <span className="text-[11px] font-extrabold text-gold-dark tracking-wider uppercase">Arrival Activation</span>
+                                  <p className="text-[11.5px] text-text-sub mt-1 mb-4 leading-snug">
+                                    Activate your queue number upon arrival at the Registrar's Office.
+                                  </p>
+                                </>
+                              ) : (
+                                <>
+                                  {/* Clean Calendar Stub Tear-Sheet */}
+                                  <div className="w-18 rounded-2xl border border-border bg-white overflow-hidden shadow-2xs mb-2.5">
+                                    <div className="bg-maroon text-white text-[10px] font-bold uppercase py-1 tracking-wider">
+                                      {new Date(appt.appointment_date).toLocaleDateString('en-US', { month: 'short' })}
+                                    </div>
+                                    <div className="text-[24px] font-extrabold font-serif text-text-main py-1.5 leading-none">
+                                      {new Date(appt.appointment_date).getDate()}
+                                    </div>
+                                  </div>
+                                  <span className="text-[11px] font-bold text-text-sub uppercase tracking-wider">Upcoming Apoointment Ticket</span>
+                                  <p className="text-[11px] text-text-muted mt-0.5 mb-4 leading-snug">
+                                    Queue activation unlocks on scheduled appointment day
+                                  </p>
+                                </>
+                              )}
+                            </div>
+
+                            {/* Stub Action Button */}
+                            <div className="w-full">
+                              {isReadyForPickup ? (
+                                <button
+                                  onClick={() => {
+                                    setActiveTab('active');
+                                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                                  }}
+                                  className="w-full py-2.5 px-4 rounded-xl border border-success-border bg-success text-white hover:bg-success-dark text-xs sm:text-[13px] font-bold font-sans transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs hover:-translate-y-0.5"
+                                >
+                                  <FileCheck size={14} /> View Claim Stub
+                                </button>
+                              ) : isFutureApptScheduled && liveTicketForAppt ? (
+                                <button
+                                  onClick={() => {
+                                    setActiveTab('active');
+                                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                                  }}
+                                  className="w-full py-2.5 px-4 rounded-xl border border-gold-border bg-gold text-white hover:bg-gold-dark text-xs sm:text-[13px] font-bold font-sans transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs hover:-translate-y-0.5"
+                                >
+                                  <Calendar size={14} /> View Ticket ({liveTicketForAppt.queue_number})
+                                </button>
+                              ) : isActivated ? (
+                                <button
+                                  onClick={() => {
+                                    setActiveTab('active');
+                                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                                  }}
+                                  className="w-full py-2.5 px-4 rounded-xl border border-maroon bg-maroon text-white hover:bg-maroon-dark text-xs sm:text-[13px] font-bold font-sans transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs hover:-translate-y-0.5"
+                                >
+                                  <Ticket size={14} /> View Active Ticket
+                                </button>
+                              ) : (
+                                <button
+                                  onClick={() => setActivateConfirmId(appt.id)}
+                                  disabled={activating === appt.id || !isToday || isAnotherTicketActiveForToday}
+                                  title={isAnotherTicketActiveForToday ? "You already have an active queue ticket for today" : ""}
+                                  className={`w-full py-2.5 sm:py-3 px-4 rounded-xl border text-xs sm:text-[13px] font-bold font-sans transition-all flex items-center justify-center gap-1.5 ${
+                                    activating === appt.id ? 'bg-gold-light text-gold border-gold-border cursor-wait' :
+                                    !isToday ? 'bg-white text-text-muted border-border cursor-not-allowed opacity-80' :
+                                    isAnotherTicketActiveForToday ? 'bg-white text-text-muted border-border cursor-not-allowed opacity-80' :
+                                    'bg-gold text-white border-gold-dark cursor-pointer hover:bg-gold-dark shadow-sm hover:-translate-y-0.5'
+                                  }`}
+                                >
+                                  {activating === appt.id ? (
+                                    <>
+                                      <Loader2 size={14} className="animate-spin text-gold" />
+                                      <span>Activating...</span>
+                                    </>
+                                  ) : !isToday ? (
+                                    `Available ${formatShortDate(appt.appointment_date)}`
+                                  ) : isAnotherTicketActiveForToday ? (
+                                    'Ticket Already Active'
+                                  ) : (
+                                    <>
+                                      <Ticket size={15} /> Activate Queue Ticket
+                                    </>
+                                  )}
+                                </button>
+                              )}
+                            </div>
+                          </div>
                         </div>
-                        
-                        {/* Dynamic Action Button */}
-                        {isReadyForPickup ? (
-                          <button
-                            onClick={() => {
-                              setActiveTab('active');
-                              window.scrollTo({ top: 0, behavior: 'smooth' });
-                            }}
-                            className="w-full py-3.5 px-4 rounded-xl border border-success-border bg-success-light text-success hover:bg-success hover:text-white text-[14px] font-bold font-sans transition-all flex items-center justify-center gap-2 cursor-pointer shadow-xs hover:-translate-y-0.5"
-                          >
-                            <FileCheck size={16} /> Ready for Pickup • View Claim Stub
-                          </button>
-                        ) : isFutureApptScheduled && liveTicketForAppt ? (
-                          <button
-                            onClick={() => {
-                              setActiveTab('active');
-                              window.scrollTo({ top: 0, behavior: 'smooth' });
-                            }}
-                            className="w-full py-3.5 px-4 rounded-xl border border-gold-border bg-gold-light text-gold hover:bg-gold hover:text-white text-[14px] font-bold font-sans transition-all flex items-center justify-center gap-2 cursor-pointer shadow-xs hover:-translate-y-0.5"
-                          >
-                            <Calendar size={16} /> Scheduled for Release • View Queue Ticket ({liveTicketForAppt.queue_number})
-                          </button>
-                        ) : isActivated ? (
-                          <button
-                            onClick={() => {
-                              setActiveTab('active');
-                              window.scrollTo({ top: 0, behavior: 'smooth' });
-                            }}
-                            className="w-full py-3.5 px-4 rounded-xl border border-gold-border bg-gold-light text-gold hover:bg-gold hover:text-white text-[14px] font-bold font-sans transition-all flex items-center justify-center gap-2 cursor-pointer shadow-xs hover:-translate-y-0.5"
-                          >
-                            <Ticket size={16} /> In Progress • View Active Queue Ticket ({liveTicketForAppt.queue_number})
-                          </button>
-                        ) : (
-                          <button
-                            onClick={() => setActivateConfirmId(appt.id)}
-                            disabled={activating === appt.id || !isToday || isAnotherTicketActiveForToday}
-                            title={isAnotherTicketActiveForToday ? "You already have an active queue ticket for today" : ""}
-                            className={`w-full py-3.5 px-4 rounded-xl border text-[14px] font-bold font-sans transition-all flex items-center justify-center gap-2 ${
-                              activating === appt.id ? 'bg-gold-light text-gold border-gold-border cursor-wait' :
-                              !isToday ? 'bg-surface text-text-sub border-border cursor-not-allowed opacity-70' :
-                              isAnotherTicketActiveForToday ? 'bg-surface text-text-sub border-border cursor-not-allowed opacity-70' :
-                              'bg-gold text-white border-gold-dark cursor-pointer hover:bg-gold-light hover:text-gold hover:border-gold-light shadow-sm hover:-translate-y-0.5'
-                            }`}
-                          >
-                            {activating === appt.id ? (
-                              <>
-                                <Loader2 size={16} className="animate-spin text-gold" />
-                                <span>Activating Queue Ticket...</span>
-                              </>
-                            ) : !isToday ? (
-                              'Available on Appointment Date'
-                            ) : isAnotherTicketActiveForToday ? (
-                              'Another Ticket is Active'
-                            ) : (
-                              <>
-                                <Ticket size={16} /> Get Queue Number
-                              </>
-                            )}
-                          </button>
-                        )}
                       </div>
                     );
                   })}
@@ -974,7 +1151,7 @@ export default function MyQueue({ embedded = false }) {
         <div className="fixed inset-0 z-9999 flex items-center justify-center p-4 pointer-events-auto">
           <div className="fixed inset-0 bg-black/60 transition-opacity backdrop-blur-2xs" onClick={() => !activating && setActivateConfirmId(null)} />
           <div className="relative bg-white rounded-2xl p-7 max-w-sm w-full shadow-2xl animate-fade-up z-10">
-            <h3 className="text-[18px] font-bold text-text-main m-0 mb-2">Get Queue Number?</h3>
+            <h3 className="text-[18px] font-bold text-text-main m-0 mb-2">Activate Queue Ticket?</h3>
             <p className="text-[14px] text-text-sub m-0 mb-6">
               Are you sure you want to activate your queue ticket now? Make sure you are already at the Campus and you already have the receipt or documents needed.
             </p>

@@ -12,17 +12,20 @@ import AdminOfficeConfigPage from './AdminOfficeConfigPage'
 import AdminAuditLogPage from './AdminAuditLogPage'
 import AdminDocumentsPage from './AdminDocumentsPage'
 import MasterListPage from '../staff/MasterListPage'
-import { Calendar, Ticket, Clock, Bot, Search, Shield, BarChart2, LineChart as LineChartIcon, FolderOpen, Users, Settings, MessageSquare, Bell, LogOut, LayoutDashboard, CheckSquare, CheckCircle, ChevronLeft, ChevronRight, ClipboardList, FileText, Menu, X, PanelLeftClose } from 'lucide-react'
+import PriorityRequestsPage from '../staff/PriorityRequestsPage'
+import IdRequestsPage from '../staff/IdRequestsPage'
+import { Calendar, Ticket, Clock, Bot, Search, Shield, BarChart2, LineChart as LineChartIcon, FolderOpen, Users, Settings, MessageSquare, Bell, LogOut, LayoutDashboard, CheckSquare, CheckCircle, ChevronLeft, ChevronRight, ClipboardList, FileText, Menu, X, PanelLeftClose, ShieldCheck, HelpCircle } from 'lucide-react'
 import {
-  getDashboardStats, getReports
+  getDashboardStats, getReports, getIdRequests
 } from '../../services/adminService'
+import { getPendingPriorityRequests } from '../../services/priorityService'
 import NotificationDropdown from '../../components/NotificationDropdown'
 import AdminGlobalSearch from '../../components/AdminGlobalSearch'
 import DonutChart from '../../components/DonutChart'
 import { getDocumentColor } from '../../utils/colors'
 
 // ── Sidebar Nav Item ───────────────────────────────────────────────────────────
-const SideItem = ({ icon, label, active, onClick }) => (
+const SideItem = ({ icon, label, active, onClick, badge }) => (
   <button 
     onClick={onClick} 
     className={`relative flex items-center gap-3 w-full py-2.5 px-4 rounded-[10px] border-none cursor-pointer text-left font-sans text-fluid-13-5 transition-all duration-300 overflow-hidden
@@ -35,6 +38,11 @@ const SideItem = ({ icon, label, active, onClick }) => (
       {icon}
     </span>
     <span className="flex-1 tracking-wide">{label}</span>
+    {badge > 0 && (
+      <span className="bg-maroon text-white text-fluid-10 font-extrabold px-1.5 py-0.5 rounded-full shrink-0 animate-pulse">
+        {badge}
+      </span>
+    )}
   </button>
 )
 
@@ -494,12 +502,55 @@ function OverviewTab() {
 // MAIN ADMIN DASHBOARD
 // ─────────────────────────────────────────────────────────────────────────────
 export default function AdminDashboard() {
-  const { user, requestLogout } = useAuth()
+  const { user, token, requestLogout } = useAuth()
   const navigate = useNavigate()
   const [activeNav, setActiveNav] = useState('overview')
   const [visitedTabs, setVisitedTabs] = useState(() => new Set(['overview']))
   const [profileOpen, setProfileOpen] = useState(false)
   const [isMobileOpen, setIsMobileOpen] = useState(false)
+  const [badgeStats, setBadgeStats] = useState({ idRequests: 0, priorityRequests: 0 })
+
+  // Sync sidebar width CSS variable for layout-aligned overlays (like ToastContainer)
+  useEffect(() => {
+    const checkWidth = () => {
+      if (window.innerWidth >= 768) {
+        document.documentElement.style.setProperty('--cf-sidebar-width', '240px')
+      } else {
+        document.documentElement.style.setProperty('--cf-sidebar-width', '0px')
+      }
+    }
+    checkWidth()
+    window.addEventListener('resize', checkWidth)
+    return () => {
+      window.removeEventListener('resize', checkWidth)
+      document.documentElement.style.removeProperty('--cf-sidebar-width')
+    }
+  }, [])
+
+  const fetchBadgeStats = useCallback(async () => {
+    try {
+      const [idReqs, prioReqs] = await Promise.all([
+        getIdRequests(token).catch(() => []),
+        getPendingPriorityRequests(token).catch(() => [])
+      ])
+      setBadgeStats({
+        idRequests: (idReqs || []).filter(r => r.status === 'pending').length,
+        priorityRequests: (prioReqs || []).length
+      })
+    } catch (e) {
+      console.error("Error loading admin badge stats", e)
+    }
+  }, [token])
+
+  useStaffEvent(['PRIORITY_REQUESTS_UPDATED', 'ID_REQUESTS_UPDATED'], () => {
+    fetchBadgeStats()
+  })
+
+  useEffect(() => {
+    fetchBadgeStats()
+    const t = setInterval(fetchBadgeStats, 60000)
+    return () => clearInterval(t)
+  }, [fetchBadgeStats])
 
   const handleNavChange = (tabId) => {
     setActiveNav(tabId)
@@ -515,6 +566,8 @@ export default function AdminDashboard() {
         { id: 'reports', icon: <BarChart2 size={18} />, label: 'Analytics' },
         { id: 'queue', icon: <Ticket size={18} />, label: 'Live Queue Monitoring'},
         { id: 'appts', icon: <Calendar size={18} />, label: 'Appointments' },
+        { id: 'priority-requests', icon: <ShieldCheck size={18} />, label: 'Priority Requests', badge: badgeStats.priorityRequests },
+        { id: 'id-requests', icon: <HelpCircle size={18} />, label: 'Id Requests', badge: badgeStats.idRequests },
       ]
     },
     {
@@ -557,6 +610,7 @@ export default function AdminDashboard() {
               {group.items.map(item => (
                 <SideItem key={item.id} icon={item.icon} label={item.label}
                   active={activeNav === item.id}
+                  badge={item.badge}
                   onClick={() => handleNavChange(item.id)} />
               ))}
             </div>
@@ -712,6 +766,16 @@ export default function AdminDashboard() {
           {visitedTabs.has('appts') && (
             <div className={activeNav === 'appts' ? 'block' : 'hidden'}>
               <AdminAppointmentsPage />
+            </div>
+          )}
+          {visitedTabs.has('priority-requests') && (
+            <div className={activeNav === 'priority-requests' ? 'block' : 'hidden'}>
+              <PriorityRequestsPage />
+            </div>
+          )}
+          {visitedTabs.has('id-requests') && (
+            <div className={activeNav === 'id-requests' ? 'block' : 'hidden'}>
+              <IdRequestsPage />
             </div>
           )}
           {visitedTabs.has('records') && (

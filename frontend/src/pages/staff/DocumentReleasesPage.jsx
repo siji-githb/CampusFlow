@@ -2,12 +2,14 @@ import { useState, useEffect, useCallback, useMemo } from 'react'
 import { getUncollectedDocuments, getCollectedDocuments, confirmStep, remindStudent } from '../../services/queueService'
 import { useAuth } from '../../context/useAuth'
 import { useStaffEvent } from '../../context/WebSocketContext'
+import { useToast } from '../../context/ToastContext'
 import { FileText, FolderOpen, AlertTriangle, Search, Check, X, Loader2, Clock, CheckCircle2, RefreshCw, ChevronLeft, ChevronRight, Bell, Calendar } from 'lucide-react'
 
 const ITEMS_PER_PAGE = 10
 
 export default function DocumentReleasesPage() {
   const { token } = useAuth()
+  const toast = useToast()
   const [activeTab, setActiveTab] = useState('uncollected')
   const [uncollected, setUncollected] = useState([])
   const [collected, setCollected] = useState([])
@@ -18,11 +20,13 @@ export default function DocumentReleasesPage() {
   const [markingId, setMarkingId] = useState(null)
   const [remindingId, setRemindingId] = useState(null)
   const [currentPage, setCurrentPage] = useState(1)
-  const [toastMsg, setToastMsg] = useState(null)
 
   const showToast = (msg, type = 'success') => {
-    setToastMsg({ text: typeof msg === 'string' ? msg : JSON.stringify(msg), type })
-    setTimeout(() => setToastMsg(null), 3500)
+    const text = typeof msg === 'string' ? msg : JSON.stringify(msg)
+    if (type === 'error') toast.error(text)
+    else if (type === 'warning') toast.warning(text)
+    else if (type === 'info') toast.info(text)
+    else toast.success(text)
   }
 
   // Format assigned release date safely without timezone shift
@@ -459,9 +463,24 @@ export default function DocumentReleasesPage() {
 
                           {/* Document */}
                           <td className="py-4 px-6">
-                            <div className="text-fluid-13 font-bold text-text-main leading-snug">
-                              {doc.transaction_type}
-                            </div>
+                            {doc.selected_documents && doc.selected_documents.length > 1 ? (
+                              <div className="flex flex-col gap-1">
+                                <div className="text-fluid-13 font-bold text-text-main leading-snug">
+                                  {doc.selected_documents.length} Documents
+                                </div>
+                                <div className="flex flex-wrap gap-1">
+                                  {doc.selected_documents.map((d, idx) => (
+                                    <span key={idx} className="text-fluid-10 font-bold px-2 py-0.5 rounded-md bg-maroon-light text-maroon border border-maroon-border/40">
+                                      {d.name}
+                                    </span>
+                                  ))}
+                                </div>
+                              </div>
+                            ) : (
+                              <div className="text-fluid-13 font-bold text-text-main leading-snug">
+                                {doc.transaction_type}
+                              </div>
+                            )}
                           </td>
 
                           {/* Ready Since (Assigned Release Date) */}
@@ -649,9 +668,24 @@ export default function DocumentReleasesPage() {
 
                         {/* Document */}
                         <td className="py-4 px-6">
-                          <div className="text-fluid-13 font-bold text-text-main leading-snug">
-                            {doc.transaction_type}
-                          </div>
+                          {doc.selected_documents && doc.selected_documents.length > 1 ? (
+                            <div className="flex flex-col gap-1">
+                              <div className="text-fluid-13 font-bold text-text-main leading-snug">
+                                {doc.selected_documents.length} Documents
+                              </div>
+                              <div className="flex flex-wrap gap-1">
+                                {doc.selected_documents.map((d, idx) => (
+                                  <span key={idx} className="text-fluid-10 font-bold px-2 py-0.5 rounded-md bg-maroon-light text-maroon border border-maroon-border/40">
+                                    {d.name}
+                                  </span>
+                                ))}
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="text-fluid-13 font-bold text-text-main leading-snug">
+                              {doc.transaction_type}
+                            </div>
+                          )}
                         </td>
 
                         {/* Collected Timestamp */}
@@ -728,30 +762,6 @@ export default function DocumentReleasesPage() {
         </div>
       )}
       </>
-      )}
-
-      {/* ── Toast Notification (Adhering strictly to #006600 rule) ── */}
-      {toastMsg && (
-        <div className={`fixed bottom-10 right-8 z-10000 flex items-center gap-3 px-5 py-3.5 rounded-xl shadow-[0_12px_32px_rgba(0,0,0,0.18)] border text-fluid-13-5 font-bold animate-fade-up ${
-          toastMsg.type === 'error'
-            ? 'bg-danger text-white border-danger-border'
-            : 'bg-[#006600] text-white border-[#005200]'
-        }`}>
-          {toastMsg.type === 'error' ? (
-            <AlertTriangle size={17} className="shrink-0 text-white" />
-          ) : (
-            <div className="w-5 h-5 rounded-full bg-white/20 flex items-center justify-center shrink-0">
-              <Check size={13} className="text-white stroke-3" />
-            </div>
-          )}
-          <span className="text-white">{toastMsg.text}</span>
-          <button 
-            onClick={() => setToastMsg(null)} 
-            className="ml-2.5 bg-transparent border-none text-white/80 hover:text-white cursor-pointer p-0 flex items-center shrink-0 transition-opacity"
-          >
-            <X size={14} strokeWidth={2.5} />
-          </button>
-        </div>
       )}
 
     </div>

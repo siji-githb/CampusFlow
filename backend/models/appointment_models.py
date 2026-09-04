@@ -4,7 +4,8 @@ from datetime import date
 
 
 class AppointmentCreate(BaseModel):
-    transaction_type_id: str
+    transaction_type_id: Optional[str] = None
+    transaction_type_ids: Optional[List[str]] = None
     appointment_date: date
     time_slot: str
     notes: Optional[str] = None

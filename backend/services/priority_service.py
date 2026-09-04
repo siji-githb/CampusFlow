@@ -148,6 +148,15 @@ def submit_priority_request(student_id: str, priority_type: str, document_url: s
             "ocr_reasoning": scan["reasoning"],
             "status": "pending",
         }).execute()
+
+        try:
+            student_res = admin.table("users").select("first_name, last_name").eq("id", student_id).single().execute()
+            sname = f"{student_res.data.get('first_name', '')} {student_res.data.get('last_name', '')}".strip() or "A student"
+        except Exception:
+            sname = "A student"
+            
+        from services.notification_service import notify_staff_priority_request
+        notify_staff_priority_request(sname, priority_type)
         manager.broadcast_staff_event("PRIORITY_REQUESTS_UPDATED")
         return res.data[0]
     except Exception as e:

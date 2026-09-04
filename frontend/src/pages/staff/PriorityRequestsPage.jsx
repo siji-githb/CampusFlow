@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { createPortal } from 'react-dom'
 import { useAuth } from '../../context/useAuth'
 import { useStaffEvent } from '../../context/WebSocketContext'
+import { useToast } from '../../context/ToastContext'
 import { getPendingPriorityRequests, approvePriorityRequest, rejectPriorityRequest } from '../../services/priorityService'
 import { Check, X, ShieldCheck, Image as ImageIcon, Clock, Sparkles, ZoomIn, ZoomOut, RotateCcw, Loader2 } from 'lucide-react'
 
@@ -85,6 +86,7 @@ export default function PriorityRequestsPage() {
   const [rejectReason, setRejectReason] = useState('')
   const [isConfirming, setIsConfirming] = useState(null)
   const [previewUrl, setPreviewUrl] = useState(null)
+  const toast = useToast()
 
   const loadRequests = useCallback(async (showSkeleton = true) => {
     try {
@@ -113,9 +115,10 @@ export default function PriorityRequestsPage() {
     setIsConfirming(id)
     try {
       await approvePriorityRequest(token, id)
+      toast.success('Priority request approved successfully!')
       await loadRequests()
     } catch (err) {
-      alert("Failed to approve: " + err.message)
+      toast.error('Failed to approve: ' + err.message)
     } finally {
       setIsConfirming(null)
     }
@@ -123,7 +126,7 @@ export default function PriorityRequestsPage() {
 
   const handleReject = async (id) => {
     if (!rejectReason.trim()) {
-      alert('Please enter a rejection reason.')
+      toast.warning('Please enter a rejection reason.')
       return
     }
     setIsConfirming(id)
@@ -131,9 +134,10 @@ export default function PriorityRequestsPage() {
       await rejectPriorityRequest(token, id, rejectReason.trim())
       setRejectingId(null)
       setRejectReason('')
+      toast.success('Priority request rejected.')
       await loadRequests()
     } catch (err) {
-      alert("Failed to reject: " + err.message)
+      toast.error('Failed to reject: ' + err.message)
     } finally {
       setIsConfirming(null)
     }

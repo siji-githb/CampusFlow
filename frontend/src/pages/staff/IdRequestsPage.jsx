@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import { createPortal } from 'react-dom'
 import { useAuth } from '../../context/useAuth'
 import { useStaffEvent } from '../../context/WebSocketContext'
+import { useToast } from '../../context/ToastContext'
 import { getIdRequests, updateIdRequestStatus, getStudentRecords, sendIdRequestEmail, deleteIdRequest } from '../../services/adminService'
 import { Check, X, Clock, HelpCircle, Mail, BookOpen, Send, User, Calendar, AtSign, Search, Trash2 } from 'lucide-react'
 
@@ -220,6 +221,7 @@ function EmailModal({ req, token, onClose, onSentAndResolve }) {
 // ── Main Page ──────────────────────────────────────────────────────────────────
 export default function IdRequestsPage() {
   const { token } = useAuth()
+  const toast = useToast()
   const [requests, setRequests] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -259,8 +261,9 @@ export default function IdRequestsPage() {
     try {
       const updated = await updateIdRequestStatus(token, id, status)
       setRequests(prev => prev.map(r => r.id === id ? { ...r, ...updated.data } : r))
+      toast.success(`ID request marked as ${status}`)
     } catch (err) {
-      alert("Failed to update status: " + err.message)
+      toast.error("Failed to update status: " + err.message)
     }
   }
 
@@ -287,10 +290,12 @@ export default function IdRequestsPage() {
       await loadRequests()
 
       if (failed > 0) {
-        setError(`Deleted ${succeeded} of ${results.length} request(s). ${failed} failed — they may have already been removed by another staff member.`)
+        toast.warning(`Deleted ${succeeded} request(s), but ${failed} failed.`)
+      } else {
+        toast.success(`Successfully deleted ${succeeded} request(s)`)
       }
     } catch (err) {
-      setError('Failed to delete requests: ' + err.message)
+      toast.error('Failed to delete requests: ' + err.message)
     } finally {
       setIsDeleting(false)
     }

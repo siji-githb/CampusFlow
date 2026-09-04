@@ -15,26 +15,38 @@ def get_dashboard_stats():
     today = str(date.today())
 
     try:
-        # Today's appointments
+        # Today's appointments (distinct student visits)
         today_appts = admin.table("appointments") \
-            .select("id, status") \
+            .select("id, student_id, time_slot, status") \
             .eq("appointment_date", today) \
             .execute()
 
-        total_today = len(today_appts.data)
-        confirmed = len([a for a in today_appts.data if a["status"] == "confirmed"])
-        completed = len([a for a in today_appts.data if a["status"] == "completed"])
-        cancelled = len([a for a in today_appts.data if a["status"] == "cancelled"])
-        no_show   = len([a for a in today_appts.data if a["status"] == "no_show"])
+        seen_visits = set()
+        status_visits = {"confirmed": set(), "completed": set(), "cancelled": set(), "no_show": set()}
+        for a in (today_appts.data or []):
+            st_id = a.get("student_id")
+            ts = a.get("time_slot")
+            v_key = f"{st_id}_{ts}" if (st_id and ts) else a.get("id")
+            seen_visits.add(v_key)
+            st = a.get("status")
+            if st in status_visits:
+                status_visits[st].add(v_key)
 
-        # Yesterday's appointments
+        total_today = len(seen_visits)
+        confirmed = len(status_visits["confirmed"])
+        completed = len(status_visits["completed"])
+        cancelled = len(status_visits["cancelled"])
+        no_show   = len(status_visits["no_show"])
+
+        # Yesterday's appointments (distinct student visits)
         yesterday = str(date.today() - timedelta(days=1))
         yesterday_appts = admin.table("appointments") \
-            .select("id") \
+            .select("id, student_id, time_slot") \
             .eq("appointment_date", yesterday) \
             .execute()
         
-        total_yesterday = len(yesterday_appts.data)
+        y_visits = set(f"{a.get('student_id')}_{a.get('time_slot')}" if (a.get('student_id') and a.get('time_slot')) else a.get("id") for a in (yesterday_appts.data or []))
+        total_yesterday = len(y_visits)
         
         if total_yesterday == 0:
             vs_yesterday_pct = 100 if total_today > 0 else 0
@@ -97,20 +109,22 @@ def get_dashboard_stats():
             .eq("role", "student") \
             .execute()
 
-        # This week's appointments
+        # This week's appointments (distinct visits)
         week_start = date.today() - timedelta(days=date.today().weekday())
         week_appts = admin.table("appointments") \
-            .select("id") \
+            .select("id, student_id, appointment_date, time_slot") \
             .gte("appointment_date", str(week_start)) \
             .lte("appointment_date", today) \
             .execute()
+        week_visits = set(f"{a.get('student_id')}_{a.get('appointment_date')}_{a.get('time_slot')}" if (a.get('student_id') and a.get('appointment_date') and a.get('time_slot')) else a.get("id") for a in (week_appts.data or []))
 
-        # All-time completed appointments (system-wide)
+        # All-time completed appointments (system-wide distinct completed visits)
         total_completed_res = admin.table("appointments") \
-            .select("id") \
+            .select("id, student_id, appointment_date, time_slot") \
             .eq("status", "completed") \
             .execute()
-        total_completed = len(total_completed_res.data) if total_completed_res.data else 0
+        comp_visits = set(f"{a.get('student_id')}_{a.get('appointment_date')}_{a.get('time_slot')}" if (a.get('student_id') and a.get('appointment_date') and a.get('time_slot')) else a.get("id") for a in (total_completed_res.data or []))
+        total_completed = len(comp_visits)
 
         return {
             "today": {
@@ -123,7 +137,7 @@ def get_dashboard_stats():
             "vs_yesterday_pct": vs_yesterday_pct,
             "active_queue":   len(active_queue.data),
             "total_students": len(total_students.data),
-            "week_total":     len(week_appts.data),
+            "week_total":     len(week_visits),
             "total_completed": total_completed,
             "avg_wait_minutes": avg_wait_minutes,
         }
@@ -154,6 +168,10 @@ def get_reports(days: int = 7, doc_type: str = None):
         completed_with_time = 0
         from datetime import datetime
 
+        seen_date_visits = set()
+        completed_visits = set()
+        cancelled_visits = set()
+        no_show_visits   = set()
         for appt in appts.data:
             raw_tt_name = appt.get("transaction_types", {}).get("name", "Unknown") \
                 if appt.get("transaction_types") else "Unknown"
@@ -168,16 +186,29 @@ def get_reports(days: int = 7, doc_type: str = None):
                     continue
 
             d = appt["appointment_date"]
-            by_date[d] = by_date.get(d, 0) + 1
+            st_id = appt.get("student_id")
+            ts = appt.get("time_slot")
+            visit_k = f"{d}_{st_id}_{ts}" if (st_id and ts) else appt.get("id")
+            if visit_k not in seen_date_visits:
+                seen_date_visits.add(visit_k)
+                by_date[d] = by_date.get(d, 0) + 1
+
+            # Count each requested document towards document demand
             by_type[tt_name] = by_type.get(tt_name, 0) + 1
 
             status = appt["status"]
             by_status[status] = by_status.get(status, 0) + 1
+            if status == "completed":
+                completed_visits.add(visit_k)
+            elif status == "cancelled":
+                cancelled_visits.add(visit_k)
+            elif status == "no_show":
+                no_show_visits.add(visit_k)
 
         total     = sum(by_date.values())
-        completed = by_status.get("completed", 0)
-        cancelled = by_status.get("cancelled", 0)
-        no_show   = by_status.get("no_show", 0)
+        completed = len(completed_visits)
+        cancelled = len(cancelled_visits)
+        no_show   = len(no_show_visits)
 
         # Compute real average processing time from completed steps in period
         steps_res = admin.table("transaction_steps") \
@@ -207,8 +238,8 @@ def get_reports(days: int = 7, doc_type: str = None):
             "cancelled":           cancelled,
             "no_show":             no_show,
             "avg_processing_mins": avg_processing_mins,
-            "completion_rate":     round((completed / total * 100), 1) if total > 0 else 0,
-            "no_show_rate":        round((no_show   / total * 100), 1) if total > 0 else 0,
+            "completion_rate":     min(100.0, round((completed / total * 100), 1)) if total > 0 else 0,
+            "no_show_rate":        min(100.0, round((no_show   / total * 100), 1)) if total > 0 else 0,
             "by_date":   [{"date": k,   "count": v} for k, v in sorted(by_date.items())],
             "by_type":   [{"name": k,   "count": v} for k, v in by_type.items()],
             "by_status": [{"status": k, "count": v} for k, v in by_status.items()],
@@ -223,16 +254,43 @@ def get_registrar_records(days: int = 30):
 
     try:
         records = admin.table("appointments") \
-            .select("*, transaction_types(name), users(first_name, last_name, student_id)") \
+            .select("*, transaction_types(name, required_documents), users(first_name, last_name, student_id)") \
             .gte("appointment_date", str(start_date)) \
             .order("appointment_date", desc=True) \
             .execute()
             
-        for row in records.data:
+        # Group siblings by (student_id, appointment_date, time_slot, status)
+        slot_map = {}
+        for row in (records.data or []):
             raw_tx_name = (row.get("transaction_types") or {}).get("name", "Unknown")
             row["transaction_types"] = row.get("transaction_types", {})
             row["transaction_types"]["name"] = re.sub(r" \(deleted \d+\)$", "", raw_tx_name)
             
+            k = f"{row.get('student_id')}_{row.get('appointment_date')}_{row.get('time_slot')}_{row.get('status')}"
+            if k not in slot_map:
+                slot_map[k] = []
+            slot_map[k].append(row)
+
+        for row in (records.data or []):
+            k = f"{row.get('student_id')}_{row.get('appointment_date')}_{row.get('time_slot')}_{row.get('status')}"
+            siblings = slot_map.get(k, [row])
+            doc_list = []
+            for s in siblings:
+                tt = s.get("transaction_types") or {}
+                if tt and tt.get("name"):
+                    doc_list.append({
+                        "id": s.get("transaction_type_id"),
+                        "name": tt.get("name"),
+                        "required_documents": tt.get("required_documents") or []
+                    })
+            seen = set()
+            u_docs = []
+            for d in doc_list:
+                if d["name"] not in seen:
+                    seen.add(d["name"])
+                    u_docs.append(d)
+            row["selected_documents"] = u_docs
+
         return records.data
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

@@ -123,6 +123,7 @@ export default function StudentProfile({ embedded = false }) {
     e.preventDefault()
     if (!priorityForm.file) {
       setPriorityMsg({ type: 'error', text: 'Please upload a supporting document.' })
+      toast.error('Please upload a supporting document.')
       return
     }
     
@@ -154,12 +155,14 @@ export default function StudentProfile({ embedded = false }) {
         setIsSubmittingPriority(false)
         setPriorityForm({ type: 'pwd', file: null })
         setPriorityMsg({ type: 'success', text: 'Priority status request submitted successfully!' })
+        toast.success('Priority status request submitted successfully!')
         fetchStatus()
       }, 400)
     } catch (err) {
       clearInterval(progressTimer)
       setIsSubmittingPriority(false)
       setPriorityMsg({ type: 'error', text: err.message || 'Failed to submit priority request' })
+      toast.error(err.message || 'Failed to submit priority request')
     }
   }
 

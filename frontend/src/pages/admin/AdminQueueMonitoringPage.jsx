@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react'
 import { createPortal } from 'react-dom'
 import { useAuth } from '../../context/useAuth'
 import { useStaffEvent } from '../../context/WebSocketContext'
+import { useToast } from '../../context/ToastContext'
 import {
   getTodaysQueue,
   getLiveQueueStats,
@@ -293,7 +294,7 @@ export default function AdminQueueMonitoringPage() {
   const [error, setError] = useState('')
   const [lastUpdated, setLastUpdated] = useState(null)
   const [now, setNow] = useState(new Date())
-  const [toastMsg, setToastMsg] = useState(null)
+  const toast = useToast()
 
   // Filters & State
   const [activeTab, setActiveTab] = useState('all_active') // 'all_active', 'counter', 'processing', 'releases', 'completed'
@@ -309,8 +310,11 @@ export default function AdminQueueMonitoringPage() {
   const [confirmingKey, setConfirmingKey] = useState(null)
 
   const showToast = (msg, type = 'success') => {
-    setToastMsg({ text: msg, type })
-    setTimeout(() => setToastMsg(null), 4000)
+    const text = typeof msg === 'string' ? msg : JSON.stringify(msg)
+    if (type === 'error') toast.error(text)
+    else if (type === 'warning') toast.warning(text)
+    else if (type === 'info') toast.info(text)
+    else toast.success(text)
   }
 
   // Update clock every 30s
@@ -512,26 +516,25 @@ export default function AdminQueueMonitoringPage() {
   // ── Donut 2: Document Distribution ──
   const docDistributionDonut = useMemo(() => {
     const counts = {}
-    const seenQueueNumbers = new Set()
     
-    // 1. Count from active queue
+    // 1. Count from active queue (count each requested document towards document demand)
     queue.forEach(q => {
-      const qNum = q.ticket.queue_number
-      if (qNum && !seenQueueNumbers.has(qNum)) {
-        seenQueueNumbers.add(qNum)
+      const docs = q.ticket.appointments?.selected_documents || (q.ticket.appointments?.transaction_types ? [q.ticket.appointments.transaction_types] : []);
+      if (docs.length > 0) {
+        docs.forEach(d => {
+          const name = d.name || 'Other'
+          counts[name] = (counts[name] || 0) + 1
+        })
+      } else {
         const name = q.ticket.appointments?.transaction_types?.name || 'Other'
         counts[name] = (counts[name] || 0) + 1
       }
     })
 
-    // 2. Count uncollected releases (avoiding double-counting if already in queue)
+    // 2. Count uncollected releases
     uncollected.forEach(d => {
-      const qNum = d.queue_number
-      if (qNum && !seenQueueNumbers.has(qNum)) {
-        seenQueueNumbers.add(qNum)
-        const name = d.transaction_type || 'Other'
-        counts[name] = (counts[name] || 0) + 1
-      }
+      const name = d.transaction_type || 'Other'
+      counts[name] = (counts[name] || 0) + 1
     })
 
     const data = Object.entries(counts).map(([name, count]) => ({
@@ -611,6 +614,7 @@ export default function AdminQueueMonitoringPage() {
         student_name: studentName,
         student_id: studentId,
         transaction_type: txName,
+        selected_documents: ticket.appointments?.selected_documents || [],
         priority_class: pClass,
         stage,
         statusKey,
@@ -812,28 +816,6 @@ export default function AdminQueueMonitoringPage() {
 
   return (
     <div className="animate-fade-up font-sans flex flex-col gap-6 w-full pb-10">
-      
-      {/* ── Toast Notification ── */}
-      {toastMsg && (
-        <div className={`fixed bottom-10 right-8 z-9999 flex items-center gap-3 px-5 py-3.5 rounded-xl shadow-[0_12px_32px_rgba(0,0,0,0.18)] border text-fluid-13-5 font-bold animate-fade-up ${
-          toastMsg.type === 'error' 
-            ? 'bg-red-600 text-white border-red-700' 
-            : 'bg-[#006600] text-white border-[#005200]'
-        }`}>
-          {toastMsg.type === 'error' ? (
-            <AlertTriangle size={17} className="shrink-0 text-white" />
-          ) : (
-            <div className="w-5 h-5 rounded-full bg-white/20 flex items-center justify-center shrink-0">
-              <Check size={13} className="text-white stroke-3" />
-            </div>
-          )}
-          <span className="text-white">{toastMsg.text}</span>
-          <button onClick={() => setToastMsg(null)} className="ml-2.5 bg-transparent border-none text-white/80 hover:text-white cursor-pointer p-0 flex items-center shrink-0 transition-opacity">
-            <X size={14} strokeWidth={2.5} />
-          </button>
-        </div>
-      )}
-
       {/* ── Page Header ── */}
       <div className="flex items-end justify-between mb-2 flex-wrap gap-4">
         <div>
@@ -1260,17 +1242,36 @@ export default function AdminQueueMonitoringPage() {
 
                       {/* Document / Service */}
                       <td className="py-4 px-5 whitespace-nowrap">
-                        <span
-                          className="inline-flex items-center gap-1.5 text-fluid-12 font-semibold px-2.5 py-1 rounded-lg border whitespace-nowrap"
-                          style={{
-                            backgroundColor: `${getDocumentColor(item.transaction_type)}12`,
-                            color: getDocumentColor(item.transaction_type),
-                            borderColor: `${getDocumentColor(item.transaction_type)}30`,
-                          }}
-                        >
-                          <FileText size={12} className="shrink-0" />
-                          <span>{item.transaction_type}</span>
-                        </span>
+                        {item.selected_documents && item.selected_documents.length > 1 ? (
+                          <div className="flex flex-wrap gap-1">
+                            {item.selected_documents.map((d, idx) => (
+                              <span
+                                key={d.id || idx}
+                                className="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-md border whitespace-nowrap"
+                                style={{
+                                  backgroundColor: `${getDocumentColor(d.name)}12`,
+                                  color: getDocumentColor(d.name),
+                                  borderColor: `${getDocumentColor(d.name)}30`,
+                                }}
+                              >
+                                <FileText size={11} className="shrink-0" />
+                                <span>{d.name}</span>
+                              </span>
+                            ))}
+                          </div>
+                        ) : (
+                          <span
+                            className="inline-flex items-center gap-1.5 text-fluid-12 font-semibold px-2.5 py-1 rounded-lg border whitespace-nowrap"
+                            style={{
+                              backgroundColor: `${getDocumentColor(item.transaction_type)}12`,
+                              color: getDocumentColor(item.transaction_type),
+                              borderColor: `${getDocumentColor(item.transaction_type)}30`,
+                            }}
+                          >
+                            <FileText size={12} className="shrink-0" />
+                            <span>{item.transaction_type}</span>
+                          </span>
+                        )}
                       </td>
 
                       {/* Target Release Date */}

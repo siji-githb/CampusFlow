@@ -109,6 +109,20 @@ export const isReadyForPickup = (appt) => {
   return false;
 };
 
+export const fmtApptDate = (dateStr) => {
+  if (!dateStr) return '';
+  const [y, m, d] = dateStr.split('-').map(Number);
+  if (!y || !m || !d) return dateStr;
+  return new Date(y, m - 1, d).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
+};
+
+export const fmtLongDate = (dateStr) => {
+  if (!dateStr) return '';
+  const [y, m, d] = dateStr.split('-').map(Number);
+  if (!y || !m || !d) return dateStr;
+  return new Date(y, m - 1, d).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
+};
+
 export const getEffectiveStatus = (appt) => {
   if (!appt) return 'pending';
   if (appt.status === 'cancelled') return 'cancelled';
@@ -178,25 +192,81 @@ function AppointmentDetailsContent({
   const isSelCancelled = selEff === 'cancelled'
   const prioInfo = getPriorityClassInfo(selectedAppt.priority_class, userPriorityClass)
 
+  const docsList = selectedAppt.selected_documents && selectedAppt.selected_documents.length > 0 
+    ? selectedAppt.selected_documents 
+    : (selectedAppt.transaction_types ? [selectedAppt.transaction_types] : []);
+
+  const mergedRequirements = useMemo(() => {
+    const reqs = [];
+    docsList.forEach(d => {
+      (d.required_documents || []).forEach(r => {
+        if (r && !reqs.includes(r)) reqs.push(r);
+      });
+    });
+    return reqs;
+  }, [docsList]);
+
   return (
     <div className="flex flex-col flex-1 h-full">
       {!isMobileModal && (
-        <div className="flex items-start justify-between mb-6 pb-5 border-b border-border">
-          <div>
-            <p className="text-[10px] font-bold text-text-muted tracking-widest uppercase m-0 mb-1.5">TRANSACTION OVERVIEW</p>
-            <h2 className="font-serif text-[22px] font-bold text-text-main m-0 mb-2">{selectedAppt.transaction_types?.name || 'Transaction'}</h2>
-            <span className="text-[11.5px] font-bold py-1.5 px-3 rounded-full inline-flex items-center gap-1.5" style={{ background: selStatusObj.bg, color: selStatusObj.color, border: `1px solid ${selStatusObj.border}` }}>
+        <div className="mb-6 pb-5 border-b border-border">
+          <div className="flex items-center justify-between gap-3 mb-2.5">
+            <p className="text-[10.5px] font-extrabold text-maroon tracking-widest uppercase m-0 flex items-center gap-1.5">
+              <ClipboardList size={13} className="text-maroon" />
+              TRANSACTION OVERVIEW
+            </p>
+            <span className="text-[11.5px] font-bold py-1 px-3 rounded-full inline-flex items-center gap-1.5 shrink-0 shadow-2xs" style={{ background: selStatusObj.bg, color: selStatusObj.color, border: `1px solid ${selStatusObj.border}` }}>
               {isSelReady ? <FileCheck size={13} /> : isSelScheduled ? <Calendar size={13} /> : isSelCompleted ? <CheckCircle size={13} /> : null} {selStatusObj.label}
             </span>
           </div>
+
+          <h2 className="font-serif text-[22px] font-bold text-text-main m-0 mb-3">
+            {docsList.length > 1 ? `${docsList.length} Requested Documents` : (docsList[0]?.name || selectedAppt.transaction_types?.name || 'Transaction')?.replace(/([a-zA-Z])\(/g, '$1 (')}
+          </h2>
+
+          {docsList.length > 1 && (
+            <div className="flex flex-col gap-2 p-3 rounded-2xl bg-off-white/80 border border-border">
+              {docsList.map((d, idx) => (
+                <div key={d.id || idx} className="flex items-center gap-2.5 py-2 px-3 rounded-xl bg-white border border-border/70 shadow-2xs">
+                  <div className="w-6 h-6 rounded-lg bg-maroon-light text-maroon flex items-center justify-center shrink-0 border border-maroon-border/30">
+                    <FileText size={13} />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <span className="text-xs sm:text-[13px] font-bold text-text-main truncate block">
+                      {d.name?.replace(/([a-zA-Z])\(/g, '$1 (')}
+                    </span>
+                    {d.clean_description && (
+                      <span className="text-[11px] text-text-sub truncate block mt-0.5">{d.clean_description}</span>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
 
       {isMobileModal && (
-        <div className="mb-4">
-          <span className="text-[11.5px] font-bold py-1.5 px-3 rounded-full inline-flex items-center gap-1.5" style={{ background: selStatusObj.bg, color: selStatusObj.color, border: `1px solid ${selStatusObj.border}` }}>
-            {isSelReady ? <FileCheck size={13} /> : isSelScheduled ? <Calendar size={13} /> : isSelCompleted ? <CheckCircle size={13} /> : null} {selStatusObj.label}
-          </span>
+        <div className="mb-4 pb-4 border-b border-border">
+          <div className="flex items-center justify-between gap-2 mb-2">
+            <h2 className="font-serif text-lg font-bold text-text-main m-0">
+              {docsList.length > 1 ? `${docsList.length} Requested Documents` : (docsList[0]?.name || selectedAppt.transaction_types?.name || 'Transaction')?.replace(/([a-zA-Z])\(/g, '$1 (')}
+            </h2>
+            <span className="text-[11px] font-bold py-1 px-2.5 rounded-full inline-flex items-center gap-1 shrink-0" style={{ background: selStatusObj.bg, color: selStatusObj.color, border: `1px solid ${selStatusObj.border}` }}>
+              {isSelReady ? <FileCheck size={12} /> : isSelScheduled ? <Calendar size={12} /> : isSelCompleted ? <CheckCircle size={12} /> : null} {selStatusObj.label}
+            </span>
+          </div>
+
+          {docsList.length > 1 && (
+            <div className="flex flex-col gap-1.5 mt-2">
+              {docsList.map((d, idx) => (
+                <div key={d.id || idx} className="flex items-center gap-2 py-1.5 px-2.5 rounded-lg bg-off-white border border-border text-xs font-semibold text-text-main">
+                  <FileText size={12} className="text-maroon shrink-0" />
+                  <span className="truncate">{d.name?.replace(/([a-zA-Z])\(/g, '$1 (')}</span>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
 
@@ -463,7 +533,7 @@ function AppointmentDetailsContent({
               <p className="text-[10px] font-bold text-text-muted tracking-widest uppercase m-0 mb-2 flex items-center gap-1.5">
                 <Calendar size={12} className="text-gold" /> SCHEDULED DATE & TIME
               </p>
-              <p className="text-[13.5px] font-bold text-text-main m-0 mb-0.5">{selectedAppt.appointment_date}</p>
+              <p className="text-[13.5px] font-bold text-text-main m-0 mb-0.5">{fmtLongDate(selectedAppt.appointment_date)}</p>
               <p className="text-[12px] text-text-sub m-0">{fmt12h(selectedAppt.time_slot)}</p>
             </div>
             <div className="p-4.5 rounded-2xl bg-white border border-border shadow-[0_2px_8px_rgba(0,0,0,0.03)]">
@@ -505,8 +575,8 @@ function AppointmentDetailsContent({
               <ShieldCheck size={12} className="text-maroon" /> REQUIRED DOCUMENTS TO BRING
             </p>
             <div className="flex flex-col gap-2 text-[13px] text-text-main">
-              {selectedAppt.transaction_types?.required_documents?.length > 0 ? (
-                selectedAppt.transaction_types.required_documents.map((doc, i) => (
+              {mergedRequirements.length > 0 ? (
+                mergedRequirements.map((doc, i) => (
                   <div key={i} className="flex items-center gap-2.5">
                     <div className="w-4.5 h-4.5 rounded-full bg-success-light border border-success-border text-success flex items-center justify-center text-[10px] font-bold shrink-0">✓</div>
                     <span>{doc}</span>
@@ -912,31 +982,75 @@ export default function MyAppointments({ embedded = false }) {
                         setSelectedApptId(appt.id)
                         setIsMobileViewingDetails(true)
                       }}
-                      className={`group bg-white rounded-2xl p-4.5 shadow-[0_2px_8px_rgba(0,0,0,0.06),0_0_0_1px_rgba(0,0,0,0.04)] transition-all cursor-pointer hover:shadow-[0_4px_12px_rgba(0,0,0,0.08)] ${isSelected ? 'md:ring-2 md:ring-maroon md:shadow-[0_4px_12px_rgba(123,26,42,0.15)]' : ''}`}
+                      className={`group bg-white rounded-2xl p-4 sm:p-5 border border-border shadow-[0_2px_8px_rgba(0,0,0,0.05)] transition-all cursor-pointer hover:shadow-[0_6px_16px_rgba(0,0,0,0.08)] hover:border-maroon/30 ${isSelected ? 'md:ring-2 md:ring-maroon md:shadow-[0_6px_16px_rgba(123,26,42,0.12)] bg-linear-to-b from-white to-maroon-light/10' : ''}`}
                     >
-                      <div className="flex justify-between items-start mb-2.5">
-                        <h3 className="font-serif text-[15.5px] font-bold text-text-main m-0 group-hover:text-maroon transition-colors">{appt.transaction_types?.name || 'Transaction'}</h3>
-                        <span className="text-[11px] font-bold py-1 px-2.5 rounded-full whitespace-nowrap flex items-center gap-1 shrink-0 ml-2" style={{ background: s.bg, color: s.color, border: `1px solid ${s.border}` }}>
+                      <div className="flex justify-between items-start gap-2.5 mb-2.5">
+                        <div className="min-w-0 flex-1">
+                          {appt.selected_documents && appt.selected_documents.length > 1 ? (
+                            <h3 className="font-serif text-[15.5px] font-bold text-text-main m-0 group-hover:text-maroon transition-colors leading-snug">
+                              {appt.selected_documents.length} Requested Documents
+                            </h3>
+                          ) : (
+                            <h3 className="font-serif text-[15.5px] font-bold text-text-main m-0 group-hover:text-maroon transition-colors leading-snug truncate">
+                              {(appt.selected_documents?.[0]?.name || appt.transaction_types?.name || 'Transaction')?.replace(/([a-zA-Z])\(/g, '$1 (')}
+                            </h3>
+                          )}
+                        </div>
+                        <span className="text-[11px] font-bold py-1 px-2.5 rounded-full whitespace-nowrap flex items-center gap-1 shrink-0 shadow-2xs" style={{ background: s.bg, color: s.color, border: `1px solid ${s.border}` }}>
                           {isReady ? <FileCheck size={12} /> : isCompleted ? <CheckCircle size={12} /> : null} {s.label}
                         </span>
                       </div>
-                      <div className="text-[13px] text-text-sub flex flex-col gap-1.5">
-                        <span className="flex items-center gap-1.5"><Calendar size={13} className="text-gold shrink-0" /> {appt.appointment_date} at {fmt12h(appt.time_slot)}</span>
-                        {(() => {
-                          const cardPrio = getPriorityClassInfo(appt.priority_class, user?.priority_class)
-                          return (
-                            <span className="flex items-center gap-1.5">
-                              <Tag size={13} className="text-gold shrink-0" /> Priority: 
-                              <span className={`text-[11px] px-2 py-0.5 rounded-md ml-0.5 font-bold ${cardPrio.badge}`}>
-                                {cardPrio.name}
+
+                      {/* Clean Document List (No wrapping pills) */}
+                      {appt.selected_documents && appt.selected_documents.length > 1 && (
+                        <div className="flex flex-col gap-1.5 my-2.5 p-2 rounded-xl bg-off-white/80 border border-border/70">
+                          {appt.selected_documents.map((d, idx) => (
+                            <div key={d.id || idx} className="flex items-center gap-2 py-1 px-2 rounded-lg bg-white border border-border/60 text-xs font-semibold text-text-main shadow-2xs">
+                              <div className="w-4.5 h-4.5 rounded-md bg-maroon-light text-maroon flex items-center justify-center shrink-0">
+                                <FileText size={10.5} />
+                              </div>
+                              <span className="truncate leading-tight">
+                                {d.name?.replace(/([a-zA-Z])\(/g, '$1 (')}
                               </span>
-                            </span>
-                          )
-                        })()}
-                        {appt.notes && <span className="flex items-start gap-1.5"><FileText size={13} className="text-gold shrink-0 mt-0.5" /> <span className="truncate">{appt.notes}</span></span>}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      <div className="text-[12.5px] text-text-sub flex flex-col gap-2 mt-2.5">
+                        <div className="flex items-center gap-2 text-text-main font-semibold">
+                          <Calendar size={13} className="text-gold shrink-0" />
+                          <span>{fmtApptDate(appt.appointment_date)}</span>
+                          <span className="text-text-muted font-normal">•</span>
+                          <span className="text-maroon font-bold">{fmt12h(appt.time_slot)}</span>
+                        </div>
+
+                        <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                          {(() => {
+                            const cardPrio = getPriorityClassInfo(appt.priority_class, user?.priority_class)
+                            return (
+                              <div className="flex items-center gap-1.5">
+                                <Tag size={12} className="text-text-muted shrink-0" />
+                                <span className="text-text-muted text-[11.5px]">Priority:</span>
+                                <span className={`text-[10.5px] px-1.5 py-0.5 rounded-md font-bold ${cardPrio.badge}`}>
+                                  {cardPrio.name}
+                                </span>
+                              </div>
+                            )
+                          })()}
+
+                          {appt.notes && (
+                            <div className="flex items-center gap-1.5 min-w-0 flex-1">
+                              <ClipboardList size={12} className="text-gold shrink-0" />
+                              <span className="text-text-sub text-[11.5px] truncate font-medium">
+                                {appt.notes.replace(/^PURPOSE:\s*/i, 'Purpose: ')}
+                              </span>
+                            </div>
+                          )}
+                        </div>
                       </div>
 
-                      <div className="flex justify-end items-center mt-3 pt-3 border-t border-border border-dashed text-[12px] font-bold text-maroon">
+                      <div className="flex justify-end items-center mt-3 pt-2.5 border-t border-border/70 border-dashed text-[12px] font-bold text-maroon">
                         <span className="flex items-center gap-1 group-hover:translate-x-0.5 transition-transform">
                           View Details <ChevronRight size={14} />
                         </span>

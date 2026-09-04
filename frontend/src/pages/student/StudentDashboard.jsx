@@ -107,7 +107,9 @@ export default function StudentDashboard({ embedded = false }) {
           isPrep: !!isPrep,
           isCounterActive: !!isCounterActive,
           current_step: stepLabel,
-          transaction_type: qData.ticket.appointments?.transaction_types?.name || 'Registrar'
+          transaction_type: (qData.ticket.appointments?.selected_documents && qData.ticket.appointments.selected_documents.length > 1)
+            ? `${qData.ticket.appointments.selected_documents.length} Documents (${qData.ticket.appointments.selected_documents.map(d => d.name).join(', ')})`
+            : (qData.ticket.appointments?.transaction_types?.name || 'Registrar')
         });
       } else {
         setLiveTicket(null);
@@ -129,7 +131,9 @@ export default function StudentDashboard({ embedded = false }) {
         .slice(0, 3)
         .map(a => ({
           id: a.id,
-          type: a.transaction_types?.name || 'Registrar Transaction',
+          type: (a.selected_documents && a.selected_documents.length > 1)
+            ? `${a.selected_documents.length} Documents (${a.selected_documents.map(d => d.name).join(', ')})`
+            : (a.transaction_types?.name || 'Registrar Transaction'),
           step: 'Registrar',
           date: a.appointment_date === today ? 'Today' : a.appointment_date,
           time: formatTime12(a.time_slot),

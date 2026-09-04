@@ -676,13 +676,30 @@ export default function AppointmentsPage() {
 
                         {/* Transaction */}
                         <td className="py-3.5 px-3.5 sm:px-4">
-                          <div className="text-fluid-13 font-bold text-text-main leading-snug line-clamp-2">
-                            {txName}
-                          </div>
-                          {apt.transaction_types?.required_documents?.length > 0 && (
-                            <span className="text-fluid-10-5 text-text-muted font-medium mt-0.5 block">
-                              {apt.transaction_types.required_documents.length} required document{apt.transaction_types.required_documents.length !== 1 ? 's' : ''}
-                            </span>
+                          {apt.selected_documents && apt.selected_documents.length > 1 ? (
+                            <div>
+                              <div className="flex flex-wrap gap-1 mb-1">
+                                {apt.selected_documents.map((d, idx) => (
+                                  <span key={d.id || idx} className="text-[11px] font-bold text-maroon bg-maroon-light py-0.5 px-2 rounded-md border border-maroon-border/40">
+                                    {d.name}
+                                  </span>
+                                ))}
+                              </div>
+                              <span className="text-fluid-10-5 text-text-muted font-medium block">
+                                {apt.selected_documents.length} requested documents
+                              </span>
+                            </div>
+                          ) : (
+                            <>
+                              <div className="text-fluid-13 font-bold text-text-main leading-snug line-clamp-2">
+                                {txName}
+                              </div>
+                              {apt.transaction_types?.required_documents?.length > 0 && (
+                                <span className="text-fluid-10-5 text-text-muted font-medium mt-0.5 block">
+                                  {apt.transaction_types.required_documents.length} required document{apt.transaction_types.required_documents.length !== 1 ? 's' : ''}
+                                </span>
+                              )}
+                            </>
                           )}
                         </td>
 
@@ -788,8 +805,23 @@ export default function AppointmentsPage() {
 
         const queueTicket = viewDetailsModal.queue_tickets?.[0] || viewDetailsModal.queue_tickets || null
         const txType = viewDetailsModal.transaction_types || viewDetailsModal.transaction_type || {}
+        
+        const docList = viewDetailsModal.selected_documents && viewDetailsModal.selected_documents.length > 0
+          ? viewDetailsModal.selected_documents
+          : (txType && txType.name ? [txType] : []);
+
+        const mergedRequiredDocs = (() => {
+          const reqs = [];
+          docList.forEach(d => {
+            (d.required_documents || []).forEach(r => {
+              if (r && !reqs.includes(r)) reqs.push(r);
+            });
+          });
+          return reqs;
+        })();
+
         const processingSteps = txType?.processing_steps || []
-        const requiredDocs = txType?.required_documents || []
+        const requiredDocs = mergedRequiredDocs.length > 0 ? mergedRequiredDocs : (txType?.required_documents || [])
 
         const formattedDate = new Date(viewDetailsModal.appointment_date + 'T00:00:00').toLocaleDateString('en-US', {
           weekday: 'short',
@@ -882,11 +914,21 @@ export default function AppointmentsPage() {
                   </div>
                   <div className="flex-1 min-w-0">
                     <span className="text-fluid-10-5 text-text-muted uppercase font-extrabold tracking-wider block mb-1">
-                      Requested Document
+                      {docList.length > 1 ? `Requested Documents (${docList.length})` : 'Requested Document'}
                     </span>
-                    <div className="text-fluid-16 font-bold text-text-main leading-snug mb-1.5">
-                      {txType?.name || 'Document Transaction'}
-                    </div>
+                    {docList.length > 1 ? (
+                      <div className="flex flex-wrap gap-1.5 mb-2 mt-1">
+                        {docList.map((d, idx) => (
+                          <span key={d.id || idx} className="text-xs font-bold text-maroon bg-maroon-light py-0.5 px-2 rounded-md border border-maroon-border/40">
+                            {d.name}
+                          </span>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-fluid-16 font-bold text-text-main leading-snug mb-1.5">
+                        {txType?.name || 'Document Transaction'}
+                      </div>
+                    )}
                     <div className="text-fluid-12 text-text-sub flex items-center gap-1.5 font-medium mb-1">
                       <Calendar size={13} className="text-gold shrink-0" />
                       <span>

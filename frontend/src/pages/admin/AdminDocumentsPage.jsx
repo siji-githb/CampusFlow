@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { useAuth } from '../../context/useAuth';
+import { useToast } from '../../context/ToastContext';
 import {
   getTransactionTypes,
   createTransactionType,
@@ -17,11 +18,14 @@ export default function AdminDocumentsPage() {
   const [loading, setLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
-  const [toastMsg, setToastMsg] = useState(null);
+  const toast = useToast();
 
   const showToast = (msg, type = 'success') => {
-    setToastMsg({ text: typeof msg === 'string' ? msg : JSON.stringify(msg), type });
-    setTimeout(() => setToastMsg(null), 3500);
+    const text = typeof msg === 'string' ? msg : JSON.stringify(msg);
+    if (type === 'error') toast.error(text);
+    else if (type === 'warning') toast.warning(text);
+    else if (type === 'info') toast.info(text);
+    else toast.success(text);
   };
 
   // Modal State
@@ -191,27 +195,6 @@ export default function AdminDocumentsPage() {
 
   return (
     <>
-      {/* ── Toast Notification ── */}
-      {toastMsg && (
-        <div className={`fixed bottom-10 right-8 z-9999 flex items-center gap-3 px-5 py-3.5 rounded-xl shadow-[0_12px_32px_rgba(0,0,0,0.18)] border text-fluid-13-5 font-bold animate-fade-up ${
-          toastMsg.type === 'error' 
-            ? 'bg-red-600 text-white border-red-700' 
-            : 'bg-[#006600] text-white border-[#005200]'
-        }`}>
-          {toastMsg.type === 'error' ? (
-            <AlertTriangle size={17} className="shrink-0 text-white" />
-          ) : (
-            <div className="w-5 h-5 rounded-full bg-white/20 flex items-center justify-center shrink-0">
-              <Check size={13} className="text-white stroke-3" />
-            </div>
-          )}
-          <span className="text-white">{toastMsg.text}</span>
-          <button onClick={() => setToastMsg(null)} className="ml-2.5 bg-transparent border-none text-white/80 hover:text-white cursor-pointer p-0 flex items-center shrink-0 transition-opacity">
-            <X size={14} strokeWidth={2.5} />
-          </button>
-        </div>
-      )}
-
       <div className="animate-fade-up font-sans w-full pb-10">
         <div className="mb-6">
           <p className="text-fluid-11 font-bold text-gold tracking-widest uppercase m-0 mb-1.5">System Configuration</p>

@@ -1,11 +1,13 @@
 import { useState, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import { useAuth } from '../../context/useAuth'
+import { useToast } from '../../context/ToastContext'
 import { Edit2, IdCard, Tag, LogOut, Trash2, X, Camera, Loader2, Eye, EyeOff, ChevronLeft } from 'lucide-react'
 import { updateProfile, changePassword, logoutAllDevices, deleteAccount, updateProfilePicture, removeProfilePicture } from '../../services/authService'
 
 export default function StaffProfilePage({ setActiveNav }) {
   const { user, token, updateUser, logout } = useAuth()
+  const toast = useToast()
   
   const [isChangingPassword, setIsChangingPassword] = useState(false)
   const [isEditModalOpen, setIsEditModalOpen] = useState(false)
@@ -53,49 +55,43 @@ export default function StaffProfilePage({ setActiveNav }) {
 
   const handleCloseEditModal = () => {
     setIsEditModalOpen(false)
-    setProfileMsg({ type: '', text: '' })
-    // Clear preview memory
-    if (previewImage && previewImage.startsWith('blob:')) {
-      URL.revokeObjectURL(previewImage)
-    }
-  }
-
-  const handleRemovePicture = () => {
     setPendingProfilePicture(null)
-    setPendingRemovePicture(true)
-    setPreviewImage(null)
+    setPendingRemovePicture(false)
+    setPreviewImage(user?.profile_image || null)
     setProfileMsg({ type: '', text: '' })
   }
 
   const handleFileChange = (e) => {
     const file = e.target.files[0]
     if (!file) return
+    if (!file.type.startsWith('image/')) {
+      setProfileMsg({ type: 'error', text: 'Please select an image file.' })
+      return
+    }
+    if (file.size > 2 * 1024 * 1024) {
+      setProfileMsg({ type: 'error', text: 'Image size must be less than 2MB.' })
+      return
+    }
     
-    // Quick frontend validation
-    const allowedTypes = ['image/jpeg', 'image/png']
-    if (!allowedTypes.includes(file.type)) {
-      setProfileMsg({ type: 'error', text: 'Only PNG and JPEG images are allowed.' })
-      return
-    }
-    if (file.size > 5 * 1024 * 1024) {
-      setProfileMsg({ type: 'error', text: 'Image size exceeds 5MB limit.' })
-      return
-    }
-
     setPendingProfilePicture(file)
     setPendingRemovePicture(false)
-    setPreviewImage(URL.createObjectURL(file))
-    setProfileMsg({ type: '', text: '' })
-    
-    if (fileInputRef.current) {
-      fileInputRef.current.value = ''
-    }
+    const reader = new FileReader()
+    reader.onload = () => setPreviewImage(reader.result)
+    reader.readAsDataURL(file)
   }
 
-  const handleUpdateProfile = async () => {
+  const handleRemovePhoto = () => {
+    setPendingProfilePicture(null)
+    setPendingRemovePicture(true)
+    setPreviewImage(null)
+  }
+
+  const handleSaveProfile = async (e) => {
+    e.preventDefault()
     setProfileMsg({ type: '', text: '' })
+    
     if (!editData.first_name || !editData.last_name || !editData.email) {
-      setProfileMsg({ type: 'error', text: 'All fields are required.' })
+      setProfileMsg({ type: 'error', text: 'Please fill out all required fields.' })
       return
     }
     
@@ -121,11 +117,13 @@ export default function StaffProfilePage({ setActiveNav }) {
       })
       
       setProfileMsg({ type: 'success', text: 'Profile updated successfully!' })
+      toast.success('Profile updated successfully!')
       setTimeout(() => {
         handleCloseEditModal()
       }, 1500)
     } catch (err) {
       setProfileMsg({ type: 'error', text: err.message || 'Failed to update profile' })
+      toast.error(err.message || 'Failed to update profile')
     } finally {
       setIsSavingProfile(false)
     }
@@ -149,6 +147,7 @@ export default function StaffProfilePage({ setActiveNav }) {
         new_password: passwordData.new_password 
       }, token)
       setPasswordMsg({ type: 'success', text: 'Password changed successfully!' })
+      toast.success('Password changed successfully!')
       setPasswordData({ current_password: '', new_password: '', confirm_password: '' })
       setTimeout(() => {
         setIsChangingPassword(false)
@@ -156,6 +155,7 @@ export default function StaffProfilePage({ setActiveNav }) {
       }, 2000)
     } catch (err) {
       setPasswordMsg({ type: 'error', text: err.message || 'Failed to change password' })
+      toast.error(err.message || 'Failed to change password')
     } finally {
       setIsSavingPassword(false)
     }
@@ -170,7 +170,7 @@ export default function StaffProfilePage({ setActiveNav }) {
       await logoutAllDevices(token)
       logout()
     } catch (err) {
-      alert(err.message || 'Failed to logout from all devices')
+      toast.error(err.message || 'Failed to logout from all devices')
       setIsLoggingOutAll(false)
     }
   }
@@ -189,7 +189,7 @@ export default function StaffProfilePage({ setActiveNav }) {
       await deleteAccount(token)
       logout()
     } catch (err) {
-      alert(err.message || 'Failed to delete account')
+      toast.error(err.message || 'Failed to delete account')
       setIsDeletingAccount(false)
       setShowDeleteConfirm(false)
       setDeleteConfirmText('')

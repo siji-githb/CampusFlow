@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { createPortal } from 'react-dom'
 import { useAuth } from '../../context/useAuth'
+import { useToast } from '../../context/ToastContext'
 import { getRegistrarRecords } from '../../services/adminService'
 import { ChevronDown, Download, RefreshCw, AlertTriangle, Search, X as XIcon, FolderOpen, Printer, Check, Clipboard, CheckCircle, Clock, Archive, Calendar } from 'lucide-react'
 
@@ -115,11 +116,14 @@ export default function AdminRegistrarRecordsPage() {
   const [viewingRecord, setViewingRecord] = useState(null)
   const [months, setMonths]           = useState(1)
   const [openDropdown, setOpenDropdown] = useState(null)
-  const [toastMsg, setToastMsg]       = useState(null)
+  const toast = useToast()
 
   const showToast = (msg, type = 'success') => {
-    setToastMsg({ text: typeof msg === 'string' ? msg : JSON.stringify(msg), type })
-    setTimeout(() => setToastMsg(null), 3500)
+    const text = typeof msg === 'string' ? msg : JSON.stringify(msg)
+    if (type === 'error') toast.error(text)
+    else if (type === 'warning') toast.warning(text)
+    else if (type === 'info') toast.info(text)
+    else toast.success(text)
   }
 
   const PER_PAGE = 8
@@ -134,10 +138,11 @@ export default function AdminRegistrarRecordsPage() {
         student: `${r.users?.first_name || ''} ${r.users?.last_name || ''}`.trim(),
         studentId: r.users?.student_id || 'N/A',
         type: r.transaction_types?.name || 'Unknown',
+        selected_documents: r.selected_documents || [],
         requested: new Date(r.created_at).toLocaleDateString('en-PH', { year: 'numeric', month: 'short', day: 'numeric' }),
         processed: (r.status === 'pending' || r.status === 'processing') ? '—' : new Date(r.appointment_date).toLocaleDateString('en-PH', { year: 'numeric', month: 'short', day: 'numeric' }),
         status: r.status,
-        copies: 1,
+        copies: (r.selected_documents && r.selected_documents.length > 0) ? r.selected_documents.length : 1,
       }))
       setRecords(mapped)
     }
@@ -200,27 +205,6 @@ export default function AdminRegistrarRecordsPage() {
 
   return (
     <div className="animate-fade-up font-sans w-full pb-10">
-      {/* ── Toast Notification ── */}
-      {toastMsg && (
-        <div className={`fixed bottom-10 right-8 z-9999 flex items-center gap-3 px-5 py-3.5 rounded-xl shadow-[0_12px_32px_rgba(0,0,0,0.18)] border text-fluid-13-5 font-bold animate-fade-up ${
-          toastMsg.type === 'error' 
-            ? 'bg-red-600 text-white border-red-700' 
-            : 'bg-[#006600] text-white border-[#005200]'
-        }`}>
-          {toastMsg.type === 'error' ? (
-            <AlertTriangle size={17} className="shrink-0 text-white" />
-          ) : (
-            <div className="w-5 h-5 rounded-full bg-white/20 flex items-center justify-center shrink-0">
-              <Check size={13} className="text-white stroke-3" />
-            </div>
-          )}
-          <span className="text-white">{toastMsg.text}</span>
-          <button onClick={() => setToastMsg(null)} className="ml-2.5 bg-transparent border-none text-white/80 hover:text-white cursor-pointer p-0 flex items-center shrink-0 transition-opacity">
-            <XIcon size={14} strokeWidth={2.5} />
-          </button>
-        </div>
-      )}
-
       {/* ── Header ── */}
       <div className="flex items-end justify-between mb-6 flex-wrap gap-3">
         <div>
@@ -338,9 +322,19 @@ export default function AdminRegistrarRecordsPage() {
                         <div className="flex items-center gap-2">
                           <div className="text-fluid-11 font-medium text-text-muted font-mono">{rec.studentId}</div>
                           <div className="w-1 h-1 rounded-full bg-border" />
-                          <div className="flex items-center gap-1.5 min-w-0">
-                            <div className="w-2 h-2 rounded-full shrink-0" style={{ background: typeColor }} />
-                            <span className="text-fluid-12 font-medium text-text-sub overflow-hidden text-ellipsis whitespace-nowrap">{rec.type}</span>
+                          <div className="flex items-center gap-1.5 min-w-0 flex-wrap">
+                            {rec.selected_documents && rec.selected_documents.length > 1 ? (
+                              rec.selected_documents.map((d, idx) => (
+                                <span key={d.id || idx} className="text-[10.5px] font-bold text-maroon bg-maroon-light py-0.5 px-2 rounded-md border border-maroon-border/30">
+                                  {d.name}
+                                </span>
+                              ))
+                            ) : (
+                              <>
+                                <div className="w-2 h-2 rounded-full shrink-0" style={{ background: typeColor }} />
+                                <span className="text-fluid-12 font-medium text-text-sub overflow-hidden text-ellipsis whitespace-nowrap">{rec.type}</span>
+                              </>
+                            )}
                           </div>
                         </div>
                       </div>
@@ -566,10 +560,21 @@ export default function AdminRegistrarRecordsPage() {
                   </div>
                   {/* Document Info */}
                   <div>
-                    <h3 className="text-fluid-11 font-bold text-text-muted uppercase tracking-[0.06em] m-0 mb-3">Document Details</h3>
-                    <div className="text-fluid-15 font-semibold text-text-main">{viewingRecord.type}</div>
-                    <div className="text-fluid-13 text-text-sub mt-1">Copies Requested: {viewingRecord.copies}</div>
-                    <div className="text-fluid-13 text-text-sub mt-1">Purpose: Employment / Reference</div>
+                    <h3 className="text-fluid-11 font-bold text-text-muted uppercase tracking-[0.06em] m-0 mb-3">
+                      {viewingRecord.selected_documents && viewingRecord.selected_documents.length > 1 ? `Documents (${viewingRecord.selected_documents.length})` : 'Document Details'}
+                    </h3>
+                    {viewingRecord.selected_documents && viewingRecord.selected_documents.length > 1 ? (
+                      <div className="flex flex-wrap gap-1.5 mb-2 mt-1">
+                        {viewingRecord.selected_documents.map((d, idx) => (
+                          <span key={d.id || idx} className="text-xs font-bold text-maroon bg-maroon-light py-0.5 px-2 rounded-md border border-maroon-border/40">
+                            {d.name}
+                          </span>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-fluid-15 font-semibold text-text-main">{viewingRecord.type}</div>
+                    )}
+                    <div className="text-fluid-13 text-text-sub mt-1">Total Documents: {viewingRecord.copies}</div>
                   </div>
                 </div>
 

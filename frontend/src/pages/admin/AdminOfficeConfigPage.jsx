@@ -1,13 +1,14 @@
 import { useState, useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import { useAuth } from '../../context/useAuth'
+import { useToast } from '../../context/ToastContext'
 import { getOfficeConfig, updateOfficeConfig } from '../../services/adminService'
 import { Check, AlertTriangle, Settings, CheckCircle2, X, Loader2 } from 'lucide-react'
 
 const SETTINGS_CATEGORIES = {
   general: ['office_open_time', 'office_close_time', 'lunch_break_start', 'lunch_break_end'],
   appointments: ['slot_duration_minutes', 'booking_cutoff_days'],
-  staffing: ['staff_count', 'num_windows'],
+  staffing: ['num_windows'],
 }
 
 const LABELS = {
@@ -17,17 +18,16 @@ const LABELS = {
   lunch_break_end:       { title: 'Lunch Break End',       desc: 'When the staff lunch break ends' },
   slot_duration_minutes: { title: 'Slot Duration',         desc: 'Length of each appointment block in minutes' },
   booking_cutoff_days:   { title: 'Booking Cutoff',        desc: 'Minimum days required for advance booking' },
-  staff_count:           { title: 'Staff Count',           desc: 'Number of active registrar staff serving queues' },
   num_windows:           { title: 'Active Windows',         desc: 'Number of service windows open at the registrar (e.g. Window 1, Window 2...)' },
 }
 
 export default function AdminOfficeConfigPage() {
   const { token } = useAuth()
+  const toast = useToast()
   const [config, setConfig]   = useState([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving]   = useState(null)
   const [edited, setEdited]   = useState({})
-  const [toast, setToast]     = useState(null)
   const [confirmSave, setConfirmSave] = useState(null)
 
   useEffect(() => {
@@ -38,14 +38,9 @@ export default function AdminOfficeConfigPage() {
         data.forEach(c => { init[c.key] = c.value })
         setEdited(init)
       })
-      .catch(() => setToast({ type: 'error', msg: 'Failed to load configuration' }))
+      .catch(() => toast.error('Failed to load configuration'))
       .finally(() => setLoading(false))
   }, [token])
-
-  const showToast = (type, msg) => {
-    setToast({ type, msg })
-    setTimeout(() => setToast(null), 3000)
-  }
 
   const handleEdit = (key, value) => {
     setEdited(prev => ({ ...prev, [key]: value }))
@@ -58,9 +53,9 @@ export default function AdminOfficeConfigPage() {
     try {
       await updateOfficeConfig(token, key, String(val))
       setConfig(prev => prev.map(item => item.key === key ? { ...item, value: String(val) } : item))
-      showToast('success', `Updated "${LABELS[key]?.title || key}" successfully.`)
+      toast.success(`Updated "${LABELS[key]?.title || key}" successfully.`)
     } catch (e) {
-      showToast('error', e.message || 'Failed to update setting.')
+      toast.error(e.message || 'Failed to update setting.')
     } finally {
       setSaving(null)
       setConfirmSave(null)
@@ -119,27 +114,6 @@ export default function AdminOfficeConfigPage() {
 
   return (
     <div className="animate-fade-up font-sans w-full pb-10">
-      {/* Toast Notification */}
-      {toast && (
-        <div className={`fixed bottom-10 right-8 z-9999 flex items-center gap-3 px-5 py-3.5 rounded-xl shadow-[0_12px_32px_rgba(0,0,0,0.18)] border text-fluid-13-5 font-bold animate-fade-up ${
-          toast.type === 'error' 
-            ? 'bg-red-600 text-white border-red-700' 
-            : 'bg-[#006600] text-white border-[#005200]'
-        }`}>
-          {toast.type === 'error' ? (
-            <AlertTriangle size={17} className="shrink-0 text-white" />
-          ) : (
-            <div className="w-5 h-5 rounded-full bg-white/20 flex items-center justify-center shrink-0">
-              <Check size={13} className="text-white stroke-3" />
-            </div>
-          )}
-          <span className="text-white">{toast.msg}</span>
-          <button onClick={() => setToast(null)} className="ml-2.5 bg-transparent border-none text-white/80 hover:text-white cursor-pointer p-0 flex items-center shrink-0 transition-opacity">
-            <X size={14} strokeWidth={2.5} />
-          </button>
-        </div>
-      )}
-
       {/* Header */}
       <div className="mb-6">
         <p className="text-fluid-11 font-bold text-gold tracking-widest uppercase m-0 mb-1.5">System Configuration</p>

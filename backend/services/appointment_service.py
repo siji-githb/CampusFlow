@@ -104,21 +104,29 @@ def get_available_slots_for_date(appointment_date: date) -> list[str]:
 
     try:
         bookings_res = admin.table("appointments") \
-            .select("time_slot") \
+            .select("time_slot, student_id") \
             .eq("appointment_date", str(appointment_date)) \
             .neq("status", "cancelled") \
             .execute()
-        booked_slots = [b["time_slot"] for b in bookings_res.data]
+        booked_rows = bookings_res.data or []
     except Exception:
         return []
 
-    slot_counts = {}
-    for slot in booked_slots:
-        slot_counts[slot] = slot_counts.get(slot, 0) + 1
+    slot_students = {}
+    for b in booked_rows:
+        slot = b.get("time_slot")
+        st_id = b.get("student_id")
+        if slot:
+            if slot not in slot_students:
+                slot_students[slot] = set()
+            if st_id:
+                slot_students[slot].add(st_id)
+            else:
+                slot_students[slot].add(len(slot_students[slot]))
 
     available_slots = []
     for slot in all_slots:
-        if slot_counts.get(slot, 0) < num_windows:
+        if len(slot_students.get(slot, set())) < num_windows:
             available_slots.append(slot)
 
     return available_slots
@@ -170,27 +178,38 @@ def get_available_slots(transaction_type_id: str, appointment_date: date):
     all_slots = generate_time_slots(open_time, close_time, duration, lunch_start, lunch_end)
     daily_cap = len(all_slots) * num_windows
 
-    # Get existing bookings for this date across ALL types (capacity is shared by staff)
+    # Get existing bookings for this date across ALL types (capacity is shared by windows/staff)
     try:
         bookings_res = admin.table("appointments") \
-            .select("time_slot") \
+            .select("time_slot, student_id") \
             .eq("appointment_date", str(appointment_date)) \
             .neq("status", "cancelled") \
             .execute()
-        booked_slots = [b["time_slot"] for b in bookings_res.data]
+        booked_rows = bookings_res.data or []
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-    # Count bookings per slot
-    slot_counts = {}
-    for slot in booked_slots:
-        slot_counts[slot] = slot_counts.get(slot, 0) + 1
+    # Count unique student visits per slot
+    slot_students = {}
+    distinct_visits = set()
+    for b in booked_rows:
+        slot = b.get("time_slot")
+        st_id = b.get("student_id")
+        if slot:
+            if slot not in slot_students:
+                slot_students[slot] = set()
+            if st_id:
+                slot_students[slot].add(st_id)
+                distinct_visits.add(f"{slot}_{st_id}")
+            else:
+                slot_students[slot].add(len(slot_students[slot]))
+                distinct_visits.add(f"{slot}_{len(distinct_visits)}")
 
-    total_booked = len(booked_slots)
+    total_booked = len(distinct_visits)
 
     result = []
     for slot in all_slots:
-        booked_in_slot = slot_counts.get(slot, 0)
+        booked_in_slot = len(slot_students.get(slot, set()))
         remaining = max(0, num_windows - booked_in_slot)
         result.append({
             "time_slot": slot,
@@ -237,58 +256,98 @@ def create_appointment(student_id: str, priority_class: str, data: AppointmentCr
         raise HTTPException(status_code=400, detail=f"Cannot book appointment: {data.appointment_date} is {block_reason}. The office is closed.")
 
 
-    # Get transaction type
-    try:
-        tt_res = admin.table("transaction_types").select("*").eq("id", data.transaction_type_id).single().execute()
-        tt = tt_res.data
-    except Exception:
-        raise HTTPException(status_code=404, detail="Transaction type not found")
+    # Resolve requested transaction types (multi-select or single)
+    tx_ids = []
+    if data.transaction_type_ids:
+        tx_ids = [tid for tid in data.transaction_type_ids if tid]
+    elif data.transaction_type_id:
+        tx_ids = [data.transaction_type_id]
+
+    if not tx_ids:
+        raise HTTPException(status_code=400, detail="Please select at least one document transaction")
+
+    # Fetch and validate all requested transaction types
+    tt_records = []
+    for tid in tx_ids:
+        try:
+            tt_res = admin.table("transaction_types").select("*").eq("id", tid).single().execute()
+            if tt_res.data:
+                tt_records.append(tt_res.data)
+        except Exception:
+            pass
+
+    if len(tt_records) != len(tx_ids):
+        raise HTTPException(status_code=404, detail="One or more selected transaction types were not found")
+
+    # Enforce Completion Forms standalone rule
+    if len(tx_ids) > 1:
+        has_completion_form = any("completion form" in (t.get("name") or "").lower() for t in tt_records)
+        if has_completion_form:
+            raise HTTPException(
+                status_code=400,
+                detail="Completion Forms are quick counter services and must be booked on their own, separate from document requests."
+            )
 
     num_windows = int(config.get("num_windows", 2))
 
-    # Check slot capacity across ALL transaction types at that exact time
+    # Check slot capacity: compute unique student visits booked in this time slot
     try:
         count_res = admin.table("appointments") \
-            .select("id") \
+            .select("id, student_id") \
             .eq("appointment_date", str(data.appointment_date)) \
             .eq("time_slot", data.time_slot) \
             .neq("status", "cancelled") \
             .execute()
-        if len(count_res.data) >= num_windows:
+        
+        other_students = set(b["student_id"] for b in (count_res.data or []) if b.get("student_id") != student_id)
+        if len(other_students) >= num_windows:
             raise HTTPException(status_code=400, detail="This time slot is full")
     except HTTPException:
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-    # Check student doesn't already have appointment same day same type
-    try:
-        existing = admin.table("appointments") \
-            .select("id") \
-            .eq("student_id", student_id) \
-            .eq("transaction_type_id", data.transaction_type_id) \
-            .eq("appointment_date", str(data.appointment_date)) \
-            .neq("status", "cancelled") \
-            .execute()
-        if existing.data:
-            raise HTTPException(status_code=400, detail="You already have an appointment for this transaction on this date")
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    # Check student doesn't already have an appointment for the same document on this date
+    for tid in tx_ids:
+        try:
+            existing = admin.table("appointments") \
+                .select("id") \
+                .eq("student_id", student_id) \
+                .eq("transaction_type_id", tid) \
+                .eq("appointment_date", str(data.appointment_date)) \
+                .neq("status", "cancelled") \
+                .execute()
+            if existing.data:
+                matching_name = next((t["name"] for t in tt_records if t["id"] == tid), "this document")
+                raise HTTPException(status_code=400, detail=f"You already have an appointment for '{matching_name}' on this date")
+        except HTTPException:
+            raise
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=str(e))
 
-    # Create appointment
+    # Create appointment records for all selected documents
+    created_appts = []
+    doc_names = [t["name"] for t in tt_records]
+    combined_doc_title = ", ".join(doc_names)
+
     try:
-        appt_res = admin.table("appointments").insert({
-            "student_id": student_id,
-            "transaction_type_id": data.transaction_type_id,
-            "appointment_date": str(data.appointment_date),
-            "time_slot": data.time_slot,
-            "status": "confirmed",
-            "priority_class": priority_class,
-            "notes": data.notes
-        }).execute()
-        appt = appt_res.data[0]
+        for tt in tt_records:
+            appt_res = admin.table("appointments").insert({
+                "student_id": student_id,
+                "transaction_type_id": tt["id"],
+                "appointment_date": str(data.appointment_date),
+                "time_slot": data.time_slot,
+                "status": "confirmed",
+                "priority_class": priority_class,
+                "notes": data.notes
+            }).execute()
+            if appt_res.data:
+                created_appts.append(appt_res.data[0])
+        
+        if not created_appts:
+            raise HTTPException(status_code=500, detail="Failed to create appointment records")
+
+        primary_appt = created_appts[0]
         
         # Format time to 12-hour AM/PM
         try:
@@ -298,11 +357,11 @@ def create_appointment(student_id: str, priority_class: str, data: AppointmentCr
         except Exception:
             formatted_time = data.time_slot
             
-        # Trigger notification
+        # Trigger unified notification
         create_system_notification(
             user_id=student_id,
             title="Appointment Confirmed",
-            message=f"Your appointment for {tt['name']} on {data.appointment_date} at {formatted_time} is confirmed.",
+            message=f"Your appointment for {combined_doc_title} on {data.appointment_date} at {formatted_time} is confirmed.",
             type="success"
         )
         
@@ -310,9 +369,9 @@ def create_appointment(student_id: str, priority_class: str, data: AppointmentCr
             user_id=student_id,
             action="Created new appointment",
             table_name="appointments",
-            record_id=appt["id"],
+            record_id=primary_appt["id"],
             status="Success",
-            changes=f"Date: {data.appointment_date}, Time: {data.time_slot}",
+            changes=f"Documents: {combined_doc_title}, Date: {data.appointment_date}, Time: {data.time_slot}",
             severity="Info"
         )
     except HTTPException:
@@ -325,8 +384,98 @@ def create_appointment(student_id: str, priority_class: str, data: AppointmentCr
 
     return {
         "message": "Appointment booked successfully",
-        "appointment": appt
+        "appointment": primary_appt,
+        "appointments": created_appts
     }
+
+
+def enrich_appointment_documents(appts: list) -> list:
+    """Consolidates sibling appointments sharing the same (student_id, appointment_date, time_slot, status)
+    into a single unified visit appointment object with full multi-document list and queue ticket links."""
+    if not appts:
+        return []
+    
+    slot_map = {}
+    for appt in appts:
+        st_id = appt.get("student_id")
+        dt = appt.get("appointment_date")
+        ts = appt.get("time_slot")
+        status = appt.get("status")
+        key = f"{st_id}_{dt}_{ts}_{status}"
+        if key not in slot_map:
+            slot_map[key] = []
+        slot_map[key].append(appt)
+
+    consolidated = []
+    seen_keys = set()
+
+    for appt in appts:
+        st_id = appt.get("student_id")
+        dt = appt.get("appointment_date")
+        ts = appt.get("time_slot")
+        status = appt.get("status")
+        key = f"{st_id}_{dt}_{ts}_{status}"
+
+        if key in seen_keys:
+            continue
+        seen_keys.add(key)
+
+        siblings = slot_map.get(key, [appt])
+
+        # Prioritize sibling with an active or valid queue ticket as primary
+        primary = siblings[0]
+        for s in siblings:
+            s_tickets = s.get("queue_tickets") or []
+            if not isinstance(s_tickets, list):
+                s_tickets = [s_tickets] if s_tickets else []
+            if any(t and t.get("status") in ["waiting", "in_progress", "completed"] for t in s_tickets):
+                primary = s
+                break
+
+        # Collect unique documents across all siblings
+        doc_list = []
+        for s in siblings:
+            tt = s.get("transaction_types") or {}
+            if tt and tt.get("name"):
+                doc_list.append({
+                    "id": s.get("transaction_type_id") or tt.get("id"),
+                    "name": tt.get("name"),
+                    "required_documents": tt.get("required_documents") or [],
+                    "processing_steps": tt.get("processing_steps") or []
+                })
+        
+        seen_names = set()
+        unique_docs = []
+        for d in doc_list:
+            if d["name"] not in seen_names:
+                seen_names.add(d["name"])
+                unique_docs.append(d)
+
+        # Collect and deduplicate all queue tickets across siblings
+        all_tickets = []
+        seen_ticket_ids = set()
+        for s in siblings:
+            s_tickets = s.get("queue_tickets") or []
+            if not isinstance(s_tickets, list):
+                s_tickets = [s_tickets] if s_tickets else []
+            for t in s_tickets:
+                if t and t.get("id") and t["id"] not in seen_ticket_ids:
+                    seen_ticket_ids.add(t["id"])
+                    all_tickets.append(t)
+
+        primary_copy = dict(primary)
+        primary_copy["sibling_ids"] = [s["id"] for s in siblings]
+        primary_copy["queue_tickets"] = all_tickets if all_tickets else (primary.get("queue_tickets") or [])
+        primary_copy["selected_documents"] = unique_docs if unique_docs else ([{
+            "id": primary_copy.get("transaction_type_id"),
+            "name": (primary_copy.get("transaction_types") or {}).get("name") or "Document Request",
+            "required_documents": (primary_copy.get("transaction_types") or {}).get("required_documents") or [],
+            "processing_steps": (primary_copy.get("transaction_types") or {}).get("processing_steps") or []
+        }] if primary_copy.get("transaction_types") else [])
+
+        consolidated.append(primary_copy)
+
+    return consolidated
 
 
 def get_student_appointments(student_id: str):
@@ -394,7 +543,7 @@ def get_student_appointments(student_id: str):
                     appt["priority_class"] = user_pc
                 elif not appt.get("priority_class"):
                     appt["priority_class"] = "regular"
-        return data
+        return enrich_appointment_documents(data)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -417,38 +566,55 @@ def cancel_appointment(appointment_id: str, student_id: str):
     if appt["status"] in ["completed", "cancelled"]:
         raise HTTPException(status_code=400, detail="Cannot cancel a completed or already cancelled appointment")
 
-    # Prevent cancellation if ticket is already in progress / being served by staff
-    in_prog_res = admin.table("queue_tickets") \
+    # Find sibling appointments sharing the same date and time slot
+    sibling_res = admin.table("appointments") \
         .select("id") \
-        .eq("appointment_id", appointment_id) \
-        .eq("status", "in_progress") \
+        .eq("student_id", student_id) \
+        .eq("appointment_date", appt["appointment_date"]) \
+        .eq("time_slot", appt["time_slot"]) \
+        .neq("status", "cancelled") \
         .execute()
-    if in_prog_res.data:
-        raise HTTPException(
-            status_code=400,
-            detail="Cannot cancel a ticket that is already in progress or currently being served by staff."
-        )
+    
+    target_ids = [s["id"] for s in (sibling_res.data or [])]
+    if appointment_id not in target_ids:
+        target_ids.append(appointment_id)
+
+    # Check if any ticket is in_progress
+    for aid in target_ids:
+        in_prog_res = admin.table("queue_tickets") \
+            .select("id") \
+            .eq("appointment_id", aid) \
+            .eq("status", "in_progress") \
+            .execute()
+        if in_prog_res.data:
+            raise HTTPException(
+                status_code=400,
+                detail="Cannot cancel a ticket that is already in progress or currently being served by staff."
+            )
 
     try:
         admin.table("appointments") \
             .update({"status": "cancelled"}) \
-            .eq("id", appointment_id) \
+            .in_("id", target_ids) \
             .execute()
 
-        # Cancel any waiting queue tickets
-        waiting_tickets_res = admin.table("queue_tickets") \
-            .select("id") \
-            .eq("appointment_id", appointment_id) \
-            .eq("status", "waiting") \
-            .execute()
-
-        if waiting_tickets_res.data:
-            ticket_ids = [t["id"] for t in waiting_tickets_res.data]
+        for aid in target_ids:
             admin.table("queue_tickets") \
                 .update({"status": "cancelled"}) \
-                .in_("id", ticket_ids) \
+                .eq("appointment_id", aid) \
+                .in_("status", ["waiting", "pending"]) \
                 .execute()
-            
+
+        log_audit_action(
+            user_id=student_id,
+            action="Cancelled appointment",
+            table_name="appointments",
+            record_id=appointment_id,
+            status="Success",
+            changes=f"Cancelled {len(target_ids)} appointment item(s) on {appt['appointment_date']} at {appt['time_slot']}",
+            severity="Info"
+        )
+        
         # Automatically mark the confirmation notification as read
         try:
             admin.table("notifications") \
@@ -568,7 +734,7 @@ def get_all_appointments(date_str: str = None):
             query = query.eq("appointment_date", date_str)
             
         res = query.order("time_slot", desc=False).execute()
-        return res.data
+        return enrich_appointment_documents(res.data or [])
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -578,18 +744,25 @@ def get_appointment_stats():
     try:
         today = str(date.today())
         
-        # Today's appointments
-        res_today = admin.table("appointments").select("id").eq("appointment_date", today).execute()
-        today_count = len(res_today.data) if res_today.data else 0
+        # Today's appointments (distinct student visits)
+        res_today = admin.table("appointments").select("id, student_id, time_slot, status").eq("appointment_date", today).execute()
+        today_visits = set()
+        comp_visits = set()
+        for a in (res_today.data or []):
+            st_id = a.get("student_id")
+            ts = a.get("time_slot")
+            k = f"{st_id}_{ts}" if (st_id and ts) else a.get("id")
+            today_visits.add(k)
+            if a.get("status") == "completed":
+                comp_visits.add(k)
+        today_count = len(today_visits)
+        comp_count = len(comp_visits)
         
-        # Completed today
-        res_comp = admin.table("appointments").select("id").eq("appointment_date", today).eq("status", "completed").execute()
-        comp_count = len(res_comp.data) if res_comp.data else 0
-        
-        # Total monthly volume
+        # Total monthly volume (distinct student visits)
         month_start = str(date.today().replace(day=1))
-        res_month = admin.table("appointments").select("id").gte("appointment_date", month_start).execute()
-        month_count = len(res_month.data) if res_month.data else 0
+        res_month = admin.table("appointments").select("id, student_id, appointment_date, time_slot").gte("appointment_date", month_start).execute()
+        month_visits = set(f"{a.get('student_id')}_{a.get('appointment_date')}_{a.get('time_slot')}" if (a.get('student_id') and a.get('appointment_date') and a.get('time_slot')) else a.get("id") for a in (res_month.data or []))
+        month_count = len(month_visits)
 
         # Avg wait minutes — derived from completed appointments this month that have both created_at and updated_at
         from datetime import datetime as dt
@@ -682,21 +855,29 @@ def reschedule_appointment(appointment_id: str, new_date: str, new_time: str, ac
             block_reason = override.get("note") or (f"a Philippine holiday ({ph_holiday['name']})" if ph_holiday else "blocked")
             raise HTTPException(status_code=400, detail=f"Cannot reschedule: {new_date} is {block_reason}. The office is closed.")
 
-        # Check student doesn't already have appointment same day same type (excluding this one)
-        existing = admin.table("appointments").select("id").eq("student_id", student_id).eq("transaction_type_id", tt_id).eq("appointment_date", new_date).neq("status", "cancelled").neq("id", appointment_id).execute()
-        if existing.data:
-            raise HTTPException(status_code=400, detail="You already have an appointment for this transaction on this date")
-        
-        staff_count = int(config.get("staff_count", 2))
-        count_res = admin.table("appointments") \
+        # Find sibling appointments sharing the same visit slot
+        sibling_res = admin.table("appointments") \
             .select("id") \
+            .eq("student_id", student_id) \
+            .eq("appointment_date", old_date) \
+            .eq("time_slot", old_time) \
+            .neq("status", "cancelled") \
+            .execute()
+        target_ids = [s["id"] for s in (sibling_res.data or [])]
+        if appointment_id not in target_ids:
+            target_ids.append(appointment_id)
+
+        # Capacity check on new slot: count unique students in new slot
+        num_windows = int(config.get("num_windows", 2))
+        count_res = admin.table("appointments") \
+            .select("id, student_id") \
             .eq("appointment_date", new_date) \
             .eq("time_slot", new_time) \
             .neq("status", "cancelled") \
-            .neq("id", appointment_id) \
             .execute()
             
-        if len(count_res.data) >= staff_count:
+        other_students = set(b["student_id"] for b in (count_res.data or []) if b.get("student_id") != student_id)
+        if len(other_students) >= num_windows:
             raise HTTPException(status_code=400, detail="This time slot is full")
             
         update_data = {
@@ -707,7 +888,7 @@ def reschedule_appointment(appointment_id: str, new_date: str, new_time: str, ac
         if notes is not None:
             update_data["notes"] = notes
             
-        admin.table("appointments").update(update_data).eq("id", appointment_id).execute()
+        admin.table("appointments").update(update_data).in_("id", target_ids).execute()
         
         if actor_id:
             log_audit_action(
@@ -716,7 +897,7 @@ def reschedule_appointment(appointment_id: str, new_date: str, new_time: str, ac
                 table_name="appointments",
                 record_id=appointment_id,
                 status="Success",
-                changes=f"From: {old_date} {old_time} ➔ To: {new_date} {new_time}",
+                changes=f"Rescheduled {len(target_ids)} item(s) from {old_date} {old_time} ➔ {new_date} {new_time}",
                 severity="Warning"
             )
             
@@ -730,8 +911,6 @@ def reschedule_appointment(appointment_id: str, new_date: str, new_time: str, ac
             except Exception:
                 nt_formatted = new_time
 
-            # Only notify the student if they are not the actor, OR if they are the actor (e.g. AI modified it for them)
-            # Just send a notification regardless so they have a record
             create_system_notification(
                 user_id=student_id,
                 title="Appointment Rescheduled",
@@ -757,13 +936,41 @@ def update_appointment_status(appointment_id: str, status: str, actor_id: str = 
         raise HTTPException(status_code=400, detail="Invalid status")
         
     try:
-        res = admin.table("appointments").select("status").eq("id", appointment_id).execute()
+        res = admin.table("appointments").select("id, status, student_id, appointment_date, time_slot").eq("id", appointment_id).execute()
         if not res.data:
             raise HTTPException(status_code=404, detail="Appointment not found")
             
-        old_status = res.data[0]["status"]
+        appt_row = res.data[0]
+        old_status = appt_row["status"]
+        student_id = appt_row.get("student_id")
+        appt_date = appt_row.get("appointment_date")
+        t_slot = appt_row.get("time_slot")
+
+        # Update appointment and siblings sharing the same visit slot
+        if student_id and appt_date and t_slot:
+            admin.table("appointments") \
+                .update({"status": status}) \
+                .eq("student_id", student_id) \
+                .eq("appointment_date", appt_date) \
+                .eq("time_slot", t_slot) \
+                .execute()
+        else:
+            admin.table("appointments").update({"status": status}).eq("id", appointment_id).execute()
         
-        admin.table("appointments").update({"status": status}).eq("id", appointment_id).execute()
+        # If status is cancelled or no_show, cascade cancellation to any active queue tickets for this visit
+        if status in ["cancelled", "no_show"]:
+            try:
+                sibs = admin.table("appointments").select("id").eq("student_id", student_id).eq("appointment_date", appt_date).eq("time_slot", t_slot).execute()
+                all_target_ids = [s["id"] for s in (sibs.data or [])]
+                if appointment_id not in all_target_ids:
+                    all_target_ids.append(appointment_id)
+                admin.table("queue_tickets") \
+                    .update({"status": status}) \
+                    .in_("appointment_id", all_target_ids) \
+                    .in_("status", ["waiting", "in_progress"]) \
+                    .execute()
+            except Exception:
+                pass
         
         if actor_id and old_status != status:
             severity = "Info"
@@ -793,22 +1000,50 @@ def update_appointment_status(appointment_id: str, status: str, actor_id: str = 
 def set_release_date(appointment_id: str, release_date: str, actor_id: str = None):
     admin = get_admin()
     try:
-        res = admin.table("appointments").select("release_date").eq("id", appointment_id).execute()
+        res = admin.table("appointments").select("id, release_date, student_id, appointment_date, time_slot").eq("id", appointment_id).execute()
         if not res.data:
             raise HTTPException(status_code=404, detail="Appointment not found")
             
-        old_date = res.data[0].get("release_date")
+        appt_row = res.data[0]
+        old_date = appt_row.get("release_date")
         if old_date == release_date:
             return {"message": "Release date unchanged"}
         
-        admin.table("appointments").update({"release_date": release_date}).eq("id", appointment_id).execute()
+        student_id = appt_row.get("student_id")
+        appt_date = appt_row.get("appointment_date")
+        t_slot = appt_row.get("time_slot")
+
+        # Update appointment and siblings sharing the same visit slot
+        if student_id and appt_date and t_slot:
+            admin.table("appointments") \
+                .update({"release_date": release_date}) \
+                .eq("student_id", student_id) \
+                .eq("appointment_date", appt_date) \
+                .eq("time_slot", t_slot) \
+                .neq("status", "cancelled") \
+                .execute()
+        else:
+            admin.table("appointments").update({"release_date": release_date}).eq("id", appointment_id).execute()
         
         appt_res = admin.table("appointments").select("student_id, release_date, transaction_types(name)").eq("id", appointment_id).single().execute()
         if appt_res.data and appt_res.data.get("student_id"):
             from services.notification_service import create_system_notification
             from datetime import date
             today_str = str(date.today())
-            tx_name = (appt_res.data.get("transaction_types") or {}).get("name", "document")
+            
+            # Fetch all document names for this visit
+            tx_names = []
+            if student_id and appt_date and t_slot:
+                sibs = admin.table("appointments").select("transaction_types(name)").eq("student_id", student_id).eq("appointment_date", appt_date).eq("time_slot", t_slot).neq("status", "cancelled").execute()
+                for s in (sibs.data or []):
+                    tt_n = (s.get("transaction_types") or {}).get("name")
+                    if tt_n and tt_n not in tx_names:
+                        tx_names.append(tt_n)
+            if not tx_names and appt_res.data:
+                single_n = (appt_res.data.get("transaction_types") or {}).get("name")
+                if single_n:
+                    tx_names.append(single_n)
+            tx_name = ", ".join(tx_names) if tx_names else "document"
 
             if release_date == today_str:
                 create_system_notification(

@@ -63,10 +63,22 @@ def activate_queue(appointment_id: str, student_id: str):
             detail=f"Queue can only be activated on your appointment date ({appt['appointment_date']})"
         )
 
-    # Check if queue ticket already exists
+    # Check if this appointment or any sibling appointment sharing the same date/time has a queue ticket
+    sibling_res = admin.table("appointments") \
+        .select("id, transaction_type_id, transaction_types(name, processing_steps)") \
+        .eq("student_id", student_id) \
+        .eq("appointment_date", appt["appointment_date"]) \
+        .eq("time_slot", appt["time_slot"]) \
+        .neq("status", "cancelled") \
+        .execute()
+    
+    sibling_ids = [s["id"] for s in (sibling_res.data or [])]
+    if appointment_id not in sibling_ids:
+        sibling_ids.append(appointment_id)
+
     existing = admin.table("queue_tickets") \
-        .select("*") \
-        .eq("appointment_id", appointment_id) \
+        .select("*, appointments(id, appointment_date, time_slot, priority_class, release_date, transaction_types(name))") \
+        .in_("appointment_id", sibling_ids) \
         .execute()
     if existing.data:
         ticket = existing.data[0]
@@ -74,6 +86,29 @@ def activate_queue(appointment_id: str, student_id: str):
         if ticket.get("status") == "cancelled":
             admin.table("queue_tickets").update({"status": "waiting"}).eq("id", ticket["id"]).execute()
             ticket["status"] = "waiting"
+        
+        # Confirm all sibling appointments
+        admin.table("appointments").update({"status": "confirmed"}).in_("id", sibling_ids).execute()
+
+        # Build unique documents list for ticket
+        doc_list = []
+        for s in (sibling_res.data or []):
+            tt = s.get("transaction_types") or {}
+            if tt and tt.get("name"):
+                doc_list.append({
+                    "id": s.get("transaction_type_id"),
+                    "name": tt.get("name"),
+                    "processing_steps": tt.get("processing_steps") or []
+                })
+        seen_names = set()
+        unique_docs = []
+        for d in doc_list:
+            if d["name"] not in seen_names:
+                seen_names.add(d["name"])
+                unique_docs.append(d)
+        if "appointments" in ticket and isinstance(ticket["appointments"], dict):
+            ticket["appointments"]["selected_documents"] = unique_docs
+
         steps = admin.table("transaction_steps") \
             .select("*") \
             .eq("queue_ticket_id", ticket["id"]) \
@@ -81,10 +116,20 @@ def activate_queue(appointment_id: str, student_id: str):
             .execute()
         return {"ticket": ticket, "steps": steps.data}
 
-    # Generate queue number
-    tt = appt["transaction_types"]
-    processing_steps = tt["processing_steps"] or []
-    prefix = get_transaction_prefix(tt.get("name", ""))
+    # Generate queue number and resolve processing steps
+    is_multi = len(sibling_ids) > 1
+    if is_multi:
+        prefix = "MULTI"
+        processing_steps = [
+            {"name": "Checking of Payment Receipt", "requires_presence": True},
+            {"name": "Preparation of Document", "requires_presence": False},
+            {"name": "Document Prepared", "requires_presence": False},
+            {"name": "Release", "requires_presence": True}
+        ]
+    else:
+        tt = appt["transaction_types"]
+        processing_steps = tt["processing_steps"] or []
+        prefix = get_transaction_prefix(tt.get("name", ""))
 
     # Queue number assignment strategy:
     # 1. _queue_number_lock guards concurrent requests within a single process.
@@ -175,14 +220,41 @@ def activate_queue(appointment_id: str, student_id: str):
 
     steps_res = admin.table("transaction_steps").insert(steps_to_insert).execute()
 
-    # Update appointment status
+    # Update all sibling appointments status to confirmed
     admin.table("appointments") \
         .update({"status": "confirmed"}) \
-        .eq("id", appointment_id) \
+        .in_("id", sibling_ids) \
         .execute()
 
+    # Build unique documents list for ticket
+    doc_list = []
+    for s in (sibling_res.data or []):
+        tt_s = s.get("transaction_types") or {}
+        if tt_s and tt_s.get("name"):
+            doc_list.append({
+                "id": s.get("transaction_type_id"),
+                "name": tt_s.get("name"),
+                "processing_steps": tt_s.get("processing_steps") or []
+            })
+    seen_names = set()
+    unique_docs = []
+    for d in doc_list:
+        if d["name"] not in seen_names:
+            seen_names.add(d["name"])
+            unique_docs.append(d)
+
+    # Fetch enriched ticket with appointments
+    full_ticket_res = admin.table("queue_tickets") \
+        .select("*, appointments(id, appointment_date, time_slot, priority_class, release_date, transaction_types(name))") \
+        .eq("id", ticket["id"]) \
+        .single() \
+        .execute()
+    full_ticket = full_ticket_res.data or ticket
+    if "appointments" in full_ticket and isinstance(full_ticket["appointments"], dict):
+        full_ticket["appointments"]["selected_documents"] = unique_docs
+
     # Trigger notification
-    tx_name = tt.get("name", "document")
+    tx_names_str = ", ".join(d["name"] for d in unique_docs) if unique_docs else tt.get("name", "document")
     if processing_steps:
         _, first_requires_presence = _normalize_step(processing_steps[0])
     else:
@@ -190,12 +262,12 @@ def activate_queue(appointment_id: str, student_id: str):
 
     if first_requires_presence:
         first_message = (
-            f"Your queue ticket {queue_number} has been generated for {tx_name}. "
+            f"Your queue ticket {queue_number} has been generated for {tx_names_str}. "
             f"Please monitor your queue status and wait for your number to be called."
         )
     else:
         first_message = (
-            f"Your queue ticket {queue_number} has been generated for {tx_name}. "
+            f"Your queue ticket {queue_number} has been generated for {tx_names_str}. "
             f"Your request is now being processed in the back office — we'll notify you when it's ready."
         )
 
@@ -208,7 +280,7 @@ def activate_queue(appointment_id: str, student_id: str):
 
     manager.broadcast_staff_event("QUEUE_UPDATED")
 
-    return {"ticket": ticket, "steps": steps_res.data}
+    return {"ticket": full_ticket, "steps": steps_res.data}
 
 
 def get_student_queue(student_id: str):
@@ -281,18 +353,38 @@ def get_student_queue(student_id: str):
                     active_ticket = t
                     break
 
-        if not active_ticket:
-            return None
-
-        # Ensure appointment status is confirmed for active ticket
-        if active_ticket and active_ticket.get("status") in ["waiting", "in_progress"]:
-            appt = active_ticket.get("appointments") or {}
-            if appt.get("status") == "cancelled" and active_ticket.get("appointment_id"):
-                admin.table("appointments").update({"status": "confirmed"}).eq("id", active_ticket["appointment_id"]).execute()
-                if "appointments" in active_ticket and isinstance(active_ticket["appointments"], dict):
-                    active_ticket["appointments"]["status"] = "confirmed"
-
         ticket = active_ticket
+        if ticket and ticket.get("appointments"):
+            appt = ticket.get("appointments") or {}
+            try:
+                sibs = admin.table("appointments") \
+                    .select("id, transaction_type_id, transaction_types(id, name, required_documents, processing_steps)") \
+                    .eq("student_id", student_id) \
+                    .eq("appointment_date", appt.get("appointment_date")) \
+                    .eq("time_slot", appt.get("time_slot")) \
+                    .neq("status", "cancelled") \
+                    .execute()
+                docs = []
+                for s in (sibs.data or []):
+                    tt = s.get("transaction_types") or {}
+                    if tt and tt.get("name"):
+                        docs.append({
+                            "id": s.get("transaction_type_id") or tt.get("id"),
+                            "name": tt.get("name"),
+                            "required_documents": tt.get("required_documents") or [],
+                            "processing_steps": tt.get("processing_steps") or []
+                        })
+                seen = set()
+                u_docs = []
+                for d in docs:
+                    if d["name"] not in seen:
+                        seen.add(d["name"])
+                        u_docs.append(d)
+                if "appointments" in ticket and isinstance(ticket["appointments"], dict):
+                    ticket["appointments"]["selected_documents"] = u_docs
+            except Exception:
+                pass
+
         steps_res = admin.table("transaction_steps") \
             .select("*") \
             .eq("queue_ticket_id", ticket["id"]) \
@@ -326,11 +418,27 @@ def call_ticket(queue_ticket_id: str, staff_id: str):
 
     # 4. Trigger notification
     try:
-        ticket_res = admin.table("queue_tickets").select("queue_number, student_id, appointments(transaction_types(name))").eq("id", queue_ticket_id).single().execute()
+        ticket_res = admin.table("queue_tickets").select("queue_number, student_id, appointment_id, appointments(id, student_id, appointment_date, time_slot, transaction_types(name))").eq("id", queue_ticket_id).single().execute()
         if ticket_res.data:
             q_num = ticket_res.data.get("queue_number", "")
-            tx_name = ((ticket_res.data.get("appointments") or {}).get("transaction_types") or {}).get("name", "")
-            tx_label = f" for {tx_name}" if tx_name else ""
+            appt_data = ticket_res.data.get("appointments") or {}
+            s_id = appt_data.get("student_id") or ticket_res.data.get("student_id")
+            a_date = appt_data.get("appointment_date")
+            t_slot = appt_data.get("time_slot")
+            
+            tx_names = []
+            if s_id and a_date and t_slot:
+                sibs = admin.table("appointments").select("transaction_types(name)").eq("student_id", s_id).eq("appointment_date", a_date).eq("time_slot", t_slot).neq("status", "cancelled").execute()
+                for s in (sibs.data or []):
+                    tt_n = (s.get("transaction_types") or {}).get("name")
+                    if tt_n and tt_n not in tx_names:
+                        tx_names.append(tt_n)
+            if not tx_names and appt_data:
+                single_n = (appt_data.get("transaction_types") or {}).get("name")
+                if single_n:
+                    tx_names.append(single_n)
+            
+            tx_label = f" for {', '.join(tx_names)}" if tx_names else ""
             create_system_notification(
                 user_id=ticket_res.data["student_id"],
                 title=f"Now Serving • Ticket {q_num}",
@@ -344,7 +452,7 @@ def call_ticket(queue_ticket_id: str, staff_id: str):
                 table_name="queue_tickets",
                 record_id=queue_ticket_id,
                 status="Success",
-                changes=f"Called ticket {ticket_res.data.get('queue_number')} to {window_label}",
+                changes=f"Called ticket {q_num} to {window_label}",
                 severity="Info"
             )
     except Exception:
@@ -510,11 +618,26 @@ def confirm_step(queue_ticket_id: str, step_number: int, staff_id: str,
     total_steps = ticket["total_steps"]
     next_step = step_number + 1
 
+    tx_names = []
     try:
-        appt_res = admin.table("appointments").select("transaction_types(name)").eq("id", ticket["appointment_id"]).single().execute()
-        tx_name = appt_res.data.get("transaction_types", {}).get("name") if appt_res.data else "document"
+        appt_info = admin.table("appointments").select("student_id, appointment_date, time_slot, transaction_types(name)").eq("id", ticket["appointment_id"]).single().execute()
+        if appt_info.data:
+            s_id = appt_info.data.get("student_id")
+            a_date = appt_info.data.get("appointment_date")
+            t_slot = appt_info.data.get("time_slot")
+            if s_id and a_date and t_slot:
+                sibs = admin.table("appointments").select("transaction_types(name)").eq("student_id", s_id).eq("appointment_date", a_date).eq("time_slot", t_slot).neq("status", "cancelled").execute()
+                for s in (sibs.data or []):
+                    tt_n = (s.get("transaction_types") or {}).get("name")
+                    if tt_n and tt_n not in tx_names:
+                        tx_names.append(tt_n)
+            if not tx_names:
+                tt_n = (appt_info.data.get("transaction_types") or {}).get("name")
+                if tt_n:
+                    tx_names.append(tt_n)
     except Exception:
-        tx_name = "document"
+        pass
+    tx_name = ", ".join(tx_names) if tx_names else "document"
 
     current_step_name = step.get("step_name", f"Step {step_number}")
 
@@ -524,10 +647,31 @@ def confirm_step(queue_ticket_id: str, step_number: int, staff_id: str,
             .update({"status": "completed", "current_step": total_steps}) \
             .eq("id", queue_ticket_id) \
             .execute()
-        admin.table("appointments") \
-            .update({"status": "completed"}) \
-            .eq("id", ticket["appointment_id"]) \
-            .execute()
+            
+        # Update primary appointment and all sibling appointments sharing this visit slot
+        try:
+            appt_info = admin.table("appointments").select("student_id, appointment_date, time_slot").eq("id", ticket["appointment_id"]).single().execute()
+            if appt_info.data:
+                s_id = appt_info.data.get("student_id")
+                a_date = appt_info.data.get("appointment_date")
+                t_slot = appt_info.data.get("time_slot")
+                admin.table("appointments") \
+                    .update({"status": "completed"}) \
+                    .eq("student_id", s_id) \
+                    .eq("appointment_date", a_date) \
+                    .eq("time_slot", t_slot) \
+                    .neq("status", "cancelled") \
+                    .execute()
+            else:
+                admin.table("appointments") \
+                    .update({"status": "completed"}) \
+                    .eq("id", ticket["appointment_id"]) \
+                    .execute()
+        except Exception:
+            admin.table("appointments") \
+                .update({"status": "completed"}) \
+                .eq("id", ticket["appointment_id"]) \
+                .execute()
             
         create_system_notification(
             user_id=ticket["student_id"],
@@ -634,12 +778,67 @@ def get_todays_queue(date_filter: str = None):
                 seen_ids.add(t["id"])
                 all_raw_tickets.append(t)
 
+        # Collect student appointments for all tickets to enrich with multi-document tags
+        appts_lookup = {}
+        try:
+            pairs = set()
+            for t in all_raw_tickets:
+                appt_t = t.get("appointments") or {}
+                s_id = t.get("student_id")
+                a_d = appt_t.get("appointment_date")
+                if s_id and a_d:
+                    pairs.add((s_id, a_d))
+            
+            if pairs:
+                st_ids = list(set(p[0] for p in pairs))
+                day_appts_res = admin.table("appointments") \
+                    .select("id, student_id, appointment_date, time_slot, transaction_type_id, transaction_types(id, name, required_documents, processing_steps)") \
+                    .in_("student_id", st_ids) \
+                    .neq("status", "cancelled") \
+                    .execute()
+                for a in (day_appts_res.data or []):
+                    k = f"{a.get('student_id')}_{a.get('appointment_date')}_{a.get('time_slot')}"
+                    if k not in appts_lookup:
+                        appts_lookup[k] = []
+                    tt = a.get("transaction_types") or {}
+                    if tt and tt.get("name"):
+                        appts_lookup[k].append({
+                            "id": a.get("transaction_type_id") or tt.get("id"),
+                            "name": tt.get("name"),
+                            "required_documents": tt.get("required_documents") or [],
+                            "processing_steps": tt.get("processing_steps") or []
+                        })
+        except Exception:
+            pass
+
         result = []
         for ticket in all_raw_tickets:
             tx_type = (ticket.get("appointments") or {}).get("transaction_types") or {}
             tx_name = tx_type.get("name", "")
             if "(deleted" in tx_name:
                 continue
+            
+            appt = ticket.get("appointments") or {}
+            st_id = ticket.get("student_id")
+            k = f"{st_id}_{appt.get('appointment_date')}_{appt.get('time_slot')}"
+            docs = appts_lookup.get(k, [])
+            if docs:
+                seen = set()
+                u_docs = []
+                for d in docs:
+                    if d["name"] not in seen:
+                        seen.add(d["name"])
+                        u_docs.append(d)
+                if "appointments" in ticket and isinstance(ticket["appointments"], dict):
+                    ticket["appointments"]["selected_documents"] = u_docs
+            elif tx_type and tx_name:
+                if "appointments" in ticket and isinstance(ticket["appointments"], dict):
+                    ticket["appointments"]["selected_documents"] = [{
+                        "id": appt.get("transaction_type_id"),
+                        "name": tx_name,
+                        "required_documents": tx_type.get("required_documents") or [],
+                        "processing_steps": tx_type.get("processing_steps") or []
+                    }]
             
             processing_steps = tx_type.get("processing_steps") or []
             
@@ -868,7 +1067,7 @@ def get_uncollected_documents(threshold_days: int = 0):
         query = admin.table("transaction_steps") \
             .select("*, queue_tickets(id, queue_number, student_id, "
                     "users(first_name, last_name, student_id), "
-                    "appointments(transaction_types(name), priority_class, release_date))") \
+                    "appointments(id, appointment_date, time_slot, priority_class, release_date, transaction_types(name)))") \
             .or_("step_name.ilike.%Release%,step_name.ilike.%Claim%,step_name.ilike.%Pickup%,step_name.ilike.%Collection%,step_name.ilike.%Issuance%,location.ilike.%Release%") \
             .eq("status", "in_progress")
 
@@ -879,6 +1078,30 @@ def get_uncollected_documents(threshold_days: int = 0):
         res = query.execute()
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+    # Fetch sibling appointments to build multi-document lists
+    appts_lookup = {}
+    try:
+        student_ids = list(set(
+            (r.get("queue_tickets") or {}).get("student_id")
+            for r in (res.data or [])
+            if (r.get("queue_tickets") or {}).get("student_id")
+        ))
+        if student_ids:
+            appts_rows = admin.table("appointments") \
+                .select("id, student_id, appointment_date, time_slot, transaction_types(name)") \
+                .in_("student_id", student_ids) \
+                .neq("status", "cancelled") \
+                .execute()
+            for a in (appts_rows.data or []):
+                k = f"{a.get('student_id')}_{a.get('appointment_date')}_{a.get('time_slot')}"
+                if k not in appts_lookup:
+                    appts_lookup[k] = []
+                tt = a.get("transaction_types") or {}
+                if tt and tt.get("name"):
+                    appts_lookup[k].append(tt.get("name"))
+    except Exception:
+        pass
 
     results = []
     today_date = datetime.now(timezone.utc).date()
@@ -895,6 +1118,17 @@ def get_uncollected_documents(threshold_days: int = 0):
         if "(deleted" in raw_tx_name:
             continue
         tx_name = raw_tx_name
+
+        st_id = ticket.get("student_id")
+        k = f"{st_id}_{appt.get('appointment_date')}_{appt.get('time_slot')}"
+        doc_names = appts_lookup.get(k, [tx_name])
+        # Deduplicate
+        seen = set()
+        selected_docs = []
+        for d in doc_names:
+            if d not in seen:
+                seen.add(d)
+                selected_docs.append({"name": d})
 
         # Calculate waiting time relative to assigned release_date or activated_at
         days_waiting = 0
@@ -921,6 +1155,7 @@ def get_uncollected_documents(threshold_days: int = 0):
             "student_name": f"{student.get('first_name', '')} {student.get('last_name', '')}".strip(),
             "student_id": student.get("student_id"),
             "transaction_type": tx_name,
+            "selected_documents": selected_docs,
             "days_waiting": days_waiting,
             "activated_at": row.get("activated_at"),
             "step_number": row.get("step_number"),
@@ -941,7 +1176,7 @@ def get_collected_documents(limit: int = 500):
         res = admin.table("transaction_steps") \
             .select("*, queue_tickets(id, queue_number, student_id, "
                     "users(first_name, last_name, student_id), "
-                    "appointments(transaction_types(name), priority_class, release_date))") \
+                    "appointments(id, appointment_date, time_slot, priority_class, release_date, transaction_types(name)))") \
             .or_("step_name.ilike.%Release%,step_name.ilike.%Claim%,step_name.ilike.%Pickup%,step_name.ilike.%Collection%,step_name.ilike.%Issuance%,location.ilike.%Release%") \
             .eq("status", "completed") \
             .order("confirmed_at", desc=True) \
@@ -950,6 +1185,22 @@ def get_collected_documents(limit: int = 500):
     except Exception as e:
         from fastapi import HTTPException
         raise HTTPException(status_code=500, detail=str(e))
+
+    # Fetch sibling appointments to build multi-document lists
+    appts_lookup = {}
+    try:
+        appts_rows = admin.table("appointments") \
+            .select("id, student_id, appointment_date, time_slot, transaction_types(name)") \
+            .execute()
+        for a in (appts_rows.data or []):
+            k = f"{a.get('student_id')}_{a.get('appointment_date')}_{a.get('time_slot')}"
+            if k not in appts_lookup:
+                appts_lookup[k] = []
+            tt = a.get("transaction_types") or {}
+            if tt and tt.get("name"):
+                appts_lookup[k].append(tt.get("name"))
+    except Exception:
+        pass
 
     results = []
     for row in (res.data or []):
@@ -961,12 +1212,23 @@ def get_collected_documents(limit: int = 500):
             continue
         tx_name = raw_tx_name
 
+        st_id = ticket.get("student_id")
+        k = f"{st_id}_{appt.get('appointment_date')}_{appt.get('time_slot')}"
+        doc_names = appts_lookup.get(k, [tx_name])
+        seen = set()
+        selected_docs = []
+        for d in doc_names:
+            if d not in seen:
+                seen.add(d)
+                selected_docs.append({"name": d})
+
         results.append({
             "queue_ticket_id": ticket.get("id"),
             "queue_number": ticket.get("queue_number"),
             "student_name": f"{student.get('first_name', '')} {student.get('last_name', '')}".strip(),
             "student_id": student.get("student_id"),
             "transaction_type": tx_name,
+            "selected_documents": selected_docs,
             "confirmed_at": row.get("confirmed_at"),
             "released_to": row.get("released_to"),
             "priority_class": appt.get("priority_class"),

@@ -1,11 +1,13 @@
 import { useState, useEffect, useRef } from 'react';
-import { Search, LayoutDashboard, BarChart2, Ticket, Calendar, FolderOpen, ClipboardList, Users, Shield, Settings, FileText, ChevronRight } from 'lucide-react';
+import { Search, LayoutDashboard, BarChart2, Ticket, Calendar, FolderOpen, ClipboardList, Users, Shield, Settings, FileText, ChevronRight, ShieldCheck, HelpCircle } from 'lucide-react';
 
 const SEARCH_ITEMS = [
   { id: 'overview', label: 'Dashboard Overview', icon: LayoutDashboard, desc: 'View high-level summary and statistics' },
   { id: 'reports', label: 'Analytics & Reports', icon: BarChart2, desc: 'Detailed metrics and performance data' },
   { id: 'queue', label: 'Live Queue & Releases Monitoring', icon: Ticket, desc: 'Monitor active counter windows, queue line, and document pickups' },
   { id: 'appts', label: 'Appointments', icon: Calendar, desc: 'Manage scheduled student appointments' },
+  { id: 'priority-requests', label: 'Priority Requests', icon: ShieldCheck, desc: 'Review and approve student priority lane applications' },
+  { id: 'id-requests', label: 'ID Requests', icon: HelpCircle, desc: 'Process student ID inquiries and directory lookups' },
   { id: 'records', label: 'Registrar Records', icon: FolderOpen, desc: 'Access academic and institutional records' },
   { id: 'student_records', label: 'Master List', icon: ClipboardList, desc: 'Manage student data and documents' },
   { id: 'users', label: 'User Management', icon: Users, desc: 'Manage staff roles and access' },
