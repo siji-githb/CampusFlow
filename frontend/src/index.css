@@ -210,6 +210,33 @@ html {
   }
 }
 
+/* --- Progress Bar Animation --- */
+@keyframes progressStripes {
+  from { background-position: 1rem 0; }
+  to { background-position: 0 0; }
+}
+
+.animate-progress-stripes {
+  background-image: linear-gradient(
+    45deg,
+    rgba(255, 255, 255, 0.22) 25%,
+    transparent 25%,
+    transparent 50%,
+    rgba(255, 255, 255, 0.22) 50%,
+    rgba(255, 255, 255, 0.22) 75%,
+    transparent 75%,
+    transparent
+  );
+  background-size: 1rem 1rem;
+  animation: progressStripes 0.85s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-progress-stripes {
+    animation: none;
+  }
+}
+
 /* --- Print Styles --- */
 @media print {
   .no-print { display: none !important; }

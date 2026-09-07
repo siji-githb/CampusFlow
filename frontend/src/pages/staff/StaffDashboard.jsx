@@ -1,5 +1,4 @@
 import { useState, useEffect, useCallback } from 'react'
-import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/useAuth'
 import { useStaffEvent } from '../../context/WebSocketContext'
 import campusFlowLogo from '../../assets/logo.png'
@@ -66,7 +65,6 @@ function CompactQueuePreview({ queue, loading, onNavigate }) {
       {active.map(({ ticket }) => {
         const student = ticket.users
         const name = student ? `${student.first_name || ''} ${student.last_name || ''}`.trim() || 'Unknown Student' : 'Unknown Student'
-        const initials = name.split(' ').slice(0, 2).map(w => w[0]?.toUpperCase()).join('') || '?'
         const isServing = ticket.status === 'in_progress'
         const priorityClass = ticket.appointments?.priority_class
         const isPriority = priorityClass && priorityClass !== 'regular'
@@ -83,25 +81,26 @@ function CompactQueuePreview({ queue, loading, onNavigate }) {
             }`}
           >
             {/* Queue Number & Info */}
-            <div className="flex items-center gap-3 min-w-0">
-              <div className="w-10 h-10 rounded-xl bg-maroon text-white flex items-center justify-center font-serif text-fluid-14 font-extrabold shrink-0 shadow-2xs">
+            <div className="flex items-center gap-3 sm:gap-3.5 min-w-0 flex-1">
+              <div className="font-serif text-fluid-16 sm:text-fluid-18 font-extrabold text-maroon shrink-0 whitespace-nowrap tracking-tight">
                 {ticket.queue_number}
               </div>
-              <div className="min-w-0">
-                <div className="flex items-center gap-1.5 mb-0.5">
+              <div className="w-px h-7 bg-border shrink-0" />
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-2 mb-1 flex-wrap">
                   <span className="text-fluid-13 font-bold text-text-main truncate group-hover:text-maroon transition-colors">
                     {name}
                   </span>
                   {isPriority && (
-                    <span className="shrink-0 text-fluid-9 font-extrabold px-1.5 py-0.2 rounded-full bg-maroon-light text-maroon border border-maroon-border/60 uppercase">
+                    <span className="shrink-0 text-fluid-9 font-extrabold px-1.5 py-0.5 rounded-full bg-maroon-light text-maroon border border-maroon-border/60 uppercase tracking-wide">
                       {priorityClass}
                     </span>
                   )}
                 </div>
                 {ticket.appointments?.selected_documents && ticket.appointments.selected_documents.length > 1 ? (
-                  <div className="flex flex-wrap gap-1 mt-0.5">
+                  <div className="flex flex-wrap gap-1.5 mt-0.5">
                     {ticket.appointments.selected_documents.map((d, idx) => (
-                      <span key={idx} className="text-fluid-9 font-bold px-1.5 py-0.2 rounded bg-maroon-light text-maroon border border-maroon-border/40">
+                      <span key={idx} className="text-fluid-10 font-bold px-2 py-0.5 rounded-md bg-maroon-light text-maroon border border-maroon-border/40 whitespace-nowrap">
                         {d.name}
                       </span>
                     ))}
@@ -116,7 +115,7 @@ function CompactQueuePreview({ queue, loading, onNavigate }) {
 
             {/* Serving / Waiting Status */}
             <div className="shrink-0 flex items-center gap-2">
-              <span className={`text-fluid-11 font-bold px-2.5 py-1 rounded-full border flex items-center gap-1.5 ${
+              <span className={`text-fluid-11 font-bold px-2.5 py-1 rounded-full border flex items-center gap-1.5 whitespace-nowrap ${
                 isServing 
                   ? 'bg-success-light text-success border-success-border' 
                   : 'bg-gold-light text-gold border-gold-border'
@@ -131,9 +130,12 @@ function CompactQueuePreview({ queue, loading, onNavigate }) {
       
       {activeAll.length > 4 && (
         <div className="pt-2 text-right">
-          <span className="text-fluid-11 font-semibold text-text-muted">
-            + {activeAll.length - 4} more tickets in queue
-          </span>
+          <button 
+            onClick={() => onNavigate && onNavigate('queue')}
+            className="text-fluid-11 font-bold text-maroon hover:underline cursor-pointer bg-transparent border-none p-0 inline-flex items-center gap-1"
+          >
+            + {activeAll.length - 4} more ticket{activeAll.length - 4 > 1 ? 's' : ''} in queue &rarr;
+          </button>
         </div>
       )}
     </div>
@@ -167,19 +169,24 @@ const SideItem = ({ icon, label, active, onClick, badge, disabled }) => (
 )
 
 // ── Stat Card ──────────────────────────────────────────────────────────────────
-const StatCard = ({ icon, value, label, sub, subColorClass = "text-text-muted", colorClass, bgClass, loading, delay, className = "" }) => (
-  <div className={`animate-fade-up bg-white rounded-xl sm:rounded-[14px] p-3.5 sm:px-5 sm:py-4.5 border border-border flex flex-col justify-between gap-2.5 sm:gap-3 shadow-[0_1px_4px_rgba(0,0,0,0.04)] ${className}`} style={{ animationDelay: delay || '0s' }}>
-    <div className="flex items-start justify-between gap-2">
-      <div className="text-fluid-10-5 sm:text-xs font-semibold text-text-muted uppercase tracking-[0.06em] mt-0.5 sm:mt-1.5 leading-tight">{label}</div>
-      <div className={`w-8 h-8 sm:w-9 sm:h-9 rounded-lg sm:rounded-[10px] flex items-center justify-center shrink-0 ${bgClass} ${colorClass}`}>
+const StatCard = ({ icon, value, label, sub, subColorClass = "text-text-muted", colorClass = "text-maroon", bgClass = "bg-maroon-light", borderClass = "border-maroon-border/60", loading, delay, className = "" }) => (
+  <div className={`animate-fade-up bg-white rounded-xl sm:rounded-2xl px-3.5 py-3 sm:px-5 sm:py-3.5 border border-border flex flex-col justify-between min-h-25.5 sm:min-h-28 gap-1.5 shadow-[0_1px_4px_rgba(0,0,0,0.02)] ${className}`} style={{ animationDelay: delay || '0s' }}>
+    <div className="flex items-center justify-between gap-2">
+      <span className="text-fluid-10 sm:text-fluid-11 font-bold text-text-muted uppercase tracking-[0.08em] truncate leading-tight">{label}</span>
+      <div className={`w-7 h-7 sm:w-8.5 sm:h-8.5 rounded-lg sm:rounded-xl flex items-center justify-center shrink-0 border ${borderClass} ${bgClass} ${colorClass}`}>
         {icon}
       </div>
     </div>
     <div>
-      <div className="font-serif text-fluid-22 sm:text-fluid-28 font-extrabold leading-none m-0 min-h-6 sm:min-h-7 text-text-main">
-        {loading ? <div className="animate-pulse w-15 h-6 sm:h-7 rounded-md bg-border" /> : value}
+      <div className="font-serif text-fluid-20 sm:text-fluid-26 font-extrabold leading-tight tracking-tight m-0 text-text-main">
+        {loading ? <div className="animate-pulse w-14 h-6 sm:h-7 rounded-md bg-border" /> : value}
       </div>
-      {sub && <div className={`text-fluid-10-5 sm:text-fluid-11 font-semibold mt-1 sm:mt-1.5 truncate ${subColorClass}`}>{sub}</div>}
+      {sub && (
+        <div className={`text-fluid-10 sm:text-fluid-11 font-medium mt-0.5 flex items-center gap-1.5 truncate ${subColorClass}`}>
+          <span className="w-1.5 h-1.5 rounded-full bg-current inline-block shrink-0" />
+          <span>{sub}</span>
+        </div>
+      )}
     </div>
   </div>
 )
@@ -224,7 +231,6 @@ export default function StaffDashboard() {
   // Data states
   const [queue, setQueue] = useState([])
   const [priorityData, setPriorityData] = useState([])
-  const [idRequestsData, setIdRequestsData] = useState([])
   const [badgeStats, setBadgeStats] = useState({ idRequests: 0, priorityRequests: 0 })
   const [loadingQueue, setLoadingQueue] = useState(true)
   const [apptStats, setApptStats] = useState({ today_appointments: 0, completed_today: 0, total_monthly: 0 })
@@ -237,7 +243,8 @@ export default function StaffDashboard() {
   const [claimingWindow, setClaimingWindow] = useState(null)
   const [isLoadingWindow, setIsLoadingWindow] = useState(true)
 
-  const loadWindowData = async () => {
+  const loadWindowData = useCallback(async () => {
+    if (!token) return
     try {
       const data = await getWindowAssignments(token, Date.now())
       setNumWindows(data.num_windows != null ? Number(data.num_windows) : 3)
@@ -250,7 +257,7 @@ export default function StaffDashboard() {
     } finally {
       setIsLoadingWindow(false)
     }
-  }
+  }, [token, user?.id])
 
   const handleClaimWindow = async (winNum) => {
     setClaimingWindow(winNum); setWindowError('')
@@ -273,7 +280,6 @@ export default function StaffDashboard() {
       setQueue(qData)
       setApptStats(aStats)
       setPriorityData(priorityReqs)
-      setIdRequestsData(reqs.filter(r => r.status === 'pending'))
       setBadgeStats({
         idRequests: reqs.filter(r => r.status === 'pending').length,
         priorityRequests: priorityReqs.length
@@ -297,41 +303,20 @@ export default function StaffDashboard() {
     const t = setInterval(loadData, 60000)
     const wt = setInterval(loadWindowData, 60000)
     return () => { clearInterval(t); clearInterval(wt) }
-  }, [loadData])
+  }, [loadData, loadWindowData])
 
   // Calculate stats — only count tickets at the counter (exclude back-office processing table)
   const activeInQueue = queue.filter(q => q.ticket.status !== 'completed' && getRequiresPresence(q.steps)).length
   const inProcessing = queue.filter(q => q.ticket.status !== 'completed' && !getRequiresPresence(q.steps)).length
   const completedToday = queue.filter(q => q.ticket.status === 'completed').length
   
-  let avgWait = 0
-  const done = queue.filter(q => q.ticket.status === 'completed')
-  if (done.length > 0) {
-    let totalMins = 0
-    let validCount = 0
-    done.forEach(({ ticket, steps }) => {
-      if (!ticket.created_at) return
-      const created = new Date(ticket.created_at)
-      const lastStep = steps.slice().reverse().find(s => s.status === 'completed' && s.confirmed_at)
-      if (lastStep) {
-        const completed = new Date(lastStep.confirmed_at)
-        totalMins += Math.max(0, (completed - created) / 60000)
-        validCount++
-      }
-    })
-    avgWait = validCount > 0 ? Math.round(totalMins / validCount) : 12
-  } else {
-    avgWait = 12
-  }
-
   const pendingAppts = Math.max(0, (apptStats.today_appointments || 0) - (apptStats.completed_today || 0))
 
   const stats = [
-    { icon: <Users size={20} />, value: activeInQueue.toString(), label: 'Active in Queue', sub: "At the counter", colorClass: 'text-gold', bgClass: 'bg-gold-light', loading: loadingQueue, delay: '0.1s' },
-    { icon: <FolderOpen size={20} />, value: inProcessing.toString(), label: 'In Processing', sub: "Processing table", colorClass: 'text-gold', bgClass: 'bg-gold-light', loading: loadingQueue, delay: '0.15s' },
-    { icon: <CheckSquare size={20} />, value: completedToday.toString(), label: 'Completed Today', sub: "Fully serviced", colorClass: 'text-gold', bgClass: 'bg-gold-light', loading: loadingQueue, delay: '0.2s' },
-    { icon: <Clock size={20} />, value: `${avgWait}m`, label: 'Avg. Serving Time', sub: avgWait > 15 ? "High wait times" : "Serving efficiently", subColorClass: avgWait > 15 ? "text-danger" : "text-text-muted", colorClass: 'text-gold', bgClass: 'bg-gold-light', loading: loadingQueue, delay: '0.25s' },
-    { icon: <CalendarClock size={20} />, value: pendingAppts.toString(), label: 'Today\'s Appts.', sub: "Scheduled today", colorClass: 'text-gold', bgClass: 'bg-gold-light', loading: loadingQueue, delay: '0.3s' },
+    { icon: <CalendarClock size={15} strokeWidth={2.4} />, value: pendingAppts.toString(), label: "Today's Appts.", sub: "Scheduled today", colorClass: 'text-blue', bgClass: 'bg-blue-light', borderClass: 'border-blue-border/60', subColorClass: 'text-blue', loading: loadingQueue, delay: '0.1s' },
+    { icon: <Users size={15} strokeWidth={2.4} />, value: activeInQueue.toString(), label: 'Active in Queue', sub: "At the counter", colorClass: 'text-maroon', bgClass: 'bg-maroon-light', borderClass: 'border-maroon-border/60', subColorClass: 'text-maroon', loading: loadingQueue, delay: '0.15s' },
+    { icon: <FolderOpen size={15} strokeWidth={2.4} />, value: inProcessing.toString(), label: 'In Processing', sub: "Processing table", colorClass: 'text-gold', bgClass: 'bg-gold-light', borderClass: 'border-gold-border/60', subColorClass: 'text-gold', loading: loadingQueue, delay: '0.2s' },
+    { icon: <CheckSquare size={15} strokeWidth={2.4} />, value: completedToday.toString(), label: 'Completed Today', sub: "Fully serviced", colorClass: 'text-success', bgClass: 'bg-success-light', borderClass: 'border-success-border/60', subColorClass: 'text-success', loading: loadingQueue, delay: '0.25s' },
   ]
 
   const navGroups = [
@@ -607,21 +592,20 @@ export default function StaffDashboard() {
               </div>
 
               {/* Stats Grid */}
-              <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2.5 sm:gap-4 mb-5 sm:mb-7">
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4 mb-5 sm:mb-7">
                 {stats.map((s, i) => (
                   <StatCard 
                     key={i} 
                     {...s} 
-                    className={i === stats.length - 1 ? 'col-span-2 sm:col-span-1 md:col-span-1' : ''} 
                   />
                 ))}
               </div>
 
               {/* Two-column: Queue preview + Priority Requests */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 sm:gap-6 items-stretch">
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 sm:gap-6 items-stretch">
 
                 {/* Live Queue Preview */}
-                <div className="animate-fade-up bg-white rounded-2xl p-5 sm:p-6 border border-border shadow-[0_2px_8px_rgba(0,0,0,0.04)] flex flex-col justify-between" style={{ animationDelay: '0.5s' }}>
+                <div className="lg:col-span-7 xl:col-span-8 animate-fade-up bg-white rounded-2xl p-5 sm:p-6 border border-border shadow-[0_2px_8px_rgba(0,0,0,0.04)] flex flex-col justify-between" style={{ animationDelay: '0.5s' }}>
                   <div>
                     <div className="flex items-center justify-between mb-4 sm:mb-5 pb-3.5 border-b border-border/80">
                       <div>
@@ -654,31 +638,22 @@ export default function StaffDashboard() {
                 </div>
 
                 {/* Priority Request Panel */}
-                <div className="animate-fade-up bg-white rounded-2xl p-5 sm:p-6 border border-border shadow-[0_2px_8px_rgba(0,0,0,0.04)] flex flex-col justify-between" style={{ animationDelay: '0.6s' }}>
+                <div className="lg:col-span-5 xl:col-span-4 animate-fade-up bg-white rounded-2xl p-5 sm:p-6 border border-border shadow-[0_2px_8px_rgba(0,0,0,0.04)] flex flex-col justify-between" style={{ animationDelay: '0.6s' }}>
                   <div>
-                    <div className="flex items-center justify-between mb-4 sm:mb-5 pb-3.5 border-b border-border/80">
-                      <div>
-                        <p className="text-fluid-11 font-extrabold text-gold tracking-[0.08em] uppercase m-0 mb-1">
-                          Action Required
-                        </p>
-                        <div className="flex items-center gap-2.5">
-                          <h2 className="font-serif text-fluid-18 sm:text-fluid-20 font-bold text-text-main m-0">
-                            Priority Requests
-                          </h2>
-                          {priorityData.length > 0 && (
-                            <span className="px-2 py-0.5 rounded-full bg-maroon-light text-maroon text-fluid-11 font-extrabold border border-maroon-border/60">
-                              {priorityData.length} Pending
-                            </span>
-                          )}
-                        </div>
+                    <div className="mb-4 sm:mb-5 pb-3.5 border-b border-border/80">
+                      <p className="text-fluid-11 font-extrabold text-gold tracking-[0.08em] uppercase m-0 mb-1">
+                        Action Required
+                      </p>
+                      <div className="flex items-center gap-2.5 flex-wrap">
+                        <h2 className="font-serif text-fluid-18 sm:text-fluid-20 font-bold text-text-main m-0 whitespace-nowrap">
+                          Priority Requests
+                        </h2>
+                        {priorityData.length > 0 && (
+                          <span className="px-2.5 py-0.5 rounded-full bg-maroon-light text-maroon text-fluid-11 font-extrabold border border-maroon-border/60 whitespace-nowrap shrink-0">
+                            {priorityData.length} Pending
+                          </span>
+                        )}
                       </div>
-                      <button 
-                        onClick={() => handleNavChange('priority-requests')} 
-                        className="group px-3 py-1.5 sm:px-3.5 sm:py-1.5 rounded-xl border border-border bg-white text-text-main hover:border-maroon/40 hover:text-maroon hover:bg-surface text-fluid-11-5 font-bold cursor-pointer font-sans transition-all duration-200 shadow-2xs hover:shadow-xs flex items-center gap-1.5 shrink-0"
-                      >
-                        View All
-                        <ChevronRight size={13} className="transition-transform duration-200 group-hover:translate-x-0.5 text-text-muted group-hover:text-maroon" />
-                      </button>
                     </div>
 
                     <div className="overflow-auto">
@@ -711,28 +686,28 @@ export default function StaffDashboard() {
                               <div 
                                 key={req.id} 
                                 onClick={() => handleNavChange('priority-requests')}
-                                className="group flex items-center justify-between gap-3 p-3 sm:px-4 sm:py-3 rounded-xl border border-border bg-white hover:border-maroon-border hover:bg-surface/50 transition-all cursor-pointer shadow-2xs hover:shadow-xs"
+                                className="group flex items-center justify-between gap-2.5 p-3 sm:px-4 sm:py-3 rounded-xl border border-border bg-white hover:border-maroon-border hover:bg-surface/50 transition-all cursor-pointer shadow-2xs hover:shadow-xs"
                               >
-                                <div className="flex items-center gap-3 min-w-0">
+                                <div className="flex items-center gap-2.5 min-w-0 flex-1">
                                   <div className="w-9 h-9 rounded-full bg-maroon-light text-maroon border border-maroon-border/60 flex items-center justify-center font-bold text-fluid-12-5 shrink-0">
                                     {initials}
                                   </div>
-                                  <div className="min-w-0">
+                                  <div className="min-w-0 flex-1">
                                     <div className="text-fluid-13 font-bold text-text-main truncate group-hover:text-maroon transition-colors">
                                       {name}
                                     </div>
-                                    <div className="text-fluid-11 font-mono text-text-muted font-medium mt-0.5">
+                                    <div className="text-fluid-11 font-mono text-text-muted font-medium mt-0.5 truncate">
                                       ID: {studentId}
                                     </div>
                                   </div>
                                 </div>
 
-                                <div className="flex items-center gap-2 shrink-0">
-                                  <span className="text-fluid-10 font-extrabold px-2.5 py-1 rounded-full bg-maroon-light text-maroon border border-maroon-border/70 uppercase tracking-wider flex items-center gap-1">
+                                <div className="flex items-center gap-1.5 shrink-0">
+                                  <span className="text-fluid-10 font-extrabold px-2.5 py-1 rounded-full bg-maroon-light text-maroon border border-maroon-border/70 uppercase tracking-wider flex items-center gap-1 shrink-0">
                                     <ShieldCheck size={11} className="shrink-0" />
                                     <span>{pType}</span>
                                   </span>
-                                  <ChevronRight size={14} className="text-text-muted group-hover:text-maroon group-hover:translate-x-0.5 transition-all" />
+                                  <ChevronRight size={14} className="text-text-muted group-hover:text-maroon group-hover:translate-x-0.5 transition-all shrink-0" />
                                 </div>
                               </div>
                             )

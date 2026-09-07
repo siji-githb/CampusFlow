@@ -4,7 +4,7 @@ import { useAuth } from '../../context/useAuth'
 import { useStaffEvent } from '../../context/WebSocketContext'
 import { useToast } from '../../context/ToastContext'
 import { getIdRequests, updateIdRequestStatus, getStudentRecords, sendIdRequestEmail, deleteIdRequest } from '../../services/adminService'
-import { Check, X, Clock, HelpCircle, Mail, BookOpen, Send, User, Calendar, AtSign, Search, Trash2 } from 'lucide-react'
+import { Check, X, Clock, HelpCircle, Mail, BookOpen, Send, User, Calendar, AtSign, Search, Trash2, GraduationCap, ShieldCheck, AlertTriangle } from 'lucide-react'
 
 // ── Email Reply Modal ──────────────────────────────────────────────────────────
 function EmailModal({ req, token, onClose, onSentAndResolve }) {
@@ -21,8 +21,8 @@ function EmailModal({ req, token, onClose, onSentAndResolve }) {
   const [dirError, setDirError] = useState('')
   const searchRef = useRef()
 
-  const defaultMessage = (id) =>
-    `Hi ${req.first_name},\n\nThank you for reaching out to the CRMC Registrar's Office.\n\nAfter checking our records, your Student ID is:\n\n  ${id || '[Student ID Here]'}\n\nPlease keep this for your records. You can now use this ID to create your CampusFlow account.\n\nIf you have any other concerns, feel free to contact us.\n\nBest regards,\nCRMC Registrar's Office`
+  const defaultMessage = useCallback((id) =>
+    `Hi ${req?.first_name || 'Student'},\n\nThank you for reaching out to the CRMC Registrar's Office.\n\nAfter checking our records, your Student ID is:\n\n  ${id || '[Student ID Here]'}\n\nPlease keep this for your records. You can now use this ID to create your CampusFlow account.\n\nIf you have any other concerns, feel free to contact us.\n\nBest regards,\nCRMC Registrar's Office`, [req?.first_name])
 
   useEffect(() => {
     setMessage(defaultMessage(''))
@@ -31,7 +31,7 @@ function EmailModal({ req, token, onClose, onSentAndResolve }) {
       .then(res => setAllRecords(res.records || []))
       .catch(e => setDirError(e.message))
       .finally(() => setLoadingDir(false))
-  }, [])
+  }, [defaultMessage, token])
 
   const handleIdChange = (val) => {
     setStudentId(val)
@@ -71,147 +71,233 @@ function EmailModal({ req, token, onClose, onSentAndResolve }) {
   }
 
   return createPortal((
-    <div className="fixed inset-0 z-99999 flex items-center justify-center p-4 bg-black/60 overflow-y-auto animate-fade-in" onClick={onClose}>
-      <div className="bg-white rounded-2xl shadow-[0_24px_64px_rgba(0,0,0,0.18)] w-full max-w-212.5 my-auto overflow-hidden animate-fade-up border border-border" onClick={e => e.stopPropagation()}>
-        
-        {/* Header - White */}
-        <div className="bg-white border-b border-border px-6 py-5 flex items-start justify-between gap-4">
+    <div 
+      className="fixed inset-0 z-99999 flex items-center justify-center p-4 sm:p-6 overflow-y-auto" 
+      onClick={onClose}
+    >
+      <div className="fixed inset-0 bg-black/50 transition-opacity animate-fade-in" />
+      
+      <div 
+        className="animate-fade-up relative my-auto w-full max-w-4xl xl:max-w-5xl bg-white text-text-main rounded-3xl p-5 sm:p-7 shadow-[0_25px_80px_rgba(0,0,0,0.18)] border border-border z-10 font-sans overflow-hidden max-h-[92vh] flex flex-col" 
+        onClick={e => e.stopPropagation()}
+      >
+        {/* Top decorative accent bar */}
+        <div className="absolute top-0 left-0 right-0 h-1.5 bg-linear-to-r from-maroon via-maroon-dark to-gold" />
+
+        {/* Header */}
+        <div className="flex justify-between items-start mb-5 pb-4 border-b border-border gap-4 pt-1 shrink-0">
           <div>
-            <p className="text-fluid-10 font-bold text-gold tracking-widest uppercase m-0 mb-1">ID Request Response</p>
-            <h2 className="text-text-main font-serif text-fluid-20 font-bold m-0">Send Student ID</h2>
+            <div className="flex items-center gap-2 mb-2 flex-wrap">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-maroon-light text-maroon text-fluid-11 font-extrabold uppercase tracking-wider border border-maroon-border">
+                <Mail size={13} /> ID Request Response
+              </span>
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-off-white text-text-sub text-fluid-11 font-mono font-bold border border-border">
+                Ref: <strong className="text-maroon">#{req.id?.slice(0, 8) || req.id}</strong>
+              </span>
+              {studentId && (
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-success-light text-success text-fluid-11 font-mono font-bold border border-success-border">
+                  ID: <strong>{studentId}</strong>
+                </span>
+              )}
+            </div>
+            <h2 className="font-serif text-fluid-22 sm:text-fluid-26 font-extrabold text-maroon m-0 leading-tight tracking-tight">
+              Send Student ID
+            </h2>
+            <p className="text-fluid-12 text-text-muted mt-1 mb-0 font-medium">
+              Search directory records or input the student ID to send official credentials via email.
+            </p>
           </div>
-          <button onClick={onClose} className="bg-slate-100 border-none text-text-sub hover:text-text-main rounded-full w-8 h-8 flex items-center justify-center cursor-pointer hover:bg-slate-200 transition-colors shrink-0 text-fluid-18 leading-none">
-            ×
+
+          <button
+            type="button"
+            onClick={onClose}
+            className="w-10 h-10 rounded-full bg-surface text-text-muted hover:bg-border/80 hover:text-text-main transition-all flex items-center justify-center border border-border cursor-pointer shrink-0 shadow-xs hover:scale-105 active:scale-95"
+            title="Close"
+          >
+            <X size={18} />
           </button>
         </div>
 
-        <div className="px-4 sm:px-6 py-6 grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8 max-h-[85vh] overflow-y-auto">
-          
-          {/* Left Column: Student Info & Search */}
-          <div className="flex flex-col">
-            {/* Student Info */}
-            <div className="bg-off-white border border-border rounded-xl p-4 mb-6 grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div className="flex items-center gap-2 text-fluid-13 text-text-sub">
-                <User size={14} className="text-maroon shrink-0" />
-                <span><span className="font-semibold text-text-main">{req.first_name} {req.last_name}</span></span>
-              </div>
-              <div className="flex items-center gap-2 text-fluid-13 text-text-sub">
-                <BookOpen size={14} className="text-maroon shrink-0" />
-                <span>{req.course}</span>
-              </div>
-              <div className="flex items-center gap-2 text-fluid-13 text-text-sub sm:col-span-2">
-                <AtSign size={14} className="text-maroon shrink-0" />
-                <span className="truncate">{req.email}</span>
-              </div>
-              <div className="flex items-center gap-2 text-fluid-13 text-text-sub sm:col-span-2">
-                <Calendar size={14} className="text-maroon shrink-0" />
-                <span>Requested {new Date(req.created_at).toLocaleString()}</span>
-              </div>
-            </div>
-
-            {/* Directory Search */}
-            <div className="mb-6 flex-1">
-              <label className="block text-fluid-11 font-bold text-text-sub tracking-wider uppercase mb-1.5">
-                <span className="flex items-center gap-1.5"><Search size={12} /> Search School Directory</span>
-              </label>
-              <div className="relative">
-                <input
-                  ref={searchRef}
-                  type="text"
-                  value={query}
-                  onChange={e => { setQuery(e.target.value); if (studentId) { setStudentId(''); setMessage(defaultMessage('')) } }}
-                  placeholder="Type name or student ID to search…"
-                  className="w-full pl-9 pr-3.5 py-2.5 rounded-lg border-[1.5px] border-border text-fluid-13 text-text-main outline-none focus:border-maroon transition-colors"
-                />
-                <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted pointer-events-none" />
-              </div>
-
-              {/* Loading / error state */}
-              {loadingDir && (
-                <p className="text-fluid-11 text-text-muted mt-1.5 flex items-center gap-1.5">
-                  <span className="inline-block w-3 h-3 border-2 border-maroon border-t-transparent rounded-full animate-spin" /> Loading directory…
-                </p>
-              )}
-              {dirError && <p className="text-fluid-11 text-danger mt-1.5">{dirError}</p>}
-
-              {/* Live results dropdown */}
-              {filtered.length > 0 && (
-                <div className="mt-1.5 rounded-xl border border-border shadow-[0_4px_16px_rgba(0,0,0,0.08)] bg-white overflow-hidden max-h-40 overflow-y-auto">
-                  {filtered.map((r, i) => (
-                    <button
-                      key={r.student_id}
-                      type="button"
-                      onClick={() => handleSelectRecord(r)}
-                      className={`w-full text-left flex items-center justify-between px-4 py-2.5 border-none cursor-pointer transition-colors hover:bg-maroon-light
-                        ${i !== filtered.length - 1 ? 'border-b border-border' : ''}`}
-                    >
-                      <div>
-                        <div className="text-fluid-13 font-semibold text-text-main">{r.last_name}, {r.first_name}</div>
-                        <div className="text-fluid-11 text-text-sub mt-0.5">{r.course}</div>
-                      </div>
-                      <span className="text-fluid-12 font-bold text-maroon shrink-0 ml-4">{r.student_id}</span>
-                    </button>
-                  ))}
+        {/* Scrollable Body */}
+        <div className="overflow-y-auto custom-scrollbar flex-1 pr-1 -mr-1">
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-5 sm:gap-6">
+            {/* Left Column: Requester info & Search (5 cols) */}
+            <div className="flex flex-col space-y-3.5 md:col-span-5">
+              {/* Requester Information Card */}
+              <div className="p-3.5 bg-off-white/70 rounded-2xl border border-border/80 shadow-2xs">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8.5 h-8.5 rounded-xl bg-maroon-light text-maroon flex items-center justify-center shrink-0 border border-maroon-border/60 shadow-xs">
+                    <User size={15} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <span className="text-[10px] font-bold text-text-muted uppercase tracking-wider block leading-none mb-1">
+                      Student Requester
+                    </span>
+                    <h4 className="text-xs sm:text-sm font-bold text-text-main m-0 truncate leading-tight">
+                      {req.first_name} {req.last_name}
+                    </h4>
+                  </div>
+                  <span className="text-[10px] text-text-muted shrink-0 hidden sm:inline-block">
+                    {new Date(req.created_at).toLocaleDateString()}
+                  </span>
                 </div>
-              )}
-              {trimmedQuery.length >= 2 && !loadingDir && filtered.length === 0 && (
-                <p className="text-fluid-11 text-text-muted mt-1.5">No matching records found in the directory.</p>
-              )}
+
+                <div className="mt-2.5 pt-2.5 border-t border-border/60 space-y-1.5 text-xs">
+                  <div className="flex items-center gap-2 text-text-sub">
+                    <GraduationCap size={13} className="text-maroon shrink-0" />
+                    <span className="truncate text-[11px]">{req.course || 'Degree Program Not Specified'}</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-text-sub">
+                    <AtSign size={13} className="text-maroon shrink-0" />
+                    <span className="truncate text-[11px] font-semibold text-text-main">{req.email}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Search School Directory */}
+              <div>
+                <label className="text-[11px] font-bold text-text-muted uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
+                  <Search size={13} className="text-maroon" /> Search School Directory
+                </label>
+                <div className="relative">
+                  <input
+                    ref={searchRef}
+                    type="text"
+                    value={query}
+                    onChange={e => { setQuery(e.target.value); if (studentId) { setStudentId(''); setMessage(defaultMessage('')) } }}
+                    placeholder="Search by student name or ID..."
+                    className="w-full pl-8.5 pr-8 py-2 rounded-xl border border-border bg-off-white/60 text-xs text-text-main placeholder:text-text-muted/50 outline-none focus:border-maroon focus:bg-white focus:ring-2 focus:ring-maroon/10 transition-all shadow-xs"
+                  />
+                  <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-text-muted pointer-events-none" />
+                  {query && (
+                    <button
+                      type="button"
+                      onClick={() => { setQuery(''); if (studentId) { setStudentId(''); setMessage(defaultMessage('')) } }}
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-text-muted hover:text-text-main p-0.5 rounded hover:bg-surface cursor-pointer transition-colors"
+                      title="Clear search"
+                    >
+                      <X size={13} />
+                    </button>
+                  )}
+                </div>
+
+                {loadingDir && (
+                  <p className="text-[11px] text-text-muted mt-1.5 flex items-center gap-1.5 font-medium">
+                    <span className="inline-block w-3 h-3 border-2 border-maroon border-t-transparent rounded-full animate-spin" /> 
+                    Loading directory database...
+                  </p>
+                )}
+                {dirError && <p className="text-[11px] text-danger mt-1 font-medium">{dirError}</p>}
+
+                {/* Dropdown Live Results (Refined compact sizing) */}
+                {filtered.length > 0 && (
+                  <div className="mt-1.5 rounded-xl border border-border shadow-md bg-white overflow-hidden max-h-44 overflow-y-auto custom-scrollbar divide-y divide-border/60 animate-fade-up">
+                    {filtered.map(r => (
+                      <button
+                        key={r.student_id}
+                        type="button"
+                        onClick={() => handleSelectRecord(r)}
+                        className="w-full text-left flex items-center justify-between px-3 py-2 cursor-pointer transition-colors hover:bg-maroon-light/50 group border-none bg-transparent"
+                      >
+                        <div className="min-w-0 pr-2">
+                          <div className="text-xs font-semibold text-text-main group-hover:text-maroon transition-colors leading-snug">
+                            {r.last_name}, {r.first_name}
+                          </div>
+                          <div className="text-[11px] text-text-sub truncate mt-0.5">{r.course}</div>
+                        </div>
+                        <span className="font-mono text-[11px] font-bold text-maroon bg-white px-2 py-0.5 rounded border border-maroon-border/40 shadow-2xs shrink-0">
+                          {r.student_id}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+                {trimmedQuery.length >= 2 && !loadingDir && filtered.length === 0 && (
+                  <p className="text-[11px] text-text-muted mt-1.5 font-medium">No matching records found in directory.</p>
+                )}
+              </div>
+
+              {/* Student ID to Send */}
+              <div>
+                <label className="text-[11px] font-bold text-text-muted uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
+                  <ShieldCheck size={13} className="text-maroon" /> Student ID to Send <span className="text-danger">*</span>
+                </label>
+                <input
+                  type="text"
+                  value={studentId}
+                  onChange={e => handleIdChange(e.target.value)}
+                  placeholder="Auto-filled from search, or type manually"
+                  className={`w-full px-3 py-2 rounded-xl border text-xs font-mono font-bold outline-none transition-all shadow-xs ${
+                    studentId 
+                      ? 'border-success bg-success-light/40 text-success ring-2 ring-success/15' 
+                      : 'border-border bg-off-white/60 text-text-main placeholder:text-text-muted/50 focus:border-maroon focus:bg-white focus:ring-2 focus:ring-maroon/10'
+                  }`}
+                />
+              </div>
             </div>
 
-            {/* Selected / manual Student ID */}
-            <div>
-              <label className="block text-fluid-11 font-bold text-text-sub tracking-wider uppercase mb-1.5">
-                Student ID to Send <span className="text-danger">*</span>
+            {/* Right Column: Email Preview & Feedback (7 cols) */}
+            <div className="flex flex-col h-full min-h-60 md:col-span-7">
+              <label className="text-[11px] font-bold text-text-muted uppercase tracking-wider mb-1.5 flex items-center justify-between">
+                <span className="flex items-center gap-1.5">
+                  <Mail size={13} className="text-maroon" /> Email Message Preview
+                </span>
+                <span className="text-[10px] text-text-muted font-normal">Editable</span>
               </label>
-              <input
-                type="text"
-                value={studentId}
-                onChange={e => handleIdChange(e.target.value)}
-                placeholder="Auto-filled from search, or type manually"
-                className={`w-full px-3.5 py-2.5 rounded-lg border-[1.5px] text-fluid-14 text-text-main outline-none transition-colors
-                  ${studentId ? 'border-success bg-success-light font-bold text-success' : 'border-border focus:border-maroon'}`}
-              />
-            </div>
-          </div>
-
-          {/* Right Column: Email body & Actions */}
-          <div className="flex flex-col h-full min-h-65">
-            <div className="mb-4 flex-1 flex flex-col">
-              <label className="block text-fluid-11 font-bold text-text-sub tracking-wider uppercase mb-1.5">Email Message</label>
               <textarea
                 value={message}
                 onChange={e => setMessage(e.target.value)}
-                className="w-full flex-1 min-h-45 px-3.5 py-3 rounded-lg border-[1.5px] border-border text-fluid-13 text-text-main outline-none focus:border-maroon transition-colors resize-none font-[inherit] leading-relaxed"
+                className="w-full flex-1 min-h-48 sm:min-h-60 p-3.5 rounded-xl border border-border bg-off-white/50 text-xs sm:text-[13px] font-sans font-medium text-text-main placeholder:text-text-muted/50 outline-none focus:border-maroon focus:bg-white focus:ring-2 focus:ring-maroon/10 transition-all shadow-xs resize-none leading-relaxed custom-scrollbar"
               />
-            </div>
 
-            {sendError && (
-              <div className="mb-4 py-2.5 px-3.5 rounded-lg bg-danger-light border border-danger-border text-danger text-fluid-13">
-                {sendError}
-              </div>
-            )}
+              {sendError && (
+                <div className="mt-2.5 p-2.5 rounded-xl bg-danger-light text-danger border border-danger-border flex items-center gap-2 text-xs font-medium animate-fade-in">
+                  <AlertTriangle size={14} className="shrink-0" /> {sendError}
+                </div>
+              )}
 
-            {sent && (
-              <div className="mb-4 py-2.5 px-3.5 rounded-lg bg-success-light border border-success-border text-success text-fluid-13 flex items-center gap-2">
-                <Check size={15} /> Email sent and request marked resolved.
-              </div>
-            )}
-
-            <div className="flex gap-3 mt-auto">
-              {!sent && (
-                <button
-                  onClick={handleSend}
-                  disabled={!studentId.trim() || sending}
-                  className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-fluid-14 border-none transition-colors
-                    ${(studentId.trim() && !sending) ? 'bg-maroon text-white cursor-pointer hover:bg-maroon-dark' : 'bg-border text-text-muted cursor-not-allowed'}`}
-                >
-                  <Mail size={16} /> {sending ? 'Sending Email...' : 'Send Email Now'}
-                </button>
+              {sent && (
+                <div className="mt-2.5 p-2.5 rounded-xl bg-success-light text-success border border-success-border flex items-center gap-2 text-xs font-bold animate-fade-in">
+                  <Check size={15} className="shrink-0" /> Email sent successfully! Resolving request...
+                </div>
               )}
             </div>
           </div>
+        </div>
 
+        {/* Modal Action Buttons Footer */}
+        <div className="flex items-center justify-end gap-2.5 pt-3.5 border-t border-border mt-3.5 shrink-0">
+          <button
+            type="button"
+            onClick={onClose}
+            disabled={sending}
+            className="px-4 py-2 rounded-xl border border-border bg-surface text-text-sub hover:text-text-main hover:bg-border/60 text-xs font-bold transition-all cursor-pointer shadow-2xs active:scale-[0.98] disabled:opacity-50 min-w-20"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            onClick={handleSend}
+            disabled={!studentId.trim() || sending || sent}
+            className="px-4.5 py-2 rounded-xl bg-maroon text-white hover:bg-maroon-dark text-xs font-bold transition-all cursor-pointer shadow-[0_4px_14px_rgba(123,26,42,0.18)] hover:shadow-[0_6px_18px_rgba(123,26,42,0.25)] active:scale-[0.98] flex items-center justify-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {sending ? (
+              <>
+                <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                <span>Sending...</span>
+              </>
+            ) : sent ? (
+              <>
+                <Check size={14} />
+                <span>Sent!</span>
+              </>
+            ) : (
+              <>
+                <Send size={13} />
+                <span>Send Email & Resolve</span>
+              </>
+            )}
+          </button>
         </div>
       </div>
     </div>
@@ -233,6 +319,7 @@ export default function IdRequestsPage() {
   const [isSelectMode, setIsSelectMode] = useState(false)
   const [selectedIds, setSelectedIds] = useState(new Set())
   const [isDeleting, setIsDeleting] = useState(false)
+  const [showDeleteModal, setShowDeleteModal] = useState(false)
 
   const loadRequests = useCallback(async (showSkeleton = true) => {
     try {
@@ -272,10 +359,8 @@ export default function IdRequestsPage() {
     setEmailTarget(null)
   }
 
-  const handleDeleteSelected = async () => {
+  const confirmDeleteSelected = async () => {
     if (selectedIds.size === 0) return
-    if (!window.confirm(`Are you sure you want to delete ${selectedIds.size} request(s)? This cannot be undone.`)) return
-    
     setIsDeleting(true)
     setError('')
     try {
@@ -287,6 +372,7 @@ export default function IdRequestsPage() {
 
       setIsSelectMode(false)
       setSelectedIds(new Set())
+      setShowDeleteModal(false)
       await loadRequests()
 
       if (failed > 0) {
@@ -337,6 +423,47 @@ export default function IdRequestsPage() {
           onSentAndResolve={handleSentAndResolve}
         />
       )}
+
+      {/* Delete Confirmation Modal (matches MasterListPage design) */}
+      {showDeleteModal && createPortal((
+        <div 
+          className="fixed inset-0 z-99999 flex items-center justify-center p-4 sm:p-6 overflow-y-auto" 
+          onClick={() => setShowDeleteModal(false)}
+        >
+          <div className="fixed inset-0 bg-black/50 transition-opacity animate-fade-in" />
+          <div 
+            className="animate-fade-up relative my-auto w-full max-w-md bg-white text-text-main rounded-3xl p-6 sm:p-8 shadow-[0_25px_80px_rgba(0,0,0,0.2)] border border-border z-10 text-center font-sans overflow-hidden" 
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="absolute top-0 left-0 right-0 h-1.5 bg-danger" />
+            <div className="w-14 h-14 rounded-2xl bg-danger-light border border-danger-border flex items-center justify-center mx-auto mb-4 text-danger shadow-xs">
+              <Trash2 size={26} />
+            </div>
+            <h3 className="text-fluid-20 font-bold text-text-main m-0 mb-2 font-serif">Delete Selected Requests?</h3>
+            <p className="text-fluid-13 text-text-sub m-0 mb-6 leading-relaxed">
+              You are about to permanently delete <strong className="text-maroon font-bold">{selectedIds.size}</strong> selected ID request(s). This action cannot be undone.
+            </p>
+            <div className="flex items-center gap-3">
+              <button 
+                type="button" 
+                onClick={() => setShowDeleteModal(false)} 
+                disabled={isDeleting} 
+                className="flex-1 px-4 py-3 rounded-xl border border-border bg-surface text-text-sub hover:text-text-main hover:bg-border/60 text-fluid-13 font-bold transition-all cursor-pointer shadow-xs disabled:opacity-50 active:scale-[0.98]"
+              >
+                Cancel
+              </button>
+              <button 
+                type="button" 
+                onClick={confirmDeleteSelected} 
+                disabled={isDeleting} 
+                className="flex-1 px-4 py-3 rounded-xl border-none bg-danger text-white hover:bg-danger-hover text-fluid-13 font-bold cursor-pointer transition-all shadow-[0_6px_20px_rgba(220,38,38,0.2)] hover:shadow-[0_8px_25px_rgba(220,38,38,0.28)] disabled:opacity-50 flex items-center justify-center gap-2 active:scale-[0.98]"
+              >
+                {isDeleting ? <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> : 'Yes, Delete All'}
+              </button>
+            </div>
+          </div>
+        </div>
+      ), document.body)}
 
       {/* ── Page Header (Always visible) ── */}
       <div className="animate-fade-up mb-6">
@@ -469,13 +596,13 @@ export default function IdRequestsPage() {
           <div className="mb-3 p-3 bg-danger-light/50 border border-danger-border rounded-xl flex items-center justify-between animate-fade-in">
             <span className="text-fluid-13 text-danger font-semibold">{selectedIds.size} selected</span>
             <button
-              onClick={handleDeleteSelected}
+              onClick={() => setShowDeleteModal(true)}
               disabled={isDeleting}
-            className="px-4 py-1.5 bg-danger text-white border-none rounded-lg text-fluid-12 font-bold cursor-pointer hover:bg-danger-dark transition-colors disabled:opacity-50"
-          >
-            {isDeleting ? 'Deleting...' : 'Confirm Delete'}
-          </button>
-        </div>
+              className="px-4 py-1.5 bg-danger text-white border-none rounded-lg text-fluid-12 font-bold cursor-pointer hover:bg-danger-dark transition-colors disabled:opacity-50 flex items-center gap-1.5 shadow-2xs active:scale-[0.98]"
+            >
+              <Trash2 size={13} /> Confirm Delete
+            </button>
+          </div>
       )}
 
       {loading ? (

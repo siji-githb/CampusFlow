@@ -6,7 +6,7 @@ import { getAllAppointments, getAppointmentStats, getBookingConfig } from '../..
 import { 
   Calendar, RefreshCw, BarChart2, Circle, User, Users, Tag, X, FileText, Activity, 
   Clock, CheckCircle, CheckCircle2, AlertCircle, Mail, GraduationCap, MapPin, Ticket, 
-  ExternalLink, Paperclip, ChevronRight, ChevronLeft, ChevronDown, CalendarCheck, ShieldCheck, 
+  ExternalLink, Paperclip, ChevronRight, ChevronLeft, ChevronDown, CalendarCheck, CalendarX, ShieldCheck, 
   Sparkles, DollarSign, Layers, ArrowRight, FolderOpen, ClipboardList, Info, Search, RotateCcw,
   Check, AlertTriangle
 } from 'lucide-react'
@@ -28,7 +28,6 @@ const STATUS_OPTIONS = [
   { value: 'in_progress', label: 'Ready for Pickup',  dot: 'bg-success' },
   { value: 'completed',   label: 'Completed',         dot: 'bg-success' },
   { value: 'cancelled',   label: 'Cancelled',         dot: 'bg-danger' },
-  { value: 'no_show',     label: 'No Show',           dot: 'bg-text-muted' },
 ]
 
 // ── Effective Status Resolver ───────────────────────────────────────────────────
@@ -366,7 +365,7 @@ export default function AppointmentsPage() {
   }, [filtered, page])
 
   const selectedDaySummary = useMemo(() => {
-    const summary = { confirmed: 0, in_progress: 0, completed: 0, cancelled: 0, no_show: 0 }
+    const summary = { confirmed: 0, in_progress: 0, completed: 0, cancelled: 0 }
     appointments.forEach(a => {
       const st = getEffectiveStatus(a)
       if (summary[st] !== undefined) summary[st]++
@@ -399,24 +398,59 @@ export default function AppointmentsPage() {
       )}
 
       {/* ── KPI Metric Cards ── */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-7">
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 sm:gap-4 mb-5 sm:mb-7">
         {[
-          { label: "Today's Bookings", value: statsData?.today_appointments ?? 0, icon: <Calendar size={18} />, bg: 'bg-maroon-light', fg: 'text-maroon', sub: 'Total bookings scheduled today' },
-          { label: 'Confirmed Today', value: statsData?.confirmed_today ?? (statsData?.today_appointments || 0), icon: <CalendarCheck size={18} />, bg: 'bg-blue-light', fg: 'text-blue', sub: 'Awaiting arrival at desk' },
-          { label: 'Ready for Pickup', value: selectedDaySummary.in_progress, icon: <Clock size={18} />, bg: 'bg-success-light', fg: 'text-success', sub: 'Ready at release counter' },
-          { label: 'Completed Today', value: statsData?.completed_today ?? 0, icon: <CheckCircle2 size={18} />, bg: 'bg-gold-light', fg: 'text-gold', sub: 'Successfully processed today' },
+          { 
+            label: "Today's Appts.", 
+            value: statsData?.today_appointments ?? 0, 
+            icon: <Calendar size={15} strokeWidth={2.2} />, 
+            bg: 'bg-blue-light', 
+            fg: 'text-blue', 
+            border: 'border-blue-border/60', 
+            sub: 'Scheduled today', 
+            subColor: 'text-blue' 
+          },
+          { 
+            label: 'Completed Today', 
+            value: statsData?.completed_today ?? 0, 
+            icon: <CheckCircle2 size={15} strokeWidth={2.2} />, 
+            bg: 'bg-success-light', 
+            fg: 'text-success', 
+            border: 'border-success-border/60', 
+            sub: 'Processed today', 
+            subColor: 'text-success' 
+          },
+          { 
+            label: 'Cancelled Appointments', 
+            value: statsData?.cancelled_today ?? 0, 
+            icon: <CalendarX size={15} strokeWidth={2.2} />, 
+            bg: 'bg-danger-light', 
+            fg: 'text-danger', 
+            border: 'border-danger-border/60', 
+            sub: 'Cancelled today', 
+            subColor: 'text-danger' 
+          },
         ].map((c, i) => (
-          <div key={i} className="animate-fade-up rounded-2xl p-5 bg-white border border-border shadow-[0_2px_8px_rgba(0,0,0,0.04)] relative overflow-hidden" style={{ animationDelay: `${i * 0.08}s` }}>
-            <div className="flex items-start justify-between mb-3">
-              <span className="text-fluid-10-5 font-extrabold text-text-muted uppercase tracking-[0.08em]">{c.label}</span>
-              <div className={`w-8.5 h-8.5 rounded-xl flex items-center justify-center ${c.bg} ${c.fg} shadow-2xs`}>
+          <div 
+            key={i} 
+            className={`animate-fade-up bg-white rounded-xl sm:rounded-2xl px-3.5 py-3 sm:px-5 sm:py-3.5 border border-border shadow-[0_1px_4px_rgba(0,0,0,0.02)] transition-all flex flex-col justify-between min-h-25.5 sm:min-h-28 gap-1.5 ${i === 2 ? 'col-span-2 sm:col-span-1' : ''}`} 
+            style={{ animationDelay: `${i * 0.08}s` }}
+          >
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-fluid-10 sm:text-fluid-11 font-bold text-text-muted uppercase tracking-[0.08em] truncate leading-tight">{c.label}</span>
+              <div className={`w-7 h-7 sm:w-8.5 sm:h-8.5 rounded-lg sm:rounded-xl flex items-center justify-center shrink-0 border ${c.border} ${c.bg} ${c.fg}`}>
                 {c.icon}
               </div>
             </div>
-            <div className="font-sans text-fluid-28 font-extrabold text-text-main leading-none">
-              {loading ? <div className="animate-pulse w-14 h-8 bg-border rounded-lg" /> : c.value}
+            <div>
+              <div className="font-serif text-fluid-20 sm:text-fluid-26 font-extrabold text-text-main leading-tight tracking-tight m-0">
+                {loading ? <div className="animate-pulse w-14 h-6 sm:h-7 rounded-md bg-border" /> : c.value}
+              </div>
+              <div className={`text-fluid-10 sm:text-fluid-11 font-medium mt-0.5 flex items-center gap-1.5 truncate ${c.subColor}`}>
+                <span className="w-1.5 h-1.5 rounded-full bg-current inline-block shrink-0" />
+                <span className="truncate">{c.sub}</span>
+              </div>
             </div>
-            <div className="text-fluid-11-5 font-medium text-text-muted mt-2">{c.sub}</div>
           </div>
         ))}
       </div>
@@ -442,7 +476,6 @@ export default function AppointmentsPage() {
                   { l: 'Ready for Pickup', v: selectedDaySummary.in_progress, c: 'text-success', dot: 'bg-success' },
                   { l: 'Completed',        v: selectedDaySummary.completed,   c: 'text-success', dot: 'bg-success' },
                   { l: 'Cancelled',        v: selectedDaySummary.cancelled,   c: 'text-danger',  dot: 'bg-danger' },
-                  { l: 'No Show',          v: selectedDaySummary.no_show,     c: 'text-text-muted', dot: 'bg-text-muted' },
                 ].map((s, i) => (
                   <div key={i} className="flex justify-between items-center group py-0.5">
                     <div className="flex items-center gap-2">
@@ -803,7 +836,9 @@ export default function AppointmentsPage() {
         const isPriority = viewDetailsModal.priority_class && viewDetailsModal.priority_class !== 'regular'
         const pClassLabel = viewDetailsModal.priority_class?.toUpperCase() || 'REGULAR'
 
-        const queueTicket = viewDetailsModal.queue_tickets?.[0] || viewDetailsModal.queue_tickets || null
+        const rawTickets = viewDetailsModal.queue_tickets
+        const queueTicket = Array.isArray(rawTickets) ? (rawTickets[0] || null) : (rawTickets || null)
+        const hasValidQueueTicket = Boolean(queueTicket && (queueTicket.id || queueTicket.queue_number))
         const txType = viewDetailsModal.transaction_types || viewDetailsModal.transaction_type || {}
         
         const docList = viewDetailsModal.selected_documents && viewDetailsModal.selected_documents.length > 0
@@ -833,34 +868,46 @@ export default function AppointmentsPage() {
         const refId = `APPT-${viewDetailsModal.id ? viewDetailsModal.id.split('-')[0].toUpperCase() : '000'}`
 
         return (
-          <div className="fixed inset-0 z-99999 flex items-center justify-center p-4 sm:p-6 md:p-8 overflow-y-auto" onClick={() => setViewDetailsModal(null)}>
-            <div className="fixed inset-0 bg-black/60 transition-opacity animate-fade-in" />
+          <div 
+            className="fixed inset-0 z-99999 flex items-center justify-center p-4 sm:p-6 overflow-y-auto" 
+            onClick={() => setViewDetailsModal(null)}
+          >
+            <div className="fixed inset-0 bg-black/50 transition-opacity animate-fade-in" />
             
-            <div className="animate-fade-up relative my-auto w-full max-w-4xl bg-white text-text-main rounded-3xl p-6 sm:p-8 md:p-10 max-h-[90vh] overflow-y-auto shadow-[0_25px_80px_rgba(0,0,0,0.18)] border border-border z-10 custom-scrollbar font-sans" onClick={e => e.stopPropagation()}>
-              
+            <div 
+              className="animate-fade-up relative my-auto w-full max-w-2xl bg-white text-text-main rounded-3xl p-6 sm:p-8 shadow-[0_25px_80px_rgba(0,0,0,0.18)] border border-border z-10 font-sans overflow-hidden flex flex-col max-h-[90vh]" 
+              onClick={e => e.stopPropagation()}
+            >
+              {/* Top decorative accent bar */}
+              <div className="absolute top-0 left-0 right-0 h-1.5 bg-linear-to-r from-maroon via-maroon-dark to-gold" />
+
               {/* Header */}
-              <div className="flex justify-between items-start mb-6 pb-5 border-b border-border gap-4">
+              <div className="flex justify-between items-start mb-6 pb-4 border-b border-border gap-4 pt-1 shrink-0">
                 <div>
                   <div className="flex items-center gap-2 mb-2 flex-wrap">
-                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-gold-light text-gold text-fluid-11 font-extrabold uppercase tracking-wider border border-gold-border">
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-maroon-light text-maroon text-fluid-11 font-extrabold uppercase tracking-wider border border-maroon-border">
                       <CalendarCheck size={13} /> Appointment Details
                     </span>
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-off-white text-text-sub text-fluid-11 font-mono font-bold border border-border">
+                      ID: <strong className="text-maroon">{refId}</strong>
+                    </span>
+                    <StatusBadge status={getEffectiveStatus(viewDetailsModal)} />
                     {isPriority && (
                       <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-maroon-light text-maroon text-fluid-11 font-extrabold uppercase tracking-wider border border-maroon-border">
                         <ShieldCheck size={13} /> {pClassLabel} Priority
                       </span>
                     )}
                   </div>
-                  
-                  <div className="flex items-baseline gap-4 flex-wrap">
-                    <h2 className="font-serif text-fluid-28 sm:text-fluid-34 font-extrabold text-maroon m-0 leading-none tracking-tight">
-                      {refId}
-                    </h2>
-                    <StatusBadge status={getEffectiveStatus(viewDetailsModal)} />
-                  </div>
+                  <h2 className="font-serif text-fluid-22 sm:text-fluid-26 font-extrabold text-maroon m-0 leading-tight tracking-tight">
+                    {name}
+                  </h2>
+                  <p className="text-fluid-12 text-text-muted mt-1 mb-0 font-medium">
+                    Student booking information, requested documents, and schedule verification.
+                  </p>
                 </div>
 
                 <button 
+                  type="button"
                   onClick={() => setViewDetailsModal(null)} 
                   className="w-10 h-10 rounded-full bg-surface text-text-muted hover:bg-border/80 hover:text-text-main transition-all flex items-center justify-center border border-border cursor-pointer shrink-0 shadow-xs hover:scale-105 active:scale-95"
                   title="Close"
@@ -869,254 +916,259 @@ export default function AppointmentsPage() {
                 </button>
               </div>
 
-              {/* Info Cards Grid */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-5">
-                {/* Student Details Card */}
-                <div className="p-5 sm:p-6 bg-white rounded-2xl border border-border shadow-sm flex items-start gap-4">
-                  <div className="w-12 h-12 rounded-xl bg-maroon-light text-maroon flex items-center justify-center shrink-0 border border-maroon-border font-bold text-fluid-18">
-                    <Users size={22} />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <span className="text-fluid-10-5 text-text-muted uppercase font-extrabold tracking-wider block mb-1">
-                      Student Information
-                    </span>
-                    <div className="text-fluid-16 font-bold text-text-main leading-snug truncate mb-2">
-                      {name}
+              {/* Scrollable Modal Content */}
+              <div className="overflow-y-auto custom-scrollbar flex-1 pr-1 -mr-1 space-y-4 sm:space-y-5">
+                {/* Info Cards Grid: Student Info & Requested Documents */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {/* Student Details Card */}
+                  <div className="p-4 sm:p-5 bg-off-white/60 rounded-2xl border border-border/80 shadow-2xs flex items-start gap-3.5 sm:gap-4">
+                    <div className="w-11 h-11 rounded-xl bg-maroon-light text-maroon flex items-center justify-center shrink-0 border border-maroon-border shadow-xs">
+                      <Users size={18} />
                     </div>
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-fluid-12 text-text-main font-mono font-bold bg-surface px-2.5 py-1 rounded-lg border border-border">
-                        ID: {studentId}
+                    <div className="flex-1 min-w-0">
+                      <span className="text-fluid-11 font-extrabold text-text-muted uppercase tracking-wider block mb-1">
+                        Student Information
                       </span>
-                      {isPriority && (
-                        <span className="text-fluid-11-5 font-bold uppercase px-2.5 py-1 rounded-lg border bg-maroon-light text-maroon border-maroon-border">
-                          {pClassLabel}
+                      <div className="text-fluid-15 sm:text-fluid-16 font-bold text-text-main leading-snug truncate mb-2">
+                        {name}
+                      </div>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="text-fluid-11 text-text-main font-mono font-bold bg-white px-2.5 py-1 rounded-lg border border-border shadow-2xs">
+                          ID: <strong className="text-maroon font-bold">{studentId}</strong>
                         </span>
-                      )}
-                      {email && (
-                        <span className="text-fluid-12 text-text-sub truncate max-w-64 font-medium flex items-center gap-1">
-                          <Mail size={12} className="text-text-muted shrink-0" />
-                          <span className="text-text-main truncate">{email}</span>
+                        <span className={`text-fluid-11 font-bold capitalize px-2.5 py-1 rounded-lg border ${
+                          isPriority 
+                            ? 'bg-maroon-light text-maroon border-maroon-border font-extrabold' 
+                            : 'bg-white text-text-sub border-border shadow-2xs'
+                        }`}>
+                          Priority: <span className="uppercase">{pClassLabel}</span>
                         </span>
-                      )}
-                      {academicInfo && (
-                        <span className="text-fluid-12 text-text-muted font-medium">
-                          • {academicInfo}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Requested Document Details Card */}
-                <div className="p-5 sm:p-6 bg-white rounded-2xl border border-border shadow-sm flex items-start gap-4">
-                  <div className="w-12 h-12 rounded-xl bg-gold-light text-gold flex items-center justify-center shrink-0 border border-gold-border">
-                    <FileText size={22} />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <span className="text-fluid-10-5 text-text-muted uppercase font-extrabold tracking-wider block mb-1">
-                      {docList.length > 1 ? `Requested Documents (${docList.length})` : 'Requested Document'}
-                    </span>
-                    {docList.length > 1 ? (
-                      <div className="flex flex-wrap gap-1.5 mb-2 mt-1">
-                        {docList.map((d, idx) => (
-                          <span key={d.id || idx} className="text-xs font-bold text-maroon bg-maroon-light py-0.5 px-2 rounded-md border border-maroon-border/40">
-                            {d.name}
+                        {email && (
+                          <span className="text-fluid-11 text-text-sub truncate max-w-full font-medium block w-full mt-1.5">
+                            Email: <span className="text-text-main font-semibold">{email}</span>
                           </span>
-                        ))}
+                        )}
+                        {academicInfo && (
+                          <span className="text-fluid-11 text-text-sub truncate max-w-full font-medium block w-full mt-0.5">
+                            Course: <span className="text-text-main font-semibold">{academicInfo}</span>
+                          </span>
+                        )}
                       </div>
-                    ) : (
-                      <div className="text-fluid-16 font-bold text-text-main leading-snug mb-1.5">
-                        {txType?.name || 'Document Transaction'}
-                      </div>
-                    )}
-                    <div className="text-fluid-12 text-text-sub flex items-center gap-1.5 font-medium mb-1">
-                      <Calendar size={13} className="text-gold shrink-0" />
-                      <span>
-                        {formattedDate} • {timeFormatted}
+                    </div>
+                  </div>
+
+                  {/* Requested Document Details Card */}
+                  <div className="p-4 sm:p-5 bg-off-white/60 rounded-2xl border border-border/80 shadow-2xs flex items-start gap-3.5 sm:gap-4">
+                    <div className="w-11 h-11 rounded-xl bg-gold-light text-gold-dark flex items-center justify-center shrink-0 border border-gold-border shadow-xs">
+                      <FileText size={18} />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <span className="text-fluid-11 font-extrabold text-text-muted uppercase tracking-wider block mb-1">
+                        {docList.length > 1 ? `Requested Documents (${docList.length})` : 'Requested Document'}
                       </span>
+                      {docList.length > 1 ? (
+                        <div className="flex flex-wrap gap-1.5 mb-2 mt-0.5">
+                          {docList.map((d, idx) => (
+                            <span key={d.id || idx} className="text-fluid-11 font-bold text-maroon bg-maroon-light py-0.5 px-2.5 rounded-lg border border-maroon-border">
+                              {d.name}
+                            </span>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="text-fluid-15 sm:text-fluid-16 font-bold text-text-main leading-snug mb-1.5">
+                          {txType?.name || 'Document Transaction'}
+                        </div>
+                      )}
+                      <div className="text-fluid-12 text-text-sub flex items-center gap-1.5 font-medium mb-1">
+                        <Calendar size={13} className="text-gold shrink-0" />
+                        <span>
+                          {formattedDate} • {timeFormatted}
+                        </span>
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
 
-              {/* Queue & Release Cards Grid */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-5">
-                {/* Live Queue Ticket Status Card */}
-                <div className="p-5 sm:p-6 bg-white rounded-2xl border border-border shadow-sm flex items-start gap-4">
-                  <div className="w-12 h-12 rounded-xl bg-maroon-light text-maroon flex items-center justify-center shrink-0 border border-maroon-border">
-                    <Ticket size={22} />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <span className="text-fluid-10-5 text-text-muted uppercase font-extrabold tracking-wider block mb-1">
-                      Live Queue Status
-                    </span>
-                    {queueTicket ? (
-                      <>
-                        <div className="text-fluid-18 font-extrabold text-maroon leading-tight">
-                          {queueTicket.queue_number}
-                        </div>
-                        <span className="text-fluid-12 text-text-sub font-medium mt-1 inline-block capitalize">
-                          Status: <strong className="text-text-main">{queueTicket.status === 'in_progress' ? 'Serving Now' : (queueTicket.status || 'Active').replace(/_/g, ' ')}</strong>
-                          {queueTicket.current_step ? ` (Step ${queueTicket.current_step}/${queueTicket.total_steps || 3})` : ''}
-                        </span>
-                      </>
-                    ) : (
-                      <>
-                        <div className="text-fluid-15 font-bold text-text-muted leading-tight">
-                          Not Yet Activated
-                        </div>
-                        <span className="text-fluid-12 text-text-muted font-medium mt-1 inline-block">
-                          Queue ticket activates upon student arrival
-                        </span>
-                      </>
-                    )}
-                  </div>
-                </div>
-
-                {/* Document Release Schedule Card */}
-                <div className="p-5 sm:p-6 bg-white rounded-2xl border border-border shadow-sm flex items-start gap-4">
-                  <div className="w-12 h-12 rounded-xl bg-blue-light text-blue flex items-center justify-center shrink-0 border border-blue-border">
-                    <FolderOpen size={22} />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <span className="text-fluid-10-5 text-text-muted uppercase font-extrabold tracking-wider block mb-1">
-                      Release Schedule
-                    </span>
-                    {viewDetailsModal.release_date ? (
-                      <>
-                        <div className="text-fluid-16 font-bold text-blue leading-snug">
-                          {new Date(viewDetailsModal.release_date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-                        </div>
-                        <span className="text-fluid-12 text-text-muted font-medium mt-1 inline-block">
-                          Scheduled for student pickup
-                        </span>
-                      </>
-                    ) : isCompleted ? (
-                      <>
-                        <div className="text-fluid-15 font-bold text-success leading-snug">
-                          Document Released
-                        </div>
-                        <span className="text-fluid-12 text-text-muted font-medium mt-1 inline-block">
-                          Transaction fully completed
-                        </span>
-                      </>
-                    ) : (
-                      <>
-                        <div className="text-fluid-15 font-bold text-text-main leading-snug">
-                          To Be Scheduled
-                        </div>
-                        <span className="text-fluid-12 text-text-muted font-medium mt-1 inline-block">
-                          Set by staff upon document preparation
-                        </span>
-                      </>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              {/* Requirements & Purpose */}
-              {(requiredDocs.length > 0 || purposeText || mediaUrl) && (
-                <div className="mb-5 p-5 bg-white rounded-2xl border border-border shadow-sm flex flex-col gap-4">
-                  {requiredDocs.length > 0 && (
-                    <div>
-                      <span className="text-fluid-10-5 font-extrabold text-text-muted uppercase tracking-wider mb-2 flex items-center gap-1.5">
-                        <ClipboardList size={14} className="text-gold" /> Required Document Attachments
+                {/* Queue & Release Cards Grid */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {/* Live Queue Ticket Status Card */}
+                  <div className="p-4 sm:p-5 bg-off-white/60 rounded-2xl border border-border/80 shadow-2xs flex items-start gap-3.5 sm:gap-4">
+                    <div className="w-11 h-11 rounded-xl bg-maroon-light text-maroon flex items-center justify-center shrink-0 border border-maroon-border shadow-xs">
+                      <Ticket size={18} />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <span className="text-fluid-11 font-extrabold text-text-muted uppercase tracking-wider block mb-1">
+                        Live Queue Status
                       </span>
-                      <div className="flex flex-wrap gap-2">
-                        {requiredDocs.map((doc, i) => (
-                          <span 
-                            key={i} 
-                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-surface/60 border border-border text-fluid-12 font-semibold text-text-main shadow-2xs"
+                      {hasValidQueueTicket ? (
+                        <>
+                          <div className="text-fluid-16 sm:text-fluid-18 font-extrabold text-maroon leading-tight mb-1">
+                            {queueTicket.queue_number}
+                          </div>
+                          <span className="text-fluid-12 text-text-sub font-medium block capitalize">
+                            Status: <strong className="text-text-main">{queueTicket.status === 'in_progress' ? 'Serving Now' : (queueTicket.status || 'Active').replace(/_/g, ' ')}</strong>
+                            {queueTicket.current_step ? ` (Step ${queueTicket.current_step}/${queueTicket.total_steps || 3})` : ''}
+                          </span>
+                        </>
+                      ) : (
+                        <>
+                          <div className="text-fluid-14 font-bold text-text-muted leading-tight mb-1">
+                            Not Yet Activated
+                          </div>
+                          <span className="text-fluid-11-5 text-text-muted font-medium block">
+                            Queue ticket activates upon student arrival
+                          </span>
+                        </>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Document Release Schedule Card */}
+                  <div className="p-4 sm:p-5 bg-off-white/60 rounded-2xl border border-border/80 shadow-2xs flex items-start gap-3.5 sm:gap-4">
+                    <div className="w-11 h-11 rounded-xl bg-blue-light text-blue flex items-center justify-center shrink-0 border border-blue-border shadow-xs">
+                      <FolderOpen size={18} />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <span className="text-fluid-11 font-extrabold text-text-muted uppercase tracking-wider block mb-1">
+                        Release Schedule
+                      </span>
+                      {viewDetailsModal.release_date ? (
+                        <>
+                          <div className="text-fluid-15 sm:text-fluid-16 font-bold text-blue leading-snug mb-1">
+                            {new Date(viewDetailsModal.release_date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                          </div>
+                          <span className="text-fluid-11-5 text-text-muted font-medium block">
+                            Scheduled for student pickup
+                          </span>
+                        </>
+                      ) : isCompleted ? (
+                        <>
+                          <div className="text-fluid-15 font-bold text-success leading-snug mb-1">
+                            Document Released
+                          </div>
+                          <span className="text-fluid-11-5 text-text-muted font-medium block">
+                            Transaction fully completed
+                          </span>
+                        </>
+                      ) : (
+                        <>
+                          <div className="text-fluid-14 font-bold text-text-main leading-snug mb-1">
+                            To Be Scheduled
+                          </div>
+                          <span className="text-fluid-11-5 text-text-muted font-medium block">
+                            Set by staff upon document preparation
+                          </span>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Requirements & Student Remarks & Media Card */}
+                {(requiredDocs.length > 0 || purposeText || mediaUrl) && (
+                  <div className="p-4 sm:p-5 bg-off-white/60 rounded-2xl border border-border/80 shadow-2xs flex flex-col gap-3.5">
+                    {requiredDocs.length > 0 && (
+                      <div>
+                        <span className="text-fluid-11 font-extrabold text-text-muted uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                          <ClipboardList size={13} className="text-gold" /> Required Document Attachments
+                        </span>
+                        <div className="flex flex-wrap gap-2">
+                          {requiredDocs.map((doc, i) => (
+                            <span 
+                              key={i} 
+                              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white border border-border text-fluid-11-5 font-semibold text-text-main shadow-2xs"
+                            >
+                              <CheckCircle2 size={13} className="text-success shrink-0" />
+                              <span>{typeof doc === 'string' ? doc : doc.name}</span>
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {purposeText && (
+                      <div className={requiredDocs.length > 0 ? "pt-3 border-t border-border/70" : ""}>
+                        <span className="text-fluid-11 font-extrabold text-text-muted uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
+                          <Info size={13} className="text-maroon" /> Student Remarks / Purpose
+                        </span>
+                        <p className="text-fluid-12-5 sm:text-fluid-13 text-text-main font-medium m-0 whitespace-pre-wrap leading-relaxed">
+                          {purposeText}
+                        </p>
+                      </div>
+                    )}
+
+                    {mediaUrl && (
+                      <div className={(requiredDocs.length > 0 || purposeText) ? "pt-3 border-t border-border/70" : ""}>
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-fluid-11 font-extrabold text-text-muted uppercase tracking-wider flex items-center gap-1.5">
+                            <Info size={13} className="text-maroon" /> Attached Document Media
+                          </span>
+                          <a 
+                            href={mediaUrl} 
+                            target="_blank" 
+                            rel="noreferrer" 
+                            className="text-fluid-11 font-bold text-maroon hover:underline flex items-center gap-1"
                           >
-                            <CheckCircle2 size={13} className="text-success shrink-0" />
-                            <span>{typeof doc === 'string' ? doc : doc.name}</span>
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {purposeText && (
-                    <div className={requiredDocs.length > 0 ? "pt-3.5 border-t border-border" : ""}>
-                      <span className="text-fluid-10-5 font-extrabold text-text-muted uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
-                        <Info size={14} className="text-maroon" /> Student Remarks / Purpose
-                      </span>
-                      <p className="text-fluid-13 text-text-main font-medium m-0 whitespace-pre-wrap leading-relaxed">
-                        {purposeText}
-                      </p>
-                    </div>
-                  )}
-
-                  {mediaUrl && (
-                    <div className={(requiredDocs.length > 0 || purposeText) ? "pt-3.5 border-t border-border" : ""}>
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-fluid-10-5 font-extrabold text-text-muted uppercase tracking-wider flex items-center gap-1.5">
-                          <Info size={14} className="text-maroon" /> Attached Document Media
-                        </span>
-                        <a 
-                          href={mediaUrl} 
-                          target="_blank" 
-                          rel="noreferrer" 
-                          className="text-fluid-11 font-bold text-maroon hover:underline flex items-center gap-1"
-                        >
-                          Open Full Size <ExternalLink size={11} />
+                            Open Full Size <ExternalLink size={11} />
+                          </a>
+                        </div>
+                        <a href={mediaUrl} target="_blank" rel="noreferrer" className="block rounded-xl overflow-hidden border border-border max-h-52 bg-white shadow-2xs hover:opacity-95 transition-opacity">
+                          <img src={mediaUrl} alt="Supporting Attachment" className="w-full h-full object-contain block max-h-52 bg-white" />
                         </a>
                       </div>
-                      <a href={mediaUrl} target="_blank" rel="noreferrer" className="block rounded-xl overflow-hidden border border-border max-h-56 bg-white shadow-2xs hover:opacity-95 transition-opacity">
-                        <img src={mediaUrl} alt="Supporting Attachment" className="w-full h-full object-contain block max-h-56 bg-white" />
-                      </a>
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* Workflow Roadmap */}
-              {processingSteps && processingSteps.length > 0 && (
-                <div className="mb-5 p-5 bg-white rounded-2xl border border-border shadow-sm">
-                  <h3 className="text-fluid-11 font-extrabold text-text-muted uppercase tracking-[0.08em] flex items-center gap-1.5 m-0 mb-3">
-                    <Clock size={14} className="text-maroon" /> Workflow Processing Steps
-                  </h3>
-                  <div className="space-y-2.5">
-                    {processingSteps.map((step, idx) => {
-                      const stepNumber = idx + 1
-                      const stepName = typeof step === 'string' ? step : step.name || step.step_name || `Step ${stepNumber}`
-                      const location = typeof step === 'object' ? step.location : null
-                      const estMins = typeof step === 'object' && step.estimated_minutes ? `~${step.estimated_minutes} min` : null
-
-                      return (
-                        <div key={idx} className="flex items-center justify-between p-3 rounded-xl bg-white border border-border hover:border-maroon-border transition-colors shadow-2xs gap-3">
-                          <div className="flex items-center gap-3 min-w-0">
-                            <div className="w-6 h-6 rounded-full bg-maroon text-white flex items-center justify-center text-fluid-11 font-extrabold shrink-0 shadow-2xs">
-                              {stepNumber}
-                            </div>
-                            <span className="text-fluid-13 font-bold text-text-main truncate">
-                              {stepName}
-                            </span>
-                          </div>
-                          <div className="flex items-center gap-2 shrink-0">
-                            {estMins && (
-                              <span className="text-fluid-11 font-medium text-text-muted px-2 py-0.5 rounded-md bg-white border border-border">
-                                {estMins}
-                              </span>
-                            )}
-                            {location && (
-                              <span className="text-fluid-11 font-bold px-2.5 py-0.5 rounded-full bg-maroon-light text-maroon border border-maroon-border/40">
-                                {location}
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                      )
-                    })}
+                    )}
                   </div>
-                </div>
-              )}
+                )}
+
+                {/* Workflow Roadmap */}
+                {processingSteps && processingSteps.length > 0 && (
+                  <div className="p-4 sm:p-5 bg-off-white/60 rounded-2xl border border-border/80 shadow-2xs">
+                    <h3 className="text-fluid-11 font-extrabold text-text-muted uppercase tracking-wider flex items-center gap-1.5 m-0 mb-3">
+                      <Clock size={13} className="text-maroon" /> Workflow Processing Steps
+                    </h3>
+                    <div className="space-y-2">
+                      {processingSteps.map((step, idx) => {
+                        const stepNumber = idx + 1
+                        const stepName = typeof step === 'string' ? step : step.name || step.step_name || `Step ${stepNumber}`
+                        const location = typeof step === 'object' ? step.location : null
+                        const estMins = typeof step === 'object' && step.estimated_minutes ? `~${step.estimated_minutes} min` : null
+
+                        return (
+                          <div key={idx} className="flex items-center justify-between p-2.5 sm:p-3 rounded-xl bg-white border border-border/80 hover:border-maroon-border transition-colors shadow-2xs gap-3">
+                            <div className="flex items-center gap-2.5 min-w-0">
+                              <div className="w-6 h-6 rounded-full bg-maroon text-white flex items-center justify-center text-fluid-11 font-extrabold shrink-0 shadow-2xs">
+                                {stepNumber}
+                              </div>
+                              <span className="text-fluid-12-5 sm:text-fluid-13 font-bold text-text-main truncate">
+                                {stepName}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-2 shrink-0">
+                              {estMins && (
+                                <span className="text-fluid-10-5 font-medium text-text-muted px-2 py-0.5 rounded-md bg-white border border-border">
+                                  {estMins}
+                                </span>
+                              )}
+                              {location && (
+                                <span className="text-fluid-10-5 font-bold px-2.5 py-0.5 rounded-full bg-maroon-light text-maroon border border-maroon-border/40">
+                                  {location}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </div>
+                )}
+              </div>
 
               {/* Modal Footer */}
-              <div className="pt-4 border-t border-border flex items-center justify-end">
+              <div className="pt-4 border-t border-border flex items-center justify-end shrink-0">
                 <button 
+                  type="button"
                   onClick={() => setViewDetailsModal(null)} 
-                  className="px-6 py-2.5 rounded-xl bg-maroon text-white text-fluid-13 font-bold cursor-pointer hover:bg-maroon-dark transition-colors shadow-sm active:scale-98"
+                  className="px-6 py-2.5 rounded-xl bg-maroon text-white text-fluid-13 font-bold cursor-pointer hover:bg-maroon-dark transition-all shadow-xs hover:scale-[1.02] active:scale-95"
                 >
                   Close
                 </button>

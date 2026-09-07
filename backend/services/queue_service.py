@@ -6,6 +6,12 @@ from services.admin_service import log_audit_action
 from services.notification_service import create_system_notification
 from services.websocket_manager import manager
 from deps import get_supabase_admin as get_admin
+from timezone_utils import (
+    get_valid_activation_dates,
+    get_pht_date_str,
+    get_pht_date,
+    get_pht_midnight_utc_iso,
+)
 
 settings = get_settings()
 
@@ -57,7 +63,8 @@ def activate_queue(appointment_id: str, student_id: str):
     if appt["status"] != "confirmed":
         raise HTTPException(status_code=400, detail="Appointment is not confirmed")
 
-    if appt["appointment_date"] != str(date.today()):
+    valid_activation_dates = get_valid_activation_dates()
+    if appt["appointment_date"] not in valid_activation_dates:
         raise HTTPException(
             status_code=400,
             detail=f"Queue can only be activated on your appointment date ({appt['appointment_date']})"
@@ -138,13 +145,13 @@ def activate_queue(appointment_id: str, student_id: str):
     _MAX_QNUM_RETRIES = 10
     ticket = None
     with _queue_number_lock:
-        utc_today_str = datetime.now(timezone.utc).date().isoformat()
+        today_floor_utc = min(get_pht_midnight_utc_iso(), datetime.now(timezone.utc).date().isoformat())
         
         for attempt in range(_MAX_QNUM_RETRIES):
             # Find all tickets created today with matching prefix
             existing_res = admin.table("queue_tickets") \
                 .select("queue_number") \
-                .gte("created_at", utc_today_str) \
+                .gte("created_at", today_floor_utc) \
                 .ilike("queue_number", f"{prefix}-%") \
                 .execute()
             
@@ -753,7 +760,7 @@ def confirm_step(queue_ticket_id: str, step_number: int, staff_id: str,
 def get_todays_queue(date_filter: str = None):
     """Get all active queue tickets for today — for staff dashboard."""
     admin = get_admin()
-    today = date_filter or str(date.today())
+    today = date_filter or get_pht_date_str()
     try:
         # 1. Fetch tickets for today's appointment date
         today_res = admin.table("queue_tickets") \
@@ -960,7 +967,7 @@ def get_live_queue_stats():
     """Get dynamic live queue stats like avg wait time and peak forecast based on today's queue."""
     try:
         admin = get_admin()
-        today = str(date.today())
+        today = get_pht_date_str()
         from datetime import datetime, timezone
 
         now_utc = datetime.now(timezone.utc)
@@ -1243,7 +1250,7 @@ def get_my_documents_to_claim(student_id: str):
     Returns tickets for a specific student that are currently sitting at a Release step (ready for pickup today).
     """
     admin = get_admin()
-    today_date = date.today()
+    today_date = get_pht_date()
     try:
         res = admin.table("transaction_steps") \
             .select("*, queue_tickets!inner(id, queue_number, student_id, status, appointments(transaction_types(name), release_date))") \

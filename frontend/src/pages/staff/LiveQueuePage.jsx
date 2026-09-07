@@ -1,12 +1,11 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
-import { createPortal } from 'react-dom'
 import { useAuth } from '../../context/useAuth'
 import { useStaffEvent } from '../../context/WebSocketContext'
 import { useToast } from '../../context/ToastContext'
-import { getTodaysQueue, confirmStep, callTicket, remindStudent, getLiveQueueStats } from '../../services/queueService'
+import { getTodaysQueue, confirmStep, callTicket } from '../../services/queueService'
 import { updateReleaseDate } from '../../services/adminService'
 import { getTransactionTypes } from '../../services/appointmentService'
-import { Check, CheckCircle2, Circle, Clock, X, Users, CheckSquare, AlertTriangle, Download, Inbox, Play, Ticket, DoorOpen, Cog, ChevronDown, SlidersHorizontal, FolderOpen } from 'lucide-react'
+import { Check, Clock, X, Users, CheckSquare, AlertTriangle, Inbox, Ticket, ChevronDown, SlidersHorizontal, FolderOpen, RotateCcw } from 'lucide-react'
 import QueueDetailsModal from '../../components/QueueDetailsModal'
 
 // ── Helper to determine whether student presence is required ──────────────────
@@ -108,25 +107,47 @@ const fmt12h = (t) => {
   return `${h12}:${m} ${ampm}`
 }
 
-const MiniStat = ({ icon, value, label, sub, subColorClass = 'text-text-muted', loading, delay = '0s' }) => (
-  <div className="flex-1 bg-white rounded-xl sm:rounded-[14px] border border-border shadow-[0_1px_4px_rgba(0,0,0,0.02)] p-3.5 sm:px-5 sm:py-4.5 flex flex-col justify-between gap-2.5 sm:gap-3 animate-fade-up" style={{ animationDelay: delay }}>
-    <div className="flex items-start justify-between gap-2">
-      <div className="text-fluid-10-5 sm:text-fluid-11 font-bold text-text-muted uppercase tracking-[0.06em] mt-0.5 sm:mt-1.5 leading-tight">{label}</div>
-      <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-lg sm:rounded-[10px] bg-maroon-light flex items-center justify-center text-maroon shrink-0">
+const MiniStat = ({ 
+  icon, 
+  value, 
+  label, 
+  sub, 
+  subColorClass = 'text-text-muted', 
+  colorClass = 'text-maroon', 
+  bgClass = 'bg-maroon-light', 
+  borderClass = 'border-maroon-border/60',
+  loading, 
+  delay = '0s',
+  className = ''
+}) => (
+  <div 
+    className={`animate-fade-up bg-white rounded-xl sm:rounded-2xl px-3.5 py-3 sm:px-5 sm:py-3.5 border border-border shadow-[0_1px_4px_rgba(0,0,0,0.02)] transition-all flex flex-col justify-between min-h-25.5 sm:min-h-28 gap-1.5 ${className}`}
+    style={{ animationDelay: delay }}
+  >
+    <div className="flex items-center justify-between gap-2">
+      <span className="text-fluid-10 sm:text-fluid-11 font-bold text-text-muted uppercase tracking-[0.08em] truncate leading-tight">
+        {label}
+      </span>
+      <div className={`w-7 h-7 sm:w-8.5 sm:h-8.5 rounded-lg sm:rounded-xl ${bgClass} ${colorClass} border ${borderClass} flex items-center justify-center shrink-0`}>
         {icon}
       </div>
     </div>
     <div>
-      <div className="font-serif text-fluid-22 sm:text-fluid-28 font-extrabold text-text-main leading-none m-0 min-h-6 sm:min-h-7">
-        {loading ? <div className="animate-pulse w-15 h-6 sm:h-7 rounded-md bg-border" /> : value}
+      <div className="font-serif text-fluid-20 sm:text-fluid-26 font-extrabold text-text-main leading-tight tracking-tight m-0">
+        {loading ? <div className="animate-pulse w-14 h-6 sm:h-7 rounded-md bg-border" /> : value}
       </div>
-      {sub && <div className={`text-fluid-10-5 sm:text-fluid-11 font-semibold mt-1 sm:mt-1.5 truncate ${subColorClass}`}>{sub}</div>}
+      {sub && (
+        <div className={`text-fluid-10 sm:text-fluid-11 font-medium mt-0.5 flex items-center gap-1.5 truncate ${subColorClass}`}>
+          <span className="w-1.5 h-1.5 rounded-full bg-current inline-block shrink-0" />
+          <span>{sub}</span>
+        </div>
+      )}
     </div>
   </div>
 )
 
 // ── Progress Steps Bar ─────────────────────────────────────────────────────────
-const StepsBar = ({ steps, current, total }) => (
+const StepsBar = ({ current, total }) => (
   <div className="flex items-center gap-1">
     {Array.from({ length: total }).map((_, i) => {
       const stepNum = i + 1
@@ -145,36 +166,38 @@ const StepsBar = ({ steps, current, total }) => (
 )
 
 
-const CustomDropdown = ({ value, onChange, options }) => {
+const CustomDropdown = ({ value, onChange, options, align = 'left' }) => {
   const [isOpen, setIsOpen] = useState(false)
-  const currentLabel = options.find(o => o.value === value)?.label || value
+  const currentOpt = options.find(o => o.value === value)
+  const currentLabel = currentOpt?.label || value
 
   return (
-    <div className="relative z-10 w-full group">
+    <div className="relative z-10 w-full group min-w-0">
       <button
+        type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className="w-full flex items-center justify-between px-4 py-2 rounded-full border border-border bg-white text-fluid-12-5 text-text-main font-semibold outline-none cursor-pointer font-sans hover:border-maroon/30 transition-all shadow-sm"
+        className="w-full flex items-center justify-between px-2.5 py-1.5 sm:px-3 sm:py-1.75 rounded-full border border-border bg-white text-[11px] sm:text-fluid-12 text-text-main font-semibold outline-none cursor-pointer font-sans hover:border-maroon/30 transition-all shadow-2xs min-w-0"
       >
-        <span className="truncate pr-2">{currentLabel}</span>
-        <ChevronDown size={14} className={`text-text-muted transition-transform duration-200 shrink-0 ${isOpen ? 'rotate-180' : 'group-hover:text-text-main'}`} />
+        <span className="truncate pr-1">{currentLabel}</span>
+        <ChevronDown size={11} className={`text-text-muted transition-transform duration-200 shrink-0 ${isOpen ? 'rotate-180' : 'group-hover:text-text-main'}`} />
       </button>
       {isOpen && (
         <>
-          <div className="fixed inset-0 z-40" onClick={() => setIsOpen(false)} />
-          <div className="absolute left-0 top-full mt-2 w-[120%] bg-white rounded-xl border border-border shadow-lg p-2 z-50 animate-fade-up max-h-75 overflow-y-auto" style={{ animationDuration: '0.2s' }}>
+          <div className="fixed inset-0 z-40 bg-transparent" onClick={() => setIsOpen(false)} />
+          <div className={`absolute ${align === 'right' ? 'right-0 sm:right-auto sm:left-0' : 'left-0'} top-full mt-1.5 min-w-full w-max max-w-[calc(100vw-2rem)] sm:max-w-72 bg-white rounded-xl border border-border shadow-xl p-1.5 z-50 max-h-52 sm:max-h-64 overflow-y-auto`}>
             {options.map(o => {
               const isActive = value === o.value;
               return (
                 <div
                   key={o.value}
                   onClick={() => { onChange(o.value); setIsOpen(false); }}
-                  className={`p-2 rounded-lg cursor-pointer flex items-center justify-between transition-colors ${isActive ? 'bg-maroon/5 text-maroon' : 'text-text-main hover:bg-off-white'}`}
+                  className={`p-1.5 sm:p-2 rounded-lg cursor-pointer flex items-center justify-between transition-colors ${isActive ? 'bg-maroon/5 text-maroon' : 'text-text-main hover:bg-off-white'}`}
                 >
-                  <div className="flex items-center gap-2.5">
-                    <div className={`w-3 h-3 rounded-full border flex items-center justify-center shrink-0 ${isActive ? 'border-maroon' : 'border-text-muted/40'}`}>
+                  <div className="flex items-center gap-2">
+                    <div className={`w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full border flex items-center justify-center shrink-0 ${isActive ? 'border-maroon' : 'border-text-muted/40'}`}>
                       {isActive && <div className="w-1.5 h-1.5 bg-maroon rounded-full" />}
                     </div>
-                    <span className="text-fluid-12 font-semibold whitespace-nowrap">{o.label}</span>
+                    <span className="text-[11.5px] sm:text-fluid-12 font-semibold whitespace-nowrap">{o.label}</span>
                   </div>
                 </div>
               )
@@ -186,31 +209,22 @@ const CustomDropdown = ({ value, onChange, options }) => {
   )
 }
 
-// ── Filter Sidebar ─────────────────────────────────────────────────────────────
+// ── Filter Bar ─────────────────────────────────────────────────────────────────
 const FilterBar = ({ filters, onChange, onReset, availableTxTypes = [] }) => {
   return (
-    <div className="bg-white/80 backdrop-blur-md rounded-2xl border border-border shadow-[0_2px_8px_rgba(0,0,0,0.02)] px-5 py-4 flex flex-wrap items-center gap-4 animate-fade-up relative z-20" style={{ animationDelay: '0.4s' }}>
-      <div className="text-fluid-11 font-bold text-text-muted uppercase tracking-[0.08em] mr-2 flex items-center gap-1.5"><SlidersHorizontal size={14} /> Filters</div>
-      
-      {/* Status Dropdown */}
-      <div className="flex-1 min-w-37.5">
-        <CustomDropdown
-          value={filters.status}
-          onChange={val => onChange({ ...filters, status: val })}
-          options={[
-            { value: 'active', label: 'All Active' },
-            { value: 'in_progress', label: 'In Progress' },
-            { value: 'waiting', label: 'Waiting' },
-            { value: 'completed', label: 'Completed' },
-          ]}
-        />
+    <div className="bg-white rounded-2xl border border-border shadow-xs px-2.5 py-1.5 sm:px-5 sm:py-2.5 flex items-center flex-nowrap gap-1.5 sm:gap-3.5 relative z-20">
+      {/* Filters Icon & Label */}
+      <div className="text-fluid-10 sm:text-fluid-11 font-bold text-text-muted uppercase tracking-[0.08em] flex items-center gap-1 shrink-0">
+        <SlidersHorizontal size={13} className="shrink-0 text-text-sub" />
+        <span className="hidden sm:inline">Filters</span>
       </div>
-
+      
       {/* Priority Dropdown */}
-      <div className="flex-1 min-w-37.5">
+      <div className="flex-1 sm:w-44 sm:flex-none min-w-0">
         <CustomDropdown
           value={filters.priority}
           onChange={val => onChange({ ...filters, priority: val })}
+          align="left"
           options={[
             { value: 'all', label: 'All Priorities' },
             { value: 'high', label: 'High Priority' },
@@ -220,10 +234,11 @@ const FilterBar = ({ filters, onChange, onReset, availableTxTypes = [] }) => {
       </div>
 
       {/* Transaction Type Dropdown */}
-      <div className="flex-1 min-w-40">
+      <div className="flex-[1.2] sm:w-60 sm:flex-none min-w-0">
         <CustomDropdown
           value={filters.transactionType}
           onChange={val => onChange({ ...filters, transactionType: val })}
+          align="right"
           options={[
             { value: 'all', label: 'All Transactions' },
             ...availableTxTypes.map(t => ({ value: t, label: t }))
@@ -231,8 +246,15 @@ const FilterBar = ({ filters, onChange, onReset, availableTxTypes = [] }) => {
         />
       </div>
 
-      <button onClick={onReset} className="px-5 py-2 rounded-full border border-border bg-off-white text-text-main text-fluid-12-5 font-bold cursor-pointer font-sans hover:bg-white hover:border-maroon-border hover:text-maroon hover:shadow-sm transition-all whitespace-nowrap">
-        Reset
+      {/* Reset Button */}
+      <button 
+        type="button"
+        onClick={onReset} 
+        title="Reset filters"
+        className="px-2.5 py-1.5 sm:px-3 sm:py-1.75 rounded-full border border-border bg-off-white text-text-main text-fluid-10-5 sm:text-fluid-12 font-bold cursor-pointer font-sans hover:bg-white hover:border-maroon-border hover:text-maroon hover:shadow-2xs transition-all whitespace-nowrap shrink-0 flex items-center gap-1 active:scale-95"
+      >
+        <RotateCcw size={11} className="shrink-0 text-text-muted" />
+        <span className="hidden sm:inline">Reset</span>
       </button>
     </div>
   )
@@ -244,18 +266,12 @@ export default function LiveQueuePage({ onNavigate }) {
   const [queue, setQueue]       = useState([])
   const [loading, setLoading]   = useState(true)
   const [confirming, setConfirming] = useState(null)
-  const [reminding, setReminding] = useState(null)
   const [error, setError]       = useState('')
-  const [lastUpdated, setLastUpdated] = useState(null)
   const [now, setNow]           = useState(new Date())
-  const [search, setSearch]     = useState('')
-  const [filters, setFilters]   = useState({ status: 'active', priority: 'all', transactionType: 'all' })
+  const [filters, setFilters]   = useState({ priority: 'all', transactionType: 'all' })
   const [viewingTicketId, setViewingTicketId] = useState(null)
-  const [completedPage, setCompletedPage] = useState(1)
   const [availableTxTypes, setAvailableTxTypes] = useState([])
   const toast = useToast()
-
-  const [queueStats, setQueueStats] = useState({ avg_wait_minutes: 0, peak_forecast: 'No Data' })
 
   const showToast = (msg, type = 'success') => {
     const text = typeof msg === 'string' ? msg : JSON.stringify(msg)
@@ -279,13 +295,8 @@ export default function LiveQueuePage({ onNavigate }) {
 
   const fetchQueue = useCallback(async () => {
     try {
-      const [queueData, statsData] = await Promise.all([
-        getTodaysQueue(token),
-        getLiveQueueStats(token)
-      ])
+      const queueData = await getTodaysQueue(token)
       setQueue(queueData)
-      setQueueStats(statsData)
-      setLastUpdated(new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }))
     } catch (e) { setError(e.message) }
     finally { setLoading(false) }
   }, [token])
@@ -356,59 +367,26 @@ export default function LiveQueuePage({ onNavigate }) {
 
 
 
-  const handleRemind = async (ticketId) => {
-    setReminding(ticketId); setError('')
-    try { 
-      await remindStudent(token, ticketId)
-      // fetchQueue() isn't strictly necessary for a notification, but keeps UI synced
-    }
-    catch (e) { setError(e.message) }
-    finally { setReminding(null) }
-  }
-
   // ── Derived stats ──
-  const { active, done, serving, waiting, servingCounter, servingProcessing, highPrio } = useMemo(() => {
-    const active = queue.filter(q => q.ticket.status !== 'completed')
+  const { done, waiting, servingCounter, servingProcessing } = useMemo(() => {
     const done = queue.filter(q => q.ticket.status === 'completed')
-    const serving = queue.filter(q => q.ticket.status === 'in_progress')
     const waiting = queue.filter(q => (q.ticket.status === 'pending' || q.ticket.status === 'waiting') && getRequiresPresence(q.steps))
     const servingCounter = queue.filter(q => q.ticket.status === 'in_progress' && getRequiresPresence(q.steps))
     const servingProcessing = queue.filter(q => q.ticket.status !== 'completed' && !getRequiresPresence(q.steps))
-    const highPrio = queue.filter(q => {
-      const pc = q.ticket.appointments?.priority_class
-      return pc === 'alumni' || pc === 'pwd' || pc === 'pregnant'
-    })
-    return { active, done, serving, waiting, servingCounter, servingProcessing, highPrio }
+    return { done, waiting, servingCounter, servingProcessing }
   }, [queue])
-
-  const servingSubText = useMemo(() => {
-    return `${servingCounter.length} at the counter`
-  }, [servingCounter.length])
-
-  const avgWait = queueStats.avg_wait_minutes || 0
 
   // ── Filtered & searched queue ──
   const displayed = useMemo(() => {
-    return queue.filter(({ ticket, steps }) => {
-      let statusOk = false
-      if (filters.status === 'active') {
-        statusOk = ['in_progress', 'pending', 'waiting'].includes(ticket.status)
-      } else if (filters.status === 'all') {
-        statusOk = true
-      } else {
-        statusOk = ticket.status === filters.status
-      }
-
+    return queue.filter(({ ticket }) => {
       const prioOk = filters.priority === 'all'
         || (filters.priority === 'high' && (ticket.appointments?.priority_class === 'alumni' || ticket.appointments?.priority_class === 'pwd' || ticket.appointments?.priority_class === 'pregnant'))
         || (filters.priority === 'regular' && ticket.appointments?.priority_class === 'regular')
       const txOk = filters.transactionType === 'all'
         || (ticket.appointments?.transaction_types?.name || '').includes(filters.transactionType)
-      const name = `${ticket.users?.first_name} ${ticket.users?.last_name}`.toLowerCase()
-      const srchOk = !search || name.includes(search.toLowerCase()) || ticket.queue_number.toLowerCase().includes(search.toLowerCase())
-      return statusOk && prioOk && txOk && srchOk
+      return prioOk && txOk
     })
-  }, [queue, filters, search])
+  }, [queue, filters])
 
   // ── Split into "At the Counter" (physical line) vs "Processing" (back office) ──
   const { atCounter, processingQueue } = useMemo(() => {
@@ -420,8 +398,8 @@ export default function LiveQueuePage({ onNavigate }) {
 
   const currentTime = now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
 
-  // ── Reusable row renderer — used by both "At the Counter" and "Processing" tables ──
-  const renderQueueRow = ({ ticket, steps }, idx, arrLength, actionLabel = 'Confirm', showWait = true) => {
+  // ── Desktop row renderer (>= lg screens) ──
+  const renderQueueDesktopRow = ({ ticket, steps }, idx, arrLength, showWait = true) => {
     const student = ticket.users
     const name    = student ? `${ticket.users.last_name}, ${ticket.users.first_name}` : 'Unknown'
     const sid     = student?.student_id || '—'
@@ -431,8 +409,6 @@ export default function LiveQueuePage({ onNavigate }) {
     const statusCfg = getDocStatusConfig(ticket, steps)
     const isHighPrio = pClass === 'alumni' || pClass === 'pwd' || pClass === 'pregnant'
     const inProgressStep = steps?.find(s => s.status === 'in_progress')
-    const confirmKey = inProgressStep ? `${ticket.id}-${inProgressStep.step_number}` : null
-    const isConfirming = confirming === confirmKey
     
     let waitMins = 0
     if (ticket.created_at) {
@@ -442,11 +418,10 @@ export default function LiveQueuePage({ onNavigate }) {
     }
 
     return (
-      <div key={ticket.id} className={`grid grid-cols-1 ${showWait ? 'lg:grid-cols-[150px_1.5fr_1.2fr_220px_70px_160px]' : 'lg:grid-cols-[150px_1.5fr_1.2fr_220px_160px]'} gap-6 px-5 py-4 items-center transition-all duration-300
+      <div key={ticket.id} className={`grid ${showWait ? 'grid-cols-[150px_1.5fr_1.2fr_220px_70px_160px]' : 'grid-cols-[150px_1.5fr_1.2fr_220px_160px]'} gap-6 px-5 py-4 items-center transition-all duration-300
         ${idx < arrLength - 1 ? 'border-b border-border/60' : ''}
         ${ticket.status === 'in_progress' ? 'bg-success-light/30' : 'bg-white hover:bg-off-white/80 hover:shadow-sm hover:-translate-y-px'}
       `}>
-
         {/* Queue No. */}
         <div>
           <div className="font-serif text-fluid-20 font-extrabold text-maroon leading-none">{ticket.queue_number}</div>
@@ -498,7 +473,7 @@ export default function LiveQueuePage({ onNavigate }) {
             {inProgressStep && <span className="text-fluid-11 text-text-muted font-medium">Step {inProgressStep.step_number}</span>}
           </div>
           {steps && steps.length > 0 && (
-            <StepsBar steps={steps} current={ticket.current_step} total={ticket.total_steps} />
+            <StepsBar current={ticket.current_step} total={ticket.total_steps} />
           )}
         </div>
 
@@ -510,7 +485,7 @@ export default function LiveQueuePage({ onNavigate }) {
         )}
 
         <div className="flex gap-1.5 flex-wrap">
-          {(ticket.status === 'in_progress' || ticket.status === 'waiting' || ticket.status === 'pending') && inProgressStep && (
+          {(ticket.status === 'in_progress' || ticket.status === 'waiting' || ticket.status === 'pending') && (
             <>
               {ticket.status === 'waiting' || ticket.status === 'pending' ? (
                 <>
@@ -533,15 +508,12 @@ export default function LiveQueuePage({ onNavigate }) {
                   </button>
                 </>
               ) : (
-                <>
-
-                  <button
-                    onClick={() => setViewingTicketId(ticket.id)}
-                    className="px-4 py-2 rounded-full border border-maroon-border bg-maroon-light text-maroon text-fluid-12 font-bold cursor-pointer font-sans whitespace-nowrap hover:bg-maroon hover:text-white transition-all shadow-sm hover:-translate-y-0.5"
-                  >
-                    Update Progress
-                  </button>
-                </>
+                <button
+                  onClick={() => setViewingTicketId(ticket.id)}
+                  className="px-4 py-2 rounded-full border border-maroon-border bg-maroon-light text-maroon text-fluid-12 font-bold cursor-pointer font-sans whitespace-nowrap hover:bg-maroon hover:text-white transition-all shadow-sm hover:-translate-y-0.5"
+                >
+                  Update Progress
+                </button>
               )}
             </>
           )}
@@ -550,6 +522,166 @@ export default function LiveQueuePage({ onNavigate }) {
           )}
           {ticket.status === 'no_show' && (
             <span className="text-xs font-semibold text-gray-500">No Show</span>
+          )}
+        </div>
+      </div>
+    )
+  }
+
+  // ── Mobile card renderer (< lg screens) ──
+  const renderQueueMobileCard = ({ ticket, steps }, idx, showWait = true) => {
+    const student = ticket.users
+    const name    = student ? `${ticket.users.last_name}, ${ticket.users.first_name}` : 'Unknown'
+    const sid     = student?.student_id || '—'
+    const appt    = ticket.appointments
+    const txName  = appt?.transaction_types?.name || 'Transaction'
+    const pClass  = appt?.priority_class || 'regular'
+    const statusCfg = getDocStatusConfig(ticket, steps)
+    const isHighPrio = pClass === 'alumni' || pClass === 'pwd' || pClass === 'pregnant'
+    const inProgressStep = steps?.find(s => s.status === 'in_progress')
+    
+    let waitMins = 0
+    if (ticket.created_at) {
+      waitMins = Math.max(0, Math.floor((now.getTime() - Date.parse(ticket.created_at)) / 60000))
+    } else {
+      waitMins = Math.max(3, (idx + 1) * 5)
+    }
+
+    return (
+      <div 
+        key={ticket.id} 
+        className={`p-4 rounded-2xl border transition-all duration-200 shadow-xs flex flex-col gap-3 ${
+          ticket.status === 'in_progress' 
+            ? 'bg-success-light/25 border-success-border' 
+            : 'bg-white border-border hover:border-maroon/30'
+        }`}
+      >
+        {/* Card Header: Queue #, Priority, Location & Status Badge */}
+        <div className="flex items-start justify-between gap-2">
+          <div>
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="font-serif text-fluid-20 font-extrabold text-maroon leading-none">
+                {ticket.queue_number}
+              </span>
+              {isHighPrio && (
+                <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-danger-light text-danger border border-danger-border uppercase tracking-wider">
+                  Priority
+                </span>
+              )}
+            </div>
+            {ticket.status === 'in_progress' && inProgressStep?.location && getRequiresPresence(steps) && !inProgressStep.location.toLowerCase().includes('back office') && (
+              <div className="text-[11px] font-bold text-text-sub mt-1 flex items-center gap-1 uppercase tracking-wider">
+                <DoorOpen size={12} className="text-maroon" /> {inProgressStep.location}
+              </div>
+            )}
+          </div>
+
+          <div className="flex items-center gap-1.5 shrink-0">
+            <span className={`text-[11px] font-bold px-2.5 py-1 rounded-full border whitespace-nowrap shadow-2xs ${statusCfg.bg} ${statusCfg.color} ${statusCfg.border}`}>
+              {statusCfg.label}
+            </span>
+            {showWait && (
+              <span className="text-[11px] font-bold px-2 py-1 rounded-full bg-surface text-text-sub border border-border">
+                {waitMins}m
+              </span>
+            )}
+          </div>
+        </div>
+
+        {/* Student & Document Details Info Box */}
+        <div className="bg-off-white/80 rounded-xl p-3 border border-border/70 flex flex-col gap-1.5">
+          <div className="flex items-baseline justify-between gap-2">
+            <span className="text-fluid-13 font-bold text-text-main truncate">
+              {name}
+            </span>
+            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full capitalize bg-gold-light text-gold-dark border border-gold-border shrink-0">
+              {pClass}
+            </span>
+          </div>
+          
+          <div className="text-[11.5px] text-text-muted font-mono flex items-center gap-2">
+            <span>ID: <strong className="text-text-sub font-semibold">{sid}</strong></span>
+            {appt?.time_slot && (
+              <>
+                <span>•</span>
+                <span className="font-sans text-text-muted flex items-center gap-1">
+                  <Clock size={11} /> {fmt12h(appt.time_slot)}
+                </span>
+              </>
+            )}
+          </div>
+
+          {/* Requested Documents */}
+          <div className="mt-1 pt-1.5 border-t border-border/50">
+            {appt?.selected_documents && appt.selected_documents.length > 1 ? (
+              <div className="flex flex-wrap gap-1">
+                {appt.selected_documents.map((d, idx) => (
+                  <span key={d.id || idx} className="text-[11px] font-semibold text-maroon bg-maroon-light py-0.5 px-2 rounded-md border border-maroon-border/30">
+                    {d.name}
+                  </span>
+                ))}
+              </div>
+            ) : (
+              <div className="text-[12.5px] font-bold text-maroon leading-snug">
+                {txName}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Step Progress Bar */}
+        {steps && steps.length > 0 && (
+          <div className="flex items-center justify-between gap-2 pt-0.5 px-1">
+            <span className="text-[11px] font-medium text-text-muted">
+              {inProgressStep ? `Step ${inProgressStep.step_number} of ${ticket.total_steps || steps.length}` : 'Progress'}
+            </span>
+            <StepsBar current={ticket.current_step} total={ticket.total_steps} />
+          </div>
+        )}
+
+        {/* Actions */}
+        <div className="pt-1">
+          {(ticket.status === 'in_progress' || ticket.status === 'waiting' || ticket.status === 'pending') && (
+            <>
+              {ticket.status === 'waiting' || ticket.status === 'pending' ? (
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    onClick={() => handleCallTicket(ticket.id)}
+                    disabled={confirming === ticket.id}
+                    className={`w-full py-2.5 px-3 rounded-xl border text-[12.5px] font-bold cursor-pointer font-sans whitespace-nowrap transition-all shadow-xs flex items-center justify-center
+                      ${confirming === ticket.id
+                        ? 'border-border bg-off-white text-text-muted cursor-not-allowed'
+                        : 'border-blue-border bg-blue text-white hover:bg-blue-dark active:scale-[0.98]'}
+                    `}
+                  >
+                    {confirming === ticket.id ? 'Calling...' : 'Call Ticket'}
+                  </button>
+                  <button
+                    onClick={() => setViewingTicketId(ticket.id)}
+                    className="w-full py-2.5 px-3 rounded-xl border border-border bg-white text-text-main text-[12.5px] font-bold cursor-pointer font-sans whitespace-nowrap hover:bg-surface active:scale-[0.98] transition-all shadow-xs flex items-center justify-center"
+                  >
+                    Details
+                  </button>
+                </div>
+              ) : (
+                <button
+                  onClick={() => setViewingTicketId(ticket.id)}
+                  className="w-full py-2.5 px-4 rounded-xl border border-maroon-border bg-maroon text-white text-[13px] font-bold cursor-pointer font-sans whitespace-nowrap hover:bg-maroon-dark active:scale-[0.98] transition-all shadow-xs flex items-center justify-center gap-2"
+                >
+                  Update Progress
+                </button>
+              )}
+            </>
+          )}
+          {ticket.status === 'completed' && (
+            <div className="py-2 text-center rounded-xl bg-blue-light text-blue border border-blue-border text-[12px] font-bold flex items-center justify-center gap-1.5">
+              <Check size={14} /> Completed
+            </div>
+          )}
+          {ticket.status === 'no_show' && (
+            <div className="py-2 text-center rounded-xl bg-gray-100 text-gray-600 text-[12px] font-semibold">
+              No Show
+            </div>
           )}
         </div>
       </div>
@@ -582,45 +714,47 @@ export default function LiveQueuePage({ onNavigate }) {
       </div>
 
       {/* ── Stats Bar ── */}
-      <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3.5">
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 sm:gap-4">
         <MiniStat 
-          icon={<Clock size={18} />} 
-          value={`${avgWait}m`} 
-          label="Avg. Wait Time" 
-          sub={avgWait > 15 ? "↑ Higher wait" : "Fast processing"} 
-          subColorClass={avgWait > 15 ? 'text-orange' : 'text-text-muted'} 
-          loading={loading} delay="0.1s"
-        />
-        <MiniStat 
-          icon={<Users size={18} />} 
+          icon={<Users size={15} strokeWidth={2.4} />} 
           value={waiting.length} 
           label="Waiting in Queue" 
           sub={`${servingCounter.length} at counter`} 
-          subColorClass="text-text-muted" 
-          loading={loading} delay="0.2s" 
+          subColorClass="text-maroon" 
+          colorClass="text-maroon"
+          bgClass="bg-maroon-light"
+          borderClass="border-maroon-border/60"
+          loading={loading} delay="0.1s" 
         />
         <MiniStat 
-          icon={<FolderOpen size={18} />} 
+          icon={<FolderOpen size={15} strokeWidth={2.4} />} 
           value={servingProcessing.length} 
           label="In Processing" 
           sub="Processing table" 
-          subColorClass="text-text-muted" 
-          loading={loading} delay="0.25s" 
+          subColorClass="text-gold" 
+          colorClass="text-gold"
+          bgClass="bg-gold-light"
+          borderClass="border-gold-border/60"
+          loading={loading} delay="0.15s" 
         />
         <MiniStat 
-          icon={<CheckSquare size={18} />} 
+          icon={<CheckSquare size={15} strokeWidth={2.4} />} 
           value={done.length} 
           label="Total Serviced" 
-          sub={done.length >= 80 ? 'High volume' : 'Normal volume'} 
-          subColorClass={done.length >= 80 ? 'text-danger' : 'text-text-muted'} 
-          loading={loading} delay="0.3s" 
+          sub={done.length >= 80 ? 'High volume' : 'Completed today'} 
+          subColorClass={done.length >= 80 ? 'text-danger' : 'text-success'} 
+          colorClass="text-success"
+          bgClass="bg-success-light"
+          borderClass="border-success-border/60"
+          loading={loading} delay="0.2s" 
+          className="col-span-2 sm:col-span-1"
         />
       </div>
 
       <FilterBar
         filters={filters}
         onChange={setFilters}
-        onReset={() => setFilters({ status: 'active', priority: 'all', transactionType: 'all' })}
+        onReset={() => setFilters({ priority: 'all', transactionType: 'all' })}
         availableTxTypes={availableTxTypes}
       />
 
@@ -657,49 +791,82 @@ export default function LiveQueuePage({ onNavigate }) {
             )}
           </div>
 
-          <div className="overflow-x-auto rounded-2xl border border-border shadow-[0_4px_16px_rgba(0,0,0,0.02)]">
-            <div className="min-w-237.5">
-              <div className="hidden lg:grid grid-cols-[150px_1.5fr_1.2fr_220px_70px_160px] gap-6 px-5 py-3 bg-surface/50 backdrop-blur-sm border-b border-border">
-                {columnHeaders.map(col => (
-                  <div key={col} className="text-fluid-10 font-bold text-text-muted tracking-[0.06em] uppercase">{col}</div>
-                ))}
-              </div>
-
-              <div className="bg-white">
-            {loading ? (
-              <div className="flex flex-col">
-                {[1, 2, 3].map(i => (
-                  <div key={i} className={`grid grid-cols-1 lg:grid-cols-[150px_1.5fr_1.2fr_220px_70px_160px] gap-6 p-4 ${i < 3 ? 'border-b border-border' : ''}`}>
-                    <div className="animate-pulse w-10 h-5 rounded bg-border" />
-                    <div>
-                      <div className="animate-pulse w-30 h-3.5 rounded bg-border mb-1.5" />
-                      <div className="animate-pulse w-20 h-3 rounded bg-border" />
+          {loading ? (
+            <>
+              {/* Mobile loading skeleton */}
+              <div className="flex flex-col gap-3 lg:hidden">
+                {[1, 2].map(i => (
+                  <div key={i} className="p-4 rounded-2xl border border-border bg-white animate-pulse flex flex-col gap-3">
+                    <div className="flex justify-between items-center">
+                      <div className="w-24 h-6 rounded bg-border" />
+                      <div className="w-16 h-5 rounded-full bg-border" />
                     </div>
-                    <div>
-                      <div className="animate-pulse w-25 h-3.5 rounded bg-border mb-1.5" />
-                      <div className="animate-pulse w-15 h-3 rounded bg-border" />
-                    </div>
-                    <div className="animate-pulse w-25 h-5 rounded-full bg-border" />
-                    <div className="animate-pulse w-7.5 h-4 rounded bg-border" />
-                    <div className="animate-pulse w-20 h-7 rounded-lg bg-border" />
+                    <div className="h-16 rounded-xl bg-off-white" />
+                    <div className="w-full h-9 rounded-xl bg-border" />
                   </div>
                 ))}
               </div>
-            ) : atCounter.length === 0 ? (
-              <div className="p-10 text-center">
-                <div className="flex justify-center text-text-muted mb-2.5"><Users size={32} /></div>
-                <p className="text-sm font-semibold text-text-main m-0 mb-1">No one at the counter right now</p>
+              {/* Desktop loading skeleton */}
+              <div className="hidden lg:block overflow-x-auto rounded-2xl border border-border shadow-[0_4px_16px_rgba(0,0,0,0.02)]">
+                <div className="min-w-237.5">
+                  <div className="grid grid-cols-[150px_1.5fr_1.2fr_220px_70px_160px] gap-6 px-5 py-3 bg-surface/50 backdrop-blur-sm border-b border-border">
+                    {columnHeaders.map(col => (
+                      <div key={col} className="text-fluid-10 font-bold text-text-muted tracking-[0.06em] uppercase">{col}</div>
+                    ))}
+                  </div>
+                  <div className="bg-white">
+                    {[1, 2, 3].map(i => (
+                      <div key={i} className={`grid grid-cols-[150px_1.5fr_1.2fr_220px_70px_160px] gap-6 p-4 items-center ${i < 3 ? 'border-b border-border' : ''}`}>
+                        <div className="animate-pulse w-10 h-5 rounded bg-border" />
+                        <div>
+                          <div className="animate-pulse w-30 h-3.5 rounded bg-border mb-1.5" />
+                          <div className="animate-pulse w-20 h-3 rounded bg-border" />
+                        </div>
+                        <div>
+                          <div className="animate-pulse w-25 h-3.5 rounded bg-border mb-1.5" />
+                          <div className="animate-pulse w-15 h-3 rounded bg-border" />
+                        </div>
+                        <div className="animate-pulse w-25 h-5 rounded-full bg-border" />
+                        <div className="animate-pulse w-7.5 h-4 rounded bg-border" />
+                        <div className="animate-pulse w-20 h-7 rounded-lg bg-border" />
+                      </div>
+                    ))}
+                  </div>
+                </div>
               </div>
-            ) : (
-              atCounter.map((item, idx) => renderQueueRow(item, idx, atCounter.length, 'Call Next'))
-            )}
+            </>
+          ) : atCounter.length === 0 ? (
+            /* Responsive empty state: full width, perfectly centered on all screen sizes */
+            <div className="p-8 sm:p-10 text-center bg-white rounded-2xl border border-border shadow-xs">
+              <div className="flex justify-center text-text-muted mb-2.5"><Users size={32} /></div>
+              <p className="text-fluid-14 font-bold text-text-main m-0 mb-1">No one at the counter right now</p>
+              <p className="text-fluid-12 text-text-muted m-0">Tickets requiring physical counter presence will show here.</p>
             </div>
-          </div>
-        </div>
+          ) : (
+            <>
+              {/* Mobile queue cards (< lg) */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 lg:hidden">
+                {atCounter.map((item, idx) => renderQueueMobileCard(item, idx, true))}
+              </div>
+              {/* Desktop table (>= lg) */}
+              <div className="hidden lg:block overflow-x-auto rounded-2xl border border-border shadow-[0_4px_16px_rgba(0,0,0,0.02)]">
+                <div className="min-w-237.5">
+                  <div className="grid grid-cols-[150px_1.5fr_1.2fr_220px_70px_160px] gap-6 px-5 py-3 bg-surface/50 backdrop-blur-sm border-b border-border">
+                    {columnHeaders.map(col => (
+                      <div key={col} className="text-fluid-10 font-bold text-text-muted tracking-[0.06em] uppercase">{col}</div>
+                    ))}
+                  </div>
+                  <div className="bg-white">
+                    {atCounter.map((item, idx) => renderQueueDesktopRow(item, idx, atCounter.length, true))}
+                  </div>
+                </div>
+              </div>
+            </>
+          )}
 
 
           {/* ═══ PROCESSING — back office, no line, work at own pace ═══ */}
-          <div className="mt-12">
+          <div className="mt-8 sm:mt-12">
             <div className="flex items-center justify-between mb-4 px-1">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl bg-linear-to-br from-surface to-off-white flex items-center justify-center border border-border shadow-sm">
@@ -719,19 +886,30 @@ export default function LiveQueuePage({ onNavigate }) {
               )}
             </div>
 
-            <div className="overflow-x-auto rounded-2xl border border-border shadow-[0_4px_16px_rgba(0,0,0,0.02)] opacity-95">
-              <div className="min-w-212.5">
-                {(loading || processingQueue.length > 0) && (
-                  <div className="grid grid-cols-[150px_1.5fr_1.2fr_220px_160px] gap-6 px-5 py-3 bg-surface/50 backdrop-blur-sm border-b border-border">
-                    {['QUEUE NO.', 'STUDENT DETAILS', 'TRANSACTION', 'STATUS / PROGRESS', 'ACTION'].map(col => (
-                      <div key={col} className="text-fluid-10 font-bold text-text-muted tracking-[0.06em] uppercase">{col}</div>
-                    ))}
-                  </div>
-                )}
-
-                <div className="bg-white">
-                  {loading ? (
-                    <div>
+            {loading ? (
+              <>
+                {/* Mobile loading skeleton */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 lg:hidden">
+                  {[1, 2].map(i => (
+                    <div key={i} className="p-3.5 sm:p-4 rounded-2xl border border-border bg-white animate-pulse flex flex-col gap-2.5">
+                      <div className="flex justify-between items-center">
+                        <div className="w-24 h-6 rounded bg-border" />
+                        <div className="w-16 h-5 rounded-full bg-border" />
+                      </div>
+                      <div className="h-16 rounded-xl bg-off-white" />
+                      <div className="w-full h-9 rounded-xl bg-border" />
+                    </div>
+                  ))}
+                </div>
+                {/* Desktop loading skeleton */}
+                <div className="hidden lg:block overflow-x-auto rounded-2xl border border-border shadow-[0_4px_16px_rgba(0,0,0,0.02)] opacity-95">
+                  <div className="min-w-212.5">
+                    <div className="grid grid-cols-[150px_1.5fr_1.2fr_220px_160px] gap-6 px-5 py-3 bg-surface/50 backdrop-blur-sm border-b border-border">
+                      {['QUEUE NO.', 'STUDENT DETAILS', 'TRANSACTION', 'STATUS / PROGRESS', 'ACTION'].map(col => (
+                        <div key={col} className="text-fluid-10 font-bold text-text-muted tracking-[0.06em] uppercase">{col}</div>
+                      ))}
+                    </div>
+                    <div className="bg-white">
                       {[1, 2, 3].map(i => (
                         <div key={i} className={`grid grid-cols-[150px_1.5fr_1.2fr_220px_160px] gap-6 p-4 items-center ${i < 3 ? 'border-b border-border' : ''}`}>
                           <div className="animate-pulse w-14 h-5 rounded bg-border" />
@@ -748,17 +926,37 @@ export default function LiveQueuePage({ onNavigate }) {
                         </div>
                       ))}
                     </div>
-                  ) : processingQueue.length === 0 ? (
-                    <div className="p-8 text-center border border-border rounded-[14px]">
-                      <div className="flex justify-center text-text-muted mb-2"><Inbox size={28} /></div>
-                      <p className="text-sm font-semibold text-text-main m-0 mb-1">Nothing in back-office processing</p>
-                    </div>
-                  ) : (
-                    processingQueue.map((item, idx) => renderQueueRow(item, idx, processingQueue.length, 'Mark Complete', false))
-                  )}
+                  </div>
                 </div>
+              </>
+            ) : processingQueue.length === 0 ? (
+              /* Responsive empty state: full width, perfectly centered on all screen sizes */
+              <div className="p-8 sm:p-10 text-center bg-white rounded-2xl border border-border shadow-xs">
+                <div className="flex justify-center text-text-muted mb-2"><Inbox size={28} /></div>
+                <p className="text-fluid-14 font-bold text-text-main m-0 mb-1">Nothing in back-office processing</p>
+                <p className="text-fluid-12 text-text-muted m-0">Transactions processed without physical presence will appear here.</p>
               </div>
-            </div>
+            ) : (
+              <>
+                {/* Mobile queue cards (< lg) */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 lg:hidden">
+                  {processingQueue.map((item, idx) => renderQueueMobileCard(item, idx, false))}
+                </div>
+                {/* Desktop table (>= lg) */}
+                <div className="hidden lg:block overflow-x-auto rounded-2xl border border-border shadow-[0_4px_16px_rgba(0,0,0,0.02)] opacity-95">
+                  <div className="min-w-212.5">
+                    <div className="grid grid-cols-[150px_1.5fr_1.2fr_220px_160px] gap-6 px-5 py-3 bg-surface/50 backdrop-blur-sm border-b border-border">
+                      {['QUEUE NO.', 'STUDENT DETAILS', 'TRANSACTION', 'STATUS / PROGRESS', 'ACTION'].map(col => (
+                        <div key={col} className="text-fluid-10 font-bold text-text-muted tracking-[0.06em] uppercase">{col}</div>
+                      ))}
+                    </div>
+                    <div className="bg-white">
+                      {processingQueue.map((item, idx) => renderQueueDesktopRow(item, idx, processingQueue.length, false))}
+                    </div>
+                  </div>
+                </div>
+              </>
+            )}
           </div>
         </div>
       </div>

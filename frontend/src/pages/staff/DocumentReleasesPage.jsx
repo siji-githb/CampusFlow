@@ -39,7 +39,9 @@ export default function DocumentReleasesPage() {
         const dt = new Date(y, m - 1, d)
         return dt.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
       }
-    } catch {}
+    } catch {
+      /* ignore date parse error and fallback */
+    }
     return dateStr
   }
 
@@ -96,7 +98,9 @@ export default function DocumentReleasesPage() {
           days: diffDays
         }
       }
-    } catch {}
+    } catch {
+      /* ignore calculation error and fallback */
+    }
 
     const days = fallbackDays || 0
     return {
@@ -211,70 +215,102 @@ export default function DocumentReleasesPage() {
     
     if (isPriority) {
       return (
-        <span className="text-fluid-10 font-extrabold uppercase px-2.5 py-0.5 rounded-full border bg-maroon-light text-maroon border-maroon-border">
+        <span className="text-fluid-9-5 sm:text-fluid-10 font-extrabold uppercase px-2 sm:px-2.5 py-0.5 rounded-full border bg-maroon-light text-maroon border-maroon-border whitespace-nowrap">
           {priorityClass}
         </span>
       )
     }
     
     return (
-      <span className="text-fluid-10 font-extrabold uppercase px-2.5 py-0.5 rounded-full border bg-gold-light text-gold border-gold-border">
+      <span className="text-fluid-9-5 sm:text-fluid-10 font-extrabold uppercase px-2 sm:px-2.5 py-0.5 rounded-full border bg-gold-light text-gold border-gold-border whitespace-nowrap">
         {priorityClass || 'Regular'}
       </span>
     )
   }
 
+  const renderStatusBadge = (waitingInfo) => (
+    <span className={`text-fluid-10-5 sm:text-fluid-11 font-bold px-2.5 py-1 rounded-full inline-flex items-center gap-1.5 border whitespace-nowrap ${
+      waitingInfo.isOverdue 
+        ? 'bg-danger-light text-danger border-danger-border' 
+        : waitingInfo.isDueSoon 
+        ? 'bg-gold-light text-gold border-gold-border'
+        : waitingInfo.isScheduled
+        ? 'bg-blue-light text-blue border-blue-border'
+        : 'bg-success-light text-success border-success-border'
+    }`}>
+      {waitingInfo.isOverdue && <AlertTriangle size={12} className="stroke-3 shrink-0" />}
+      {waitingInfo.isScheduled ? <Calendar size={12} className="shrink-0" /> : <Clock size={12} className="shrink-0" />}
+      <span>{waitingInfo.label}</span>
+    </span>
+  )
+
   return (
     <div className="animate-fade-up w-full pb-8">
       
       {/* ── Page Header (Always visible) ── */}
-      <div className="animate-fade-up flex items-start justify-between mb-5 flex-wrap gap-4">
-        <div>
-          <p className="text-fluid-11 font-bold text-gold tracking-widest uppercase m-0 mb-1.5">Document Management</p>
+      <div className="animate-fade-up flex items-start justify-between mb-4 sm:mb-5 flex-wrap gap-3">
+        <div className="min-w-0">
+          <p className="text-fluid-11 font-bold text-gold tracking-widest uppercase m-0 mb-1">Document Management</p>
           <h1 className="font-serif text-fluid-22 sm:text-fluid-26 font-bold text-text-main m-0 flex items-center gap-2">
             <FolderOpen size={24} className="text-maroon shrink-0" /> Document Releases
           </h1>
-          <p className="text-fluid-12 sm:text-fluid-13 text-text-sub mt-1.5 sm:mt-2 mb-0">
-            Track documents that are ready for student collection and review completed pickup records.
+          <p className="text-fluid-12 sm:text-fluid-13 text-text-sub mt-1 sm:mt-1.5 mb-0 leading-relaxed">
+            Track documents ready for student collection and review completed pickup records.
           </p>
         </div>
 
         <button
           onClick={() => fetchData(true)}
           disabled={isRefreshing || loading}
-          className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-white border border-border text-fluid-12 font-bold text-text-main hover:bg-surface transition-all shadow-xs cursor-pointer disabled:opacity-60"
+          className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-white border border-border text-fluid-12 font-bold text-text-main hover:bg-surface transition-all shadow-xs cursor-pointer disabled:opacity-60 shrink-0"
         >
           <RefreshCw size={13} className={`text-maroon ${isRefreshing || loading ? 'animate-spin' : ''}`} />
-          {isRefreshing || loading ? 'Refreshing…' : 'Refresh'}
+          <span>{isRefreshing || loading ? 'Refreshing…' : 'Refresh'}</span>
         </button>
       </div>
 
       {loading && uncollected.length === 0 && collected.length === 0 ? (
         <div>
           {/* Stats Summary Skeleton (2 Cards) */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-5 animate-pulse">
+          <div className="grid grid-cols-2 gap-2.5 sm:gap-4 mb-4 sm:mb-5 animate-pulse">
             {[1, 2].map(i => (
-              <div key={i} className="bg-white rounded-2xl px-5 py-3.5 border border-border shadow-xs flex flex-col justify-between gap-1.5">
+              <div key={i} className="bg-white rounded-xl sm:rounded-2xl px-3.5 py-3 sm:px-5 sm:py-3.5 border border-border shadow-[0_1px_4px_rgba(0,0,0,0.02)] flex flex-col justify-between min-h-25.5 sm:min-h-28 gap-1.5">
                 <div className="flex items-center justify-between">
-                  <div className="h-3 w-28 bg-border/60 rounded" />
-                  <div className="w-8.5 h-8.5 rounded-lg bg-border/40" />
+                  <div className="h-3 w-20 sm:w-28 bg-border/60 rounded" />
+                  <div className="w-7 h-7 sm:w-8.5 sm:h-8.5 rounded-lg sm:rounded-xl bg-border/40" />
                 </div>
                 <div>
-                  <div className="h-6.5 w-14 bg-border/70 rounded-md mb-1.5" />
-                  <div className="h-3 w-32 bg-border/40 rounded" />
+                  <div className="h-6 sm:h-7 w-12 sm:w-14 bg-border/70 rounded-md mb-1" />
+                  <div className="h-3 w-20 sm:w-28 bg-border/40 rounded" />
                 </div>
               </div>
             ))}
           </div>
 
           {/* Filter Bar Skeleton */}
-          <div className="flex items-center justify-between gap-4 mb-6 animate-pulse">
-            <div className="h-10 w-64 bg-border/40 rounded-xl" />
-            <div className="h-10 w-72 bg-border/40 rounded-xl" />
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 mb-5 animate-pulse">
+            <div className="h-10 w-full sm:w-64 bg-border/40 rounded-xl" />
+            <div className="h-10 w-full sm:w-72 bg-border/40 rounded-xl" />
           </div>
 
-          {/* Table Skeleton */}
-          <div className="bg-white rounded-2xl border border-border shadow-xs overflow-hidden animate-pulse">
+          {/* Table Skeleton: Mobile cards on < lg, table on >= lg */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 lg:hidden animate-pulse">
+            {[1, 2, 3, 4].map(i => (
+              <div key={i} className="p-4 rounded-2xl border border-border bg-white flex flex-col gap-3">
+                <div className="flex justify-between items-center">
+                  <div className="w-24 h-6 rounded-md bg-border/70" />
+                  <div className="w-20 h-5 rounded-full bg-border/50" />
+                </div>
+                <div className="h-20 rounded-xl bg-off-white" />
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="h-9 rounded-xl bg-border/40" />
+                  <div className="h-9 rounded-xl bg-border/60" />
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="hidden lg:block bg-white rounded-2xl border border-border shadow-xs overflow-hidden animate-pulse">
             <div className="h-12 bg-surface/80 border-b border-border" />
             <div className="divide-y divide-border/60">
               {[1, 2, 3, 4, 5, 6].map(i => (
@@ -294,55 +330,55 @@ export default function DocumentReleasesPage() {
         <>
       <div className="grid grid-cols-2 gap-2.5 sm:gap-4 mb-4 sm:mb-5">
         {/* Ready for Pickup */}
-        <div className="animate-fade-up bg-white rounded-xl sm:rounded-2xl px-3.5 py-3 sm:px-5 sm:py-3.5 border border-border shadow-[0_1px_4px_rgba(0,0,0,0.02)] hover:border-gold/50 hover:shadow-xs transition-all flex flex-col justify-between gap-1.5" style={{ animationDelay: '0.1s' }}>
+        <div className="animate-fade-up bg-white rounded-xl sm:rounded-2xl px-3.5 py-3 sm:px-5 sm:py-3.5 border border-border shadow-[0_1px_4px_rgba(0,0,0,0.02)] transition-all flex flex-col justify-between min-h-25.5 sm:min-h-28 gap-1.5" style={{ animationDelay: '0.1s' }}>
           <div className="flex items-center justify-between gap-2">
-            <span className="text-fluid-10 sm:text-fluid-11 font-bold text-text-muted uppercase tracking-[0.08em] truncate">
+            <span className="text-fluid-10 sm:text-fluid-11 font-bold text-text-muted uppercase tracking-[0.08em] truncate leading-tight">
               Ready for Pickup
             </span>
-            <div className="w-7 h-7 sm:w-8.5 sm:h-8.5 rounded-lg bg-gold-light text-gold border border-gold-border/60 flex items-center justify-center shrink-0">
+            <div className="w-7 h-7 sm:w-8.5 sm:h-8.5 rounded-lg sm:rounded-xl bg-gold-light text-gold border border-gold-border/60 flex items-center justify-center shrink-0">
               <Clock size={15} strokeWidth={2.4} />
             </div>
           </div>
           <div>
-            <div className="font-serif text-fluid-20 sm:text-fluid-26 font-extrabold text-gold leading-tight tracking-tight">
+            <div className="font-serif text-fluid-20 sm:text-fluid-26 font-extrabold text-text-main leading-tight tracking-tight m-0">
               {uncollected.length}
             </div>
-            <div className="text-fluid-10-5 sm:text-fluid-11-5 font-medium text-text-sub mt-0.5 flex items-center gap-1.5 truncate">
+            <div className="text-fluid-10 sm:text-fluid-11 font-medium text-gold mt-0.5 flex items-center gap-1.5 truncate">
               <span className="w-1.5 h-1.5 rounded-full bg-gold inline-block shrink-0"></span>
-              Pending pickup
+              <span>Pending pickup</span>
             </div>
           </div>
         </div>
 
         {/* Total Claimed */}
-        <div className="animate-fade-up bg-white rounded-xl sm:rounded-2xl px-3.5 py-3 sm:px-5 sm:py-3.5 border border-border shadow-[0_1px_4px_rgba(0,0,0,0.02)] hover:border-success/50 hover:shadow-xs transition-all flex flex-col justify-between gap-1.5" style={{ animationDelay: '0.15s' }}>
+        <div className="animate-fade-up bg-white rounded-xl sm:rounded-2xl px-3.5 py-3 sm:px-5 sm:py-3.5 border border-border shadow-[0_1px_4px_rgba(0,0,0,0.02)] transition-all flex flex-col justify-between min-h-25.5 sm:min-h-28 gap-1.5" style={{ animationDelay: '0.15s' }}>
           <div className="flex items-center justify-between gap-2">
-            <span className="text-fluid-10 sm:text-fluid-11 font-bold text-text-muted uppercase tracking-[0.08em] truncate">
+            <span className="text-fluid-10 sm:text-fluid-11 font-bold text-text-muted uppercase tracking-[0.08em] truncate leading-tight">
               Total Claimed
             </span>
-            <div className="w-7 h-7 sm:w-8.5 sm:h-8.5 rounded-lg bg-success-light text-success border border-success-border/60 flex items-center justify-center shrink-0">
+            <div className="w-7 h-7 sm:w-8.5 sm:h-8.5 rounded-lg sm:rounded-xl bg-success-light text-success border border-success-border/60 flex items-center justify-center shrink-0">
               <CheckCircle2 size={15} strokeWidth={2.4} />
             </div>
           </div>
           <div>
-            <div className="font-serif text-fluid-20 sm:text-fluid-26 font-extrabold text-success leading-tight tracking-tight">
+            <div className="font-serif text-fluid-20 sm:text-fluid-26 font-extrabold text-text-main leading-tight tracking-tight m-0">
               {collected.length}
             </div>
-            <div className="text-fluid-10-5 sm:text-fluid-11-5 font-medium text-text-sub mt-0.5 flex items-center gap-1.5 truncate">
+            <div className="text-fluid-10 sm:text-fluid-11 font-medium text-success mt-0.5 flex items-center gap-1.5 truncate">
               <span className="w-1.5 h-1.5 rounded-full bg-success inline-block shrink-0"></span>
-              Completed
+              <span>Completed</span>
             </div>
           </div>
         </div>
       </div>
 
-      {/* ── Tabs & Search Bar (Clean: without background container box) ── */}
-      <div className="animate-fade-up flex items-center justify-between gap-4 mb-5 flex-wrap" style={{ animationDelay: '0.2s' }}>
+      {/* ── Tabs & Search Bar (Responsive & Fluid) ── */}
+      <div className="animate-fade-up flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 mb-4 sm:mb-5" style={{ animationDelay: '0.2s' }}>
         {/* Segmented Tab Controls */}
-        <div className="flex bg-white p-1 rounded-xl border border-border shadow-xs">
+        <div className="flex bg-white p-1 rounded-xl border border-border shadow-xs w-full sm:w-auto">
           <button 
             onClick={() => handleTabChange('uncollected')}
-            className={`px-4 py-2 rounded-lg text-fluid-12-5 font-bold transition-all cursor-pointer flex items-center gap-2 ${
+            className={`flex-1 sm:flex-initial justify-center px-3.5 sm:px-4 py-2 rounded-lg text-fluid-12 sm:text-fluid-12-5 font-bold transition-all cursor-pointer flex items-center gap-1.5 sm:gap-2 ${
               activeTab === 'uncollected' 
                 ? 'bg-maroon text-white shadow-xs' 
                 : 'bg-transparent text-text-sub hover:text-text-main'
@@ -350,11 +386,14 @@ export default function DocumentReleasesPage() {
           >
             <Clock size={14} />
             <span>Uncollected</span>
+            <span className={`text-fluid-10 font-bold px-1.5 py-0.2 rounded-full ${activeTab === 'uncollected' ? 'bg-white/20 text-white' : 'bg-surface text-text-sub'}`}>
+              {uncollected.length}
+            </span>
           </button>
 
           <button 
             onClick={() => handleTabChange('collected')}
-            className={`px-4 py-2 rounded-lg text-fluid-12-5 font-bold transition-all cursor-pointer flex items-center gap-2 ${
+            className={`flex-1 sm:flex-initial justify-center px-3.5 sm:px-4 py-2 rounded-lg text-fluid-12 sm:text-fluid-12-5 font-bold transition-all cursor-pointer flex items-center gap-1.5 sm:gap-2 ${
               activeTab === 'collected' 
                 ? 'bg-maroon text-white shadow-xs' 
                 : 'bg-transparent text-text-sub hover:text-text-main'
@@ -362,18 +401,21 @@ export default function DocumentReleasesPage() {
           >
             <CheckCircle2 size={14} />
             <span>Collected History</span>
+            <span className={`text-fluid-10 font-bold px-1.5 py-0.2 rounded-full ${activeTab === 'collected' ? 'bg-white/20 text-white' : 'bg-surface text-text-sub'}`}>
+              {collected.length}
+            </span>
           </button>
         </div>
 
         {/* Search Input */}
-        <div className="relative min-w-72 flex-1 sm:flex-initial">
+        <div className="relative w-full sm:w-72 sm:max-w-xs">
           <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-text-muted pointer-events-none" />
           <input 
             type="text" 
-            placeholder="Search by queue no., student name, or ID..."
+            placeholder="Search queue no., student, ID..."
             value={search}
             onChange={e => handleSearchChange(e.target.value)}
-            className="w-full pl-9 pr-8 py-2 rounded-xl border border-border bg-white text-fluid-12-5 font-medium outline-none text-text-main focus:border-maroon transition-all shadow-xs"
+            className="w-full pl-9 pr-8 py-2 rounded-xl border border-border bg-white text-fluid-12 sm:text-fluid-12-5 font-medium outline-none text-text-main focus:border-maroon transition-all shadow-xs"
           />
           {search && (
             <button 
@@ -388,7 +430,7 @@ export default function DocumentReleasesPage() {
 
       {/* ── Error Banner ── */}
       {error && (
-        <div className="mb-6 bg-danger-light text-danger px-4 py-3 rounded-2xl text-fluid-13 font-semibold border border-danger-border flex items-center justify-between">
+        <div className="mb-5 bg-danger-light text-danger px-4 py-3 rounded-2xl text-fluid-13 font-semibold border border-danger-border flex items-center justify-between">
           <div className="flex items-center gap-2">
             <AlertTriangle size={16} /> {error}
           </div>
@@ -398,11 +440,11 @@ export default function DocumentReleasesPage() {
         </div>
       )}
 
-      {/* ── Uncollected Data Table ── */}
+      {/* ── Uncollected Data Container (Cards on Mobile, Fluid Table on Desktop) ── */}
       {activeTab === 'uncollected' && (
-        <div className="animate-fade-up bg-white rounded-2xl border border-border shadow-xs overflow-hidden" style={{ animationDelay: '0.25s' }}>
+        <div className="animate-fade-up bg-white rounded-xl sm:rounded-2xl border border-border shadow-xs overflow-hidden" style={{ animationDelay: '0.25s' }}>
           {filteredUncollected.length === 0 ? (
-            <div className="p-14 flex flex-col items-center justify-center text-center">
+            <div className="p-8 sm:p-14 flex flex-col items-center justify-center text-center">
               <div className="w-14 h-14 bg-surface rounded-2xl flex items-center justify-center mb-3 border border-border text-text-muted">
                 <FileText size={28} />
               </div>
@@ -415,17 +457,125 @@ export default function DocumentReleasesPage() {
             </div>
           ) : (
             <>
-              <div className="overflow-x-auto">
-                <table className="w-full text-left border-collapse">
+              {/* Mobile Card Grid (< lg) */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 lg:hidden p-3.5 sm:p-4 bg-off-white/40">
+                {paginatedItems.map(doc => {
+                  const waitingInfo = getWaitingTimeInfo(doc.release_date, doc.days_waiting)
+
+                  return (
+                    <div 
+                      key={doc.queue_ticket_id}
+                      className={`bg-white rounded-xl sm:rounded-2xl p-3.5 sm:p-4 border border-border shadow-2xs hover:shadow-xs transition-all flex flex-col justify-between gap-3 ${
+                        waitingInfo.isOverdue ? 'border-danger-border/70 bg-danger-light/10' : ''
+                      }`}
+                    >
+                      {/* Card Top: Queue No + Priority + Status */}
+                      <div className="flex items-center justify-between gap-2 flex-wrap">
+                        <div className="flex items-center gap-2">
+                          <span className="font-serif text-fluid-18 sm:text-fluid-20 font-extrabold text-maroon leading-none">
+                            {doc.queue_number}
+                          </span>
+                          {renderPriorityBadge(doc.priority_class)}
+                        </div>
+                        {renderStatusBadge(waitingInfo)}
+                      </div>
+
+                      {/* Middle Details Block */}
+                      <div className="bg-off-white/80 rounded-xl p-3 border border-border/70 flex flex-col gap-1.5">
+                        <div className="flex items-baseline justify-between gap-2">
+                          <span className="font-bold text-text-main text-fluid-13-5 leading-tight truncate">
+                            {doc.student_name}
+                          </span>
+                          <span className="text-fluid-11 font-mono text-text-sub font-semibold shrink-0">
+                            {doc.student_id ? `ID: ${doc.student_id}` : '—'}
+                          </span>
+                        </div>
+
+                        {/* Requested Document */}
+                        <div className="pt-1.5 border-t border-border/50">
+                          {doc.selected_documents && doc.selected_documents.length > 1 ? (
+                            <div className="flex flex-col gap-1">
+                              <span className="text-fluid-11-5 font-bold text-text-main">
+                                {doc.selected_documents.length} Documents
+                              </span>
+                              <div className="flex flex-wrap gap-1">
+                                {doc.selected_documents.map((d, idx) => (
+                                  <span key={idx} className="text-fluid-10 font-bold px-2 py-0.5 rounded-md bg-maroon-light text-maroon border border-maroon-border/30">
+                                    {d.name}
+                                  </span>
+                                ))}
+                              </div>
+                            </div>
+                          ) : (
+                            <span className="text-fluid-12-5 font-bold text-maroon leading-snug">
+                              {doc.transaction_type}
+                            </span>
+                          )}
+                        </div>
+
+                        {/* Release Date */}
+                        <div className="flex items-center justify-between text-fluid-11 text-text-sub pt-1 border-t border-border/40">
+                          <span className="text-text-muted">Release Date:</span>
+                          <span className="font-semibold text-text-main">{formatReleaseDate(doc.release_date)}</span>
+                        </div>
+                      </div>
+
+                      {/* Action Buttons */}
+                      <div className="grid grid-cols-2 gap-2 pt-0.5">
+                        <button
+                          onClick={() => handleRemindStudent(doc.queue_ticket_id, doc.student_name)}
+                          disabled={remindingId === doc.queue_ticket_id}
+                          title="Send reminder notification to student"
+                          className="py-2.25 px-2.5 rounded-xl bg-surface hover:bg-gold-light text-text-main hover:text-gold border border-border hover:border-gold-border text-fluid-12 font-bold transition-all shadow-2xs cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-1.5 active:scale-[0.98]"
+                        >
+                          {remindingId === doc.queue_ticket_id ? (
+                            <>
+                              <Loader2 size={13} className="animate-spin text-gold shrink-0" />
+                              <span className="truncate">Sending…</span>
+                            </>
+                          ) : (
+                            <>
+                              <Bell size={13} className="text-gold shrink-0" />
+                              <span className="truncate">Remind</span>
+                            </>
+                          )}
+                        </button>
+
+                        <button
+                          onClick={() => handleMarkCollected(doc.queue_ticket_id, doc.step_number)}
+                          disabled={markingId === doc.queue_ticket_id}
+                          className="py-2.25 px-2.5 rounded-xl bg-success text-white text-fluid-12 font-extrabold hover:bg-success-dark transition-all shadow-xs hover:shadow-sm cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-1.5 active:scale-[0.98]"
+                        >
+                          {markingId === doc.queue_ticket_id ? (
+                            <>
+                              <Loader2 size={13} className="animate-spin shrink-0" />
+                              <span className="truncate">Processing…</span>
+                            </>
+                          ) : (
+                            <>
+                              <Check size={13} className="stroke-3 shrink-0" />
+                              <span className="truncate">Mark Collected</span>
+                            </>
+                          )}
+                        </button>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+
+              {/* Desktop Table (>= lg) */}
+              <div className="hidden lg:block overflow-x-auto custom-scrollbar">
+                <table className="w-full min-w-225 text-left border-collapse">
                   <thead>
                     <tr className="bg-surface/80 border-b border-border text-fluid-10-5 font-extrabold text-text-muted uppercase tracking-[0.08em]">
-                      <th className="py-3.5 px-6">Queue No.</th>
-                      <th className="py-3.5 px-6">Student Details</th>
-                      <th className="py-3.5 px-6">Priority</th>
-                      <th className="py-3.5 px-6">Requested Document</th>
-                      <th className="py-3.5 px-6">Release Date</th>
-                      <th className="py-3.5 px-6">Pickup Status</th>
-                      <th className="py-3.5 px-6 text-right">Action</th>
+                      <th className="py-3.5 px-4 xl:px-6">Queue No.</th>
+                      <th className="py-3.5 px-4 xl:px-6">Student Details</th>
+                      <th className="py-3.5 px-4 xl:px-6">Priority</th>
+                      <th className="py-3.5 px-4 xl:px-6">Requested Document</th>
+                      <th className="py-3.5 px-4 xl:px-6">Release Date</th>
+                      <th className="py-3.5 px-4 xl:px-6">Pickup Status</th>
+                      <th className="py-3.5 px-4 xl:px-6 text-right">Action</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-border/60">
@@ -440,14 +590,14 @@ export default function DocumentReleasesPage() {
                           }`}
                         >
                           {/* Queue Number */}
-                          <td className="py-4 px-6 whitespace-nowrap">
-                            <span className="font-serif text-fluid-20 font-extrabold text-maroon leading-none">
+                          <td className="py-3.5 px-4 xl:px-6 whitespace-nowrap">
+                            <span className="font-serif text-fluid-18 xl:text-fluid-20 font-extrabold text-maroon leading-none">
                               {doc.queue_number}
                             </span>
                           </td>
 
                           {/* Student Details */}
-                          <td className="py-4 px-6">
+                          <td className="py-3.5 px-4 xl:px-6">
                             <div className="font-bold text-text-main text-fluid-13-5 leading-tight">
                               {doc.student_name}
                             </div>
@@ -457,12 +607,12 @@ export default function DocumentReleasesPage() {
                           </td>
 
                           {/* Priority Badge */}
-                          <td className="py-4 px-6 whitespace-nowrap">
+                          <td className="py-3.5 px-4 xl:px-6 whitespace-nowrap">
                             {renderPriorityBadge(doc.priority_class)}
                           </td>
 
                           {/* Document */}
-                          <td className="py-4 px-6">
+                          <td className="py-3.5 px-4 xl:px-6">
                             {doc.selected_documents && doc.selected_documents.length > 1 ? (
                               <div className="flex flex-col gap-1">
                                 <div className="text-fluid-13 font-bold text-text-main leading-snug">
@@ -484,36 +634,24 @@ export default function DocumentReleasesPage() {
                           </td>
 
                           {/* Ready Since (Assigned Release Date) */}
-                          <td className="py-4 px-6 text-fluid-12-5 font-medium text-text-sub whitespace-nowrap">
+                          <td className="py-3.5 px-4 xl:px-6 text-fluid-12-5 font-medium text-text-sub whitespace-nowrap">
                             {formatReleaseDate(doc.release_date)}
                           </td>
 
                           {/* Waiting Time (Elapsed since release date) */}
-                          <td className="py-4 px-6 whitespace-nowrap">
-                            <span className={`text-fluid-11 font-bold px-2.5 py-1 rounded-full inline-flex items-center gap-1.5 border ${
-                              waitingInfo.isOverdue 
-                                ? 'bg-danger-light text-danger border-danger-border' 
-                                : waitingInfo.isDueSoon 
-                                ? 'bg-gold-light text-gold border-gold-border'
-                                : waitingInfo.isScheduled
-                                ? 'bg-info-light text-info border-info-border'
-                                : 'bg-success-light text-success border-success-border'
-                            }`}>
-                              {waitingInfo.isOverdue && <AlertTriangle size={12} className="stroke-3" />}
-                              {waitingInfo.isScheduled ? <Calendar size={12} /> : <Clock size={12} />}
-                              {waitingInfo.label}
-                            </span>
+                          <td className="py-3.5 px-4 xl:px-6 whitespace-nowrap">
+                            {renderStatusBadge(waitingInfo)}
                           </td>
 
                           {/* Action Buttons (Remind + Mark Collected) */}
-                          <td className="py-4 px-6 text-right whitespace-nowrap">
+                          <td className="py-3.5 px-4 xl:px-6 text-right whitespace-nowrap">
                             <div className="flex items-center justify-end gap-2">
                               {/* Remind Student Button */}
                               <button
                                 onClick={() => handleRemindStudent(doc.queue_ticket_id, doc.student_name)}
                                 disabled={remindingId === doc.queue_ticket_id}
                                 title="Send reminder notification to student"
-                                className="px-3 py-2 rounded-xl bg-surface hover:bg-gold-light text-text-main hover:text-gold border border-border hover:border-gold-border text-fluid-12 font-bold transition-all shadow-xs cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center gap-1.5"
+                                className="px-3 py-1.75 rounded-xl bg-surface hover:bg-gold-light text-text-main hover:text-gold border border-border hover:border-gold-border text-fluid-12 font-bold transition-all shadow-xs cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center gap-1.5 active:scale-95"
                               >
                                 {remindingId === doc.queue_ticket_id ? (
                                   <>
@@ -532,7 +670,7 @@ export default function DocumentReleasesPage() {
                               <button
                                 onClick={() => handleMarkCollected(doc.queue_ticket_id, doc.step_number)}
                                 disabled={markingId === doc.queue_ticket_id}
-                                className="px-3.5 py-2 rounded-xl bg-success text-white text-fluid-12 font-extrabold hover:bg-success-dark transition-all shadow-xs hover:shadow-sm cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center gap-1.5"
+                                className="px-3.5 py-1.75 rounded-xl bg-success text-white text-fluid-12 font-extrabold hover:bg-success-dark transition-all shadow-xs hover:shadow-sm cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center gap-1.5 active:scale-95"
                               >
                                 {markingId === doc.queue_ticket_id ? (
                                   <>
@@ -555,10 +693,10 @@ export default function DocumentReleasesPage() {
                 </table>
               </div>
 
-              {/* ── Pagination Bar (Clean Typography) ── */}
+              {/* ── Pagination Bar (Fluid & Responsive) ── */}
               {filteredUncollected.length > 0 && (
-                <div className="px-6 py-4 border-t border-border bg-white flex flex-col sm:flex-row justify-between items-center gap-3">
-                  <div className="text-fluid-12-5 text-text-sub font-medium">
+                <div className="px-4 sm:px-6 py-3.5 border-t border-border bg-white flex flex-col sm:flex-row justify-between items-center gap-3">
+                  <div className="text-fluid-12 sm:text-fluid-12-5 text-text-sub font-medium text-center sm:text-left">
                     {filteredUncollected.length <= 1 ? (
                       <>Showing <strong className="font-bold text-text-main">{filteredUncollected.length}</strong> record</>
                     ) : (
@@ -569,7 +707,7 @@ export default function DocumentReleasesPage() {
                   </div>
 
                   {totalPages > 1 && (
-                    <div className="flex items-center gap-1.5">
+                    <div className="flex items-center gap-1.5 flex-wrap justify-center">
                       <button
                         onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                         disabled={currentPage === 1}
@@ -613,11 +751,11 @@ export default function DocumentReleasesPage() {
         </div>
       )}
 
-      {/* ── Collected History Data Table ── */}
+      {/* ── Collected History Data Container (Cards on Mobile, Fluid Table on Desktop) ── */}
       {activeTab === 'collected' && (
-        <div className="animate-fade-up bg-white rounded-2xl border border-border shadow-xs overflow-hidden" style={{ animationDelay: '0.25s' }}>
+        <div className="animate-fade-up bg-white rounded-xl sm:rounded-2xl border border-border shadow-xs overflow-hidden" style={{ animationDelay: '0.25s' }}>
           {filteredCollected.length === 0 ? (
-            <div className="p-14 flex flex-col items-center justify-center text-center">
+            <div className="p-8 sm:p-14 flex flex-col items-center justify-center text-center">
               <div className="w-14 h-14 bg-surface rounded-2xl flex items-center justify-center mb-3 border border-border text-text-muted">
                 <CheckCircle2 size={28} />
               </div>
@@ -630,29 +768,92 @@ export default function DocumentReleasesPage() {
             </div>
           ) : (
             <>
-              <div className="overflow-x-auto">
-                <table className="w-full text-left border-collapse">
+              {/* Mobile Card Grid (< lg) */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 lg:hidden p-3.5 sm:p-4 bg-off-white/40">
+                {paginatedItems.map(doc => (
+                  <div 
+                    key={doc.queue_ticket_id}
+                    className="bg-white rounded-xl sm:rounded-2xl p-3.5 sm:p-4 border border-border shadow-2xs hover:shadow-xs transition-all flex flex-col justify-between gap-2.5"
+                  >
+                    {/* Top Bar: Queue No + Priority */}
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="font-serif text-fluid-18 font-bold text-text-muted leading-none">
+                        {doc.queue_number}
+                      </span>
+                      {renderPriorityBadge(doc.priority_class)}
+                    </div>
+
+                    {/* Middle Block */}
+                    <div className="bg-off-white/80 rounded-xl p-3 border border-border/70 flex flex-col gap-1.5">
+                      <div className="flex items-baseline justify-between gap-2">
+                        <span className="font-bold text-text-main text-fluid-13-5 leading-tight truncate">
+                          {doc.student_name}
+                        </span>
+                        <span className="text-fluid-11 font-mono text-text-sub font-semibold shrink-0">
+                          {doc.student_id ? `ID: ${doc.student_id}` : '—'}
+                        </span>
+                      </div>
+
+                      {/* Document details */}
+                      <div className="pt-1.5 border-t border-border/50">
+                        {doc.selected_documents && doc.selected_documents.length > 1 ? (
+                          <div className="flex flex-col gap-1">
+                            <span className="text-fluid-11-5 font-bold text-text-main">
+                              {doc.selected_documents.length} Documents
+                            </span>
+                            <div className="flex flex-wrap gap-1">
+                              {doc.selected_documents.map((d, idx) => (
+                                <span key={idx} className="text-fluid-10 font-bold px-2 py-0.5 rounded-md bg-maroon-light text-maroon border border-maroon-border/30">
+                                  {d.name}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        ) : (
+                          <span className="text-fluid-12-5 font-bold text-text-main leading-snug">
+                            {doc.transaction_type}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Bottom Timestamp */}
+                    <div className="flex items-center justify-between text-fluid-11 pt-1 border-t border-border/60">
+                      <span className="text-text-muted font-medium">Collected:</span>
+                      <span className="font-extrabold text-success inline-flex items-center gap-1.5">
+                        <CheckCircle2 size={13} />
+                        {doc.confirmed_at ? new Date(doc.confirmed_at).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' }) : '—'}
+                        {doc.confirmed_at ? ` at ${new Date(doc.confirmed_at).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}` : ''}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Desktop Table (>= lg) */}
+              <div className="hidden lg:block overflow-x-auto custom-scrollbar">
+                <table className="w-full min-w-190 text-left border-collapse">
                   <thead>
                     <tr className="bg-surface/80 border-b border-border text-fluid-10-5 font-extrabold text-text-muted uppercase tracking-[0.08em]">
-                      <th className="py-3.5 px-6">Queue No.</th>
-                      <th className="py-3.5 px-6">Student Details</th>
-                      <th className="py-3.5 px-6">Priority</th>
-                      <th className="py-3.5 px-6">Claimed Document</th>
-                      <th className="py-3.5 px-6 text-right">Collected At</th>
+                      <th className="py-3.5 px-4 xl:px-6">Queue No.</th>
+                      <th className="py-3.5 px-4 xl:px-6">Student Details</th>
+                      <th className="py-3.5 px-4 xl:px-6">Priority</th>
+                      <th className="py-3.5 px-4 xl:px-6">Claimed Document</th>
+                      <th className="py-3.5 px-4 xl:px-6 text-right">Collected At</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-border/60">
                     {paginatedItems.map(doc => (
                       <tr key={doc.queue_ticket_id} className="hover:bg-surface/50 transition-colors">
                         {/* Queue Number */}
-                        <td className="py-4 px-6 whitespace-nowrap">
+                        <td className="py-3.5 px-4 xl:px-6 whitespace-nowrap">
                           <span className="font-serif text-fluid-18 font-bold text-text-muted leading-none">
                             {doc.queue_number}
                           </span>
                         </td>
 
                         {/* Student Details */}
-                        <td className="py-4 px-6">
+                        <td className="py-3.5 px-4 xl:px-6">
                           <div className="font-bold text-text-main text-fluid-13-5 leading-tight">
                             {doc.student_name}
                           </div>
@@ -662,12 +863,12 @@ export default function DocumentReleasesPage() {
                         </td>
 
                         {/* Priority */}
-                        <td className="py-4 px-6 whitespace-nowrap">
+                        <td className="py-3.5 px-4 xl:px-6 whitespace-nowrap">
                           {renderPriorityBadge(doc.priority_class)}
                         </td>
 
                         {/* Document */}
-                        <td className="py-4 px-6">
+                        <td className="py-3.5 px-4 xl:px-6">
                           {doc.selected_documents && doc.selected_documents.length > 1 ? (
                             <div className="flex flex-col gap-1">
                               <div className="text-fluid-13 font-bold text-text-main leading-snug">
@@ -689,7 +890,7 @@ export default function DocumentReleasesPage() {
                         </td>
 
                         {/* Collected Timestamp */}
-                        <td className="py-4 px-6 text-right whitespace-nowrap">
+                        <td className="py-3.5 px-4 xl:px-6 text-right whitespace-nowrap">
                           <div className="text-fluid-12-5 font-extrabold text-success inline-flex items-center gap-1.5 justify-end">
                             <CheckCircle2 size={14} />
                             {doc.confirmed_at ? new Date(doc.confirmed_at).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' }) : '—'}
@@ -704,10 +905,10 @@ export default function DocumentReleasesPage() {
                 </table>
               </div>
 
-              {/* ── Pagination Bar (Clean Typography) ── */}
+              {/* ── Pagination Bar (Fluid & Responsive) ── */}
               {filteredCollected.length > 0 && (
-                <div className="px-6 py-4 border-t border-border bg-white flex flex-col sm:flex-row justify-between items-center gap-3">
-                  <div className="text-fluid-12-5 text-text-sub font-medium">
+                <div className="px-4 sm:px-6 py-3.5 border-t border-border bg-white flex flex-col sm:flex-row justify-between items-center gap-3">
+                  <div className="text-fluid-12 sm:text-fluid-12-5 text-text-sub font-medium text-center sm:text-left">
                     {filteredCollected.length <= 1 ? (
                       <>Showing <strong className="font-bold text-text-main">{filteredCollected.length}</strong> record</>
                     ) : (
@@ -718,7 +919,7 @@ export default function DocumentReleasesPage() {
                   </div>
 
                   {totalPages > 1 && (
-                    <div className="flex items-center gap-1.5">
+                    <div className="flex items-center gap-1.5 flex-wrap justify-center">
                       <button
                         onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                         disabled={currentPage === 1}

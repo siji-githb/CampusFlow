@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react'
+import { createPortal } from 'react-dom'
 import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, X } from 'lucide-react'
 import { getPhilippineHoliday } from '../../utils/philippineHolidays'
 
@@ -73,6 +74,18 @@ export default function CustomDatePicker({
   const containerRef = useRef(null)
   const inputRef = useRef(null)
 
+  const [isMobile, setIsMobile] = useState(() => 
+    typeof window !== 'undefined' ? window.innerWidth < 640 : false
+  )
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 640)
+    }
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [])
+
   const todayStr = useMemo(() => {
     const t = new Date()
     return `${t.getFullYear()}-${String(t.getMonth() + 1).padStart(2, '0')}-${String(t.getDate()).padStart(2, '0')}`
@@ -100,9 +113,10 @@ export default function CustomDatePicker({
     }
   }, [value])
 
-  // Close when clicking outside
+  // Close when clicking outside (desktop popover only; mobile uses modal backdrop)
   useEffect(() => {
     function handleClickOutside(e) {
+      if (isMobile) return
       if (containerRef.current && !containerRef.current.contains(e.target)) {
         setIsOpen(false)
         if (value) {
@@ -114,7 +128,7 @@ export default function CustomDatePicker({
       document.addEventListener('mousedown', handleClickOutside)
       return () => document.removeEventListener('mousedown', handleClickOutside)
     }
-  }, [isOpen, value])
+  }, [isOpen, value, isMobile])
 
   const year = viewDate.getFullYear()
   const month = viewDate.getMonth()
@@ -245,6 +259,143 @@ export default function CustomDatePicker({
     setViewDate(new Date(year, month + 1, 1))
   }
 
+  const renderCalendarContent = (isMobileModal = false) => (
+    <>
+      {/* Month & Year Navigation */}
+      <div className="flex items-center justify-between mb-3 px-1">
+        <span className="font-serif text-fluid-16 font-bold text-text-main">
+          {MONTHS[month]} <span className="font-sans text-fluid-14 text-text-sub font-bold">{year}</span>
+        </span>
+
+        <div className="flex items-center gap-1">
+          <button
+            type="button"
+            onClick={handlePrevMonth}
+            className="w-7.5 h-7.5 rounded-lg border border-border hover:border-border-strong hover:bg-surface text-text-sub hover:text-text-main flex items-center justify-center transition-colors cursor-pointer"
+            title="Previous month"
+          >
+            <ChevronLeft size={15} />
+          </button>
+          <button
+            type="button"
+            onClick={handleNextMonth}
+            className="w-7.5 h-7.5 rounded-lg border border-border hover:border-border-strong hover:bg-surface text-text-sub hover:text-text-main flex items-center justify-center transition-colors cursor-pointer"
+            title="Next month"
+          >
+            <ChevronRight size={15} />
+          </button>
+          {isMobileModal && (
+            <button
+              type="button"
+              onClick={() => setIsOpen(false)}
+              className="w-7.5 h-7.5 rounded-lg bg-surface hover:bg-border/80 text-text-muted hover:text-text-main flex items-center justify-center transition-colors cursor-pointer ml-1"
+              title="Close"
+            >
+              <X size={15} />
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Days of Week */}
+      <div className="grid grid-cols-7 gap-1 mb-1.5 text-center">
+        {DAYS.map((d, i) => (
+          <div
+            key={i}
+            className={`text-fluid-11 font-bold py-1 ${
+              i === 0 ? 'text-text-muted/40' : 'text-text-muted'
+            }`}
+          >
+            {d}
+          </div>
+        ))}
+      </div>
+
+      {/* Calendar Grid */}
+      <div className="grid grid-cols-7 gap-1">
+        {calendarCells.map((cell, idx) => {
+          const isSunday = cell.date.getDay() === 0
+          const isPast = cell.dateStr < todayStr
+          const isOutOfBounds = (minDate && cell.dateStr < minDate) || (maxDate && cell.dateStr > maxDate)
+          const phHoliday = getPhilippineHoliday(cell.dateStr)
+          const isDisabled = isSunday || isPast || isOutOfBounds || Boolean(phHoliday)
+
+          const isSelected = value === cell.dateStr
+          const isToday = cell.dateStr === todayStr
+
+          let cellTitle = ''
+          if (isSunday) cellTitle = 'Sundays are closed'
+          else if (phHoliday) cellTitle = `${phHoliday.name} (${phHoliday.type}) - Office Closed`
+          else if (isPast) cellTitle = 'Past date'
+          else if (isOutOfBounds) cellTitle = 'Outside booking window'
+
+          return (
+            <button
+              key={idx}
+              type="button"
+              disabled={isDisabled}
+              onClick={() => handleSelectDay(cell)}
+              title={cellTitle}
+              className={`h-8 w-8 sm:h-8 sm:w-8 mx-auto rounded-xl text-fluid-12 sm:text-fluid-12-5 font-sans flex flex-col items-center justify-center transition-all duration-150 relative ${
+                isSelected
+                  ? 'bg-maroon text-white font-extrabold shadow-sm scale-105 z-10 cursor-pointer'
+                  : isToday
+                  ? 'text-maroon font-bold hover:bg-maroon-light hover:text-maroon cursor-pointer'
+                  : phHoliday
+                  ? 'bg-danger-light/30 text-danger font-medium cursor-not-allowed opacity-75'
+                  : isDisabled
+                  ? 'text-text-muted/30 cursor-not-allowed bg-transparent font-normal'
+                  : !cell.isCurrentMonth
+                  ? 'text-text-muted/40 font-normal hover:bg-surface cursor-pointer'
+                  : 'text-text-main font-medium hover:bg-maroon-light hover:text-maroon cursor-pointer'
+              }`}
+            >
+              <span>{cell.day}</span>
+              {phHoliday && (
+                <div className={`w-1 h-1 rounded-full ${isSelected ? 'bg-white' : 'bg-danger'}`} />
+              )}
+            </button>
+          )
+        })}
+      </div>
+
+      {/* Footer details */}
+      <div className="mt-3 pt-2.5 border-t border-border flex items-center justify-between text-fluid-11 text-text-muted px-1">
+        <span className="truncate pr-2">
+          {value ? (
+            <span className="text-maroon font-bold">Selected: {formatDateDisplay(value)}</span>
+          ) : (
+            'Select a date'
+          )}
+        </span>
+        <div className="flex items-center gap-1.5 shrink-0">
+          {value && (
+            <button
+              type="button"
+              onClick={() => {
+                onChange('')
+                setInputText('')
+              }}
+              className="text-text-sub hover:text-danger font-semibold cursor-pointer border-none bg-transparent px-1.5 py-0.5"
+            >
+              Clear
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={() => setIsOpen(false)}
+            className={isMobileModal 
+              ? "px-3 py-1 rounded-lg bg-maroon text-white font-bold text-fluid-11 cursor-pointer border-none shadow-xs active:scale-95"
+              : "text-text-sub hover:text-text-main font-semibold cursor-pointer border-none bg-transparent px-1"
+            }
+          >
+            {isMobileModal ? 'Done' : 'Close'}
+          </button>
+        </div>
+      </div>
+    </>
+  )
+
   return (
     <div className={`relative inline-block ${className}`} ref={containerRef}>
       {label && (
@@ -265,12 +416,14 @@ export default function CustomDatePicker({
           ref={inputRef}
           type="text"
           disabled={disabled}
+          readOnly={isMobile}
           value={inputText}
           onChange={handleInputChange}
           onBlur={handleInputBlur}
-          onFocus={() => !disabled && setIsOpen(true)}
+          onClick={() => !disabled && setIsOpen(true)}
+          onFocus={() => !disabled && !isMobile && setIsOpen(true)}
           placeholder={placeholder}
-          className="w-full bg-transparent px-3.5 py-2.5 outline-none text-fluid-13-5 text-text-main font-medium placeholder:text-text-muted placeholder:font-normal"
+          className={`w-full bg-transparent px-3.5 py-2.5 outline-none text-fluid-13-5 text-text-main font-medium placeholder:text-text-muted placeholder:font-normal ${isMobile ? 'cursor-pointer' : ''}`}
         />
 
         <div className="flex items-center gap-1 pr-2.5 shrink-0">
@@ -301,118 +454,33 @@ export default function CustomDatePicker({
         </div>
       </div>
 
-      {/* Popover Calendar */}
-      {isOpen && (
+      {/* Mobile Modal Calendar via Portal */}
+      {isOpen && isMobile && createPortal(
+        <div 
+          className="fixed inset-0 z-999999 bg-black/50 transition-opacity animate-fade-in flex items-center justify-center p-3.5 sm:p-4"
+          onClick={() => {
+            setIsOpen(false)
+            if (value) setInputText(formatDateDisplay(value))
+          }}
+        >
+          <div 
+            className="w-full max-w-78.75 bg-white rounded-3xl border border-border shadow-[0_25px_70px_rgba(0,0,0,0.25)] p-4 sm:p-5 animate-fade-up select-none font-sans"
+            onClick={e => e.stopPropagation()}
+          >
+            {renderCalendarContent(true)}
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {/* Desktop Popover Calendar */}
+      {isOpen && !isMobile && (
         <div
           className={`absolute ${align === 'right' ? 'right-0' : 'left-0'} ${
             position === 'top' ? 'bottom-full mb-2' : 'top-full mt-2'
-          } w-75 sm:w-[320px] bg-white rounded-2xl border border-border shadow-[0_18px_50px_rgba(0,0,0,0.18)] p-4 z-1000 animate-fade-up select-none`}
+          } w-77.5 sm:w-[320px] max-w-[calc(100vw-2rem)] bg-white rounded-2xl border border-border shadow-[0_18px_50px_rgba(0,0,0,0.18)] p-4 z-1000 animate-fade-up select-none font-sans`}
         >
-          {/* Month & Year Navigation */}
-          <div className="flex items-center justify-between mb-3 px-1">
-            <span className="font-serif text-fluid-16 font-bold text-text-main">
-              {MONTHS[month]} <span className="font-sans text-fluid-14 text-text-sub">{year}</span>
-            </span>
-
-            <div className="flex items-center gap-1">
-              <button
-                type="button"
-                onClick={handlePrevMonth}
-                className="w-7 h-7 rounded-lg border border-border hover:border-border-strong hover:bg-surface text-text-sub hover:text-text-main flex items-center justify-center transition-colors cursor-pointer"
-                title="Previous month"
-              >
-                <ChevronLeft size={15} />
-              </button>
-              <button
-                type="button"
-                onClick={handleNextMonth}
-                className="w-7 h-7 rounded-lg border border-border hover:border-border-strong hover:bg-surface text-text-sub hover:text-text-main flex items-center justify-center transition-colors cursor-pointer"
-                title="Next month"
-              >
-                <ChevronRight size={15} />
-              </button>
-            </div>
-          </div>
-
-          {/* Days of Week */}
-          <div className="grid grid-cols-7 gap-1 mb-1.5 text-center">
-            {DAYS.map((d, i) => (
-              <div
-                key={i}
-                className={`text-fluid-11 font-bold py-1 ${
-                  i === 0 ? 'text-text-muted/40' : 'text-text-muted'
-                }`}
-              >
-                {d}
-              </div>
-            ))}
-          </div>
-
-          {/* Calendar Grid */}
-          <div className="grid grid-cols-7 gap-1">
-            {calendarCells.map((cell, idx) => {
-              const isSunday = cell.date.getDay() === 0
-              const isPast = cell.dateStr < todayStr
-              const isOutOfBounds = (minDate && cell.dateStr < minDate) || (maxDate && cell.dateStr > maxDate)
-              const phHoliday = getPhilippineHoliday(cell.dateStr)
-              const isDisabled = isSunday || isPast || isOutOfBounds || Boolean(phHoliday)
-
-              const isSelected = value === cell.dateStr
-              const isToday = cell.dateStr === todayStr
-
-              let cellTitle = ''
-              if (isSunday) cellTitle = 'Sundays are closed'
-              else if (phHoliday) cellTitle = `${phHoliday.name} (${phHoliday.type}) - Office Closed`
-              else if (isPast) cellTitle = 'Past date'
-              else if (isOutOfBounds) cellTitle = 'Outside booking window'
-
-              return (
-                <button
-                  key={idx}
-                  type="button"
-                  disabled={isDisabled}
-                  onClick={() => handleSelectDay(cell)}
-                  title={cellTitle}
-                  className={`h-8 w-8 mx-auto rounded-xl text-fluid-12-5 font-sans flex flex-col items-center justify-center transition-all duration-150 relative ${
-                    isSelected
-                      ? 'bg-maroon text-white font-extrabold shadow-sm scale-105 z-10 cursor-pointer'
-                      : isToday
-                      ? 'text-maroon font-bold hover:bg-maroon-light hover:text-maroon cursor-pointer'
-                      : phHoliday
-                      ? 'bg-danger-light/30 text-danger font-medium cursor-not-allowed opacity-75'
-                      : isDisabled
-                      ? 'text-text-muted/30 cursor-not-allowed bg-transparent font-normal'
-                      : !cell.isCurrentMonth
-                      ? 'text-text-muted/40 font-normal hover:bg-surface cursor-pointer'
-                      : 'text-text-main font-medium hover:bg-maroon-light hover:text-maroon cursor-pointer'
-                  }`}
-                >
-                  <span>{cell.day}</span>
-                  {phHoliday && (
-                    <div className={`w-1 h-1 rounded-full ${isSelected ? 'bg-white' : 'bg-danger'}`} />
-                  )}
-                </button>
-              )
-            })}
-          </div>
-
-          {/* Footer details */}
-          <div className="mt-3 pt-2.5 border-t border-border flex items-center justify-between text-fluid-11 text-text-muted px-1">
-            <span>
-              {value ? (
-                <span className="text-maroon font-bold">Selected: {formatDateDisplay(value)}</span>
-              ) : (
-                'Format: MM/DD/YYYY'
-              )}
-            </span>
-            <button
-              type="button"
-              onClick={() => setIsOpen(false)}
-              className="text-text-sub hover:text-text-main font-semibold cursor-pointer border-none bg-transparent"
-            >
-              Close
-            </button>
-          </div>
+          {renderCalendarContent(false)}
         </div>
       )}
     </div>

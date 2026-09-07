@@ -30,7 +30,6 @@ const STATUS_OPTIONS = [
   { value: 'in_progress', label: 'Ready for Pickup',  dot: 'bg-success' },
   { value: 'completed',   label: 'Completed',         dot: 'bg-success' },
   { value: 'cancelled',   label: 'Cancelled',         dot: 'bg-danger' },
-  { value: 'no_show',     label: 'No Show',           dot: 'bg-text-muted' },
 ]
 
 // ── Effective Status Resolver ───────────────────────────────────────────────────
@@ -772,7 +771,7 @@ export default function AdminAppointmentsPage() {
   }, [filtered, page])
 
   const selectedDaySummary = useMemo(() => {
-    const summary = { confirmed: 0, in_progress: 0, completed: 0, cancelled: 0, no_show: 0 }
+    const summary = { confirmed: 0, in_progress: 0, completed: 0, cancelled: 0 }
     appointments.forEach(a => {
       const st = getEffectiveStatus(a)
       if (summary[st] !== undefined) summary[st]++
@@ -820,7 +819,7 @@ export default function AdminAppointmentsPage() {
       {/* ── KPI Metric Cards ── */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-7">
         {[
-          { label: "Today's Bookings", value: stats?.today?.total ?? 0, icon: <Calendar size={18} />, bg: 'bg-maroon-light', fg: 'text-maroon', sub: 'Total scheduled today' },
+          { label: "Today's Appts.", value: stats?.today?.total ?? 0, icon: <Calendar size={18} />, bg: 'bg-maroon-light', fg: 'text-maroon', sub: 'Total scheduled today' },
           { label: 'Confirmed', value: stats?.today?.confirmed ?? 0, icon: <CalendarCheck size={18} />, bg: 'bg-blue-light', fg: 'text-blue', sub: 'Awaiting student arrival' },
           { label: 'Ready for Pickup', value: selectedDaySummary.in_progress, icon: <Clock size={18} />, bg: 'bg-success-light', fg: 'text-success', sub: 'Ready at counter window' },
           { label: 'Completed Today', value: stats?.today?.completed ?? 0, icon: <CheckCircle2 size={18} />, bg: 'bg-gold-light', fg: 'text-gold', sub: 'Successfully processed' },
@@ -884,7 +883,6 @@ export default function AdminAppointmentsPage() {
                   { l: 'Ready for Pickup', v: selectedDaySummary.in_progress, c: 'text-success', dot: 'bg-success' },
                   { l: 'Completed',        v: selectedDaySummary.completed,   c: 'text-success', dot: 'bg-success' },
                   { l: 'Cancelled',        v: selectedDaySummary.cancelled,   c: 'text-danger',  dot: 'bg-danger' },
-                  { l: 'No Show',          v: selectedDaySummary.no_show,     c: 'text-text-muted', dot: 'bg-text-muted' },
                 ].map((s, i) => (
                   <div key={i} className="flex justify-between items-center group py-0.5">
                     <div className="flex items-center gap-2">
@@ -1317,7 +1315,9 @@ export default function AdminAppointmentsPage() {
         const isPriority = viewDetailsModal.priority_class && viewDetailsModal.priority_class !== 'regular'
         const pClassLabel = viewDetailsModal.priority_class?.toUpperCase() || 'REGULAR'
 
-        const queueTicket = viewDetailsModal.queue_tickets?.[0] || viewDetailsModal.queue_tickets || null
+        const rawTickets = viewDetailsModal.queue_tickets
+        const queueTicket = Array.isArray(rawTickets) ? (rawTickets[0] || null) : (rawTickets || null)
+        const hasValidQueueTicket = Boolean(queueTicket && (queueTicket.id || queueTicket.queue_number))
         const txType = viewDetailsModal.transaction_types || viewDetailsModal.transaction_type || {}
         
         const docList = viewDetailsModal.selected_documents && viewDetailsModal.selected_documents.length > 0
@@ -1464,7 +1464,7 @@ export default function AdminAppointmentsPage() {
                     <span className="text-fluid-10-5 text-text-muted uppercase font-extrabold tracking-wider block mb-1">
                       Live Queue Status
                     </span>
-                    {queueTicket ? (
+                    {hasValidQueueTicket ? (
                       <>
                         <div className="text-fluid-18 font-extrabold text-maroon leading-tight">
                           {queueTicket.queue_number}

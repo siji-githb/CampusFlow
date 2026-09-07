@@ -7,6 +7,7 @@ from services.notification_service import create_system_notification
 from services.websocket_manager import manager
 from services.holiday_service import get_philippine_holiday
 from deps import get_supabase_admin as get_admin
+from timezone_utils import get_pht_date, get_pht_date_str
 
 settings = get_settings()
 
@@ -234,7 +235,7 @@ def create_appointment(student_id: str, priority_class: str, data: AppointmentCr
 
     # Check cutoff
     cutoff_days = int(config.get("booking_cutoff_days", 1))
-    min_date = date.today() + timedelta(days=cutoff_days)
+    min_date = get_pht_date() + timedelta(days=cutoff_days)
     if data.appointment_date < min_date:
         raise HTTPException(
             status_code=400,
@@ -483,7 +484,7 @@ def get_student_appointments(student_id: str):
     
     # Auto-cancel past unactivated appointments for this student
     try:
-        today_str = str(date.today())
+        today_str = get_pht_date_str()
         past_appts_res = admin.table("appointments") \
             .select("id, queue_tickets(id, status)") \
             .in_("status", ["pending", "confirmed"]) \
@@ -699,7 +700,7 @@ def get_all_appointments(date_str: str = None):
 
     # Auto-cancel only past unattended appointments globally (exclude those with active or completed queue tickets)
     try:
-        today_str = str(date.today())
+        today_str = get_pht_date_str()
         if _last_global_cleanup_date != today_str:
             past_appts_res = admin.table("appointments") \
                 .select("id, queue_tickets(id, status)") \
@@ -742,12 +743,13 @@ def get_all_appointments(date_str: str = None):
 def get_appointment_stats():
     admin = get_admin()
     try:
-        today = str(date.today())
+        today = get_pht_date_str()
         
         # Today's appointments (distinct student visits)
         res_today = admin.table("appointments").select("id, student_id, time_slot, status").eq("appointment_date", today).execute()
         today_visits = set()
         comp_visits = set()
+        canc_visits = set()
         for a in (res_today.data or []):
             st_id = a.get("student_id")
             ts = a.get("time_slot")
@@ -755,11 +757,14 @@ def get_appointment_stats():
             today_visits.add(k)
             if a.get("status") == "completed":
                 comp_visits.add(k)
+            elif a.get("status") == "cancelled":
+                canc_visits.add(k)
         today_count = len(today_visits)
         comp_count = len(comp_visits)
+        canc_count = len(canc_visits)
         
         # Total monthly volume (distinct student visits)
-        month_start = str(date.today().replace(day=1))
+        month_start = str(get_pht_date().replace(day=1))
         res_month = admin.table("appointments").select("id, student_id, appointment_date, time_slot").gte("appointment_date", month_start).execute()
         month_visits = set(f"{a.get('student_id')}_{a.get('appointment_date')}_{a.get('time_slot')}" if (a.get('student_id') and a.get('appointment_date') and a.get('time_slot')) else a.get("id") for a in (res_month.data or []))
         month_count = len(month_visits)
@@ -812,6 +817,7 @@ def get_appointment_stats():
             "peak_forecast": peak_hour_str,
             "today_appointments": today_count,
             "completed_today": comp_count,
+            "cancelled_today": canc_count,
             "total_monthly": month_count
         }
     except Exception as e:
@@ -1028,8 +1034,7 @@ def set_release_date(appointment_id: str, release_date: str, actor_id: str = Non
         appt_res = admin.table("appointments").select("student_id, release_date, transaction_types(name)").eq("id", appointment_id).single().execute()
         if appt_res.data and appt_res.data.get("student_id"):
             from services.notification_service import create_system_notification
-            from datetime import date
-            today_str = str(date.today())
+            today_str = get_pht_date_str()
             
             # Fetch all document names for this visit
             tx_names = []
