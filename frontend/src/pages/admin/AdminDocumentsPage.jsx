@@ -258,8 +258,9 @@ export default function AdminDocumentsPage() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {filteredTransactions.map((tx, idx) => (
-              <div key={tx.id} className="bg-white p-6 rounded-2xl border border-border shadow-[0_2px_8px_rgba(0,0,0,0.03)] hover:shadow-[0_8px_24px_rgba(0,0,0,0.06)] transition-all duration-300 group animate-fade-up" style={{ animationDelay: `${idx * 0.05}s` }}>
-                <div className="mb-3 flex items-start justify-between gap-4">
+              <div key={tx.id} className="bg-white p-5 sm:p-6 rounded-2xl border border-border shadow-[0_2px_8px_rgba(0,0,0,0.03)] hover:shadow-[0_8px_24px_rgba(0,0,0,0.06)] transition-all duration-300 group animate-fade-up flex flex-col justify-between" style={{ animationDelay: `${idx * 0.05}s` }}>
+                <div>
+                  <div className="mb-3 flex items-start justify-between gap-4">
                   <h3 className="font-bold text-text-main m-0 text-fluid-18 leading-tight group-hover:text-maroon transition-colors">{tx.name}</h3>
                   <div className="flex gap-1.5 shrink-0">
                     <button onClick={() => handleOpenModal(tx, 'edit')} title="Edit" className="w-8 h-8 flex items-center justify-center rounded-lg bg-white border border-border/50 text-text-muted hover:text-maroon hover:border-maroon/30 hover:bg-maroon/5 cursor-pointer transition-all shadow-sm">
@@ -276,13 +277,14 @@ export default function AdminDocumentsPage() {
                   <div className="mb-5">
                     <span className="text-fluid-11 font-bold text-text-muted uppercase tracking-wider mb-2 block">Required Information</span>
                     <div className="flex flex-wrap gap-2">
-                      {tx.config?.requires_semester && <span className="px-2.5 py-1 bg-[#EEF2FF] text-[#4338CA] rounded-md text-fluid-11 font-bold tracking-wide uppercase border border-[#C7D2FE]">Semester</span>}
-                      {tx.config?.requires_year_level && <span className="px-2.5 py-1 bg-[#FAF5FF] text-[#7E22CE] rounded-md text-fluid-11 font-bold tracking-wide uppercase border border-[#E9D5FF]">Year Level</span>}
-                      {tx.config?.requires_school_year && <span className="px-2.5 py-1 bg-[#FFFBEB] text-[#B45309] rounded-md text-fluid-11 font-bold tracking-wide uppercase border border-[#FDE68A]">School Year</span>}
+                      {tx.config?.requires_semester && <span className="px-2.5 py-1 bg-blue-light text-blue rounded-md text-fluid-11 font-bold tracking-wide uppercase border border-blue-border">Semester</span>}
+                      {tx.config?.requires_year_level && <span className="px-2.5 py-1 bg-maroon-light text-maroon rounded-md text-fluid-11 font-bold tracking-wide uppercase border border-maroon-border">Year Level</span>}
+                      {tx.config?.requires_school_year && <span className="px-2.5 py-1 bg-gold-light text-gold rounded-md text-fluid-11 font-bold tracking-wide uppercase border border-gold-border">School Year</span>}
                       {tx.config?.requires_purpose && <span className="px-2.5 py-1 bg-success-light text-success rounded-md text-fluid-11 font-bold tracking-wide uppercase border border-success-border">Purpose</span>}
                     </div>
                   </div>
                 )}
+                </div>
 
                 {((tx.required_documents || tx.config?.required_documents || []).length > 0 || (tx.processing_steps || tx.config?.processing_steps || []).length > 0) && (
                   <div className="flex flex-col gap-4 mb-2 p-4 bg-off-white/50 rounded-xl border border-border/50 mt-auto">
@@ -319,23 +321,34 @@ export default function AdminDocumentsPage() {
 
       {/* Edit/View Modal */}
       {isModalOpen && createPortal((
-        <div className="fixed inset-0 bg-black/60 z-99999 flex items-center justify-center p-4 sm:p-6 overflow-y-auto animate-fade-in" onClick={() => setIsModalOpen(false)}>
-          <div className="bg-white rounded-[20px] shadow-[0_20px_70px_rgba(0,0,0,0.2)] w-full max-w-2xl max-h-[90vh] my-auto flex flex-col overflow-hidden animate-scale-up border border-border" onClick={e => e.stopPropagation()}>
-            <div className="flex items-center justify-between p-6 px-8 border-b border-border bg-linear-to-r from-[#FDFBF7] to-white">
-              <h2 className="m-0 text-fluid-20 font-bold font-serif text-maroon flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-maroon/10 flex items-center justify-center">
-                  {isViewMode ? <Eye size={20} className="text-maroon"/> : editingId ? <Edit2 size={20} className="text-maroon"/> : <Plus size={20} className="text-maroon"/>}
+        <div className="fixed inset-0 z-99999 flex items-center justify-center p-4 sm:p-6 overflow-y-auto animate-fade-in" onClick={() => setIsModalOpen(false)}>
+          <div className="fixed inset-0 bg-black/50 transition-opacity animate-fade-in" />
+          <div className="animate-fade-up relative my-auto w-full max-w-2xl max-h-[90vh] bg-white text-text-main rounded-3xl shadow-[0_25px_80px_rgba(0,0,0,0.18)] border border-border flex flex-col overflow-hidden font-sans z-10" onClick={e => e.stopPropagation()}>
+            <div className="absolute top-0 left-0 right-0 h-1.5 bg-linear-to-r from-maroon via-maroon-dark to-gold" />
+            
+            <div className="flex items-center justify-between p-5 sm:p-6 px-6 sm:px-8 border-b border-border bg-white pt-2">
+              <div>
+                <div className="flex items-center gap-2 mb-1.5">
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-maroon-light text-maroon text-fluid-11 font-extrabold uppercase tracking-wider border border-maroon-border">
+                    <FileText size={13} /> Document Management
+                  </span>
                 </div>
-                {isViewMode ? 'Document Details' : editingId ? 'Edit Document Type' : 'Add Document Type'}
-              </h2>
+                <h2 className="m-0 text-fluid-20 sm:text-fluid-22 font-bold font-serif text-maroon leading-tight">
+                  {isViewMode ? 'Document Details' : editingId ? 'Edit Document Type' : 'Add Document Type'}
+                </h2>
+              </div>
               <div className="flex items-center gap-2">
                 {isViewMode && (
-                  <button onClick={() => setIsViewMode(false)} className="bg-white border border-border text-text-main hover:text-maroon hover:border-maroon rounded-lg px-3 py-1.5 text-fluid-12 font-bold cursor-pointer transition-colors shadow-sm flex items-center gap-1.5">
-                    <Edit2 size={12} /> Edit
+                  <button onClick={() => setIsViewMode(false)} className="px-3.5 py-2 rounded-xl border border-border bg-white text-text-main hover:border-maroon/40 hover:text-maroon text-fluid-12 font-bold cursor-pointer transition-all shadow-2xs flex items-center gap-1.5">
+                    <Edit2 size={13} /> Edit
                   </button>
                 )}
-                <button onClick={() => setIsModalOpen(false)} className="bg-white border border-border text-text-muted hover:text-danger hover:border-danger rounded-lg p-1.5 cursor-pointer transition-colors shadow-sm flex items-center justify-center">
-                  <X size={16} strokeWidth={2.5} />
+                <button 
+                  onClick={() => setIsModalOpen(false)} 
+                  className="w-10 h-10 rounded-full bg-surface text-text-muted hover:bg-border/80 hover:text-text-main transition-all flex items-center justify-center border border-border cursor-pointer shrink-0 shadow-xs hover:scale-105 active:scale-95"
+                  title="Close"
+                >
+                  <X size={18} />
                 </button>
               </div>
             </div>
@@ -614,20 +627,22 @@ export default function AdminDocumentsPage() {
               </div>
             </div>
 
+            {/* Footer */}
             {!isViewMode && (
-              <div className="p-5 border-t border-border bg-off-white flex justify-end gap-3">
+              <div className="p-4 sm:p-5 px-6 sm:px-8 bg-surface/50 border-t border-border flex justify-end gap-3 shrink-0">
                 <button 
-                  onClick={handleCancelEdit}
-                  className="px-4 py-2 bg-white border border-border text-text-main hover:bg-gray-50 rounded-xl font-medium cursor-pointer transition-colors"
+                  onClick={() => setIsModalOpen(false)}
+                  disabled={isSaving}
+                  className="px-4 py-2 sm:py-2.25 rounded-xl border border-border bg-white text-text-sub hover:text-text-main hover:bg-border/60 text-xs sm:text-fluid-13 font-bold transition-all cursor-pointer shadow-2xs active:scale-[0.98]"
                 >
                   Cancel
                 </button>
                 <button 
                   onClick={handleSave}
                   disabled={isSaving}
-                  className="px-5 py-2 bg-maroon hover:bg-maroon-dark text-white border-none rounded-xl font-medium flex items-center gap-2 cursor-pointer shadow-sm transition-colors disabled:opacity-70 disabled:cursor-not-allowed"
+                  className="px-4.5 py-2 sm:py-2.25 rounded-xl bg-maroon hover:bg-maroon-dark text-white font-bold text-xs sm:text-fluid-13 transition-all cursor-pointer shadow-[0_4px_14px_rgba(123,26,42,0.18)] hover:shadow-[0_6px_18px_rgba(123,26,42,0.25)] flex items-center gap-1.5 active:scale-[0.98] disabled:opacity-50"
                 >
-                  {isSaving ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
+                  {isSaving ? <Loader2 size={15} className="animate-spin" /> : <Save size={15} />}
                   {isSaving ? 'Saving...' : (editingId ? 'Save Changes' : 'Create Document')}
                 </button>
               </div>
@@ -638,34 +653,35 @@ export default function AdminDocumentsPage() {
 
       {/* Delete Confirmation Modal */}
       {deleteModalOpen && createPortal((
-        <div className="fixed inset-0 bg-black/60 z-99999 flex items-center justify-center p-4 sm:p-6 overflow-y-auto animate-fade-in" onClick={() => setDeleteModalOpen(false)}>
-          <div className="bg-white rounded-2xl shadow-[0_20px_70px_rgba(0,0,0,0.2)] w-full max-w-sm my-auto overflow-hidden animate-scale-up border border-border" onClick={e => e.stopPropagation()}>
-            <div className="p-6 text-center">
-              <div className="w-16 h-16 bg-danger/10 text-danger rounded-full flex items-center justify-center mx-auto mb-4">
-                <AlertCircle size={32} />
-              </div>
-              <h3 className="text-xl font-bold text-text-main m-0 mb-2">Delete Document Type?</h3>
-              <p className="text-text-sub text-fluid-14 m-0 mb-6">
-                This action cannot be undone. Are you sure you want to permanently delete this document type?
-              </p>
-              
-              <div className="flex gap-3 w-full">
-                <button 
-                  onClick={() => setDeleteModalOpen(false)}
-                  disabled={isDeleting}
-                  className="flex-1 py-2.5 bg-white border border-border text-text-main hover:bg-off-white rounded-xl font-medium cursor-pointer transition-colors disabled:opacity-50"
-                >
-                  Cancel
-                </button>
-                <button 
-                  onClick={confirmDelete}
-                  disabled={isDeleting}
-                  className="flex-1 py-2.5 bg-danger hover:bg-[#b91c1c] text-white border-none rounded-xl font-medium flex items-center justify-center gap-2 cursor-pointer shadow-sm transition-colors disabled:opacity-70 disabled:cursor-not-allowed"
-                >
-                  {isDeleting ? <Loader2 size={16} className="animate-spin" /> : <Trash2 size={16} />}
-                  {isDeleting ? 'Deleting...' : 'Delete'}
-                </button>
-              </div>
+        <div className="fixed inset-0 z-99999 flex items-center justify-center p-4 sm:p-6 overflow-y-auto animate-fade-in" onClick={() => setDeleteModalOpen(false)}>
+          <div className="fixed inset-0 bg-black/50 transition-opacity animate-fade-in" />
+          <div className="animate-fade-up relative my-auto w-full max-w-md bg-white text-text-main rounded-3xl p-6 sm:p-8 shadow-[0_25px_80px_rgba(0,0,0,0.18)] border border-border z-10 text-center font-sans overflow-hidden" onClick={e => e.stopPropagation()}>
+            <div className="absolute top-0 left-0 right-0 h-1.5 bg-danger" />
+            <div className="w-14 h-14 rounded-2xl bg-danger-light border border-danger-border flex items-center justify-center mx-auto mb-4 text-danger shadow-xs">
+              <Trash2 size={26} />
+            </div>
+            <h3 className="text-fluid-20 font-bold text-text-main m-0 mb-2 font-serif">Delete Document Type?</h3>
+            <p className="text-fluid-13 text-text-sub m-0 mb-6 leading-relaxed">
+              This action cannot be undone. Are you sure you want to permanently delete this document type?
+            </p>
+            
+            <div className="flex items-center gap-3">
+              <button 
+                type="button"
+                onClick={() => setDeleteModalOpen(false)}
+                disabled={isDeleting}
+                className="flex-1 px-4 py-3 rounded-xl border border-border bg-surface text-text-sub hover:text-text-main hover:bg-border/60 text-fluid-13 font-bold transition-all cursor-pointer shadow-xs disabled:opacity-50 active:scale-[0.98]"
+              >
+                Cancel
+              </button>
+              <button 
+                type="button"
+                onClick={confirmDelete}
+                disabled={isDeleting}
+                className="flex-1 px-4 py-3 rounded-xl border-none bg-danger text-white hover:bg-danger-hover text-fluid-13 font-bold cursor-pointer transition-all shadow-[0_6px_20px_rgba(220,38,38,0.2)] hover:shadow-[0_8px_25px_rgba(220,38,38,0.28)] disabled:opacity-50 flex items-center justify-center gap-2 active:scale-[0.98]"
+              >
+                {isDeleting ? <Loader2 size={16} className="animate-spin" /> : 'Yes, Delete'}
+              </button>
             </div>
           </div>
         </div>

@@ -81,22 +81,22 @@ export default function AdminOfficeConfigPage() {
       const isTimeField = key.includes('time') || key.includes('lunch')
 
       return (
-        <div key={key} className={`flex items-center justify-between p-[24px_28px] gap-6 flex-wrap transition-colors duration-200 ${i < keys.length - 1 ? 'border-b border-border' : 'border-none'} ${isChanged ? 'bg-maroon-light' : 'bg-transparent'}`}>
-          <div className="flex-1 min-w-50">
+        <div key={key} className={`flex flex-col sm:flex-row sm:items-center justify-between p-4 sm:p-[20px_28px] gap-3.5 sm:gap-6 transition-colors duration-200 ${i < keys.length - 1 ? 'border-b border-border' : 'border-none'} ${isChanged ? 'bg-maroon-light' : 'bg-transparent'}`}>
+          <div className="flex-1 min-w-0">
             <p className="text-fluid-15 font-semibold text-text-main m-0 mb-1">{LABELS[key]?.title || key}</p>
             <p className="text-fluid-13 text-text-sub m-0 leading-snug">{LABELS[key]?.desc}</p>
           </div>
-          <div className="flex gap-3 items-center">
+          <div className="flex gap-2.5 sm:gap-3 items-center w-full sm:w-auto justify-end">
             <input
               type={isTimeField ? 'time' : 'number'}
               value={edited[key] ?? ''}
               onChange={e => setEdited({ ...edited, [key]: e.target.value })}
-              className={`py-2.75 px-4 rounded-[10px] bg-white text-fluid-14 outline-none font-sans text-text-main transition-all duration-200 border-[1.5px] focus:border-maroon ${isTimeField ? 'w-32.5 text-left' : 'w-25 text-center'} ${isChanged ? 'border-maroon shadow-[0_0_0_3px_rgba(123,26,42,0.1)]' : 'border-border'}`}
+              className={`py-2 px-3.5 sm:py-2.5 sm:px-4 rounded-xl bg-white text-fluid-13 sm:text-fluid-14 outline-none font-sans text-text-main transition-all duration-200 border-[1.5px] focus:border-maroon ${isTimeField ? 'w-32.5 text-left' : 'w-25 text-center'} ${isChanged ? 'border-maroon shadow-[0_0_0_3px_rgba(123,26,42,0.1)]' : 'border-border'}`}
             />
             <button
-              onClick={() => handleSave(key)}
+              onClick={() => setConfirmSave(key)}
               disabled={saving === key || !isChanged}
-              className={`py-2.75 px-6 rounded-[10px] border-none text-fluid-14 font-bold font-sans transition-all duration-200 flex items-center justify-center gap-2 min-w-24 ${saving === key ? 'bg-[#B8667A] text-white cursor-not-allowed' : isChanged ? 'bg-maroon text-white cursor-pointer shadow-[0_4px_12px_rgba(123,26,42,0.2)]' : 'bg-border text-text-muted cursor-not-allowed'}`}>
+              className={`py-2 px-5 sm:py-2.5 sm:px-6 rounded-xl border-none text-fluid-13 sm:text-fluid-14 font-bold font-sans transition-all duration-200 flex items-center justify-center gap-2 min-w-22 ${saving === key ? 'bg-[#B8667A] text-white cursor-not-allowed' : isChanged ? 'bg-maroon text-white cursor-pointer shadow-[0_4px_12px_rgba(123,26,42,0.2)] hover:bg-maroon-dark active:scale-[0.98]' : 'bg-border text-text-muted cursor-not-allowed'}`}>
               {saving === key ? (
                 <>
                   <Loader2 size={16} className="animate-spin text-white shrink-0" />
@@ -183,39 +183,49 @@ export default function AdminOfficeConfigPage() {
 
       {/* Confirmation Modal */}
       {confirmSave && createPortal((
-        <div className="fixed inset-0 bg-black/70 z-99999 flex items-center justify-center p-4 sm:p-6 overflow-y-auto animate-fade-in" onClick={() => setConfirmSave(null)}>
-          <div className="bg-[#0A2218] text-white rounded-3xl p-8 w-[90%] max-w-100 my-auto shadow-[0_25px_80px_rgba(0,0,0,0.6)] border border-emerald-800/50 text-center animate-fade-up" onClick={e => e.stopPropagation()}>
-            <div className="w-14 h-14 rounded-2xl bg-emerald-900/50 border border-emerald-700/50 flex items-center justify-center mx-auto mb-4 text-gold">
-              <Settings size={26} />
-            </div>
-            <h3 className="m-0 mb-2 font-serif text-fluid-22 font-bold text-white">Confirm Changes</h3>
-            <p className="m-0 mb-6 text-fluid-14 text-emerald-200/90 leading-relaxed">
-              Are you sure you want to save changes to <br/>
-              <strong className="text-gold">{LABELS[confirmSave]?.title || confirmSave}</strong>?
-            </p>
-            <div className="flex gap-3">
-              <button 
-                type="button"
-                onClick={() => setConfirmSave(null)}
-                className="flex-1 py-3 px-4 rounded-xl bg-white/10 text-white/80 border-none text-fluid-13-5 font-semibold cursor-pointer transition-colors duration-200 hover:bg-white/20 hover:text-white"
-              >
-                Cancel
-              </button>
-              <button 
-                type="button"
-                onClick={() => handleSave(confirmSave)}
-                disabled={saving === confirmSave}
-                className={`flex-1 py-3 px-4 rounded-xl bg-gold text-[#061811] border-none text-fluid-13-5 font-extrabold transition-colors duration-200 shadow-md flex items-center justify-center gap-2 ${saving === confirmSave ? 'opacity-80 cursor-not-allowed' : 'cursor-pointer hover:bg-yellow-400'}`}
-              >
-                {saving === confirmSave ? (
-                  <>
-                    <Loader2 size={16} className="animate-spin text-[#061811] shrink-0" />
-                    <span>Saving...</span>
-                  </>
-                ) : (
-                  'Yes, Save'
-                )}
-              </button>
+        <div className="fixed inset-0 bg-black/50 z-99999 flex items-center justify-center p-4 sm:p-6 overflow-y-auto animate-fade-in" onClick={() => setConfirmSave(null)}>
+          <div className="bg-white rounded-3xl w-full max-w-110 my-auto shadow-[0_25px_80px_rgba(0,0,0,0.18)] border border-border/80 overflow-hidden text-center animate-fade-up relative flex flex-col" onClick={e => e.stopPropagation()}>
+            {/* Top decorative accent bar */}
+            <div className="h-1.5 w-full bg-linear-to-r from-maroon via-maroon-dark to-gold shrink-0" />
+            
+            <div className="p-7 sm:p-8 flex flex-col items-center">
+              <div className="w-14 h-14 rounded-2xl bg-gold-light border border-gold-border/80 flex items-center justify-center mb-4 text-gold shrink-0 shadow-xs">
+                <Settings size={26} />
+              </div>
+              
+              <div className="text-fluid-10 font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-gold-light text-gold border border-gold-border/60 mb-2">
+                Office Setting
+              </div>
+
+              <h3 className="m-0 mb-2 font-serif text-fluid-22 font-bold text-text-main">Confirm Changes</h3>
+              <p className="m-0 mb-6 text-fluid-14 text-text-sub leading-relaxed max-w-85">
+                Are you sure you want to save changes to <strong className="text-maroon font-semibold">{LABELS[confirmSave]?.title || confirmSave}</strong>?
+              </p>
+              
+              <div className="flex gap-3 w-full">
+                <button 
+                  type="button"
+                  onClick={() => setConfirmSave(null)}
+                  className="flex-1 py-3 px-4 rounded-xl bg-surface border border-border/80 text-text-main text-fluid-13 font-semibold cursor-pointer transition-colors duration-200 hover:bg-off-white"
+                >
+                  Cancel
+                </button>
+                <button 
+                  type="button"
+                  onClick={() => handleSave(confirmSave)}
+                  disabled={saving === confirmSave}
+                  className={`flex-1 py-3 px-4 rounded-xl bg-maroon text-white border-none text-fluid-13 font-bold transition-colors duration-200 shadow-sm flex items-center justify-center gap-2 ${saving === confirmSave ? 'opacity-80 cursor-not-allowed' : 'cursor-pointer hover:bg-maroon-dark'}`}
+                >
+                  {saving === confirmSave ? (
+                    <>
+                      <Loader2 size={16} className="animate-spin text-white shrink-0" />
+                      <span>Saving...</span>
+                    </>
+                  ) : (
+                    'Yes, Save'
+                  )}
+                </button>
+              </div>
             </div>
           </div>
         </div>

@@ -8,7 +8,7 @@ class Settings(BaseSettings):
     supabase_service_key: str
     # ── Primary AI Provider: Google AI Studio (Gemini) ──
     gemini_api_key: str = ""
-    gemini_model: str = "gemini-3.6-flash"
+    gemini_model: str = "gemini-flash-lite-latest"
     gemini_base_url: str = "https://generativelanguage.googleapis.com/v1beta/openai/"
 
     # ── Fallback AI Provider: OpenRouter ──

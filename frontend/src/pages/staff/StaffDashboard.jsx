@@ -14,7 +14,7 @@ import { getTodaysQueue } from '../../services/queueService'
 import NotificationDropdown from '../../components/NotificationDropdown'
 import { getAppointmentStats } from '../../services/appointmentService'
 import { getPendingPriorityRequests } from '../../services/priorityService'
-import { Inbox, BarChart2, Ticket, Calendar, ClipboardList, LogOut, Users, User, Settings, CheckSquare, Clock, CalendarClock, Monitor, MonitorX, HelpCircle, LayoutDashboard, ShieldCheck, Loader2, Menu, X, PanelLeftClose, FolderOpen, AlertCircle, IdCard, ChevronRight } from 'lucide-react'
+import { Inbox, BarChart2, Ticket, Calendar, ClipboardList, LogOut, Users, User, Settings, CheckSquare, Clock, CalendarClock, Monitor, MonitorX, HelpCircle, LayoutDashboard, ShieldCheck, Loader2, Menu, X, ChevronLeft, ChevronRight, FolderOpen, AlertCircle, IdCard, FileText } from 'lucide-react'
 import { getWindowAssignments, claimWindow, releaseWindow, getIdRequests } from '../../services/adminService'
 
 // ── Helper to determine whether student presence is required at the counter ────
@@ -38,8 +38,14 @@ const getRequiresPresence = (steps) => {
 
 // ── Compact Queue Preview (Overview panel) ─────────────────────────────────────
 function CompactQueuePreview({ queue, loading, onNavigate }) {
-  // Filter only active tickets that are at the physical counter (exclude processing & release)
-  const activeAll = queue.filter(q => q.ticket.status !== 'completed' && getRequiresPresence(q.steps))
+  // Filter only active tickets that are at the physical counter (exclude completed, cancelled & processing)
+  const activeAll = queue.filter(q => 
+    q.ticket.status !== 'completed' && 
+    q.ticket.status !== 'cancelled' && 
+    q.ticket.status !== 'no_show' && 
+    q.ticket.appointments?.status !== 'cancelled' && 
+    getRequiresPresence(q.steps)
+  )
   const active = activeAll.slice(0, 4)
 
   if (loading) return (
@@ -69,25 +75,28 @@ function CompactQueuePreview({ queue, loading, onNavigate }) {
         const priorityClass = ticket.appointments?.priority_class
         const isPriority = priorityClass && priorityClass !== 'regular'
         const txName = ticket.appointments?.transaction_types?.name || ticket.transaction_type?.name || 'Document Transaction'
+        const selectedDocs = ticket.appointments?.selected_documents
+        const hasMultipleDocs = selectedDocs && selectedDocs.length > 1
+        const singleDocName = selectedDocs?.[0]?.name || txName
 
         return (
           <div 
             key={ticket.id} 
             onClick={() => onNavigate && onNavigate('queue')}
-            className={`group flex items-center justify-between gap-3 p-3 sm:px-4 sm:py-3.5 rounded-xl border transition-all cursor-pointer shadow-2xs hover:shadow-xs ${
+            className={`group flex flex-col gap-2 p-3 sm:px-4 sm:py-3.5 rounded-xl border transition-all cursor-pointer shadow-2xs hover:shadow-xs ${
               isServing 
                 ? 'border-success-border bg-success-light/40 hover:bg-success-light/70' 
                 : 'border-border bg-white hover:border-maroon-border hover:bg-surface/50'
             }`}
           >
-            {/* Queue Number & Info */}
-            <div className="flex items-center gap-3 sm:gap-3.5 min-w-0 flex-1">
-              <div className="font-serif text-fluid-16 sm:text-fluid-18 font-extrabold text-maroon shrink-0 whitespace-nowrap tracking-tight">
-                {ticket.queue_number}
-              </div>
-              <div className="w-px h-7 bg-border shrink-0" />
-              <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-2 mb-1 flex-wrap">
+            {/* Top Row: Queue #, Student Name, Priority & Status */}
+            <div className="flex items-center justify-between gap-2.5 min-w-0">
+              <div className="flex items-center gap-2.5 sm:gap-3 min-w-0 flex-1">
+                <div className="font-serif text-fluid-16 sm:text-fluid-18 font-extrabold text-maroon shrink-0 whitespace-nowrap tracking-tight">
+                  {ticket.queue_number}
+                </div>
+                <div className="w-px h-5 sm:h-6 bg-border shrink-0" />
+                <div className="flex items-center gap-1.5 sm:gap-2 min-w-0 flex-1">
                   <span className="text-fluid-13 font-bold text-text-main truncate group-hover:text-maroon transition-colors">
                     {name}
                   </span>
@@ -97,33 +106,39 @@ function CompactQueuePreview({ queue, loading, onNavigate }) {
                     </span>
                   )}
                 </div>
-                {ticket.appointments?.selected_documents && ticket.appointments.selected_documents.length > 1 ? (
-                  <div className="flex flex-wrap gap-1.5 mt-0.5">
-                    {ticket.appointments.selected_documents.map((d, idx) => (
-                      <span key={idx} className="text-fluid-10 font-bold px-2 py-0.5 rounded-md bg-maroon-light text-maroon border border-maroon-border/40 whitespace-nowrap">
-                        {d.name}
-                      </span>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-fluid-11-5 text-text-muted font-medium truncate">
-                    {txName}
-                  </div>
-                )}
+              </div>
+
+              {/* Serving / Waiting Status */}
+              <div className="shrink-0 flex items-center">
+                <span className={`text-fluid-11 font-bold px-2.5 py-1 rounded-full border flex items-center gap-1.5 whitespace-nowrap ${
+                  isServing 
+                    ? 'bg-success-light text-success border-success-border' 
+                    : 'bg-gold-light text-gold border-gold-border'
+                }`}>
+                  <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${isServing ? 'bg-success animate-pulse' : 'bg-gold'}`} />
+                  <span>{isServing ? 'Serving' : 'Waiting'}</span>
+                </span>
               </div>
             </div>
 
-            {/* Serving / Waiting Status */}
-            <div className="shrink-0 flex items-center gap-2">
-              <span className={`text-fluid-11 font-bold px-2.5 py-1 rounded-full border flex items-center gap-1.5 whitespace-nowrap ${
-                isServing 
-                  ? 'bg-success-light text-success border-success-border' 
-                  : 'bg-gold-light text-gold border-gold-border'
-              }`}>
-                <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${isServing ? 'bg-success animate-pulse' : 'bg-gold'}`} />
-                <span>{isServing ? 'Serving' : 'Waiting'}</span>
-              </span>
-            </div>
+            {/* Bottom Row: Selected Documents or Transaction */}
+            {hasMultipleDocs ? (
+              <div className="flex flex-wrap items-center gap-1.5 pt-1.5 border-t border-border/50">
+                <span className="text-fluid-10 font-bold uppercase tracking-wider text-text-muted shrink-0 mr-0.5">
+                  Docs:
+                </span>
+                {selectedDocs.map((d, idx) => (
+                  <span key={idx} className="text-fluid-10 font-semibold px-2 py-0.5 rounded-md bg-maroon-light text-maroon border border-maroon-border/40">
+                    {d.name}
+                  </span>
+                ))}
+              </div>
+            ) : (
+              <div className="flex items-center gap-1.5 pt-1.5 border-t border-border/50 text-fluid-11-5 text-text-muted font-medium min-w-0">
+                <FileText size={12} className="shrink-0 text-text-muted/70" />
+                <span className="truncate">{singleDocName}</span>
+              </div>
+            )}
           </div>
         )
       })}
@@ -143,11 +158,12 @@ function CompactQueuePreview({ queue, loading, onNavigate }) {
 }
 
 // ── Sidebar Item ───────────────────────────────────────────────────────────────
-const SideItem = ({ icon, label, active, onClick, badge, disabled }) => (
+const SideItem = ({ icon, label, active, onClick, badge, disabled, collapsed }) => (
   <button 
     onClick={disabled ? undefined : onClick} 
     disabled={disabled}
-    className={`flex items-center gap-2.75 w-full px-3.5 py-2.5 rounded-[10px] border-none text-left text-fluid-13-5 font-sans relative transition-all duration-300 overflow-hidden
+    title={collapsed ? label : undefined}
+    className={`flex items-center ${collapsed ? 'justify-center px-0 py-2.5' : 'gap-3 px-3 py-2.5'} w-full rounded-xl border-none text-left font-sans relative transition-all duration-250 ease-out overflow-hidden group
       ${disabled ? 'cursor-not-allowed opacity-40' : 'cursor-pointer'}
       ${active ? 'bg-maroon-light/60 text-maroon font-bold' : 'bg-transparent text-text-sub font-medium'}
       ${!active && !disabled ? 'hover:bg-surface hover:text-text-main' : ''}
@@ -156,12 +172,24 @@ const SideItem = ({ icon, label, active, onClick, badge, disabled }) => (
     {active && (
       <div className="absolute left-0 top-[15%] bottom-[15%] w-0.75 bg-maroon rounded-r-full shadow-[1px_0_6px_rgba(123,26,42,0.3)]" />
     )}
-    <span className={`flex items-center justify-center text-fluid-17 w-5 shrink-0 transition-all duration-300 ${active ? 'opacity-100 scale-110 text-maroon' : 'opacity-70'}`}>
+    <span className={`flex items-center justify-center text-fluid-17 w-5 shrink-0 transition-all duration-250 ease-out ${active ? 'opacity-100 scale-105 text-maroon' : 'opacity-70 group-hover:opacity-100'}`}>
       {icon}
     </span>
-    <span className="flex-1 tracking-wide">{label}</span>
+    
+    <span className={`tracking-wide whitespace-nowrap text-fluid-13 transition-all duration-250 ease-out overflow-hidden ${
+      collapsed 
+        ? 'opacity-0 max-w-0 -translate-x-2 pointer-events-none' 
+        : 'opacity-100 max-w-44 translate-x-0 flex-1'
+    }`}>
+      {label}
+    </span>
+
     {badge > 0 && (
-      <span className="bg-maroon text-white text-fluid-10 font-bold px-1.5 py-px rounded-full min-w-4.5 text-center z-10 relative shadow-sm">
+      <span className={`transition-all duration-250 ease-out font-bold text-center ${
+        collapsed 
+          ? 'absolute top-1.5 right-2 bg-maroon text-white text-[10px] px-1.5 py-px rounded-full min-w-4 shadow-sm leading-tight' 
+          : 'bg-maroon text-white text-fluid-10 px-2 py-0.5 rounded-full min-w-5 shadow-xs ml-auto shrink-0'
+      }`}>
         {badge}
       </span>
     )}
@@ -198,12 +226,25 @@ export default function StaffDashboard() {
   const [visitedTabs, setVisitedTabs] = useState(new Set(['overview']))
   const [profileOpen, setProfileOpen] = useState(false)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
+    try {
+      return localStorage.getItem('cf_staff_sidebar_collapsed') === 'true'
+    } catch {
+      return false
+    }
+  })
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('cf_staff_sidebar_collapsed', sidebarCollapsed ? 'true' : 'false')
+    } catch {}
+  }, [sidebarCollapsed])
 
   // Sync sidebar width CSS variable for layout-aligned overlays (like ToastContainer)
   useEffect(() => {
     const checkWidth = () => {
       if (window.innerWidth >= 768) {
-        document.documentElement.style.setProperty('--cf-sidebar-width', '240px')
+        document.documentElement.style.setProperty('--cf-sidebar-width', sidebarCollapsed ? '80px' : '256px')
       } else {
         document.documentElement.style.setProperty('--cf-sidebar-width', '0px')
       }
@@ -214,7 +255,7 @@ export default function StaffDashboard() {
       window.removeEventListener('resize', checkWidth)
       document.documentElement.style.removeProperty('--cf-sidebar-width')
     }
-  }, [])
+  }, [sidebarCollapsed])
 
   const handleNavChange = useCallback((tabId) => {
     setActiveNav(tabId)
@@ -305,9 +346,15 @@ export default function StaffDashboard() {
     return () => { clearInterval(t); clearInterval(wt) }
   }, [loadData, loadWindowData])
 
-  // Calculate stats — only count tickets at the counter (exclude back-office processing table)
-  const activeInQueue = queue.filter(q => q.ticket.status !== 'completed' && getRequiresPresence(q.steps)).length
-  const inProcessing = queue.filter(q => q.ticket.status !== 'completed' && !getRequiresPresence(q.steps)).length
+  // Calculate stats — only count active tickets (exclude completed, cancelled & no_show)
+  const activeQueueTickets = queue.filter(q => 
+    q.ticket.status !== 'completed' && 
+    q.ticket.status !== 'cancelled' && 
+    q.ticket.status !== 'no_show' && 
+    q.ticket.appointments?.status !== 'cancelled'
+  )
+  const activeInQueue = activeQueueTickets.filter(q => getRequiresPresence(q.steps)).length
+  const inProcessing = activeQueueTickets.filter(q => !getRequiresPresence(q.steps)).length
   const completedToday = queue.filter(q => q.ticket.status === 'completed').length
   
   const pendingAppts = Math.max(0, (apptStats.today_appointments || 0) - (apptStats.completed_today || 0))
@@ -348,35 +395,82 @@ export default function StaffDashboard() {
       )}
 
       {/* ── Fixed Left Sidebar ── */}
-      <aside className={`w-60 shrink-0 bg-white border-r border-border flex flex-col fixed left-0 top-0 bottom-0 z-50 px-3.5 py-5 transition-transform duration-300 ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}`}>
-        {/* Logo */}
-        <div className="flex items-center justify-between pl-1.5 mb-7">
-          <div className="flex items-center gap-2.5">
-            <img src={campusFlowLogo} alt="CampusFlow" className="w-8.5 h-8.5 rounded-full bg-white object-contain border border-slate-200" />
-            <div>
-              <div className="font-serif text-fluid-15 font-bold text-maroon">CampusFlow</div>
-              <div className="text-fluid-10 text-text-muted tracking-[0.04em]"><strong>Staff Portal</strong></div>
+      <aside className={`${sidebarCollapsed ? 'md:w-20 md:px-2.5' : 'md:w-64 md:px-3.5'} w-64 px-3.5 shrink-0 bg-white border-r border-border flex flex-col fixed left-0 top-0 bottom-0 z-50 py-5 transition-[width,padding] duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}`}>
+        {/* Logo & Mobile Close */}
+        <div className={`flex items-center ${sidebarCollapsed ? 'justify-center' : 'justify-between pl-1'} mb-7`}>
+          <div className="flex items-center gap-2.5 min-w-0">
+            <img src={campusFlowLogo} alt="CampusFlow" className="w-8.5 h-8.5 rounded-full bg-white object-contain border border-slate-200 shrink-0 shadow-2xs" />
+            <div className={`whitespace-nowrap overflow-hidden transition-all duration-250 ease-out ${
+              sidebarCollapsed 
+                ? 'opacity-0 max-w-0 -translate-x-2 pointer-events-none' 
+                : 'opacity-100 max-w-40 translate-x-0'
+            }`}>
+              <div className="font-serif text-fluid-15 font-bold text-maroon leading-tight">CampusFlow</div>
+              <div className="text-fluid-10 text-text-muted tracking-[0.04em] leading-tight"><strong>Staff Portal</strong></div>
             </div>
           </div>
-          <button onClick={() => setMobileMenuOpen(false)} className="md:hidden p-1 text-text-muted hover:text-text-main border-none bg-transparent cursor-pointer">
-            <PanelLeftClose size={18} />
+          
+          {/* Mobile responsive close button */}
+          <button 
+            onClick={() => setMobileMenuOpen(false)} 
+            className="md:hidden w-8 h-8 rounded-lg flex items-center justify-center text-text-muted hover:text-maroon hover:bg-maroon-light/60 border border-transparent hover:border-maroon-border/40 transition-all cursor-pointer" 
+            aria-label="Close menu"
+          >
+            <X size={18} strokeWidth={2.2} />
           </button>
         </div>
 
         {/* Nav */}
-        <nav className="flex-1 flex flex-col gap-6 px-1 overflow-y-auto pb-6 scrollbar-hide">
+        <nav className="flex-1 flex flex-col gap-6 px-0 overflow-y-auto pb-6 scrollbar-hide">
           {navGroups.map((group, idx) => (
             <div key={idx} className="flex flex-col gap-1.5">
-              <div className="text-fluid-10 font-extrabold text-text-muted uppercase tracking-[0.15em] px-4 mb-1">
-                {group.title}
-              </div>
-              <div className="flex flex-col gap-1 pl-3 pr-2">
+              {idx === 0 ? (
+                <div className={`flex items-center ${sidebarCollapsed ? 'justify-center' : 'justify-between px-3'} mb-1`}>
+                  <div className={`transition-all duration-250 ease-out overflow-hidden whitespace-nowrap ${
+                    sidebarCollapsed 
+                      ? 'opacity-0 max-w-0 pointer-events-none' 
+                      : 'opacity-100 max-w-40'
+                  }`}>
+                    <span className="text-fluid-10 font-extrabold text-text-muted uppercase tracking-[0.15em]">
+                      {group.title}
+                    </span>
+                  </div>
+                  {/* Desktop collapse toggle button */}
+                  <button 
+                    onClick={() => setSidebarCollapsed(!sidebarCollapsed)} 
+                    title={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+                    aria-label={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+                    className={`hidden md:flex items-center justify-center rounded-lg text-text-muted hover:text-maroon hover:bg-surface transition-all duration-200 cursor-pointer border border-transparent hover:border-border/80 shrink-0 ${
+                      sidebarCollapsed ? 'w-8 h-8 bg-surface border-border/80 text-text-sub hover:text-maroon' : 'w-6 h-6 p-0.5'
+                    }`}
+                  >
+                    <ChevronLeft size={15} strokeWidth={2.5} className={`transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${sidebarCollapsed ? 'rotate-180 text-maroon' : ''}`} />
+                  </button>
+                </div>
+              ) : (
+                <>
+                  <div className={`transition-all duration-250 ease-out overflow-hidden whitespace-nowrap ${
+                    sidebarCollapsed 
+                      ? 'opacity-0 max-w-0 pointer-events-none h-0' 
+                      : 'opacity-100 max-w-40 px-3 mb-1'
+                  }`}>
+                    <span className="text-fluid-10 font-extrabold text-text-muted uppercase tracking-[0.15em]">
+                      {group.title}
+                    </span>
+                  </div>
+                  {sidebarCollapsed && (
+                    <div className="h-px bg-border/60 mx-2 my-1 shrink-0 transition-opacity duration-250" />
+                  )}
+                </>
+              )}
+              <div className={`flex flex-col gap-1 ${sidebarCollapsed ? 'px-1' : 'px-1.5'}`}>
                 {group.items.map(item => (
                   <SideItem
                     key={item.id}
                     icon={item.icon}
                     label={item.label}
                     active={activeNav === item.id}
+                    collapsed={sidebarCollapsed}
                     onClick={() => {
                       if (myWindow) {
                         handleNavChange(item.id)
@@ -393,24 +487,34 @@ export default function StaffDashboard() {
         </nav>
         {/* Window required hint in sidebar */}
         {!myWindow && (
-          <div className="mx-1 mb-2 px-3 py-2.5 rounded-[10px] bg-gold-light border border-gold-border text-fluid-11 text-gold font-semibold leading-relaxed">
-            ⚠ Claim a window to unlock navigation.
-          </div>
+          sidebarCollapsed ? (
+            <div 
+              title="Claim a window to unlock navigation." 
+              className="mx-auto mb-2 w-8.5 h-8.5 rounded-lg bg-gold-light border border-gold-border text-gold flex items-center justify-center text-sm font-bold cursor-help shadow-2xs shrink-0"
+            >
+              ⚠
+            </div>
+          ) : (
+            <div className="mx-1 mb-2 px-3 py-2.5 rounded-[10px] bg-gold-light border border-gold-border text-fluid-11 text-gold font-semibold leading-relaxed">
+              ⚠ Claim a window to unlock navigation.
+            </div>
+          )
         )}
       </aside>
 
       {/* ── Right Content ── */}
-      <div className="ml-0 md:ml-60 flex-1 flex flex-col min-h-screen min-w-0">
+      <div className={`${sidebarCollapsed ? 'md:ml-20' : 'md:ml-64'} ml-0 flex-1 flex flex-col min-h-screen min-w-0 transition-[margin-left] duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]`}>
 
         {/* Top Bar */}
         <header className="bg-white border-b border-border px-3 sm:px-7 h-14 sm:h-15 flex items-center justify-between sticky top-0 z-40 shadow-[0_1px_4px_rgba(0,0,0,0.04)] gap-1.5 sm:gap-2">
-          <div className="flex items-center gap-1.5 sm:gap-2 flex-1 min-w-0">
+          <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="md:hidden flex items-center justify-center p-1.5 text-text-main hover:bg-slate-100 rounded-lg border-none bg-transparent cursor-pointer shrink-0"
-              title="Toggle Menu"
+              className="md:hidden w-9 h-9 flex items-center justify-center text-text-main hover:text-maroon hover:bg-surface rounded-xl border border-border/80 transition-all cursor-pointer shrink-0"
+              title="Open Navigation Menu"
+              aria-label="Open Navigation Menu"
             >
-              <Menu size={20} />
+              <Menu size={19} strokeWidth={2.2} />
             </button>
             <StaffGlobalSearch setActiveNav={handleNavChange} />
           </div>
@@ -605,28 +709,28 @@ export default function StaffDashboard() {
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 sm:gap-6 items-stretch">
 
                 {/* Live Queue Preview */}
-                <div className="lg:col-span-7 xl:col-span-8 animate-fade-up bg-white rounded-2xl p-5 sm:p-6 border border-border shadow-[0_2px_8px_rgba(0,0,0,0.04)] flex flex-col justify-between" style={{ animationDelay: '0.5s' }}>
+                <div className="lg:col-span-7 xl:col-span-8 animate-fade-up bg-white rounded-2xl p-4 sm:p-5 md:p-6 border border-border shadow-[0_2px_8px_rgba(0,0,0,0.04)] flex flex-col justify-between" style={{ animationDelay: '0.5s' }}>
                   <div>
-                    <div className="flex items-center justify-between mb-4 sm:mb-5 pb-3.5 border-b border-border/80">
-                      <div>
+                    <div className="flex flex-wrap items-start sm:items-center justify-between gap-3 mb-4 sm:mb-5 pb-3.5 border-b border-border/80">
+                      <div className="min-w-0">
                         <p className="text-fluid-11 font-extrabold text-gold tracking-[0.08em] uppercase m-0 mb-1 flex items-center gap-1.5">
                           <span className="w-1.5 h-1.5 rounded-full bg-success animate-pulse shrink-0" />
                           Real-Time Queue
                         </p>
-                        <div className="flex items-center gap-2.5">
+                        <div className="flex items-center gap-2 sm:gap-2.5 flex-wrap">
                           <h2 className="font-serif text-fluid-18 sm:text-fluid-20 font-bold text-text-main m-0">
                             Live Queue Management
                           </h2>
-                          {queue.filter(q => q.ticket.status !== 'completed' && getRequiresPresence(q.steps)).length > 0 && (
-                            <span className="px-2 py-0.5 rounded-full bg-maroon-light text-maroon text-fluid-11 font-extrabold border border-maroon-border/60">
-                              {queue.filter(q => q.ticket.status !== 'completed' && getRequiresPresence(q.steps)).length} Active
+                          {activeInQueue > 0 && (
+                            <span className="px-2 py-0.5 rounded-full bg-maroon-light text-maroon text-fluid-11 font-extrabold border border-maroon-border/60 whitespace-nowrap shrink-0">
+                              {activeInQueue} Active
                             </span>
                           )}
                         </div>
                       </div>
                       <button 
                         onClick={() => handleNavChange('queue')} 
-                        className="group px-3 py-1.5 sm:px-3.5 sm:py-1.5 rounded-xl border border-border bg-white text-text-main hover:border-maroon/40 hover:text-maroon hover:bg-surface text-fluid-11-5 font-bold cursor-pointer font-sans transition-all duration-200 shadow-2xs hover:shadow-xs flex items-center gap-1.5 shrink-0"
+                        className="group px-3 py-1.5 sm:px-3.5 sm:py-1.5 rounded-xl border border-border bg-white text-text-main hover:border-maroon/40 hover:text-maroon hover:bg-surface text-fluid-11-5 font-bold cursor-pointer font-sans transition-all duration-200 shadow-2xs hover:shadow-xs flex items-center gap-1.5 shrink-0 ml-auto sm:ml-0"
                       >
                         View All
                         <ChevronRight size={13} className="transition-transform duration-200 group-hover:translate-x-0.5 text-text-muted group-hover:text-maroon" />
@@ -638,7 +742,7 @@ export default function StaffDashboard() {
                 </div>
 
                 {/* Priority Request Panel */}
-                <div className="lg:col-span-5 xl:col-span-4 animate-fade-up bg-white rounded-2xl p-5 sm:p-6 border border-border shadow-[0_2px_8px_rgba(0,0,0,0.04)] flex flex-col justify-between" style={{ animationDelay: '0.6s' }}>
+                <div className="lg:col-span-5 xl:col-span-4 animate-fade-up bg-white rounded-2xl p-4 sm:p-5 md:p-6 border border-border shadow-[0_2px_8px_rgba(0,0,0,0.04)] flex flex-col justify-between" style={{ animationDelay: '0.6s' }}>
                   <div>
                     <div className="mb-4 sm:mb-5 pb-3.5 border-b border-border/80">
                       <p className="text-fluid-11 font-extrabold text-gold tracking-[0.08em] uppercase m-0 mb-1">

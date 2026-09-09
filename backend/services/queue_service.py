@@ -360,6 +360,9 @@ def get_student_queue(student_id: str):
                     active_ticket = t
                     break
 
+        if not active_ticket:
+            return None
+
         ticket = active_ticket
         if ticket and ticket.get("appointments"):
             appt = ticket.get("appointments") or {}
@@ -762,18 +765,22 @@ def get_todays_queue(date_filter: str = None):
     admin = get_admin()
     today = date_filter or get_pht_date_str()
     try:
-        # 1. Fetch tickets for today's appointment date
+        # 1. Fetch tickets for today's appointment date (exclude cancelled)
         today_res = admin.table("queue_tickets") \
-            .select("*, appointments!inner(id, appointment_date, time_slot, priority_class, release_date, notes, transaction_types(name, description, processing_steps, required_documents)), users(first_name, last_name, student_id, email), transaction_steps(*)") \
+            .select("*, appointments!inner(id, appointment_date, time_slot, status, priority_class, release_date, notes, transaction_types(name, description, processing_steps, required_documents)), users(first_name, last_name, student_id, email), transaction_steps(*)") \
             .eq("appointments.appointment_date", today) \
-            .in_("status", ["waiting", "in_progress", "completed", "no_show", "cancelled"]) \
+            .in_("status", ["waiting", "in_progress", "completed"]) \
+            .neq("status", "cancelled") \
+            .neq("appointments.status", "cancelled") \
             .order("created_at") \
             .execute()
 
         # 2. Fetch all ongoing active/in-progress tickets (so tickets sitting in processing table are never wiped out)
         active_res = admin.table("queue_tickets") \
-            .select("*, appointments!inner(id, appointment_date, time_slot, priority_class, release_date, notes, transaction_types(name, description, processing_steps, required_documents)), users(first_name, last_name, student_id, email), transaction_steps(*)") \
+            .select("*, appointments!inner(id, appointment_date, time_slot, status, priority_class, release_date, notes, transaction_types(name, description, processing_steps, required_documents)), users(first_name, last_name, student_id, email), transaction_steps(*)") \
             .in_("status", ["waiting", "in_progress"]) \
+            .neq("status", "cancelled") \
+            .neq("appointments.status", "cancelled") \
             .order("created_at") \
             .execute()
 
@@ -820,12 +827,18 @@ def get_todays_queue(date_filter: str = None):
 
         result = []
         for ticket in all_raw_tickets:
-            tx_type = (ticket.get("appointments") or {}).get("transaction_types") or {}
+            # Skip cancelled or no-show tickets, or cancelled appointments
+            if ticket.get("status") in ["cancelled", "no_show"]:
+                continue
+            appt = ticket.get("appointments") or {}
+            if appt.get("status") == "cancelled":
+                continue
+
+            tx_type = appt.get("transaction_types") or {}
             tx_name = tx_type.get("name", "")
             if "(deleted" in tx_name:
                 continue
             
-            appt = ticket.get("appointments") or {}
             st_id = ticket.get("student_id")
             k = f"{st_id}_{appt.get('appointment_date')}_{appt.get('time_slot')}"
             docs = appts_lookup.get(k, [])

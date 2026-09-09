@@ -7,12 +7,126 @@ import { useToast } from '../../context/ToastContext'
 import StudentLayout from '../../components/layout/StudentLayout'
 import { getMyQueue, activateQueue, getTimeEstimate, getMyDocumentsToClaim } from '../../services/queueService'
 import { getMyAppointments, cancelAppointment } from '../../services/appointmentService'
-import { Clock, Hourglass, PartyPopper, Ticket, Calendar, Inbox, Cog, FileCheck, FileSignature, Loader2, FileText, MapPin, Tag } from 'lucide-react'
+import { Clock, Hourglass, PartyPopper, Ticket, Calendar, Inbox, Cog, FileCheck, FileSignature, Loader2, FileText, MapPin, Tag, CheckCircle2, ChevronRight } from 'lucide-react'
 
 const STEP_STYLE = {
   pending:     { bg: '#F9F9F9', color: '#706B65' }, // text-text-sub
   in_progress: { bg: '#FDF6E3', color: '#B8900A' }, // text-gold
   completed:   { bg: '#F9F0F1', color: '#7B1A2A' }, // text-maroon
+}
+
+const formatShortDate = (dateStr) => {
+  if (!dateStr) return '';
+  const parts = String(dateStr).split('-');
+  if (parts.length === 3) {
+    return new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2])).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  }
+  return new Date(dateStr).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+};
+
+const formatFullDate = (dateStr) => {
+  if (!dateStr) return '';
+  const parts = String(dateStr).split('-');
+  if (parts.length === 3) {
+    return new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2])).toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' });
+  }
+  return new Date(dateStr).toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' });
+};
+
+const fmt12h = (t) => {
+  if (!t) return '';
+  const parts = t.split(':');
+  if (parts.length < 2) return t;
+  const h = parseInt(parts[0], 10);
+  const m = parts[1];
+  const ampm = h >= 12 ? 'PM' : 'AM';
+  const h12 = h % 12 || 12;
+  return `${h12}:${m} ${ampm}`;
+};
+const formatTime12 = fmt12h;
+
+// ── Empty Queue State Component ────────────────────────────────────────────────
+function EmptyQueueState({
+  ticket,
+  upcomingAppts = [],
+  today,
+  setActiveTab,
+  setActivateConfirmId,
+  navigate,
+}) {
+  const isCompleted = ticket?.status === 'completed';
+  const todayAppt = upcomingAppts.find(a => a.appointment_date === today);
+
+  return (
+    <div className="animate-fade-up bg-white rounded-2xl sm:rounded-3xl border border-border p-7 sm:p-10 md:p-12 shadow-xs text-center w-full">
+      <div className="max-w-md mx-auto">
+        {/* Icon Badge */}
+        <div className="w-13 h-13 sm:w-14 sm:h-14 rounded-2xl bg-maroon-light border border-maroon-border/60 flex items-center justify-center text-maroon mx-auto mb-4 shadow-2xs">
+          <Ticket size={24} strokeWidth={2} />
+        </div>
+
+        {/* Title */}
+        <h2 className="font-serif text-[22px] sm:text-[24px] font-bold text-text-main m-0 mb-2">
+          No Active Queue Ticket
+        </h2>
+
+        {/* Precise Description */}
+        <p className="text-[13px] sm:text-[13.5px] text-text-sub m-0 mb-6 leading-relaxed">
+          {todayAppt 
+            ? "You have an appointment scheduled for today. Activate your queue ticket once you arrive at the Registrar's Office."
+            : "You are not currently in line. Check your upcoming appointments or schedule a new one."}
+        </p>
+
+        {/* Appointment Today Tag (if scheduled today) */}
+        {todayAppt && (
+          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-gold-light border border-gold-border text-gold-dark text-[11.5px] font-bold mb-6">
+            <span className="w-2 h-2 rounded-full bg-gold animate-pulse shrink-0" />
+            <span className="truncate">Today at {fmt12h(todayAppt.time_slot)} · {todayAppt.transaction_types?.name || 'Document Transaction'}</span>
+          </div>
+        )}
+
+        {/* Actions */}
+        <div className="flex flex-wrap items-center justify-center gap-3">
+          {todayAppt ? (
+            <button
+              onClick={() => setActivateConfirmId(todayAppt.id)}
+              className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-maroon hover:bg-maroon-dark text-white text-xs sm:text-[13px] font-bold transition-all shadow-xs flex items-center justify-center gap-2 cursor-pointer"
+            >
+              <Ticket size={15} />
+              Activate Queue Ticket
+            </button>
+          ) : (
+            <button
+              onClick={() => setActiveTab('upcoming')}
+              className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-maroon hover:bg-maroon-dark text-white text-xs sm:text-[13px] font-bold transition-all shadow-xs flex items-center justify-center gap-2 cursor-pointer"
+            >
+              <Calendar size={15} />
+              View Upcoming Appointments {upcomingAppts.length > 0 && `(${upcomingAppts.length})`}
+            </button>
+          )}
+
+          <button
+            onClick={() => navigate('/student/book')}
+            className="w-full sm:w-auto px-4.5 py-2.5 rounded-xl border border-border bg-white hover:bg-surface hover:text-maroon text-text-main text-xs sm:text-[13px] font-bold transition-all shadow-2xs flex items-center justify-center gap-2 cursor-pointer"
+          >
+            Book Appointment
+          </button>
+        </div>
+
+        {/* Compact single-line note for latest completed transaction */}
+        {isCompleted && ticket && (
+          <div className="mt-7 pt-4 border-t border-border/60 text-[11.5px] text-text-muted flex items-center justify-center gap-1.5 flex-wrap">
+            <CheckCircle2 size={13} className="text-success shrink-0" />
+            <span>Last completed ticket:</span>
+            <span className="font-serif font-bold text-maroon">{ticket.queue_number}</span>
+            {ticket.appointments?.release_date && (
+              <span>· Released {formatShortDate(ticket.appointments.release_date)}</span>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  );
 }
 
 export default function MyQueue({ embedded = false }) {
@@ -46,35 +160,6 @@ export default function MyQueue({ embedded = false }) {
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
   };
   const today = getTodayStr(); // evaluated per-render for local UI checks
-
-  const formatShortDate = (dateStr) => {
-    if (!dateStr) return '';
-    const parts = String(dateStr).split('-');
-    if (parts.length === 3) {
-      return new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2])).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-    }
-    return new Date(dateStr).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-  };
-
-  const formatFullDate = (dateStr) => {
-    if (!dateStr) return '';
-    const parts = String(dateStr).split('-');
-    if (parts.length === 3) {
-      return new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2])).toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' });
-    }
-    return new Date(dateStr).toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' });
-  };
-
-  const fmt12h = (t) => {
-    if (!t) return ''
-    const parts = t.split(':')
-    if (parts.length < 2) return t
-    const h = parseInt(parts[0], 10)
-    const m = parts[1]
-    const ampm = h >= 12 ? 'PM' : 'AM'
-    const h12 = h % 12 || 12
-    return `${h12}:${m} ${ampm}`
-  }
   const pollRef  = useRef(null)
 
   const fetchQueue = useCallback(async () => {
@@ -189,6 +274,7 @@ export default function MyQueue({ embedded = false }) {
 
   const ticket = queueData?.ticket
   const steps  = queueData?.steps || []
+  const isTicketActive = Boolean(ticket && ticket.status !== 'completed' && ticket.status !== 'cancelled' && ticket.status !== 'no_show')
 
   // ── Is the CURRENT active step one that needs the student physically
   //    present, or is it back-office processing with no line to stand in? ──
@@ -354,32 +440,7 @@ export default function MyQueue({ embedded = false }) {
                 ))}
               </div>
             </div>
-          ) : ticket ? (
-            ticket.status === 'completed' ? (
-              (() => {
-                const releaseDate = ticket.appointments?.release_date;
-                return (
-                  <div className="animate-fade-up text-center py-16 px-8 bg-white rounded-2xl border border-border shadow-sm">
-                    <div className="w-16 h-16 bg-success/10 rounded-full flex items-center justify-center text-success mx-auto mb-5 shadow-sm border border-success/20">
-                      <PartyPopper size={32} />
-                    </div>
-                    <h2 className="font-serif text-[26px] font-bold text-success-dark m-0 mb-3">
-                      Transaction Completed
-                    </h2>
-                    <p className="text-[14px] text-text-sub m-0 mb-6 max-w-sm mx-auto leading-relaxed">
-                      {releaseDate ? (
-                        <>Your transaction <strong className="text-maroon font-serif text-[18px]">{ticket.queue_number}</strong> is complete. Your document was released on <strong>{formatFullDate(releaseDate)}</strong>.</>
-                      ) : (
-                        <>Your transaction <strong className="text-maroon font-serif text-[18px]">{ticket.queue_number}</strong> is fully complete. Thank you!</>
-                      )}
-                    </p>
-                    <button onClick={() => setActiveTab('upcoming')} className="py-2.5 px-6 rounded-lg border border-border bg-off-white text-text-main text-[14px] font-semibold cursor-pointer hover:bg-white transition-colors">
-                      View Upcoming Appointments
-                    </button>
-                  </div>
-                );
-              })()
-            ) : (
+          ) : isTicketActive ? (
             <div className="animate-fade-up" style={{ animationDelay: '0.15s' }}>
               {/* Queue ticket card (Redesigned) */}
               <div className="bg-white rounded-2xl sm:rounded-3xl p-5 sm:p-7 mb-5 sm:mb-6 shadow-sm border border-border relative overflow-hidden">
@@ -822,16 +883,15 @@ export default function MyQueue({ embedded = false }) {
 
               </div>
             </div>
-            )
-            ) : (
-            <div className="animate-fade-up text-center py-16 px-8 bg-white rounded-2xl border border-border shadow-sm">
-              <div className="text-text-muted mb-4 flex justify-center"><Ticket size={48} className="text-gold" /></div>
-              <p className="text-[15px] font-semibold text-text-main m-0 mb-1.5">No Active Queue Ticket</p>
-              <p className="text-[13px] text-text-sub m-0 mb-6">Check your upcoming appointments to activate a queue number.</p>
-              <button onClick={() => setActiveTab('upcoming')} className="py-2.5 px-6 rounded-lg border-none bg-maroon text-white text-[14px] font-semibold cursor-pointer hover:bg-maroon-dark transition-colors">
-                View Upcoming
-              </button>
-            </div>
+          ) : (
+            <EmptyQueueState 
+              ticket={ticket}
+              upcomingAppts={upcomingAppts}
+              today={today}
+              setActiveTab={setActiveTab}
+              setActivateConfirmId={setActivateConfirmId}
+              navigate={navigate}
+            />
           )}
         </div>
 
@@ -893,7 +953,12 @@ export default function MyQueue({ embedded = false }) {
                     const isReadyToday = Boolean(relDate && relDate <= today);
                     const isReadyForPickup = !isFutureApptScheduled && (isReadyToday || (liveTicketForAppt && isReleaseActive));
                     const isActivated = !isReadyForPickup && !isFutureApptScheduled && !!liveTicketForAppt && (liveTicketForAppt.status === 'waiting' || liveTicketForAppt.status === 'in_progress');
-                    const isAnotherTicketActiveForToday = ticket && ticket.status !== 'completed' && !isCurrentTicketForThisAppt && ((ticket.appointments?.appointment_date || ticket.appointment_date) === today);
+                    const isAnotherTicketActiveForToday = ticket && 
+                      ticket.status !== 'completed' && 
+                      ticket.status !== 'cancelled' && 
+                      ticket.status !== 'no_show' && 
+                      !isCurrentTicketForThisAppt && 
+                      ((ticket.appointments?.appointment_date || ticket.appointment_date) === today);
 
                     return (
                       <div 

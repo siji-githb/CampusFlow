@@ -240,24 +240,29 @@ export default function AdminRegistrarRecordsPage() {
       )}
 
       {/* ── Stat Cards ── */}
-      <div className="grid grid-cols-4 gap-4 mb-6">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4 mb-5 sm:mb-7">
         {[
-          { label: 'Total Records', value: totalRecords.toLocaleString(), icon: <FolderOpen size={18} />, bg: 'bg-maroon-light', fg: 'text-maroon', sub: `For ${months} ${months === 1 ? 'month' : 'months'}` },
-          { label: 'Completed/Released', value: completedRecs.toLocaleString(), icon: <CheckCircle size={18} />, bg: 'bg-success-light', fg: 'text-success', sub: `${totalRecords > 0 ? Math.round((completedRecs / totalRecords) * 100) : 0}% fulfillment rate` },
-          { label: 'Pending/Processing', value: pendingRecs.toLocaleString(), icon: <Clock size={18} />, bg: 'bg-gold-light', fg: 'text-gold', sub: 'Requires action' },
-          { label: 'Archived', value: archivedRecs.toLocaleString(), icon: <Archive size={18} />, bg: 'bg-surface', fg: 'text-text-sub', sub: 'Historical records' },
+          { label: 'Total Records', value: totalRecords.toLocaleString(), icon: <FolderOpen size={18} />, bg: 'bg-maroon-light', fg: 'text-maroon', border: 'border-maroon-border/60', sub: `For ${months} ${months === 1 ? 'month' : 'months'}` },
+          { label: 'Completed/Released', value: completedRecs.toLocaleString(), icon: <CheckCircle size={18} />, bg: 'bg-success-light', fg: 'text-success', border: 'border-success-border/60', sub: `${totalRecords > 0 ? Math.round((completedRecs / totalRecords) * 100) : 0}% fulfillment rate` },
+          { label: 'Pending/Processing', value: pendingRecs.toLocaleString(), icon: <Clock size={18} />, bg: 'bg-gold-light', fg: 'text-gold', border: 'border-gold-border/60', sub: 'Requires action' },
+          { label: 'Archived', value: archivedRecs.toLocaleString(), icon: <Archive size={18} />, bg: 'bg-blue-light', fg: 'text-blue', border: 'border-blue-border/60', sub: 'Historical records' },
         ].map((c, i) => (
-          <div key={i} className="animate-fade-up rounded-2xl p-[18px_20px] bg-white border border-border shadow-[0_1px_4px_rgba(0,0,0,0.04)] relative overflow-hidden" style={{ animationDelay: `${0.1 * (i + 1)}s` }}>
-            <div className="flex items-start justify-between mb-2">
-              <div className="text-fluid-10 font-extrabold uppercase tracking-[0.08em] text-text-muted mt-1">{c.label}</div>
-              <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${c.bg} ${c.fg}`}>
-                {c.icon}
+          <div key={i} className="animate-fade-up rounded-2xl p-4 sm:p-5 bg-white border border-border shadow-[0_1px_4px_rgba(0,0,0,0.04)] relative overflow-hidden flex flex-col justify-between h-full" style={{ animationDelay: `${0.1 * (i + 1)}s` }}>
+            <div>
+              <div className="flex items-start justify-between mb-2">
+                <div className="text-fluid-10 font-extrabold uppercase tracking-[0.08em] text-text-muted mt-1">{c.label}</div>
+                <div className={`w-8.5 h-8.5 rounded-xl flex items-center justify-center shrink-0 border ${c.border} ${c.bg} ${c.fg}`}>
+                  {c.icon}
+                </div>
+              </div>
+              <div className="font-sans text-fluid-28 sm:text-fluid-36 font-extrabold leading-none m-0 min-h-9 text-text-main">
+                {loading ? <div className="animate-pulse w-15 h-9 bg-border rounded-lg" /> : c.value}
               </div>
             </div>
-            <div className="font-sans text-fluid-36 font-extrabold leading-none m-0 min-h-9 text-text-main">
-              {loading ? <div className="animate-pulse w-15 h-9 bg-border rounded-lg" /> : c.value}
+            <div className="text-fluid-11 font-medium text-text-muted mt-2 flex items-center gap-1.5">
+              <span className={`w-1.5 h-1.5 rounded-full ${c.fg} bg-current inline-block shrink-0`} />
+              <span>{c.sub}</span>
             </div>
-            <div className="text-fluid-11 font-medium text-text-muted mt-1.5">{c.sub}</div>
           </div>
         ))}
       </div>
@@ -536,19 +541,35 @@ export default function AdminRegistrarRecordsPage() {
 
       {/* ── View Record Modal ── */}
       {viewingRecord && createPortal((
-        <div className="fixed inset-0 z-99999 flex items-center justify-center bg-black/60 p-4 sm:p-6 overflow-y-auto animate-fade-in" onClick={() => setViewingRecord(null)}>
-          <div className="bg-white rounded-3xl w-full max-w-150 my-auto shadow-[0_25px_80px_rgba(0,0,0,0.2)] border border-border overflow-hidden animate-fade-up" onClick={e => e.stopPropagation()}>
+        <div className="fixed inset-0 z-99999 flex items-center justify-center p-4 sm:p-6 bg-black/50 overflow-y-auto animate-fade-in" onClick={() => setViewingRecord(null)}>
+          <div className="bg-white rounded-3xl w-full max-w-150 my-auto shadow-[0_25px_80px_rgba(0,0,0,0.18)] border border-border/80 overflow-hidden animate-fade-up relative flex flex-col" onClick={e => e.stopPropagation()}>
+             {/* Decorative top accent bar */}
+             <div className="h-1.5 w-full bg-linear-to-r from-maroon via-maroon-dark to-gold shrink-0" />
+
              {/* Header */}
-             <div className="p-[24px_32px] bg-maroon-light border-b border-border flex justify-between items-center">
+             <div className="p-6 sm:p-8 pb-4 sm:pb-5 border-b border-border/60 flex items-start justify-between bg-white relative">
                <div>
-                 <h2 className="font-serif text-fluid-24 font-bold text-maroon m-0 mb-1">Record Details</h2>
-                 <p className="text-fluid-13 text-maroon/80 m-0">{viewingRecord.id}</p>
+                 <div className="flex items-center gap-2 mb-1.5">
+                   <span className="text-fluid-10 font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-maroon-light text-maroon border border-maroon-border/60">
+                     Registrar Record
+                   </span>
+                   <span className="text-fluid-11 font-mono font-semibold text-text-sub bg-surface px-2 py-0.5 rounded-md border border-border">
+                     {viewingRecord.id}
+                   </span>
+                 </div>
+                 <h2 className="font-serif text-fluid-22 sm:text-fluid-24 font-bold text-text-main m-0">Record Details</h2>
                </div>
-               <button onClick={() => setViewingRecord(null)} className="bg-transparent border-none flex items-center text-maroon cursor-pointer opacity-60 hover:opacity-100 transition-opacity"><XIcon size={24} /></button>
+               <button 
+                 onClick={() => setViewingRecord(null)}
+                 className="w-10 h-10 rounded-full border border-border/80 bg-surface flex items-center justify-center text-text-muted hover:text-text-main hover:bg-off-white transition-all cursor-pointer shrink-0"
+                 title="Close"
+               >
+                 <XIcon size={18} />
+               </button>
              </div>
              
              {/* Body */}
-             <div className="p-8 flex flex-col gap-7">
+             <div className="p-6 sm:p-8 flex flex-col gap-6">
                 <div className="grid grid-cols-2 gap-6">
                   {/* Student Info */}
                   <div>
@@ -617,12 +638,12 @@ export default function AdminRegistrarRecordsPage() {
              </div>
              
              {/* Footer */}
-             <div className="p-[20px_32px] bg-surface border-t border-border flex justify-end gap-3">
-               <button onClick={() => setViewingRecord(null)} className="py-2.5 px-5 rounded-[10px] border border-border bg-white text-text-main text-fluid-13 font-semibold cursor-pointer font-sans transition-colors hover:bg-off-white">
+             <div className="p-5 sm:p-6 bg-surface/80 border-t border-border/80 flex justify-end gap-3 rounded-b-3xl">
+               <button onClick={() => setViewingRecord(null)} className="py-2.5 px-5 rounded-xl border border-border/80 bg-white text-text-main text-fluid-13 font-semibold hover:bg-off-white transition-colors cursor-pointer">
                  Close
                </button>
                {(viewingRecord.status === 'completed' || viewingRecord.status === 'released') && (
-                 <button className="py-2.5 px-5 rounded-[10px] border-none bg-maroon text-white text-fluid-13 font-bold cursor-pointer font-sans flex items-center gap-2 hover:bg-maroon-dark transition-colors">
+                 <button className="py-2.5 px-5 rounded-xl border-none bg-maroon text-white text-fluid-13 font-bold hover:bg-maroon-dark transition-colors cursor-pointer flex items-center gap-2 shadow-sm">
                    <Printer size={15} /> Print Record
                  </button>
                )}

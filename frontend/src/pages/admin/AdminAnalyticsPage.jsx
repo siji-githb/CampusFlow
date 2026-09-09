@@ -505,9 +505,8 @@ export default function AdminAnalyticsPage() {
     docType === 'all' || t.name.toLowerCase().includes(docType.toLowerCase())
   )
 
-  const totalVol = docType === 'all' 
-    ? (report?.total_appointments || 0)
-    : filteredReportByType.reduce((sum, t) => sum + t.count, 0)
+  const totalDocRequests = filteredReportByType.reduce((sum, t) => sum + (t.count || 0), 0)
+  const totalVol = totalDocRequests > 0 ? totalDocRequests : (report?.total_appointments || 0)
 
   // Y-axis label based on selected filter
   const yAxisLabel = viewType === 'monthly' ? 'Requests / Day' : 'Requests / Month'
@@ -646,29 +645,15 @@ export default function AdminAnalyticsPage() {
             {/* Sub-header skeleton */}
             <div className="h-3 bg-border/40 rounded w-36 mb-1 mt-1" />
 
-            {/* Row 1: 3 cards skeleton */}
-            <div className="grid grid-cols-3 gap-3 mb-1">
-              {[1, 2, 3].map(i => (
-                <div key={i} className="bg-white rounded-2xl p-4 border border-border shadow-sm flex flex-col justify-between">
-                  <div className="flex items-center gap-2 mb-3">
-                    <div className="w-7 h-7 rounded-lg bg-border/50" />
-                    <div className="h-3 bg-border/40 rounded w-20" />
-                  </div>
-                  <div className="h-7 bg-border/60 rounded w-24 mb-2" />
-                  <div className="h-3 bg-border/30 rounded w-32" />
-                </div>
-              ))}
-            </div>
-
-            {/* Row 2: 3 cards skeleton */}
-            <div className="grid grid-cols-3 gap-3 mb-1">
-              {[1, 2, 3].map(i => (
-                <div key={i} className="bg-white rounded-2xl p-4 border border-border shadow-sm flex flex-col justify-between">
-                  <div className="flex items-center gap-2 mb-3">
+            {/* 4 cards skeleton */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3 mb-1">
+              {[1, 2, 3, 4].map(i => (
+                <div key={i} className="bg-white rounded-xl sm:rounded-2xl p-3.5 sm:p-4 border border-border shadow-xs flex flex-col justify-between min-h-25.5 sm:min-h-28 h-full gap-1.5">
+                  <div className="flex items-center gap-2 mb-2">
                     <div className="w-7 h-7 rounded-lg bg-border/50" />
                     <div className="h-3 bg-border/40 rounded w-28" />
                   </div>
-                  <div className="h-7 bg-border/60 rounded w-20 mb-2" />
+                  <div className="h-6 sm:h-7 bg-border/60 rounded w-20 mb-1" />
                   <div className="h-3 bg-border/30 rounded w-36" />
                 </div>
               ))}
@@ -678,138 +663,102 @@ export default function AdminAnalyticsPage() {
           <>
             <p className="text-fluid-15 text-text-main font-medium leading-[1.65] m-0 mb-6">{insights.insight}</p>
             <div className="text-fluid-10 font-extrabold text-text-muted uppercase tracking-[0.08em] mb-3 mt-1">Predictive Intelligence</div>
-            <div className="grid grid-cols-3 gap-3 mb-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3 mb-5">
               {/* Peak Hour */}
-              <div className="bg-white rounded-2xl p-4 border border-border shadow-sm hover:-translate-y-0.5 transition-transform">
-                <div className="flex items-center gap-2 mb-3">
-                  <div className="w-7 h-7 rounded-lg bg-info-light flex items-center justify-center">
-                    <Clock size={14} className="text-info" />
+              <div className="bg-white rounded-xl sm:rounded-2xl p-3.5 sm:p-4 border border-border shadow-xs flex flex-col justify-between min-h-25.5 sm:min-h-28 h-full gap-1.5 hover:-translate-y-0.5 transition-transform">
+                <div className="flex items-center gap-2">
+                  <div className="w-7 h-7 rounded-lg bg-blue-light text-blue border border-blue-border/60 flex items-center justify-center shrink-0">
+                    <Clock size={14} />
                   </div>
-                  <span className="text-fluid-10 font-extrabold text-text-muted uppercase tracking-[0.08em]">Peak Hour</span>
+                  <span className="text-fluid-10 font-extrabold text-text-muted uppercase tracking-[0.08em] truncate">Peak Hour</span>
                 </div>
-                <div className="font-serif text-fluid-26 font-bold text-info leading-none mb-1">
-                  {insights.peak_hour && insights.peak_hour !== 'N/A' ? insights.peak_hour : '—'}
-                </div>
-                <div className="text-fluid-11 text-text-sub font-medium">
-                  {insights.peak_hour && insights.peak_hour !== 'N/A' ? 'Busiest time slot today' : 'No appointments today'}
+                <div>
+                  <div className="font-serif text-fluid-20 sm:text-fluid-26 font-bold text-blue leading-tight m-0">
+                    {insights.peak_hour && insights.peak_hour !== 'N/A' ? insights.peak_hour : '—'}
+                  </div>
+                  <div className="text-fluid-10 sm:text-fluid-11 text-blue font-medium flex items-center gap-1.5 truncate mt-0.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-current inline-block shrink-0" />
+                    <span>{insights.peak_hour && insights.peak_hour !== 'N/A' ? 'Busiest time slot today' : 'No appointments today'}</span>
+                  </div>
                 </div>
               </div>
 
               {/* Busiest Document */}
-              <div className="bg-white rounded-2xl p-4 border border-border shadow-sm hover:-translate-y-0.5 transition-transform">
-                <div className="flex items-center gap-2 mb-3">
-                  <div className="w-7 h-7 rounded-lg bg-gold-light flex items-center justify-center">
-                    <FileText size={14} className="text-gold" />
+              <div className="bg-white rounded-xl sm:rounded-2xl p-3.5 sm:p-4 border border-border shadow-xs flex flex-col justify-between min-h-25.5 sm:min-h-28 h-full gap-1.5 hover:-translate-y-0.5 transition-transform">
+                <div className="flex items-center gap-2">
+                  <div className="w-7 h-7 rounded-lg bg-gold-light text-gold border border-gold-border/60 flex items-center justify-center shrink-0">
+                    <FileText size={14} />
                   </div>
-                  <span className="text-fluid-10 font-extrabold text-text-muted uppercase tracking-[0.08em]">Busiest Document</span>
+                  <span className="text-fluid-10 font-extrabold text-text-muted uppercase tracking-[0.08em] truncate">Busiest Document</span>
                 </div>
-                <div className="font-serif text-fluid-18 font-bold text-gold leading-tight mb-1 line-clamp-2">
-                  {insights.busiest_document && insights.busiest_document !== 'N/A' ? insights.busiest_document : '—'}
-                </div>
-                <div className="text-fluid-11 text-text-sub font-medium">
-                  {insights.busiest_document && insights.busiest_document !== 'N/A' ? 'Most requested doc type' : 'No requests today'}
+                <div>
+                  <div className="font-serif text-fluid-16 sm:text-fluid-18 font-bold text-gold leading-tight m-0 line-clamp-1">
+                    {insights.busiest_document && insights.busiest_document !== 'N/A' ? insights.busiest_document : '—'}
+                  </div>
+                  <div className="text-fluid-10 sm:text-fluid-11 text-gold font-medium flex items-center gap-1.5 truncate mt-0.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-current inline-block shrink-0" />
+                    <span>{insights.busiest_document && insights.busiest_document !== 'N/A' ? 'Most requested doc type' : 'No requests today'}</span>
+                  </div>
                 </div>
               </div>
 
-              {/* Served Today */}
-              <div className="bg-white rounded-2xl p-4 border border-border shadow-sm hover:-translate-y-0.5 transition-transform">
-                <div className="flex items-center gap-2 mb-3">
-                  <div className="w-7 h-7 rounded-lg bg-success-light flex items-center justify-center">
-                    <CheckCircle size={14} className="text-success" />
-                  </div>
-                  <span className="text-fluid-10 font-extrabold text-text-muted uppercase tracking-[0.08em]">Served Today</span>
-                </div>
-                <div className="font-serif text-fluid-26 font-bold text-success leading-none mb-1">
-                  {insights.served_today ?? 0}
-                </div>
-                <div className="text-fluid-11 text-text-sub font-medium">
-                  {insights.total > 0 ? `out of ${insights.total} total appointments` : 'No appointments today'}
-                </div>
-              </div>
-            </div>
-
-            {/* Forecast Row */}
-            <div className="grid grid-cols-3 gap-3 mb-5">
               {/* Tomorrow's Forecast */}
-              <div className="bg-white rounded-2xl p-4 border border-border shadow-sm hover:-translate-y-0.5 transition-transform">
-                <div className="flex items-center gap-2 mb-3">
-                  <div className="w-7 h-7 rounded-lg bg-maroon-light flex items-center justify-center">
-                    <Activity size={14} className="text-maroon" />
+              <div className="bg-white rounded-xl sm:rounded-2xl p-3.5 sm:p-4 border border-border shadow-xs flex flex-col justify-between min-h-25.5 sm:min-h-28 h-full gap-1.5 hover:-translate-y-0.5 transition-transform">
+                <div className="flex items-center gap-2">
+                  <div className="w-7 h-7 rounded-lg bg-maroon-light text-maroon border border-maroon-border/60 flex items-center justify-center shrink-0">
+                    <Activity size={14} />
                   </div>
-                  <span className="text-fluid-10 font-extrabold text-text-muted uppercase tracking-[0.08em]">Tomorrow's Forecast</span>
+                  <span className="text-fluid-10 font-extrabold text-text-muted uppercase tracking-[0.08em] truncate">Tomorrow's Forecast</span>
                 </div>
-                {insights.forecast?.insufficient_data ? (
-                  <>
-                    <div className="font-serif text-fluid-26 font-bold text-text-muted leading-none mb-1">—</div>
-                    <div className="text-fluid-11 text-text-sub font-medium">Not enough history yet</div>
-                  </>
-                ) : (
-                  <>
-                    <div className="font-serif text-fluid-26 font-bold text-maroon leading-none mb-1">
-                      {insights.forecast?.predicted_count ?? '—'} <span className="text-fluid-14 font-sans font-semibold text-text-muted">expected</span>
-                    </div>
-                    <div className="text-fluid-11 text-text-sub font-medium">
-                      {insights.forecast?.weekday}{insights.forecast?.top_transaction_type ? ` · Top: ${insights.forecast.top_transaction_type}` : ''}
-                    </div>
-                  </>
-                )}
+                <div>
+                  {insights.forecast?.insufficient_data ? (
+                    <>
+                      <div className="font-serif text-fluid-20 sm:text-fluid-26 font-bold text-text-muted leading-tight m-0">—</div>
+                      <div className="text-fluid-10 sm:text-fluid-11 text-text-muted font-medium truncate mt-0.5">Not enough history yet</div>
+                    </>
+                  ) : (
+                    <>
+                      <div className="font-serif text-fluid-20 sm:text-fluid-26 font-bold text-maroon leading-tight m-0">
+                        ~{insights.forecast?.estimated_traffic ?? 0} visits
+                      </div>
+                      <div className="text-fluid-10 sm:text-fluid-11 text-maroon font-medium flex items-center gap-1.5 truncate mt-0.5">
+                        <span className="w-1.5 h-1.5 rounded-full bg-current inline-block shrink-0" />
+                        <span>Est. appointments expected</span>
+                      </div>
+                    </>
+                  )}
+                </div>
               </div>
 
               {/* 14-Day Trend */}
-              <div className="bg-white rounded-2xl p-4 border border-border shadow-sm hover:-translate-y-0.5 transition-transform">
-                <div className="flex items-center gap-2 mb-3">
-                  <div className={`w-7 h-7 rounded-lg flex items-center justify-center ${
-                    insights.trend?.direction === 'up' ? 'bg-success-light' :
-                    insights.trend?.direction === 'down' ? 'bg-danger-light' : 'bg-surface'
-                  }`}>
-                    <Activity size={14} className={
-                      insights.trend?.direction === 'up' ? 'text-success' :
-                      insights.trend?.direction === 'down' ? 'text-danger' : 'text-text-muted'
-                    } />
+              <div className="bg-white rounded-xl sm:rounded-2xl p-3.5 sm:p-4 border border-border shadow-xs flex flex-col justify-between min-h-25.5 sm:min-h-28 h-full gap-1.5 hover:-translate-y-0.5 transition-transform">
+                <div className="flex items-center gap-2">
+                  <div className="w-7 h-7 rounded-lg bg-blue-light text-blue border border-blue-border/60 flex items-center justify-center shrink-0">
+                    <Activity size={14} />
                   </div>
-                  <span className="text-fluid-10 font-extrabold text-text-muted uppercase tracking-[0.08em]">14-Day Trend</span>
+                  <span className="text-fluid-10 font-extrabold text-text-muted uppercase tracking-[0.08em] truncate">14-Day Trend</span>
                 </div>
-                {insights.trend?.insufficient_data ? (
-                  <>
-                    <div className="font-serif text-fluid-26 font-bold text-text-muted leading-none mb-1">—</div>
-                    <div className="text-fluid-11 text-text-sub font-medium">Not enough history yet</div>
-                  </>
-                ) : (
-                  <>
-                    <div className={`font-serif text-fluid-26 font-bold leading-none mb-1 ${
-                      insights.trend?.direction === 'up' ? 'text-success' :
-                      insights.trend?.direction === 'down' ? 'text-danger' : 'text-text-main'
-                    }`}>
-                      {insights.trend?.direction === 'up' ? '↑' : insights.trend?.direction === 'down' ? '↓' : '→'} {Math.round(Math.abs(insights.trend?.percent_change ?? 0))}%
-                    </div>
-                    <div className="text-fluid-11 text-text-sub font-medium">
-                      {insights.trend?.recent_count} recent vs {insights.trend?.prior_count} prior
-                    </div>
-                  </>
-                )}
-              </div>
-
-              {/* Demand Driver */}
-              <div className="bg-white rounded-2xl p-4 border border-border shadow-sm hover:-translate-y-0.5 transition-transform">
-                <div className="flex items-center gap-2 mb-3">
-                  <div className="w-7 h-7 rounded-lg bg-[#EDE9FE] flex items-center justify-center">
-                    <Sparkles size={14} className="text-[#6D28D9]" />
-                  </div>
-                  <span className="text-fluid-10 font-extrabold text-text-muted uppercase tracking-[0.08em]">Most In-Demand</span>
+                <div>
+                  {insights.trend?.insufficient_data ? (
+                    <>
+                      <div className="font-serif text-fluid-20 sm:text-fluid-26 font-bold text-text-muted leading-tight m-0">—</div>
+                      <div className="text-fluid-10 sm:text-fluid-11 text-text-muted font-medium truncate mt-0.5">Not enough history yet</div>
+                    </>
+                  ) : (
+                    <>
+                      <div className={`font-serif text-fluid-20 sm:text-fluid-26 font-bold leading-tight m-0 ${
+                        insights.trend?.direction === 'up' ? 'text-success' :
+                        insights.trend?.direction === 'down' ? 'text-danger' : 'text-blue'
+                      }`}>
+                        {insights.trend?.direction === 'up' ? '↑' : insights.trend?.direction === 'down' ? '↓' : '→'} {Math.round(Math.abs(insights.trend?.percent_change ?? 0))}%
+                      </div>
+                      <div className="text-fluid-10 sm:text-fluid-11 text-blue font-medium flex items-center gap-1.5 truncate mt-0.5">
+                        <span className="w-1.5 h-1.5 rounded-full bg-current inline-block shrink-0" />
+                        <span>{insights.trend?.recent_count} recent vs {insights.trend?.prior_count} prior</span>
+                      </div>
+                    </>
+                  )}
                 </div>
-                {insights.trend?.driving_type ? (
-                  <>
-                    <div className="font-serif text-fluid-18 font-bold text-[#6D28D9] leading-tight mb-1 line-clamp-2">
-                      {insights.trend.driving_type}
-                    </div>
-                    <div className="text-fluid-11 text-text-sub font-medium">Highest student demand lately</div>
-                  </>
-                ) : (
-                  <>
-                    <div className="font-serif text-fluid-26 font-bold text-text-muted leading-none mb-1">—</div>
-                    <div className="text-fluid-11 text-text-sub font-medium">{insights.trend?.direction === 'down' ? 'Volume is decreasing' : 'Demand is evenly spread'}</div>
-                  </>
-                )}
               </div>
             </div>
           </>
@@ -861,24 +810,33 @@ export default function AdminAnalyticsPage() {
       )}
 
       {/* ── Stat Cards ── */}
-      <div className="grid grid-cols-4 gap-4 mb-7">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4 mb-5 sm:mb-7">
         {[
-          { label: 'Total Volume', value: totalVol.toLocaleString(), icon: <FileText size={18} />, bg: 'bg-maroon-light', fg: 'text-maroon', sub: 'Total requests in period' },
-          { label: 'Completion Rate', value: docType === 'all' ? `${report?.completion_rate || 0}%` : '—', icon: <CheckCircle size={18} />, bg: 'bg-info-light', fg: 'text-info', sub: 'Successfully processed' },
-          { label: 'Avg Process Time', value: docType === 'all' ? `${report?.avg_processing_mins || 0}m` : '—', icon: <Clock size={18} />, bg: 'bg-gold-light', fg: 'text-gold', sub: 'Per document average' },
-          { label: 'No-Show Rate', value: docType === 'all' ? `${report?.no_show_rate || 0}%` : '—', icon: <AlertTriangle size={18} />, bg: 'bg-danger-light', fg: 'text-danger', sub: 'Missed appointments' },
+          { label: 'Total Volume', value: totalVol.toLocaleString(), icon: <FileText size={18} strokeWidth={2.2} />, bg: 'bg-maroon-light', fg: 'text-maroon', border: 'border-maroon-border/60', sub: 'Total requests in period', subColor: 'text-maroon' },
+          { label: 'Completion Rate', value: docType === 'all' ? `${report?.completion_rate || 0}%` : '—', icon: <CheckCircle size={18} strokeWidth={2.2} />, bg: 'bg-success-light', fg: 'text-success', border: 'border-success-border/60', sub: 'Successfully processed', subColor: 'text-success' },
+          { label: 'Avg Process Time', value: docType === 'all' ? `${report?.avg_processing_mins || 0}m` : '—', icon: <Clock size={18} strokeWidth={2.2} />, bg: 'bg-gold-light', fg: 'text-gold', border: 'border-gold-border/60', sub: 'Per document average', subColor: 'text-gold' },
+          { label: 'No-Show Rate', value: docType === 'all' ? `${report?.no_show_rate || 0}%` : '—', icon: <AlertTriangle size={18} strokeWidth={2.2} />, bg: 'bg-danger-light', fg: 'text-danger', border: 'border-danger-border/60', sub: 'Missed appointments', subColor: 'text-danger' },
         ].map((c, i) => (
-          <div key={i} className="animate-fade-up rounded-2xl p-[18px_20px] bg-white border border-border shadow-[0_1px_4px_rgba(0,0,0,0.04)] relative overflow-hidden" style={{ animationDelay: `${i * 0.1}s` }}>
-            <div className="flex items-start justify-between mb-3">
-              <div className="text-fluid-10 font-extrabold text-text-muted uppercase tracking-[0.08em]">{c.label}</div>
-              <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${c.bg} ${c.fg}`}>
+          <div 
+            key={i} 
+            className="animate-fade-up bg-white rounded-xl sm:rounded-2xl px-3.5 py-3 sm:px-5 sm:py-3.5 border border-border shadow-[0_1px_4px_rgba(0,0,0,0.02)] transition-all flex flex-col justify-between min-h-25.5 sm:min-h-28 gap-1.5 h-full" 
+            style={{ animationDelay: `${i * 0.08}s` }}
+          >
+            <div className="flex items-center justify-between gap-2">
+              <div className="text-fluid-10 sm:text-fluid-11 font-bold text-text-muted uppercase tracking-[0.08em] truncate leading-tight">{c.label}</div>
+              <div className={`w-7 h-7 sm:w-8.5 sm:h-8.5 rounded-lg sm:rounded-xl flex items-center justify-center border ${c.border} ${c.bg} ${c.fg} shrink-0`}>
                 {c.icon}
               </div>
             </div>
-            <div className="font-sans text-fluid-28 font-bold text-text-main leading-none">
-              {loading ? <div className="animate-pulse w-15 h-9 bg-border rounded-lg" /> : c.value}
+            <div>
+              <div className="font-serif text-fluid-20 sm:text-fluid-26 font-extrabold text-text-main leading-tight tracking-tight m-0">
+                {loading ? <div className="animate-pulse w-14 h-6 sm:h-7 bg-border rounded-md" /> : c.value}
+              </div>
+              <div className={`text-fluid-10 sm:text-fluid-11 font-medium mt-0.5 flex items-center gap-1.5 truncate ${c.subColor}`}>
+                <span className="w-1.5 h-1.5 rounded-full bg-current inline-block shrink-0" />
+                <span>{c.sub}</span>
+              </div>
             </div>
-            <div className="text-fluid-11 font-medium text-text-muted mt-1.5">{c.sub}</div>
           </div>
         ))}
       </div>
@@ -931,7 +889,7 @@ export default function AdminAnalyticsPage() {
           <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-8 items-center">
             <div className="flex justify-center lg:border-r border-border/50 lg:pr-4">
               <DonutChart 
-                data={[...filteredReportByType].sort((a, b) => {
+                data={[...filteredReportByType].filter(t => t.count > 0).sort((a, b) => {
                   const iA = TYPE_ORDER.indexOf(a.name)
                   const iB = TYPE_ORDER.indexOf(b.name)
                   if (iA === -1 && iB === -1) return b.count - a.count
@@ -940,7 +898,7 @@ export default function AdminAnalyticsPage() {
                   return iA - iB
                 })} 
                 total={totalVol} 
-                colors={[...filteredReportByType].sort((a, b) => {
+                colors={[...filteredReportByType].filter(t => t.count > 0).sort((a, b) => {
                   const iA = TYPE_ORDER.indexOf(a.name)
                   const iB = TYPE_ORDER.indexOf(b.name)
                   if (iA === -1 && iB === -1) return b.count - a.count

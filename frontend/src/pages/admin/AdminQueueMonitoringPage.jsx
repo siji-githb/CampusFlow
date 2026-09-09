@@ -29,7 +29,6 @@ import {
   Download,
   ChevronDown,
   Calendar,
-  Sparkles,
   X,
   ChevronLeft,
   ChevronRight,
@@ -116,22 +115,23 @@ function AdminTicketDetailsModal({ item, onClose }) {
     .sort((a, b) => new Date(b.confirmed_at) - new Date(a.confirmed_at))[0]
 
   return createPortal(
-    <div className="fixed inset-0 z-99999 flex items-center justify-center p-4 sm:p-6 overflow-y-auto bg-black/60 animate-fade-in" onClick={onClose}>
+    <div className="fixed inset-0 z-99999 flex items-center justify-center p-4 sm:p-6 overflow-y-auto" onClick={onClose}>
+      <div className="fixed inset-0 bg-black/50 transition-opacity animate-fade-in" />
       {/* Modal Dialog Box */}
       <div 
-        className="animate-fade-up relative my-auto w-full max-w-2xl bg-white text-text-main rounded-3xl p-6 sm:p-8 shadow-[0_25px_80px_rgba(0,0,0,0.25)] border border-border flex flex-col max-h-[88vh]"
+        className="animate-fade-up relative my-auto w-full max-w-2xl bg-white text-text-main rounded-3xl p-6 sm:p-8 shadow-[0_25px_80px_rgba(0,0,0,0.18)] border border-border flex flex-col max-h-[88vh] font-sans overflow-hidden z-10"
         onClick={e => e.stopPropagation()}
       >
+        {/* Top decorative accent bar */}
+        <div className="absolute top-0 left-0 right-0 h-1.5 bg-linear-to-r from-maroon via-maroon-dark to-gold" />
+
         {/* Modal Header: Pinned */}
-        <div className="flex justify-between items-start mb-5 pb-4 border-b border-border shrink-0">
+        <div className="flex justify-between items-start mb-5 pb-4 border-b border-border shrink-0 pt-1">
           <div>
-            <div className="text-fluid-11 font-extrabold text-gold uppercase tracking-wider mb-1 flex items-center gap-1.5">
-              <Ticket size={14} /> Queue Ticket Details
-            </div>
-            <div className="flex items-center gap-3 flex-wrap">
-              <h2 className="font-serif text-fluid-28 sm:text-fluid-32 font-extrabold text-maroon m-0 leading-none">
-                {item.queue_number}
-              </h2>
+            <div className="flex items-center gap-2 mb-2 flex-wrap">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-gold-light text-gold text-fluid-11 font-extrabold uppercase tracking-wider border border-gold-border">
+                <Ticket size={13} /> Queue Ticket Details
+              </span>
               <span className={`text-fluid-11 font-bold uppercase tracking-wider px-3 py-1 rounded-full border ${
                 item.statusKey === 'serving' ? 'bg-success-light text-success border-success-border' :
                 item.statusKey === 'waiting' ? 'bg-gold-light text-gold border-gold-border' :
@@ -148,12 +148,15 @@ function AdminTicketDetailsModal({ item, onClose }) {
                 </span>
               )}
             </div>
+            <h2 className="font-serif text-fluid-28 sm:text-fluid-32 font-extrabold text-maroon m-0 leading-none">
+              {item.queue_number}
+            </h2>
           </div>
           <button 
             type="button"
             onClick={onClose} 
-            className="w-8 h-8 rounded-full flex items-center justify-center text-text-muted hover:text-text-main hover:bg-slate-100 transition-colors cursor-pointer border-none bg-transparent shrink-0 -mr-1 -mt-1"
-            aria-label="Close modal"
+            className="w-10 h-10 rounded-full bg-surface text-text-muted hover:bg-border/80 hover:text-text-main transition-all flex items-center justify-center border border-border cursor-pointer shrink-0 shadow-xs hover:scale-105 active:scale-95"
+            title="Close"
           >
             <X size={18} />
           </button>
@@ -269,7 +272,7 @@ function AdminTicketDetailsModal({ item, onClose }) {
           <button
             type="button"
             onClick={onClose}
-            className="px-6 py-2.5 rounded-xl bg-maroon text-white font-sans font-semibold text-fluid-13 cursor-pointer hover:bg-maroon-dark transition-colors border-none shadow-sm"
+            className="px-5 py-2.5 rounded-xl border border-border bg-surface text-text-sub hover:text-text-main hover:bg-border/60 text-fluid-13 font-bold transition-all cursor-pointer shadow-2xs active:scale-[0.98]"
           >
             Close Details
           </button>
@@ -420,7 +423,12 @@ export default function AdminQueueMonitoringPage() {
     overdueReleases,
     completedTodayCount
   } = useMemo(() => {
-    const nonCompleted = queue.filter(q => q.ticket.status !== 'completed')
+    const nonCompleted = queue.filter(q => 
+      q.ticket.status !== 'completed' && 
+      q.ticket.status !== 'cancelled' && 
+      q.ticket.status !== 'no_show' && 
+      q.ticket.appointments?.status !== 'cancelled'
+    )
     
     // Serving at counter windows
     const atWindows = nonCompleted.filter(({ ticket, steps }) => {
@@ -518,7 +526,11 @@ export default function AdminQueueMonitoringPage() {
     const counts = {}
     
     // 1. Count from active queue (count each requested document towards document demand)
-    queue.forEach(q => {
+    queue.filter(q => 
+      q.ticket.status !== 'cancelled' && 
+      q.ticket.status !== 'no_show' && 
+      q.ticket.appointments?.status !== 'cancelled'
+    ).forEach(q => {
       const docs = q.ticket.appointments?.selected_documents || (q.ticket.appointments?.transaction_types ? [q.ticket.appointments.transaction_types] : []);
       if (docs.length > 0) {
         docs.forEach(d => {
@@ -550,7 +562,11 @@ export default function AdminQueueMonitoringPage() {
   // ── Unified Table Items Mapping ──
   const allUnifiedItems = useMemo(() => {
     // 1. Live Queue Items
-    const queueItems = queue.map(q => {
+    const queueItems = queue.filter(q => 
+      q.ticket.status !== 'cancelled' && 
+      q.ticket.status !== 'no_show' && 
+      q.ticket.appointments?.status !== 'cancelled'
+    ).map(q => {
       const { ticket, steps } = q
       const currentStep = steps?.find(s => s.status === 'in_progress')
       const student = ticket.users
@@ -868,97 +884,112 @@ export default function AdminQueueMonitoringPage() {
       )}
 
       {/* ── Real-Time Status Cards ── */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3.5">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5 sm:gap-4">
         
         {/* At Windows */}
-        <div className="animate-fade-up bg-white rounded-2xl p-4.5 border border-border shadow-2xs flex flex-col justify-between" style={{ animationDelay: '0.1s' }}>
-          <div className="flex justify-between items-start mb-2">
-            <span className="text-fluid-10 font-extrabold text-text-muted uppercase tracking-wider">Serving Now</span>
-            <div className="w-8 h-8 rounded-lg bg-success-light text-success flex items-center justify-center">
+        <div className="animate-fade-up bg-white rounded-xl sm:rounded-2xl px-3.5 py-3 sm:px-4.5 sm:py-4 border border-border shadow-[0_1px_4px_rgba(0,0,0,0.02)] flex flex-col justify-between min-h-25.5 sm:min-h-28 gap-1.5 h-full" style={{ animationDelay: '0.1s' }}>
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-fluid-10 sm:text-fluid-11 font-bold text-text-muted uppercase tracking-[0.08em] truncate leading-tight">Serving Now</span>
+            <div className="w-7 h-7 sm:w-8.5 sm:h-8.5 rounded-lg sm:rounded-xl bg-maroon-light text-maroon border border-maroon-border/60 flex items-center justify-center shrink-0">
               <UserCheck size={16} />
             </div>
           </div>
           <div>
-            <div className="font-serif text-fluid-28 font-extrabold text-text-main leading-none mb-1">
-              {loading ? <div className="animate-pulse w-10 h-7 bg-border rounded" /> : atWindows.length}
+            <div className="font-serif text-fluid-20 sm:text-fluid-26 font-extrabold text-text-main leading-tight tracking-tight m-0">
+              {loading ? <div className="animate-pulse w-10 h-6 sm:h-7 bg-border rounded-md" /> : atWindows.length}
             </div>
-            <div className="text-fluid-10-5 text-text-sub font-medium">Students at counter</div>
+            <div className="text-fluid-10 sm:text-fluid-11 font-medium mt-0.5 text-maroon flex items-center gap-1.5 truncate">
+              <span className="w-1.5 h-1.5 rounded-full bg-current inline-block shrink-0" />
+              <span>Students at counter</span>
+            </div>
           </div>
         </div>
 
         {/* Waiting in Line */}
-        <div className="animate-fade-up bg-white rounded-2xl p-4.5 border border-border shadow-2xs flex flex-col justify-between" style={{ animationDelay: '0.15s' }}>
-          <div className="flex justify-between items-start mb-2">
-            <span className="text-fluid-10 font-extrabold text-text-muted uppercase tracking-wider">Waiting in Line</span>
-            <div className="w-8 h-8 rounded-lg bg-gold-light text-gold flex items-center justify-center">
+        <div className="animate-fade-up bg-white rounded-xl sm:rounded-2xl px-3.5 py-3 sm:px-4.5 sm:py-4 border border-border shadow-[0_1px_4px_rgba(0,0,0,0.02)] flex flex-col justify-between min-h-25.5 sm:min-h-28 gap-1.5 h-full" style={{ animationDelay: '0.15s' }}>
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-fluid-10 sm:text-fluid-11 font-bold text-text-muted uppercase tracking-[0.08em] truncate leading-tight">Waiting in Line</span>
+            <div className="w-7 h-7 sm:w-8.5 sm:h-8.5 rounded-lg sm:rounded-xl bg-gold-light text-gold border border-gold-border/60 flex items-center justify-center shrink-0">
               <Users size={16} />
             </div>
           </div>
           <div>
-            <div className="font-serif text-fluid-28 font-extrabold text-text-main leading-none mb-1">
-              {loading ? <div className="animate-pulse w-10 h-7 bg-border rounded" /> : waitingInLine.length}
+            <div className="font-serif text-fluid-20 sm:text-fluid-26 font-extrabold text-text-main leading-tight tracking-tight m-0">
+              {loading ? <div className="animate-pulse w-10 h-6 sm:h-7 bg-border rounded-md" /> : waitingInLine.length}
             </div>
-            <div className="text-fluid-10-5 text-text-sub font-medium">Next in queue line</div>
+            <div className="text-fluid-10 sm:text-fluid-11 font-medium mt-0.5 text-gold flex items-center gap-1.5 truncate">
+              <span className="w-1.5 h-1.5 rounded-full bg-current inline-block shrink-0" />
+              <span>Next in queue line</span>
+            </div>
           </div>
         </div>
 
         {/* In Document Prep */}
-        <div className="animate-fade-up bg-white rounded-2xl p-4.5 border border-border shadow-2xs flex flex-col justify-between" style={{ animationDelay: '0.2s' }}>
-          <div className="flex justify-between items-start mb-2">
-            <span className="text-fluid-10 font-extrabold text-text-muted uppercase tracking-wider">Preparing Docs</span>
-            <div className="w-8 h-8 rounded-lg bg-blue-light text-blue flex items-center justify-center">
+        <div className="animate-fade-up bg-white rounded-xl sm:rounded-2xl px-3.5 py-3 sm:px-4.5 sm:py-4 border border-border shadow-[0_1px_4px_rgba(0,0,0,0.02)] flex flex-col justify-between min-h-25.5 sm:min-h-28 gap-1.5 h-full" style={{ animationDelay: '0.2s' }}>
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-fluid-10 sm:text-fluid-11 font-bold text-text-muted uppercase tracking-[0.08em] truncate leading-tight">Preparing Docs</span>
+            <div className="w-7 h-7 sm:w-8.5 sm:h-8.5 rounded-lg sm:rounded-xl bg-blue-light text-blue border border-blue-border/60 flex items-center justify-center shrink-0">
               <FileEdit size={16} />
             </div>
           </div>
           <div>
-            <div className="font-serif text-fluid-28 font-extrabold text-text-main leading-none mb-1">
-              {loading ? <div className="animate-pulse w-10 h-7 bg-border rounded" /> : inPreparation.length}
+            <div className="font-serif text-fluid-20 sm:text-fluid-26 font-extrabold text-text-main leading-tight tracking-tight m-0">
+              {loading ? <div className="animate-pulse w-10 h-6 sm:h-7 bg-border rounded-md" /> : inPreparation.length}
             </div>
-            <div className="text-fluid-10-5 text-text-sub font-medium">Processing records</div>
+            <div className="text-fluid-10 sm:text-fluid-11 font-medium mt-0.5 text-blue flex items-center gap-1.5 truncate">
+              <span className="w-1.5 h-1.5 rounded-full bg-current inline-block shrink-0" />
+              <span>Processing records</span>
+            </div>
           </div>
         </div>
 
         {/* Ready for Pickup */}
-        <div className="animate-fade-up bg-white rounded-2xl p-4.5 border border-border shadow-2xs flex flex-col justify-between" style={{ animationDelay: '0.25s' }}>
-          <div className="flex justify-between items-start mb-2">
-            <span className="text-fluid-10 font-extrabold text-text-muted uppercase tracking-wider">Ready for Pickup</span>
-            <div className="w-8 h-8 rounded-lg bg-success-light text-success flex items-center justify-center">
+        <div className="animate-fade-up bg-white rounded-xl sm:rounded-2xl px-3.5 py-3 sm:px-4.5 sm:py-4 border border-border shadow-[0_1px_4px_rgba(0,0,0,0.02)] flex flex-col justify-between min-h-25.5 sm:min-h-28 gap-1.5 h-full" style={{ animationDelay: '0.25s' }}>
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-fluid-10 sm:text-fluid-11 font-bold text-text-muted uppercase tracking-[0.08em] truncate leading-tight">Ready for Pickup</span>
+            <div className="w-7 h-7 sm:w-8.5 sm:h-8.5 rounded-lg sm:rounded-xl bg-gold-light text-gold border border-gold-border/60 flex items-center justify-center shrink-0">
               <FolderOpen size={16} />
             </div>
           </div>
           <div>
-            <div className="font-serif text-fluid-28 font-extrabold text-text-main leading-none mb-1 flex items-baseline gap-2">
-              {loading ? <div className="animate-pulse w-10 h-7 bg-border rounded" /> : readyReleases.length}
+            <div className="font-serif text-fluid-20 sm:text-fluid-26 font-extrabold text-text-main leading-tight tracking-tight m-0 flex items-baseline gap-2">
+              {loading ? <div className="animate-pulse w-10 h-6 sm:h-7 bg-border rounded-md" /> : readyReleases.length}
               {overdueReleases.length > 0 && (
-                <span className="text-fluid-10 font-bold text-danger bg-danger-light px-1.5 py-0.5 rounded border border-danger-border">
+                <span className="text-[10px] font-bold text-danger bg-danger-light px-1.5 py-0.2 rounded border border-danger-border">
                   {overdueReleases.length} overdue
                 </span>
               )}
             </div>
-            <div className="text-fluid-10-5 text-text-sub font-medium">Waiting for student claim</div>
+            <div className="text-fluid-10 sm:text-fluid-11 font-medium mt-0.5 text-gold flex items-center gap-1.5 truncate">
+              <span className="w-1.5 h-1.5 rounded-full bg-current inline-block shrink-0" />
+              <span>Waiting for student claim</span>
+            </div>
           </div>
         </div>
 
         {/* Finished Today */}
-        <div className="animate-fade-up bg-white rounded-2xl p-4.5 border border-border shadow-2xs flex flex-col justify-between" style={{ animationDelay: '0.3s' }}>
-          <div className="flex justify-between items-start mb-2">
-            <span className="text-fluid-10 font-extrabold text-text-muted uppercase tracking-wider">Finished Today</span>
-            <div className="w-8 h-8 rounded-lg bg-maroon-light text-maroon flex items-center justify-center">
+        <div className="animate-fade-up bg-white rounded-xl sm:rounded-2xl px-3.5 py-3 sm:px-4.5 sm:py-4 border border-border shadow-[0_1px_4px_rgba(0,0,0,0.02)] flex flex-col justify-between min-h-25.5 sm:min-h-28 gap-1.5 h-full" style={{ animationDelay: '0.3s' }}>
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-fluid-10 sm:text-fluid-11 font-bold text-text-muted uppercase tracking-[0.08em] truncate leading-tight">Finished Today</span>
+            <div className="w-7 h-7 sm:w-8.5 sm:h-8.5 rounded-lg sm:rounded-xl bg-success-light text-success border border-success-border/60 flex items-center justify-center shrink-0">
               <CheckCircle2 size={16} />
             </div>
           </div>
           <div>
-            <div className="font-serif text-fluid-28 font-extrabold text-maroon leading-none mb-1">
-              {loading ? <div className="animate-pulse w-10 h-7 bg-border rounded" /> : completedTodayCount}
+            <div className="font-serif text-fluid-20 sm:text-fluid-26 font-extrabold text-success leading-tight tracking-tight m-0">
+              {loading ? <div className="animate-pulse w-10 h-6 sm:h-7 bg-border rounded-md" /> : completedTodayCount}
             </div>
-            <div className="text-fluid-10-5 text-text-sub font-medium">Completed transactions</div>
+            <div className="text-fluid-10 sm:text-fluid-11 font-medium mt-0.5 text-success flex items-center gap-1.5 truncate">
+              <span className="w-1.5 h-1.5 rounded-full bg-current inline-block shrink-0" />
+              <span>Completed transactions</span>
+            </div>
           </div>
         </div>
 
       </div>
 
       {/* ── Donut Reports & Highlights ── */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-5">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5">
         
         {/* Donut 1: Overall Queue Status */}
         <div className="animate-fade-up bg-white rounded-2xl p-4.5 sm:p-5 border border-border shadow-2xs flex flex-col justify-between" style={{ animationDelay: '0.35s' }}>
@@ -1016,78 +1047,6 @@ export default function AdminQueueMonitoringPage() {
                 total={docDistributionDonut.total}
                 colors={docDistributionDonut.colors}
               />
-            )}
-          </div>
-        </div>
-
-        {/* Quick Summary & Alerts */}
-        <div className="animate-fade-up bg-white rounded-2xl p-5 sm:p-6 border border-border shadow-2xs flex flex-col justify-between relative overflow-hidden" style={{ animationDelay: '0.45s' }}>
-          <div>
-            <div className="flex items-center gap-2 mb-2">
-              <Sparkles size={17} className="text-gold shrink-0" />
-              <h3 className="font-serif text-fluid-16 font-bold text-maroon m-0">AI Summary</h3>
-            </div>
-            <p className="text-fluid-12 text-text-sub leading-relaxed mb-4">
-              Important updates on student wait times, counter workload, and pickups.
-            </p>
-
-            {loading ? (
-              <div className="flex flex-col gap-3">
-                {[1, 2, 3].map((i) => (
-                  <div key={i} className="p-3.5 rounded-2xl bg-off-white border border-border flex items-start gap-3.5 animate-pulse">
-                    <div className="w-8 h-8 rounded-xl bg-border/60 shrink-0 mt-0.5" />
-                    <div className="flex-1 space-y-2 py-0.5">
-                      <div className="h-3.5 bg-border/70 rounded w-2/5" />
-                      <div className="h-2.5 bg-border/50 rounded w-4/5" />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="flex flex-col gap-3">
-                {/* Alert 1 */}
-                <div className="p-3.5 rounded-2xl bg-off-white/80 border border-border/80 flex items-start gap-3.5">
-                  <div className="w-8 h-8 rounded-xl bg-gold-light text-gold flex items-center justify-center shrink-0 mt-0.5 shadow-2xs">
-                    <Clock size={15} />
-                  </div>
-                  <div>
-                    <div className="text-fluid-12-5 font-bold text-text-main">Busiest Hours Expected</div>
-                    <div className="text-fluid-11-5 text-text-sub mt-1 leading-relaxed">
-                      Highest queue traffic expected around <strong className="text-text-main">{queueStats?.peak_forecast === 'No Data' ? 'None scheduled' : (queueStats?.peak_forecast || 'None')}</strong>.
-                    </div>
-                  </div>
-                </div>
-
-                {/* Alert 2 */}
-                <div className={`p-3.5 rounded-2xl border flex items-start gap-3.5 ${overdueReleases.length > 0 ? 'bg-danger-light/60 border-danger-border' : 'bg-success-light/30 border-success-border/70'}`}>
-                  <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 mt-0.5 shadow-2xs ${overdueReleases.length > 0 ? 'bg-danger-light text-danger' : 'bg-success-light text-success'}`}>
-                    {overdueReleases.length > 0 ? <AlertTriangle size={15} /> : <CheckCircle2 size={15} />}
-                  </div>
-                  <div>
-                    <div className={`text-fluid-12-5 font-bold ${overdueReleases.length > 0 ? 'text-danger' : 'text-success'}`}>
-                      {overdueReleases.length > 0 ? `${overdueReleases.length} Overdue Pickups` : 'Pickups On Schedule'}
-                    </div>
-                    <div className="text-fluid-11-5 text-text-sub mt-1 leading-relaxed">
-                      {overdueReleases.length > 0 
-                        ? 'You can click "Remind" in the table below to alert students.' 
-                        : 'Students are picking up their prepared documents on time.'}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Alert 3 */}
-                <div className="p-3.5 rounded-2xl bg-off-white/80 border border-border/80 flex items-start gap-3.5">
-                  <div className="w-8 h-8 rounded-xl bg-maroon-light text-maroon flex items-center justify-center shrink-0 mt-0.5 shadow-2xs">
-                    <UserCheck size={15} />
-                  </div>
-                  <div>
-                    <div className="text-fluid-12-5 font-bold text-text-main">Priority Lane Active</div>
-                    <div className="text-fluid-11-5 text-text-sub mt-1 leading-relaxed">
-                      PWD, Pregnant, and Alumni students are automatically prioritized in the queue.
-                    </div>
-                  </div>
-                </div>
-              </div>
             )}
           </div>
         </div>
@@ -1178,8 +1137,159 @@ export default function AdminQueueMonitoringPage() {
 
         </div>
 
-        {/* ── Table View ── */}
-        <div className="overflow-x-auto">
+        {/* ── Mobile Queue Cards (< lg screens) ── */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 lg:hidden p-3.5 sm:p-4 bg-surface/30">
+          {loading ? (
+            <div className="col-span-full py-12 text-center text-text-muted">
+              <RefreshCw className="animate-spin mx-auto mb-2 text-maroon" size={24} />
+              <p className="text-fluid-13 m-0 font-medium">Loading live queue and pickup records...</p>
+            </div>
+          ) : paginatedItems.length === 0 ? (
+            <div className="col-span-full py-12 text-center">
+              <div className="w-12 h-12 bg-surface rounded-full flex items-center justify-center mx-auto mb-2.5 border border-border text-text-muted">
+                <Layers size={22} />
+              </div>
+              <h4 className="text-fluid-14 font-bold text-text-main m-0 mb-1">No Queue Records Found</h4>
+              <p className="text-fluid-12 text-text-sub m-0 max-w-xs mx-auto">
+                {search ? 'No tickets match your search.' : 'There are currently no tickets in this tab.'}
+              </p>
+            </div>
+          ) : (
+            paginatedItems.map((item) => {
+              const isHighPrio = item.priority_class === 'alumni' || item.priority_class === 'pwd' || item.priority_class === 'pregnant'
+              return (
+                <div 
+                  key={item.id || item.queue_number}
+                  className="bg-white rounded-2xl border border-border p-4 shadow-xs flex flex-col justify-between gap-3 hover:border-maroon/30 transition-all"
+                >
+                  {/* Card Header: Queue #, Priority, Status */}
+                  <div className="flex items-start justify-between gap-2">
+                    <div>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="font-serif text-fluid-20 font-extrabold text-maroon leading-none">
+                          {item.queue_number}
+                        </span>
+                        {isHighPrio && (
+                          <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-danger-light text-danger border border-danger-border uppercase tracking-wider">
+                            {item.priority_class}
+                          </span>
+                        )}
+                      </div>
+                      <div className="text-fluid-13 font-bold text-text-main mt-1.5 leading-snug">
+                        {item.student_name}
+                      </div>
+                      <div className="text-fluid-11 font-mono text-text-muted">
+                        ID: {item.student_id || '—'}
+                      </div>
+                    </div>
+
+                    <div className="flex flex-col items-end gap-1.5 shrink-0">
+                      {item.statusKey === 'serving' ? (
+                        <span className="inline-flex items-center gap-1 text-[11px] font-extrabold uppercase tracking-wider px-2.5 py-1 rounded-full bg-success-light text-success border border-success-border whitespace-nowrap">
+                          <span className="w-1.5 h-1.5 rounded-full bg-success animate-pulse shrink-0" /> Serving Now
+                        </span>
+                      ) : item.statusKey === 'waiting' ? (
+                        <span className="inline-flex items-center gap-1 text-[11px] font-extrabold uppercase tracking-wider px-2.5 py-1 rounded-full bg-gold-light text-gold border border-gold-border whitespace-nowrap">
+                          <Clock size={11} className="shrink-0" /> In Line
+                        </span>
+                      ) : item.statusKey === 'prep' ? (
+                        <span className="inline-flex items-center gap-1 text-[11px] font-extrabold uppercase tracking-wider px-2.5 py-1 rounded-full bg-blue-light text-blue border border-blue-border whitespace-nowrap">
+                          <Cog size={11} className="animate-spin shrink-0" style={{ animationDuration: '3s' }} /> Preparing
+                        </span>
+                      ) : item.statusKey === 'overdue' ? (
+                        <span className="inline-flex items-center gap-1 text-[11px] font-extrabold uppercase tracking-wider px-2.5 py-1 rounded-full bg-danger-light text-danger border border-danger-border animate-pulse whitespace-nowrap">
+                          <AlertTriangle size={11} className="shrink-0" /> Overdue
+                        </span>
+                      ) : item.statusKey === 'ready' ? (
+                        <span className="inline-flex items-center gap-1 text-[11px] font-extrabold uppercase tracking-wider px-2.5 py-1 rounded-full bg-success-light text-success border border-success-border whitespace-nowrap">
+                          <FolderOpen size={11} className="shrink-0" /> Ready
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 text-[11px] font-extrabold uppercase tracking-wider px-2.5 py-1 rounded-full bg-success-light text-success border border-success-border whitespace-nowrap">
+                          <CheckCircle2 size={11} className="shrink-0" /> Done
+                        </span>
+                      )}
+
+                      {item.statusKey !== 'completed' && (
+                        <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-surface text-text-sub border border-border">
+                          {item.elapsedText}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Document and Target Release Date */}
+                  <div className="pt-2 border-t border-border/70 flex flex-col gap-1.5">
+                    <div className="flex flex-wrap gap-1">
+                      {item.selected_documents && item.selected_documents.length > 1 ? (
+                        item.selected_documents.map((d, idx) => (
+                          <span
+                            key={d.id || idx}
+                            className="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-md border whitespace-nowrap"
+                            style={{
+                              backgroundColor: `${getDocumentColor(d.name)}12`,
+                              color: getDocumentColor(d.name),
+                              borderColor: `${getDocumentColor(d.name)}30`,
+                            }}
+                          >
+                            <FileText size={11} className="shrink-0" />
+                            <span>{d.name}</span>
+                          </span>
+                        ))
+                      ) : (
+                        <span
+                          className="inline-flex items-center gap-1 text-fluid-11-5 font-semibold px-2 py-0.5 rounded-lg border whitespace-nowrap"
+                          style={{
+                            backgroundColor: `${getDocumentColor(item.transaction_type)}12`,
+                            color: getDocumentColor(item.transaction_type),
+                            borderColor: `${getDocumentColor(item.transaction_type)}30`,
+                          }}
+                        >
+                          <FileText size={11.5} className="shrink-0" />
+                          <span>{item.transaction_type}</span>
+                        </span>
+                      )}
+                    </div>
+
+                    {item.releaseDate && (
+                      <div className="text-[11.5px] font-medium text-text-sub flex items-center gap-1">
+                        <Calendar size={12} className="text-text-muted" />
+                        <span>Target: {new Date(item.releaseDate + "T00:00:00").toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Card Actions */}
+                  <div className="pt-2 border-t border-border/70 flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setViewingTicketData(item)}
+                      className="flex-1 py-2 px-3 rounded-xl border border-border bg-white text-text-main text-fluid-12 font-bold cursor-pointer hover:bg-surface active:scale-[0.98] transition-all shadow-2xs flex items-center justify-center gap-1.5"
+                    >
+                      <Eye size={13} />
+                      <span>Details</span>
+                    </button>
+
+                    {(item.statusKey === 'ready' || item.statusKey === 'overdue') && (
+                      <button
+                        type="button"
+                        onClick={() => handleRemindStudent(item.id, item.student_name)}
+                        disabled={remindingId === item.id}
+                        className="py-2 px-3 rounded-xl border border-gold-border bg-gold-light text-gold text-fluid-12 font-bold cursor-pointer hover:bg-gold hover:text-white active:scale-[0.98] transition-all shadow-2xs flex items-center justify-center gap-1.5 disabled:opacity-50"
+                      >
+                        <Bell size={13} className={remindingId === item.id ? 'animate-spin' : ''} />
+                        <span>Remind</span>
+                      </button>
+                    )}
+                  </div>
+                </div>
+              )
+            })
+          )}
+        </div>
+
+        {/* ── Table View (>= lg screens) ── */}
+        <div className="hidden lg:block overflow-x-auto">
           <table className="w-full text-left border-collapse min-w-240">
             <thead>
               <tr className="border-b border-border bg-off-white/80 text-fluid-10-5 font-extrabold text-text-muted uppercase tracking-[0.08em]">

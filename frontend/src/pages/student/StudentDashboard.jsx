@@ -7,7 +7,7 @@ import campusFlowLogo from '../../assets/logo.png';
 import StudentLayout, { useWindowWidth, ProfileDropdown } from '../../components/layout/StudentLayout';
 import { getMyAppointments, cancelAppointment } from '../../services/appointmentService';
 import { getMyQueue, getTimeEstimate, getPublicLiveQueue, getMyDocumentsToClaim } from '../../services/queueService';
-import { LogOut, ClipboardList, Ticket, Home, Calendar, Bot, Clock, Search, ChevronRight, Bell } from 'lucide-react';
+import { LogOut, ClipboardList, Ticket, Home, Calendar, Bot, Clock, Search, ChevronRight, Bell, FileText, MapPin } from 'lucide-react';
 import NotificationDropdown from '../../components/NotificationDropdown';
 import GlobalSearch from '../../components/GlobalSearch';
 
@@ -135,6 +135,9 @@ export default function StudentDashboard({ embedded = false }) {
             ? `${a.selected_documents.length} Documents (${a.selected_documents.map(d => d.name).join(', ')})`
             : (a.transaction_types?.name || 'Registrar Transaction'),
           step: 'Registrar',
+          appointment_date: a.appointment_date,
+          isToday: a.appointment_date === today,
+          formattedDate: a.appointment_date === today ? 'Today' : formatShortDate(a.appointment_date),
           date: a.appointment_date === today ? 'Today' : a.appointment_date,
           time: formatTime12(a.time_slot),
           status: a.status
@@ -395,7 +398,7 @@ export default function StudentDashboard({ embedded = false }) {
                 className="text-[13px] font-semibold text-maroon bg-transparent lg:bg-maroon-light border-none lg:border-[1.5px] lg:border-maroon-border rounded-[10px] py-1 lg:py-2 px-0 lg:px-4 cursor-pointer font-sans transition-all duration-200 hover:text-maroon-dark lg:hover:bg-maroon lg:hover:text-white shrink-0 flex items-center gap-1"
               >
                 <span className="md:hidden">View All</span>
-                <span className="hidden md:inline">View History</span>
+                <span className="hidden md:inline">View All</span>
                 <ChevronRight size={14} />
               </button>
             </div>
@@ -420,42 +423,80 @@ export default function StudentDashboard({ embedded = false }) {
                 {appointments.map(apt => (
                   <div 
                     key={apt.id} 
-                    className="flex justify-between items-center p-4 rounded-2xl border border-border bg-white lg:bg-off-white transition-all duration-400 ease-out hover:-translate-y-1 hover:shadow-[0_12px_30px_-4px_rgba(123,26,42,0.08),0_4px_12px_-2px_rgba(0,0,0,0.02)] hover:border-maroon-border"
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => navigate(`/student/appointments?id=${apt.id}`)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        navigate(`/student/appointments?id=${apt.id}`);
+                      }
+                    }}
+                    className="group relative flex justify-between items-center p-3.5 sm:p-4 rounded-2xl border border-border bg-white lg:bg-off-white/80 hover:bg-white hover:border-maroon/35 transition-all duration-300 ease-out cursor-pointer shadow-2xs hover:shadow-[0_10px_26px_rgba(123,26,42,0.08)] hover:-translate-y-0.5 active:scale-[0.995]"
                   >
-                    <div className="flex items-center gap-4">
-                      <div className="hidden lg:flex w-11.5 h-11.5 rounded-xl text-maroon bg-white border-[1.5px] border-border items-center justify-center shrink-0">
-                        <ClipboardList size={22} />
+                    <div className="flex items-center gap-3.5 sm:gap-4 min-w-0">
+                      {/* Document Icon Badge */}
+                      <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-xl text-maroon bg-maroon-light border border-maroon-border/40 flex items-center justify-center shrink-0 group-hover:scale-105 group-hover:bg-maroon group-hover:text-white transition-all duration-300 shadow-2xs">
+                        <ClipboardList size={20} />
                       </div>
-                      <div>
-                        <div className="text-[14px] lg:text-[15px] font-semibold text-text-main m-0 mb-1 lg:mb-0">{apt.type}</div>
-                        <div className="lg:hidden text-[12px] text-text-sub m-0 mb-1.5">{apt.step}</div>
-                        <div className="flex flex-wrap gap-2 items-center mt-0 lg:mt-1.5 text-[12px] lg:text-[12px]">
-                          <span className="text-text-sub bg-transparent lg:bg-white border-none lg:border lg:border-border py-0 lg:py-0.5 px-0 lg:px-2 rounded-md flex items-center gap-1">
-                            <Calendar size={12} /> {apt.date}
+                      
+                      {/* Document Info */}
+                      <div className="min-w-0">
+                        <h3 className="text-[14px] sm:text-[15px] font-bold text-text-main group-hover:text-maroon transition-colors duration-200 m-0 mb-1 leading-snug truncate">
+                          {apt.type}
+                        </h3>
+                        <div className="flex flex-wrap gap-1.5 sm:gap-2 items-center text-[11px] sm:text-[12px]">
+                          <span className={`py-0.5 px-2 rounded-md font-semibold flex items-center gap-1.5 shadow-2xs ${
+                            apt.isToday 
+                              ? 'bg-gold-light text-gold-dark border border-gold-border/60' 
+                              : 'bg-white border border-border/80 text-text-sub'
+                          }`}>
+                            <Calendar size={12} className={apt.isToday ? "text-gold" : "text-text-muted"} /> 
+                            {apt.isToday ? 'Today' : apt.formattedDate}
                           </span>
-                          <span className="text-text-sub bg-transparent lg:bg-white border-none lg:border lg:border-border py-0 lg:py-0.5 px-0 lg:px-2 rounded-md flex items-center gap-1">
-                            <Clock size={12} /> {apt.time}
+                          <span className="py-0.5 px-2 rounded-md bg-white border border-border/80 text-text-sub font-semibold flex items-center gap-1.5 shadow-2xs">
+                            <Clock size={12} className="text-maroon" /> 
+                            {apt.time}
                           </span>
-                          <span className="hidden lg:inline text-xs text-text-muted">
-                            · &nbsp;{apt.step}
+                          <span className="hidden sm:inline-flex items-center text-text-muted text-[11px] font-medium">
+                            · Registrar's Office
                           </span>
                         </div>
                       </div>
                     </div>
-                    <span className="text-[11px] font-bold py-1 lg:py-1.5 px-2.5 lg:px-3.5 rounded-full whitespace-nowrap uppercase tracking-[0.02em] lg:tracking-[0.04em]"
-                      style={{
-                        background: STATUS_STYLES[apt.status].bg, color: STATUS_STYLES[apt.status].color,
-                        border: `1.5px solid ${STATUS_STYLES[apt.status].border}`,
-                      }}
-                    >
-                      {apt.status}
-                    </span>
+
+                    {/* Status & Click Affordance */}
+                    <div className="flex items-center gap-2 sm:gap-3 shrink-0 ml-3">
+                      <span 
+                        className="text-[10px] sm:text-[10.5px] font-extrabold py-1 px-2.5 sm:px-3 rounded-full uppercase tracking-wider shadow-2xs whitespace-nowrap"
+                        style={{
+                          background: STATUS_STYLES[apt.status]?.bg || '#F0FDF4',
+                          color: STATUS_STYLES[apt.status]?.color || '#15803D',
+                          border: `1.5px solid ${STATUS_STYLES[apt.status]?.border || '#BBF7D0'}`,
+                        }}
+                      >
+                        {apt.status === 'in_progress' ? 'Serving' : apt.status}
+                      </span>
+                      <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-white border border-border/70 flex items-center justify-center text-text-muted group-hover:bg-maroon-light group-hover:text-maroon group-hover:border-maroon-border/40 transition-all duration-200 shrink-0 shadow-2xs">
+                        <ChevronRight size={15} className="transition-transform duration-200 group-hover:translate-x-0.5" />
+                      </div>
+                    </div>
                   </div>
                 ))}
               </div>
             ) : (
-              <div className="text-center p-6 lg:p-8 text-text-muted bg-white lg:bg-off-white rounded-2xl border border-dashed border-border">
-                No upcoming appointments.
+              <div className="text-center py-8 px-6 bg-white lg:bg-off-white/60 rounded-2xl border border-dashed border-border flex flex-col items-center justify-center">
+                <div className="w-11 h-11 rounded-xl bg-surface border border-border flex items-center justify-center text-text-muted mb-2.5">
+                  <Calendar size={20} />
+                </div>
+                <p className="text-[14px] font-bold text-text-main m-0 mb-1">No upcoming appointments</p>
+                <p className="text-[12px] text-text-sub m-0 mb-4 max-w-xs">You don't have any upcoming appointments scheduled with the registrar.</p>
+                <button
+                  onClick={() => navigate('/student/book')}
+                  className="py-2 px-4 rounded-xl bg-maroon text-white text-xs font-bold hover:bg-maroon-dark transition-all cursor-pointer shadow-2xs inline-flex items-center gap-1.5"
+                >
+                  <Calendar size={13} /> Book an Appointment
+                </button>
               </div>
             )}
           </div>

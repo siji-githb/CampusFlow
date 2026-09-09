@@ -351,24 +351,33 @@ export default function AdminAuditLogPage() {
       )}
 
       {/* ── Stat Metric Cards ── */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4 mb-5 sm:mb-7">
         {[
-          { label: 'Total Logged Actions', value: totalEvents, sub: 'Chronological records', icon: <Shield size={18} />, bg: 'bg-maroon-light', fg: 'text-maroon' },
-          { label: 'Security & User Events', value: criticalEvents, sub: 'Roles & suspensions', icon: <AlertOctagon size={18} />, bg: 'bg-danger-light', fg: 'text-danger' },
-          { label: 'System Configuration', value: configEvents, sub: 'Office parameters & rules', icon: <Settings size={18} />, bg: 'bg-maroon-light', fg: 'text-maroon' },
-          { label: 'Queue & Service Actions', value: queueEvents, sub: 'Verifications & releases', icon: <Ticket size={18} />, bg: 'bg-info-light', fg: 'text-info' },
+          { label: 'Total Logged Actions', value: totalEvents, sub: 'Chronological records', icon: <Shield size={18} />, bg: 'bg-maroon-light', fg: 'text-maroon', border: 'border-maroon-border/60' },
+          { label: 'Security & User Events', value: criticalEvents, sub: 'Roles & suspensions', icon: <AlertOctagon size={18} />, bg: 'bg-danger-light', fg: 'text-danger', border: 'border-danger-border/60' },
+          { label: 'System Configuration', value: configEvents, sub: 'Office parameters & rules', icon: <Settings size={18} />, bg: 'bg-gold-light', fg: 'text-gold', border: 'border-gold-border/60' },
+          { label: 'Queue & Service Actions', value: queueEvents, sub: 'Verifications & releases', icon: <Ticket size={18} />, bg: 'bg-blue-light', fg: 'text-blue', border: 'border-blue-border/60' },
         ].map((c, idx) => (
-          <div key={idx} className="animate-fade-up rounded-2xl p-[18px_20px] bg-white border border-border shadow-[0_1px_4px_rgba(0,0,0,0.04)] relative overflow-hidden" style={{ animationDelay: `${0.08 * (idx + 1)}s` }}>
-            <div className="flex items-start justify-between mb-2">
-              <div className="text-fluid-10 font-extrabold uppercase tracking-[0.08em] text-text-muted mt-1">{c.label}</div>
-              <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${c.bg} ${c.fg}`}>
+          <div 
+            key={idx} 
+            className="animate-fade-up bg-white rounded-xl sm:rounded-2xl px-3.5 py-3 sm:px-5 sm:py-3.5 border border-border shadow-[0_1px_4px_rgba(0,0,0,0.02)] transition-all flex flex-col justify-between min-h-25.5 sm:min-h-28 gap-1.5 h-full" 
+            style={{ animationDelay: `${0.08 * (idx + 1)}s` }}
+          >
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-fluid-10 sm:text-fluid-11 font-bold text-text-muted uppercase tracking-[0.08em] truncate leading-tight">{c.label}</span>
+              <div className={`w-7 h-7 sm:w-8.5 sm:h-8.5 rounded-lg sm:rounded-xl flex items-center justify-center shrink-0 border ${c.border} ${c.bg} ${c.fg}`}>
                 {c.icon}
               </div>
             </div>
-            <div className="font-sans text-fluid-36 font-extrabold leading-none text-text-main m-0 min-h-9">
-              {loading ? <div className="animate-pulse w-16 h-9 bg-border rounded-lg" /> : c.value.toLocaleString()}
+            <div>
+              <div className="font-serif text-fluid-20 sm:text-fluid-26 font-extrabold text-text-main leading-tight tracking-tight m-0">
+                {loading ? <div className="animate-pulse w-14 h-6 sm:h-7 bg-border rounded-md" /> : c.value.toLocaleString()}
+              </div>
+              <div className="text-fluid-10 sm:text-fluid-11 font-medium text-text-sub truncate mt-1 flex items-center gap-1.5">
+                <span className={`w-1.5 h-1.5 rounded-full ${c.fg} bg-current inline-block shrink-0`} />
+                <span>{c.sub}</span>
+              </div>
             </div>
-            <div className="text-fluid-11 font-medium text-text-muted mt-1.5">{c.sub}</div>
           </div>
         ))}
       </div>
@@ -624,25 +633,34 @@ export default function AdminAuditLogPage() {
 
       </div>
 
-      {/* ── Event Detail Modal (Clean System Palette: White canvas, Maroon header) ── */}
+      {/* ── Event Detail Modal (MasterListPage Standard) ── */}
       {selectedLog && createPortal((
-        <div className="fixed inset-0 z-99999 flex items-center justify-center p-4 sm:p-6 overflow-y-auto bg-black/60 animate-fade-in" onClick={() => setSelectedLog(null)}>
+        <div className="fixed inset-0 z-99999 flex items-center justify-center p-4 sm:p-6 overflow-y-auto bg-black/50 animate-fade-in" onClick={() => setSelectedLog(null)}>
           <div 
-            className="animate-fade-up relative my-auto w-full max-w-xl bg-white text-text-main rounded-3xl p-6 sm:p-8 shadow-[0_25px_80px_rgba(0,0,0,0.25)] border border-border flex flex-col gap-5 max-h-[90vh] overflow-y-auto"
+            className="animate-fade-up relative my-auto w-full max-w-xl bg-white text-text-main rounded-3xl shadow-[0_25px_80px_rgba(0,0,0,0.18)] border border-border/80 overflow-hidden flex flex-col"
             onClick={e => e.stopPropagation()}
           >
+            {/* Top decorative accent bar */}
+            <div className="h-1.5 w-full bg-linear-to-r from-maroon via-maroon-dark to-gold shrink-0" />
             
             {/* Modal Header */}
-            <div className="flex justify-between items-start pb-4 border-b border-border gap-3">
+            <div className="p-6 sm:p-8 pb-4 sm:pb-5 border-b border-border/60 flex items-start justify-between bg-white relative">
               <div className="flex items-center gap-3.5 min-w-0">
-                <div className="w-12 h-12 rounded-2xl bg-maroon-light text-maroon flex items-center justify-center shrink-0 border border-maroon-border shadow-2xs">
-                  <Shield size={24} />
+                <div className="w-12 h-12 rounded-2xl bg-maroon-light text-maroon flex items-center justify-center shrink-0 border border-maroon-border/80 shadow-2xs">
+                  <Shield size={22} />
                 </div>
                 <div className="min-w-0">
-                  <div className="text-fluid-11 font-bold text-gold uppercase tracking-[0.06em] mb-0.5">
-                    AUDIT EVENT DETAILS
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="text-fluid-10 font-bold text-gold uppercase tracking-wider px-2 py-0.5 rounded-full bg-gold-light border border-gold-border/60">
+                      Audit Event
+                    </span>
+                    {selectedLog.table_name && (
+                      <span className="text-fluid-11 font-mono font-semibold text-text-sub bg-surface px-2 py-0.5 rounded-md border border-border">
+                        {selectedLog.table_name}
+                      </span>
+                    )}
                   </div>
-                  <h2 className="font-serif text-fluid-19 sm:text-fluid-20 font-bold text-maroon m-0 leading-snug truncate">
+                  <h2 className="font-serif text-fluid-20 sm:text-fluid-22 font-bold text-text-main m-0 leading-snug truncate">
                     {selectedLog.action}
                   </h2>
                 </div>
@@ -650,7 +668,7 @@ export default function AdminAuditLogPage() {
               <button 
                 type="button"
                 onClick={() => setSelectedLog(null)}
-                className="w-8 h-8 rounded-full flex items-center justify-center text-text-muted hover:text-text-main hover:bg-slate-100 transition-colors cursor-pointer border-none bg-transparent shrink-0 -mr-1 -mt-1"
+                className="w-10 h-10 rounded-full border border-border/80 bg-surface flex items-center justify-center text-text-muted hover:text-text-main hover:bg-off-white transition-all cursor-pointer shrink-0"
                 aria-label="Close modal"
               >
                 <X size={18} />
@@ -658,7 +676,7 @@ export default function AdminAuditLogPage() {
             </div>
 
             {/* Modal Details Grid */}
-            <div className="flex flex-col gap-3.5">
+            <div className="p-6 sm:p-8 flex flex-col gap-3.5 max-h-[60vh] overflow-y-auto">
               
               {/* Actor & Timestamp Card */}
               <div className="p-4 rounded-2xl bg-surface border border-border grid grid-cols-1 sm:grid-cols-2 gap-3.5">
@@ -725,11 +743,11 @@ export default function AdminAuditLogPage() {
             </div>
 
             {/* Modal Footer */}
-            <div className="pt-3 border-t border-border flex justify-end">
+            <div className="p-5 sm:p-6 bg-surface/80 border-t border-border/80 flex justify-end rounded-b-3xl">
               <button
                 type="button"
                 onClick={() => setSelectedLog(null)}
-                className="py-2.5 px-6 rounded-xl bg-maroon text-white font-sans font-semibold text-fluid-13-5 cursor-pointer hover:bg-maroon-dark transition-colors border-none shadow-sm"
+                className="py-2.5 px-6 rounded-xl border border-border/80 bg-white text-text-main font-sans font-semibold text-fluid-13 hover:bg-off-white transition-colors cursor-pointer shadow-xs"
               >
                 Close
               </button>

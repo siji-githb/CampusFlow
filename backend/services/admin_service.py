@@ -584,7 +584,7 @@ def get_ai_insights():
     providers = get_ai_providers()
 
     prompt_content = (
-        f"You are a helpful assistant for the Registrar's Office at Cebu Roosevelt Memorial Colleges.\n"
+        f"You are a helpful assistant for the Registrar's Office.\n"
         f"Here is the latest operational data:\n"
         f"- Peak Hour Today: {peak_hour}\n"
         f"- Most Requested Document: {busiest_document}\n"

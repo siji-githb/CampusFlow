@@ -25,21 +25,32 @@ import DonutChart from '../../components/DonutChart'
 import { getDocumentColor } from '../../utils/colors'
 
 // ── Sidebar Nav Item ───────────────────────────────────────────────────────────
-const SideItem = ({ icon, label, active, onClick, badge }) => (
+const SideItem = ({ icon, label, active, onClick, badge, collapsed }) => (
   <button 
     onClick={onClick} 
-    className={`relative flex items-center gap-3 w-full py-2.5 px-4 rounded-[10px] border-none cursor-pointer text-left font-sans text-fluid-13-5 transition-all duration-300 overflow-hidden
+    title={collapsed ? label : undefined}
+    className={`relative flex items-center ${collapsed ? 'justify-center px-0 py-2.5' : 'gap-3 px-3.5 py-2.5'} w-full rounded-xl border-none cursor-pointer text-left font-sans text-fluid-13 transition-all duration-250 ease-out overflow-hidden group
       ${active ? 'bg-maroon-light/60 text-maroon font-bold' : 'bg-transparent text-text-sub font-medium hover:bg-surface hover:text-text-main'}`}
   >
     {active && (
       <div className="absolute left-0 top-[15%] bottom-[15%] w-0.75 bg-maroon rounded-r-full shadow-[1px_0_6px_rgba(123,26,42,0.3)]" />
     )}
-    <span className={`flex items-center justify-center w-5 shrink-0 transition-all duration-300 ${active ? 'opacity-100 scale-110 text-maroon' : 'opacity-70'}`}>
+    <span className={`flex items-center justify-center w-5 shrink-0 transition-all duration-250 ease-out ${active ? 'opacity-100 scale-105 text-maroon' : 'opacity-70 group-hover:opacity-100'}`}>
       {icon}
     </span>
-    <span className="flex-1 tracking-wide">{label}</span>
+    <span className={`tracking-wide whitespace-nowrap transition-all duration-250 ease-out overflow-hidden ${
+      collapsed 
+        ? 'opacity-0 max-w-0 -translate-x-2 pointer-events-none' 
+        : 'opacity-100 max-w-44 translate-x-0 flex-1'
+    }`}>
+      {label}
+    </span>
     {badge > 0 && (
-      <span className="bg-maroon text-white text-fluid-10 font-extrabold px-1.5 py-0.5 rounded-full shrink-0 animate-pulse">
+      <span className={`transition-all duration-250 ease-out font-extrabold text-center ${
+        collapsed 
+          ? 'absolute top-1.5 right-2 bg-maroon text-white text-[10px] px-1.5 py-px rounded-full min-w-4 shadow-sm leading-tight' 
+          : 'bg-maroon text-white text-fluid-10 px-2 py-0.5 rounded-full shrink-0 shadow-xs ml-auto'
+      }`}>
         {badge}
       </span>
     )}
@@ -257,43 +268,47 @@ function OverviewTab() {
     <div className="py-3.5 px-4.5 rounded-xl bg-danger-light text-danger border border-danger-border">{error}</div>
   )
 
-  // Stat cards matching reference image layout
+  // Stat cards matching Staff portal design tokens
   const CARDS = [
     {
       label: 'Appointments Today',
       value: loading || !stats ? null : stats?.today?.total || 0,
       sub: loading || !stats ? '—' : 'Total for today',
-      subColorClass: 'text-text-muted',
-      icon: <Calendar size={20} />,
-      colorClass: 'text-maroon',
-      bgClass: 'bg-maroon-light',
+      subColorClass: 'text-blue',
+      icon: <Calendar size={18} strokeWidth={2.2} />,
+      colorClass: 'text-blue',
+      bgClass: 'bg-blue-light',
+      borderClass: 'border-blue-border/60',
     },
     {
       label: 'Total Finished Today',
       value: loading || !stats ? null : stats?.today?.completed || 0,
       sub: loading || !stats ? '—' : 'Successfully completed',
-      subColorClass: 'text-text-muted',
-      icon: <CheckCircle size={20} />,
-      colorClass: 'text-gold',
-      bgClass: 'bg-gold-light',
+      subColorClass: 'text-success',
+      icon: <CheckCircle size={18} strokeWidth={2.2} />,
+      colorClass: 'text-success',
+      bgClass: 'bg-success-light',
+      borderClass: 'border-success-border/60',
     },
     {
       label: 'Completion Rate',
       value: loading || !stats ? null : `${stats?.today?.total > 0 ? Math.round(((stats?.today?.completed || 0) / stats?.today?.total) * 100) : 0}%`,
       sub: loading || !stats ? '—' : 'Of total scheduled',
-      subColorClass: 'text-text-muted',
-      icon: <CheckSquare size={20} />,
+      subColorClass: 'text-maroon',
+      icon: <CheckSquare size={18} strokeWidth={2.2} />,
       colorClass: 'text-maroon',
       bgClass: 'bg-maroon-light',
+      borderClass: 'border-maroon-border/60',
     },
     {
       label: 'Avg. Wait Time',
       value: loading || !stats ? null : `${Math.round(stats?.avg_wait_minutes || 0)} min`,
       sub: loading || !stats ? '—' : 'System-wide average',
-      subColorClass: 'text-text-muted',
-      icon: <Clock size={20} />,
+      subColorClass: 'text-gold',
+      icon: <Clock size={18} strokeWidth={2.2} />,
       colorClass: 'text-gold',
       bgClass: 'bg-gold-light',
+      borderClass: 'border-gold-border/60',
     },
   ]
 
@@ -347,27 +362,38 @@ function OverviewTab() {
       </div>
 
       {/* Stat cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-7">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4 mb-5 sm:mb-7">
         {CARDS.map((c, i) => (
-          <div key={i} className="animate-fade-up bg-white rounded-[14px] px-5 py-4.5 border border-border flex flex-col gap-3 shadow-[0_1px_4px_rgba(0,0,0,0.04)]" style={{ animationDelay: `${i * 0.1}s` }}>
-            <div className="flex items-start justify-between">
-              <div className="text-xs font-semibold text-text-muted uppercase tracking-[0.06em] mt-1.5">{c.label}</div>
-              <div className={`w-9 h-9 rounded-[10px] flex items-center justify-center shrink-0 ${c.bgClass} ${c.colorClass}`}>
+          <div 
+            key={i} 
+            className="animate-fade-up bg-white rounded-xl sm:rounded-2xl px-3.5 py-3 sm:px-5 sm:py-3.5 border border-border shadow-[0_1px_4px_rgba(0,0,0,0.02)] transition-all flex flex-col justify-between min-h-25.5 sm:min-h-28 gap-1.5 h-full" 
+            style={{ animationDelay: `${i * 0.08}s` }}
+          >
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-fluid-10 sm:text-fluid-11 font-bold text-text-muted uppercase tracking-[0.08em] truncate leading-tight">
+                {c.label}
+              </span>
+              <div className={`w-7 h-7 sm:w-8.5 sm:h-8.5 rounded-lg sm:rounded-xl border ${c.borderClass} ${c.bgClass} ${c.colorClass} flex items-center justify-center shrink-0`}>
                 {c.icon}
               </div>
             </div>
             <div>
-              <div className="font-serif text-fluid-28 font-extrabold leading-none m-0 min-h-7 text-text-main">
-                {c.value === null ? <div className="animate-pulse w-15 h-7 rounded-md bg-border" /> : c.value}
+              <div className="font-serif text-fluid-20 sm:text-fluid-26 font-extrabold text-text-main leading-tight tracking-tight m-0">
+                {c.value === null ? <div className="animate-pulse w-14 h-6 sm:h-7 rounded-md bg-border" /> : c.value}
               </div>
-              <div className={`text-fluid-11 font-semibold mt-1.5 ${c.subColorClass || 'text-text-muted'}`}>{c.sub}</div>
+              {c.sub && (
+                <div className={`text-fluid-10 sm:text-fluid-11 font-medium mt-0.5 flex items-center gap-1.5 truncate ${c.subColorClass || 'text-text-muted'}`}>
+                  <span className="w-1.5 h-1.5 rounded-full bg-current inline-block shrink-0" />
+                  <span>{c.sub}</span>
+                </div>
+              )}
             </div>
           </div>
         ))}
       </div>
 
       {/* Bottom row: Chart + Distribution */}
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-5 items-start">
+      <div className="grid grid-cols-1 xl:grid-cols-[1fr_320px] gap-5 items-start">
 
         {/* Appointments Chart */}
         <div className="animate-fade-up bg-white rounded-2xl p-6 border border-border shadow-sm" style={{ animationDelay: '0.4s' }}>
@@ -509,12 +535,25 @@ export default function AdminDashboard() {
   const [profileOpen, setProfileOpen] = useState(false)
   const [isMobileOpen, setIsMobileOpen] = useState(false)
   const [badgeStats, setBadgeStats] = useState({ idRequests: 0, priorityRequests: 0 })
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
+    try {
+      return localStorage.getItem('cf_admin_sidebar_collapsed') === 'true'
+    } catch {
+      return false
+    }
+  })
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('cf_admin_sidebar_collapsed', sidebarCollapsed ? 'true' : 'false')
+    } catch {}
+  }, [sidebarCollapsed])
 
   // Sync sidebar width CSS variable for layout-aligned overlays (like ToastContainer)
   useEffect(() => {
     const checkWidth = () => {
       if (window.innerWidth >= 768) {
-        document.documentElement.style.setProperty('--cf-sidebar-width', '240px')
+        document.documentElement.style.setProperty('--cf-sidebar-width', sidebarCollapsed ? '80px' : '256px')
       } else {
         document.documentElement.style.setProperty('--cf-sidebar-width', '0px')
       }
@@ -525,7 +564,7 @@ export default function AdminDashboard() {
       window.removeEventListener('resize', checkWidth)
       document.documentElement.style.removeProperty('--cf-sidebar-width')
     }
-  }, [])
+  }, [sidebarCollapsed])
 
   const fetchBadgeStats = useCallback(async () => {
     try {
@@ -589,83 +628,111 @@ export default function AdminDashboard() {
   ]
 
   const renderNavContent = () => (
-    <>
-      {/* Brand */}
-      <div className="flex items-center gap-2.5 px-2 mb-8">
-        <img src={campusFlowLogo} alt="CampusFlow" className="w-9.5 h-9.5 rounded-full bg-white object-contain border border-slate-200" />
-        <div>
-          <div className="font-serif text-fluid-14 font-bold text-maroon leading-[1.2]">CampusFlow</div>
-          <div className="text-fluid-10 text-text-muted tracking-[0.04em]"><strong>Admin Portal</strong></div>
-        </div>
-      </div>
-
-      {/* Nav */}
-      <nav className="flex-1 flex flex-col gap-6 px-1 overflow-y-auto pb-6 scrollbar-hide">
-        {navGroups.map((group, idx) => (
-          <div key={idx} className="flex flex-col gap-1.5">
-            <div className="text-fluid-10 font-extrabold text-text-muted uppercase tracking-[0.15em] px-4 mb-1">
-              {group.title}
+    <nav className="flex-1 flex flex-col gap-6 px-0 overflow-y-auto pb-6 scrollbar-hide">
+      {navGroups.map((group, idx) => (
+        <div key={idx} className="flex flex-col gap-1.5">
+          {idx === 0 ? (
+            <div className={`flex items-center ${sidebarCollapsed ? 'justify-center' : 'justify-between px-3'} mb-1`}>
+              <div className={`transition-all duration-250 ease-out overflow-hidden whitespace-nowrap ${
+                sidebarCollapsed 
+                  ? 'opacity-0 max-w-0 pointer-events-none' 
+                  : 'opacity-100 max-w-40'
+              }`}>
+                <span className="text-fluid-10 font-extrabold text-text-muted uppercase tracking-[0.15em]">
+                  {group.title}
+                </span>
+              </div>
+              {/* Desktop collapse toggle button */}
+              <button 
+                onClick={() => setSidebarCollapsed(!sidebarCollapsed)} 
+                title={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+                aria-label={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+                className={`hidden md:flex items-center justify-center rounded-lg text-text-muted hover:text-maroon hover:bg-surface transition-all duration-200 cursor-pointer border border-transparent hover:border-border/80 shrink-0 ${
+                  sidebarCollapsed ? 'w-8 h-8 bg-surface border-border/80 text-text-sub hover:text-maroon' : 'w-6 h-6 p-0.5'
+                }`}
+              >
+                <ChevronLeft size={15} strokeWidth={2.5} className={`transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${sidebarCollapsed ? 'rotate-180 text-maroon' : ''}`} />
+              </button>
             </div>
-            <div className="flex flex-col gap-1 pl-3 pr-2">
-              {group.items.map(item => (
-                <SideItem key={item.id} icon={item.icon} label={item.label}
-                  active={activeNav === item.id}
-                  badge={item.badge}
-                  onClick={() => handleNavChange(item.id)} />
-              ))}
-            </div>
+          ) : (
+            <>
+              <div className={`transition-all duration-250 ease-out overflow-hidden whitespace-nowrap ${
+                sidebarCollapsed 
+                  ? 'opacity-0 max-w-0 pointer-events-none h-0' 
+                  : 'opacity-100 max-w-40 px-3 mb-1'
+              }`}>
+                <span className="text-fluid-10 font-extrabold text-text-muted uppercase tracking-[0.15em]">
+                  {group.title}
+                </span>
+              </div>
+              {sidebarCollapsed && (
+                <div className="h-px bg-border/60 mx-2 my-1 shrink-0 transition-opacity duration-250" />
+              )}
+            </>
+          )}
+          <div className={`flex flex-col gap-1 ${sidebarCollapsed ? 'px-1' : 'px-1.5'}`}>
+            {group.items.map(item => (
+              <SideItem key={item.id} icon={item.icon} label={item.label}
+                active={activeNav === item.id}
+                badge={item.badge}
+                collapsed={sidebarCollapsed}
+                onClick={() => handleNavChange(item.id)} />
+            ))}
           </div>
-        ))}
-      </nav>
-    </>
+        </div>
+      ))}
+    </nav>
   )
 
   return (
     <div className="min-h-screen flex bg-off-white font-sans">
 
-      {/* ── Left Sidebar (Desktop) ── */}
-      <aside className="hidden md:flex w-60 shrink-0 bg-white border-r border-border flex-col fixed inset-y-0 left-0 z-50 p-[24px_14px]">
+      {/* Mobile Backdrop - solid semi-transparent scrim, zero blur */}
+      {isMobileOpen && (
+        <div onClick={() => setIsMobileOpen(false)} className="fixed inset-0 bg-black/50 z-45 md:hidden" />
+      )}
+
+      {/* ── Fixed Left Sidebar (Desktop & Mobile Slide-in Drawer) ── */}
+      <aside className={`${sidebarCollapsed ? 'md:w-20 md:px-2.5' : 'md:w-64 md:px-3.5'} w-64 px-3.5 shrink-0 bg-white border-r border-border flex flex-col fixed left-0 top-0 bottom-0 z-50 py-5 transition-[width,padding] duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${isMobileOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}`}>
+        {/* Brand */}
+        <div className={`flex items-center ${sidebarCollapsed ? 'justify-center' : 'justify-between pl-1'} mb-7`}>
+          <div className="flex items-center gap-2.5 min-w-0">
+            <img src={campusFlowLogo} alt="CampusFlow" className="w-8.5 h-8.5 rounded-full bg-white object-contain border border-slate-200 shrink-0 shadow-2xs" />
+            <div className={`whitespace-nowrap overflow-hidden transition-all duration-250 ease-out ${
+              sidebarCollapsed 
+                ? 'opacity-0 max-w-0 -translate-x-2 pointer-events-none' 
+                : 'opacity-100 max-w-40 translate-x-0'
+            }`}>
+              <div className="font-serif text-fluid-15 font-bold text-maroon leading-[1.2]">CampusFlow</div>
+              <div className="text-fluid-10 text-text-muted tracking-[0.04em]"><strong>Admin Portal</strong></div>
+            </div>
+          </div>
+          <button onClick={() => setIsMobileOpen(false)} className="md:hidden w-8 h-8 rounded-lg flex items-center justify-center text-text-muted hover:text-maroon hover:bg-maroon-light/60 border border-transparent hover:border-maroon-border/40 transition-all cursor-pointer" aria-label="Close menu">
+            <X size={18} strokeWidth={2.2} />
+          </button>
+        </div>
+
         {renderNavContent()}
       </aside>
 
-      {/* ── Mobile Sidebar Drawer ── */}
-      {isMobileOpen && (
-        <div className="md:hidden fixed inset-0 z-50 flex">
-          <div className="fixed inset-0 bg-black/40 backdrop-blur-xs animate-fade-in" onClick={() => setIsMobileOpen(false)} />
-          <aside className="relative w-64 max-w-[80vw] bg-white border-r border-border flex flex-col h-full z-10 p-[24px_14px] shadow-2xl animate-fade-up">
-            <div className="flex items-center justify-between mb-4 px-2">
-              <div className="flex items-center gap-2">
-                <img src={campusFlowLogo} alt="CampusFlow" className="w-8 h-8 rounded-full bg-white object-contain border border-slate-200" />
-                <span className="font-serif text-fluid-14 font-bold text-maroon">CampusFlow Admin</span>
-              </div>
-              <button onClick={() => setIsMobileOpen(false)} className="w-8 h-8 rounded-lg bg-surface border-none flex items-center justify-center text-text-muted hover:text-text-main cursor-pointer">
-                <X size={18} />
-              </button>
-            </div>
-            {renderNavContent()}
-          </aside>
-        </div>
-      )}
-
       {/* ── Right Side ── */}
-      <div className="md:ml-60 flex-1 flex flex-col min-h-screen w-full">
+      <div className={`${sidebarCollapsed ? 'md:ml-20' : 'md:ml-64'} ml-0 flex-1 flex flex-col min-h-screen min-w-0 w-full transition-[margin-left] duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]`}>
 
         {/* Top Bar */}
-        <header className="bg-white border-b border-border px-4 sm:px-8 h-15 flex items-center justify-between sticky top-0 z-40 shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
-          <div className="flex items-center gap-3">
+        <header className="bg-white border-b border-border px-4 sm:px-8 h-15 flex items-center justify-between sticky top-0 z-40 shadow-[0_1px_3px_rgba(0,0,0,0.04)] gap-2">
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0">
             <button 
               onClick={() => setIsMobileOpen(true)}
-              className="md:hidden w-9 h-9 rounded-xl bg-surface text-text-muted hover:text-text-main flex items-center justify-center border border-border cursor-pointer transition-colors"
+              className="md:hidden w-9 h-9 rounded-xl bg-surface text-text-muted hover:text-text-main flex items-center justify-center border border-border cursor-pointer transition-colors shrink-0"
               aria-label="Open menu"
             >
               <Menu size={18} />
             </button>
+            <AdminGlobalSearch setActiveNav={handleNavChange} />
           </div>
 
           {/* Right controls */}
-          <div className="flex items-center gap-3">
-            <AdminGlobalSearch setActiveNav={handleNavChange} />
-
+          <div className="flex items-center gap-2 sm:gap-3 shrink-0">
             {/* Bell */}
             <NotificationDropdown />
 

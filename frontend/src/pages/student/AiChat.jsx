@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/useAuth'
 import { useToast } from '../../context/ToastContext'
-import { sendMessage, clearChat, getChatHistory } from '../../services/aiService'
+import { sendMessage, sendMessageStream, clearChat, getChatHistory } from '../../services/aiService'
 import { BotMessageSquare, Eraser } from 'lucide-react'
 
 const SUGGESTED = [
@@ -26,6 +26,71 @@ const SendIcon = () => (
   </svg>
 )
 
+const sanitizeDisplayText = (text) => {
+  if (!text) return ''
+  return text
+    .replace(/\bCampusFlow\s+Registrar(?:'s\s+Office)?\b/gi, "the Registrar's Office")
+    .replace(/\bCampusFlow\s+Registrar\b/gi, 'the Registrar')
+    .replace(/\bCampusFlow\s+AI\s+Assistant\b/gi, 'AI Assistant')
+    .replace(/\bCampusFlow\s+Assistant\b/gi, 'AI Assistant')
+    .replace(/\bCebu\s+Roosevelt\s+Memorial\s+Colleges\b/gi, "the Registrar's Office")
+    .replace(/\bCebu\s+Roosevelt\b/gi, 'the Registrar')
+    .replace(/\bofficial\s+CRMC\s+options\b/gi, 'available options')
+    .replace(/\bCRMC\s+options\b/gi, 'available options')
+    .replace(/\bCRMC\s+Registrar(?:'s\s+Office)?\b/gi, "the Registrar's Office")
+    .replace(/\bCRMC\b/g, "the Registrar's Office")
+    .replace(/\*\*/g, '')
+    .replace(/__/g, '')
+}
+
+function FormattedMessageContent({ content, isUser }) {
+  if (!content) return null
+  const sanitized = isUser ? content : sanitizeDisplayText(content)
+  const blocks = sanitized.split(/\n\n+/)
+
+  return (
+    <div className={`space-y-2 text-[13.5px] sm:text-[14px] leading-relaxed ${isUser ? 'text-white' : 'text-text-main'}`}>
+      {blocks.map((block, bIdx) => {
+        const lines = block.split('\n')
+        const hasBullets = lines.some(l => {
+          const t = l.trim()
+          return t.startsWith('•') || t.startsWith('-') || t.startsWith('*')
+        })
+
+        if (hasBullets) {
+          return (
+            <div key={bIdx} className="space-y-1.5 my-1">
+              {lines.map((line, lIdx) => {
+                const trimmed = line.trim()
+                if (trimmed.startsWith('•') || trimmed.startsWith('-') || trimmed.startsWith('*')) {
+                  const itemText = trimmed.replace(/^[•\-\*]\s*/, '').trim()
+                  return (
+                    <div key={lIdx} className="flex items-start gap-2 pl-0.5">
+                      <span className={`w-1.5 h-1.5 rounded-full shrink-0 mt-2 ${isUser ? 'bg-white/80' : 'bg-maroon'}`} />
+                      <span className="flex-1 leading-snug">{itemText}</span>
+                    </div>
+                  )
+                }
+                return (
+                  <p key={lIdx} className="m-0 font-medium leading-snug">
+                    {line}
+                  </p>
+                )
+              })}
+            </div>
+          )
+        }
+
+        return (
+          <p key={bIdx} className="m-0 whitespace-pre-wrap">
+            {block}
+          </p>
+        )
+      })}
+    </div>
+  )
+}
+
 export default function AiChat({ asWidget, headless, onClose, initialQuery }) {
   const { token } = useAuth()
   const toast = useToast()
@@ -33,7 +98,7 @@ export default function AiChat({ asWidget, headless, onClose, initialQuery }) {
 
   const DEFAULT_MESSAGE = {
     role: 'assistant',
-    content: "Hi! I'm the CampusFlow AI Assistant 👋 I can help you with appointment booking, transaction requirements, and registrar procedures. How can I help you today?",
+    content: "Hi! I'm your AI Assistant for the Registrar's Office 👋 I can help you with appointment booking, transaction requirements, and registrar procedures. How can I help you today?",
   }
   const [messages, setMessages] = useState([DEFAULT_MESSAGE])
   const [input,   setInput]   = useState(initialQuery || '')
@@ -58,6 +123,7 @@ export default function AiChat({ asWidget, headless, onClose, initialQuery }) {
     loadHistory()
   }, [token])
   const [loading, setLoading] = useState(false)
+  const [statusText, setStatusText] = useState('')
   const [error,   setError]   = useState('')
   const [showConfirm, setShowConfirm] = useState(false)
   const confirmPopupRef = useRef(null)
@@ -142,24 +208,81 @@ export default function AiChat({ asWidget, headless, onClose, initialQuery }) {
       return;
     }
 
-    setInput(''); setError('')
+    setInput(''); setError(''); setStatusText('')
     recognitionRef.current?.stop()
     setIsListening(false)
 
     setMessages(prev => [...prev, { role: 'user', content: msg }])
     setLoading(true)
+
+    let streamedText = ''
+
     try {
-      const data  = await sendMessage(token, msg)
-      const reply = data.message
-      setMessages(prev => [...prev, { role: 'assistant', content: reply }])
+      await sendMessageStream(token, msg, {
+        onStatus: (status) => {
+          setStatusText(status)
+        },
+        onDelta: (chunk) => {
+          if (!streamedText) {
+            setLoading(false)
+            setStatusText('')
+          }
+          streamedText += chunk
+          setMessages(prev => {
+            const last = prev[prev.length - 1]
+            if (last && last.role === 'assistant' && !last.isError && last._streaming) {
+              return [
+                ...prev.slice(0, -1),
+                { ...last, content: streamedText }
+              ]
+            }
+            return [
+              ...prev,
+              { role: 'assistant', content: streamedText, _streaming: true }
+            ]
+          })
+        },
+        onError: (errMsg) => {
+          throw new Error(errMsg)
+        },
+        onDone: () => {
+          setMessages(prev => {
+            const last = prev[prev.length - 1]
+            if (last && last._streaming) {
+              const { _streaming, ...clean } = last
+              return [...prev.slice(0, -1), clean]
+            }
+            return prev
+          })
+        }
+      })
     } catch (e) {
-      const isLengthError = e.message?.includes('1000 characters') || msg.length > 1000
-      const errorText = isLengthError 
-        ? "Your message is too long — please keep it under 1000 characters." 
-        : (e.message || "Sorry, I'm having trouble connecting. Please try again.")
-      setError(errorText)
-      setMessages(prev => [...prev, { role: 'assistant', content: errorText, isError: true }])
-    } finally { setLoading(false) }
+      if (!streamedText) {
+        try {
+          const fallbackData = await sendMessage(token, msg)
+          setMessages(prev => [...prev, { role: 'assistant', content: fallbackData.message }])
+        } catch (fallbackErr) {
+          const isLengthError = e.message?.includes('1000 characters') || msg.length > 1000
+          const errorText = isLengthError 
+            ? "Your message is too long — please keep it under 1000 characters." 
+            : (e.message || "Sorry, I'm having trouble connecting. Please try again.")
+          setError(errorText)
+          setMessages(prev => [...prev, { role: 'assistant', content: errorText, isError: true }])
+        }
+      } else {
+        setMessages(prev => {
+          const last = prev[prev.length - 1]
+          if (last && last._streaming) {
+            const { _streaming, ...clean } = last
+            return [...prev.slice(0, -1), clean]
+          }
+          return prev
+        })
+      }
+    } finally {
+      setLoading(false)
+      setStatusText('')
+    }
   }
 
   const handleClear = async () => {
@@ -205,7 +328,7 @@ export default function AiChat({ asWidget, headless, onClose, initialQuery }) {
                 msg.isError ? 'rounded-[20px_20px_20px_4px] bg-red-50 text-red-600 border border-red-100' : 
                 'rounded-[20px_20px_20px_4px] bg-white text-text-main border border-border/60'
               }`}>
-                <p className="m-0 whitespace-pre-wrap">{msg.content}</p>
+                <FormattedMessageContent content={msg.content} isUser={msg.role === 'user'} />
               </div>
             </div>
           ))}
@@ -216,7 +339,9 @@ export default function AiChat({ asWidget, headless, onClose, initialQuery }) {
                 <BotMessageSquare size={15} />
               </div>
               <div className="py-2.5 px-3.5 rounded-[20px_20px_20px_4px] bg-white border border-border/70 shadow-xs flex items-center gap-2">
-                <span className="text-[12.5px] font-medium text-text-sub italic">Thinking</span>
+                <span className="text-[12.5px] font-medium text-text-sub italic">
+                  {statusText || 'Thinking'}
+                </span>
                 <div className="flex items-center gap-1 h-3.5">
                   {[0, 1, 2].map(j => (
                     <div 

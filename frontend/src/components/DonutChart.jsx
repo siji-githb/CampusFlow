@@ -8,6 +8,9 @@ export default function DonutChart({ data, total, colors, hideLegend = false }) 
   const r = (size - strokeWidth) / 2
   const circ = 2 * Math.PI * r
   
+  const sumCounts = data.reduce((sum, d) => sum + (d.count || 0), 0)
+  const chartTotal = total > 0 ? total : sumCounts
+  
   let currentOffset = 0
   
   return (
@@ -16,7 +19,7 @@ export default function DonutChart({ data, total, colors, hideLegend = false }) 
         <svg width={size} height={size} className="-rotate-90 drop-shadow-sm">
           <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="#EAE7E2" strokeWidth={strokeWidth} />
           {data.map((tx, i) => {
-            const pct = total > 0 ? tx.count / total : 0
+            const pct = chartTotal > 0 ? tx.count / chartTotal : 0
             const dash = pct * circ
             const offset = currentOffset
             currentOffset += dash
@@ -43,12 +46,12 @@ export default function DonutChart({ data, total, colors, hideLegend = false }) 
             )
           })}
         </svg>
-        <div className="absolute inset-0 flex flex-col items-center justify-center text-center pointer-events-none transition-all duration-300">
-          <div className="text-fluid-14 font-semibold text-text-main transition-colors">
-            {hovered !== null ? data[hovered].name : 'Total'}
+        <div className="absolute inset-0 flex flex-col items-center justify-center text-center pointer-events-none transition-all duration-300 px-3">
+          <div className="text-fluid-12 font-semibold text-text-muted transition-colors max-w-30 truncate leading-tight" title={hovered !== null ? data[hovered]?.name : 'Total'}>
+            {hovered !== null ? (data[hovered]?.name.match(/\(([^)]+)\)/)?.[1] || data[hovered]?.name) : 'Total'}
           </div>
           <div className="text-fluid-32 font-bold text-text-main leading-tight transition-all">
-            {hovered !== null ? data[hovered].count : total}
+            {hovered !== null ? data[hovered]?.count : chartTotal}
           </div>
         </div>
       </div>

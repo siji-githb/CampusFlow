@@ -9,7 +9,7 @@ import {
   AlertTriangle, Inbox, Check, X as XIcon, ChevronLeft, ChevronRight, ChevronDown, Filter, Calendar, 
   FolderOpen, CheckCircle, Clock, PieChart, Activity, Archive, Info, Eye, CheckCircle2,
   CalendarCheck, ShieldCheck, Users, Mail, FileText, Ticket, ExternalLink, ClipboardList,
-  Search, RotateCcw, Ban, StickyNote
+  Search, RotateCcw, Ban, StickyNote, RefreshCw
 } from 'lucide-react'
 import CustomDatePicker from '../../components/common/CustomDatePicker'
 import { getPhilippineHoliday } from '../../utils/philippineHolidays'
@@ -317,14 +317,15 @@ const RescheduleModal = ({ appt, onClose, onConfirm }) => {
 
   return createPortal((
     <div className="fixed inset-0 z-99999 flex items-center justify-center p-4 sm:p-6 overflow-y-auto animate-fade-in" onClick={onClose}>
-      <div className="fixed inset-0 bg-black/60 transition-opacity animate-fade-in" />
+      <div className="fixed inset-0 bg-black/50 transition-opacity animate-fade-in" />
       
       {/* Main Modal */}
       {!showConfirm ? (
-        <div className="animate-fade-up relative my-auto w-full max-w-xl bg-white rounded-3xl p-6 sm:p-8 shadow-[0_25px_70px_rgba(0,0,0,0.18)] border border-border z-10 custom-scrollbar max-h-[90vh] overflow-y-auto font-sans" onClick={e => e.stopPropagation()}>
+        <div className="animate-fade-up relative my-auto w-full max-w-xl bg-white rounded-3xl p-6 sm:p-8 shadow-[0_25px_70px_rgba(0,0,0,0.18)] border border-border z-10 custom-scrollbar max-h-[90vh] overflow-y-auto font-sans overflow-hidden" onClick={e => e.stopPropagation()}>
+          <div className="absolute top-0 left-0 right-0 h-1.5 bg-linear-to-r from-maroon via-maroon-dark to-gold" />
           
           {/* Header */}
-          <div className="flex items-start justify-between mb-5 pb-4 border-b border-border">
+          <div className="flex items-start justify-between mb-5 pb-4 border-b border-border pt-1">
             <div>
               <div className="flex items-center gap-2 mb-1.5">
                 <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-maroon-light text-maroon text-fluid-11 font-extrabold uppercase tracking-wider border border-maroon-border">
@@ -340,10 +341,10 @@ const RescheduleModal = ({ appt, onClose, onConfirm }) => {
             </div>
             <button 
               onClick={onClose} 
-              className="w-9 h-9 rounded-full bg-surface text-text-muted hover:text-text-main hover:bg-border/80 transition-all flex items-center justify-center border border-border cursor-pointer shadow-xs"
+              className="w-10 h-10 rounded-full bg-surface text-text-muted hover:bg-border/80 hover:text-text-main transition-all flex items-center justify-center border border-border cursor-pointer shrink-0 shadow-xs hover:scale-105 active:scale-95"
               title="Close"
             >
-              <XIcon size={17} />
+              <XIcon size={18} />
             </button>
           </div>
 
@@ -492,7 +493,8 @@ const RescheduleModal = ({ appt, onClose, onConfirm }) => {
         </div>
       ) : (
         /* Confirmation Modal */
-        <div className="animate-fade-up relative w-full max-w-md bg-white rounded-3xl p-7 sm:p-8 shadow-[0_25px_70px_rgba(0,0,0,0.18)] border border-border z-10 font-sans text-center">
+        <div className="animate-fade-up relative w-full max-w-md bg-white rounded-3xl p-7 sm:p-8 shadow-[0_25px_70px_rgba(0,0,0,0.18)] border border-border z-10 font-sans text-center overflow-hidden">
+          <div className="absolute top-0 left-0 right-0 h-1.5 bg-linear-to-r from-maroon via-maroon-dark to-gold" />
           <div className="w-14 h-14 rounded-2xl bg-maroon-light text-maroon flex items-center justify-center mx-auto mb-4 border border-maroon-border shadow-xs">
             <CalendarCheck size={26} />
           </div>
@@ -516,7 +518,7 @@ const RescheduleModal = ({ appt, onClose, onConfirm }) => {
             <div className="flex justify-between items-center text-fluid-13">
               <span className="text-maroon font-bold uppercase tracking-wider">New Schedule:</span>
               <span className="text-maroon font-extrabold">
-        {newFormattedDate} • {format12Hour(time)}
+                {newFormattedDate} • {format12Hour(time)}
               </span>
             </div>
           </div>
@@ -525,14 +527,14 @@ const RescheduleModal = ({ appt, onClose, onConfirm }) => {
             <button 
               onClick={() => setShowConfirm(false)} 
               disabled={saving} 
-              className={`py-2.5 px-5 rounded-xl border border-border bg-white text-text-main font-sans font-bold text-fluid-13 flex-1 ${saving ? 'cursor-not-allowed opacity-70' : 'cursor-pointer hover:bg-surface'}`}
+              className={`py-2.5 px-5 rounded-xl border border-border bg-surface text-text-sub hover:text-text-main font-sans font-bold text-fluid-13 flex-1 transition-all shadow-2xs ${saving ? 'cursor-not-allowed opacity-70' : 'cursor-pointer hover:bg-border/60'}`}
             >
               Back
             </button>
             <button 
               onClick={handleSave} 
               disabled={saving} 
-              className={`py-2.5 px-6 rounded-xl border-none bg-maroon text-white font-sans font-bold text-fluid-13 flex-1 shadow-sm transition-colors ${saving ? 'cursor-not-allowed opacity-70' : 'cursor-pointer hover:bg-maroon-dark'}`}
+              className={`py-2.5 px-6 rounded-xl border-none bg-maroon text-white font-sans font-bold text-fluid-13 flex-1 shadow-[0_4px_14px_rgba(123,26,42,0.18)] hover:shadow-[0_6px_18px_rgba(123,26,42,0.25)] transition-all ${saving ? 'cursor-not-allowed opacity-70' : 'cursor-pointer hover:bg-maroon-dark active:scale-98'}`}
             >
               {saving ? 'Saving...' : 'Confirm Reschedule'}
             </button>
@@ -560,57 +562,62 @@ const OverrideModal = ({ isOpen, type, selectedDate, currentNote, onClose, onSav
 
   return createPortal((
     <div className="fixed inset-0 z-99999 flex items-center justify-center p-4 sm:p-6 overflow-y-auto animate-fade-in" onClick={onClose}>
-      <div className="fixed inset-0 bg-black/60 transition-opacity" />
-      <div className="animate-fade-up relative my-auto w-full max-w-120 bg-white rounded-3xl p-8 shadow-[0_25px_70px_rgba(0,0,0,0.18)] border border-border z-10" onClick={e => e.stopPropagation()}>
+      <div className="fixed inset-0 bg-black/50 transition-opacity" />
+      <div className="animate-fade-up relative my-auto w-full max-w-120 bg-white rounded-3xl p-6 sm:p-8 shadow-[0_25px_70px_rgba(0,0,0,0.18)] border border-border z-10 overflow-hidden font-sans" onClick={e => e.stopPropagation()}>
+        <div className={`absolute top-0 left-0 right-0 h-1.5 ${isBlock ? 'bg-danger' : 'bg-linear-to-r from-maroon via-maroon-dark to-gold'}`} />
         
         {/* Header Section */}
-        <div className="flex items-start justify-between mb-6">
+        <div className="flex items-start justify-between mb-6 pt-1">
           <div className="flex items-center gap-4">
-            <div className={`w-14 h-14 rounded-2xl flex items-center justify-center shadow-inner ${isBlock ? 'bg-danger/10 text-danger' : 'bg-info/10 text-info'}`}>
-              {isBlock ? <AlertTriangle size={28} strokeWidth={2.5} /> : <Info size={28} strokeWidth={2.5} />}
+            <div className={`w-14 h-14 rounded-2xl flex items-center justify-center border shadow-xs ${isBlock ? 'bg-danger-light text-danger border-danger-border' : 'bg-gold-light text-gold border-gold-border'}`}>
+              {isBlock ? <AlertTriangle size={26} strokeWidth={2.4} /> : <Info size={26} strokeWidth={2.4} />}
             </div>
             <div>
-              <h3 className="font-serif text-fluid-26 font-bold text-text-main m-0 leading-tight">{title}</h3>
-              <p className="text-fluid-14 font-medium text-text-muted mt-1 flex items-center gap-2">
-                <Calendar size={14} /> {formattedDate}
+              <h3 className="font-serif text-fluid-22 font-bold text-text-main m-0 leading-tight">{title}</h3>
+              <p className="text-fluid-13 font-medium text-text-muted mt-1 flex items-center gap-2">
+                <Calendar size={14} className={isBlock ? 'text-danger' : 'text-gold'} /> {formattedDate}
               </p>
             </div>
           </div>
-          <button onClick={onClose} className="text-text-muted hover:text-text-main transition-colors p-1 cursor-pointer bg-transparent border-none">
-            <XIcon size={20} />
+          <button 
+            onClick={onClose} 
+            className="w-10 h-10 rounded-full bg-surface text-text-muted hover:bg-border/80 hover:text-text-main transition-all flex items-center justify-center border border-border cursor-pointer shrink-0 shadow-xs hover:scale-105 active:scale-95"
+            title="Close"
+          >
+            <XIcon size={18} />
           </button>
         </div>
 
-        <p className="text-fluid-14 text-text-sub m-0 mb-8 leading-relaxed bg-surface/50 p-4 rounded-xl border border-border/50">
+        <p className="text-fluid-13 text-text-sub m-0 mb-6 leading-relaxed bg-surface/60 p-4 rounded-xl border border-border">
           {desc}
         </p>
         
         {/* Input Section */}
-        <div className="mb-8">
-          <label className="block text-fluid-13 font-extrabold text-text-muted uppercase tracking-wider mb-3">
+        <div className="mb-6">
+          <label className="block text-fluid-11 font-extrabold text-text-muted uppercase tracking-wider mb-2">
             {isBlock ? 'Reason (Required)' : 'Notice Note (Required)'}
           </label>
           <textarea 
             value={note} 
             onChange={e => setNote(e.target.value)} 
             placeholder={isBlock ? "e.g., School Events, System Maintenance" : "e.g., Registrar office available for half-day only"}
-            className="w-full p-4 rounded-2xl border-[1.5px] border-border font-sans text-fluid-15 outline-none text-text-main min-h-30 resize-y focus:border-maroon/50 focus:ring-4 focus:ring-maroon/5 transition-all shadow-inner bg-off-white/50"
+            className="w-full p-3.5 rounded-xl border border-border font-sans text-fluid-13 outline-none text-text-main min-h-24 resize-y focus:border-maroon focus:ring-4 focus:ring-maroon/5 transition-all shadow-xs bg-off-white/60"
           />
         </div>
 
         {/* Footer Buttons */}
-        <div className="flex gap-4 justify-end">
+        <div className="flex gap-3 justify-end pt-3 border-t border-border">
           <button 
             onClick={onClose} 
             disabled={saving} 
-            className="py-3 px-6 rounded-xl border-[1.5px] border-border bg-white text-text-main cursor-pointer font-sans font-bold text-fluid-14 hover:bg-surface hover:text-text-main transition-all duration-200"
+            className="py-2.5 px-5 rounded-xl border border-border bg-surface text-text-sub hover:text-text-main hover:bg-border/60 text-fluid-13 font-bold transition-all cursor-pointer shadow-2xs active:scale-[0.98]"
           >
             Cancel
           </button>
           <button 
             onClick={() => onSave(note)} 
             disabled={saving || !note.trim()} 
-            className={`py-3 px-8 rounded-xl border-none text-white font-sans font-bold text-fluid-14 shadow-[0_4px_12px_rgba(0,0,0,0.1)] transition-all duration-200 ${isBlock ? 'bg-danger hover:bg-danger-hover hover:shadow-[0_6px_16px_rgba(220,38,38,0.2)]' : 'bg-maroon hover:bg-maroon-hover hover:shadow-[0_6px_16px_rgba(123,26,42,0.2)]'} ${(!note.trim() || saving) ? 'cursor-not-allowed opacity-60 grayscale-[0.3] hover:shadow-[0_4px_12px_rgba(0,0,0,0.1)]' : 'cursor-pointer hover:-translate-y-0.5'}`}
+            className={`py-2.5 px-6 rounded-xl border-none text-white font-sans font-bold text-fluid-13 shadow-xs transition-all active:scale-[0.98] ${isBlock ? 'bg-danger hover:bg-danger-hover shadow-[0_4px_14px_rgba(220,38,38,0.2)]' : 'bg-maroon hover:bg-maroon-dark shadow-[0_4px_14px_rgba(123,26,42,0.2)]'} ${(!note.trim() || saving) ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}`}
           >
             {saving ? 'Processing...' : 'Confirm Action'}
           </button>
@@ -817,24 +824,33 @@ export default function AdminAppointmentsPage() {
       )}
 
       {/* ── KPI Metric Cards ── */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-7">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4 mb-5 sm:mb-7">
         {[
-          { label: "Today's Appts.", value: stats?.today?.total ?? 0, icon: <Calendar size={18} />, bg: 'bg-maroon-light', fg: 'text-maroon', sub: 'Total scheduled today' },
-          { label: 'Confirmed', value: stats?.today?.confirmed ?? 0, icon: <CalendarCheck size={18} />, bg: 'bg-blue-light', fg: 'text-blue', sub: 'Awaiting student arrival' },
-          { label: 'Ready for Pickup', value: selectedDaySummary.in_progress, icon: <Clock size={18} />, bg: 'bg-success-light', fg: 'text-success', sub: 'Ready at counter window' },
-          { label: 'Completed Today', value: stats?.today?.completed ?? 0, icon: <CheckCircle2 size={18} />, bg: 'bg-gold-light', fg: 'text-gold', sub: 'Successfully processed' },
+          { label: "Today's Appts.", value: stats?.today?.total ?? 0, icon: <Calendar size={18} strokeWidth={2.2} />, bg: 'bg-blue-light', fg: 'text-blue', border: 'border-blue-border/60', sub: 'Total scheduled today', subColor: 'text-blue' },
+          { label: 'Confirmed', value: stats?.today?.confirmed ?? 0, icon: <CalendarCheck size={18} strokeWidth={2.2} />, bg: 'bg-maroon-light', fg: 'text-maroon', border: 'border-maroon-border/60', sub: 'Awaiting student arrival', subColor: 'text-maroon' },
+          { label: 'Ready for Pickup', value: selectedDaySummary.in_progress, icon: <Clock size={18} strokeWidth={2.2} />, bg: 'bg-gold-light', fg: 'text-gold', border: 'border-gold-border/60', sub: 'Ready at counter window', subColor: 'text-gold' },
+          { label: 'Completed Today', value: stats?.today?.completed ?? 0, icon: <CheckCircle2 size={18} strokeWidth={2.2} />, bg: 'bg-success-light', fg: 'text-success', border: 'border-success-border/60', sub: 'Successfully processed', subColor: 'text-success' },
         ].map((c, i) => (
-          <div key={i} className="animate-fade-up rounded-2xl p-5 bg-white border border-border shadow-[0_2px_8px_rgba(0,0,0,0.04)] relative overflow-hidden" style={{ animationDelay: `${i * 0.08}s` }}>
-            <div className="flex items-start justify-between mb-3">
-              <span className="text-fluid-10-5 font-extrabold text-text-muted uppercase tracking-[0.08em]">{c.label}</span>
-              <div className={`w-8.5 h-8.5 rounded-xl flex items-center justify-center ${c.bg} ${c.fg} shadow-2xs`}>
+          <div 
+            key={i} 
+            className="animate-fade-up bg-white rounded-xl sm:rounded-2xl px-3.5 py-3 sm:px-5 sm:py-3.5 border border-border shadow-[0_1px_4px_rgba(0,0,0,0.02)] transition-all flex flex-col justify-between min-h-25.5 sm:min-h-28 gap-1.5 h-full" 
+            style={{ animationDelay: `${i * 0.08}s` }}
+          >
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-fluid-10 sm:text-fluid-11 font-bold text-text-muted uppercase tracking-[0.08em] truncate leading-tight">{c.label}</span>
+              <div className={`w-7 h-7 sm:w-8.5 sm:h-8.5 rounded-lg sm:rounded-xl flex items-center justify-center border ${c.border} ${c.bg} ${c.fg} shrink-0`}>
                 {c.icon}
               </div>
             </div>
-            <div className="font-sans text-fluid-28 font-extrabold text-text-main leading-none">
-              {loading ? <div className="animate-pulse w-14 h-8 bg-border rounded-lg" /> : c.value}
+            <div>
+              <div className="font-serif text-fluid-20 sm:text-fluid-26 font-extrabold text-text-main leading-tight tracking-tight m-0">
+                {loading ? <div className="animate-pulse w-14 h-6 sm:h-7 bg-border rounded-md" /> : c.value}
+              </div>
+              <div className={`text-fluid-10 sm:text-fluid-11 font-medium mt-0.5 flex items-center gap-1.5 truncate ${c.subColor}`}>
+                <span className="w-1.5 h-1.5 rounded-full bg-current inline-block shrink-0" />
+                <span>{c.sub}</span>
+              </div>
             </div>
-            <div className="text-fluid-11-5 font-medium text-text-muted mt-2">{c.sub}</div>
           </div>
         ))}
       </div>
@@ -1005,8 +1021,109 @@ export default function AdminAppointmentsPage() {
             </div>
           </div>
 
-          {/* Schedule Table */}
-          <div className="overflow-x-auto">
+          {/* ── Mobile Appointment Cards (< lg screens) ── */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 lg:hidden p-3.5 sm:p-4 bg-surface/30">
+            {apptLoading ? (
+              <div className="col-span-full py-12 text-center text-text-muted">
+                <RefreshCw className="animate-spin mx-auto mb-2 text-maroon" size={24} />
+                <p className="text-fluid-13 m-0 font-medium">Loading schedule...</p>
+              </div>
+            ) : paginated.length === 0 ? (
+              <div className="col-span-full py-12 text-center">
+                <div className="w-12 h-12 bg-surface rounded-full flex items-center justify-center mx-auto mb-2.5 border border-border text-text-muted">
+                  <Calendar size={22} />
+                </div>
+                <h4 className="text-fluid-14 font-bold text-text-main m-0 mb-1">No Bookings Found</h4>
+                <p className="text-fluid-12 text-text-sub m-0 max-w-xs mx-auto">
+                  {searchQuery ? 'No appointments match your search.' : 'No student appointments booked for this day.'}
+                </p>
+              </div>
+            ) : (
+              paginated.map((appt) => {
+                const effStatus = getEffectiveStatus(appt)
+                const isPriority = appt.priority_class && appt.priority_class !== 'regular'
+                const student = appt.users || {}
+                const name = `${student.first_name || ''} ${student.last_name || ''}`.trim() || 'Unknown Student'
+                const txName = appt.transaction_types?.name || appt.transaction_type?.name || 'Standard Transaction'
+
+                return (
+                  <div
+                    key={appt.id}
+                    className="bg-white rounded-2xl border border-border p-4 shadow-xs flex flex-col justify-between gap-3 hover:border-maroon/30 transition-all"
+                  >
+                    {/* Card Header: Time slot, Status, Priority */}
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="font-serif text-fluid-16 font-extrabold text-maroon flex items-center gap-1.5">
+                          <Clock size={14} className="text-maroon shrink-0" />
+                          {formatTime(appt.time_slot)}
+                        </span>
+                        {isPriority && (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-maroon-light text-maroon text-[10px] font-extrabold uppercase border border-maroon-border/60">
+                            <ShieldCheck size={11} className="shrink-0" />
+                            <span>{appt.priority_class}</span>
+                          </span>
+                        )}
+                      </div>
+                      <StatusBadge status={effStatus} />
+                    </div>
+
+                    {/* Student Info */}
+                    <div className="flex items-center gap-3 pt-1">
+                      <Av name={name} size={36} />
+                      <div className="min-w-0 flex-1">
+                        <div className="text-fluid-13-5 font-bold text-text-main truncate">
+                          {name}
+                        </div>
+                        {student.student_id && (
+                          <div className="text-fluid-11 font-mono text-text-muted">
+                            ID: {student.student_id}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Transaction */}
+                    <div className="pt-2 border-t border-border/70">
+                      {appt.selected_documents && appt.selected_documents.length > 1 ? (
+                        <div>
+                          <div className="flex flex-wrap gap-1 mb-1">
+                            {appt.selected_documents.map((d, idx) => (
+                              <span key={d.id || idx} className="text-[11px] font-bold text-maroon bg-maroon-light py-0.5 px-2 rounded-md border border-maroon-border/40">
+                                {d.name}
+                              </span>
+                            ))}
+                          </div>
+                          <span className="text-[11px] text-text-muted font-medium">
+                            {appt.selected_documents.length} requested documents
+                          </span>
+                        </div>
+                      ) : (
+                        <div className="text-fluid-12-5 font-semibold text-text-main leading-snug">
+                          {txName}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Card Actions */}
+                    <div className="pt-2 border-t border-border/70 flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setViewDetailsModal(appt)}
+                        className="flex-1 py-2 px-3 rounded-xl border border-border bg-white text-text-main text-fluid-12 font-bold cursor-pointer hover:bg-surface active:scale-[0.98] transition-all shadow-2xs flex items-center justify-center gap-1.5"
+                      >
+                        <Eye size={13} />
+                        <span>Details</span>
+                      </button>
+                    </div>
+                  </div>
+                )
+              })
+            )}
+          </div>
+
+          {/* Schedule Table (>= lg screens) */}
+          <div className="hidden lg:block overflow-x-auto">
             <table className="w-full text-left border-collapse table-fixed min-w-220">
               <thead>
                 <tr className="bg-white border-b border-border">
@@ -1348,12 +1465,13 @@ export default function AdminAppointmentsPage() {
 
         return (
           <div className="fixed inset-0 z-1000 flex items-center justify-center p-4 sm:p-6 md:p-8">
-            <div className="fixed inset-0 bg-black/60 transition-opacity animate-fade-in" onClick={() => setViewDetailsModal(null)} />
+            <div className="fixed inset-0 bg-black/50 transition-opacity animate-fade-in" onClick={() => setViewDetailsModal(null)} />
             
-            <div className="animate-fade-up relative w-full max-w-4xl bg-white text-text-main rounded-3xl p-6 sm:p-8 md:p-10 max-h-[90vh] overflow-y-auto shadow-[0_25px_80px_rgba(0,0,0,0.18)] border border-border z-10 custom-scrollbar font-sans">
+            <div className="animate-fade-up relative w-full max-w-4xl bg-white text-text-main rounded-3xl p-6 sm:p-8 md:p-10 max-h-[90vh] overflow-y-auto shadow-[0_25px_80px_rgba(0,0,0,0.18)] border border-border z-10 custom-scrollbar font-sans overflow-hidden">
+              <div className="absolute top-0 left-0 right-0 h-1.5 bg-linear-to-r from-maroon via-maroon-dark to-gold" />
               
               {/* Header */}
-              <div className="flex justify-between items-start mb-6 pb-5 border-b border-border gap-4">
+              <div className="flex justify-between items-start mb-6 pb-5 border-b border-border gap-4 pt-1">
                 <div>
                   <div className="flex items-center gap-2 mb-2 flex-wrap">
                     <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-gold-light text-gold text-fluid-11 font-extrabold uppercase tracking-wider border border-gold-border">

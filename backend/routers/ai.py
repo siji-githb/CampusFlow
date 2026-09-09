@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, Request
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
-from services.ai_service import chat, clear_session, get_or_create_session, get_ai_providers
+from services.ai_service import chat, chat_stream, clear_session, get_or_create_session, get_ai_providers, clean_and_sanitize_response
 from config import get_settings
 from deps import get_current_user
 from rate_limit import limiter
@@ -19,10 +20,25 @@ def chat_endpoint(request: Request, data: ChatRequest, user=Depends(get_current_
     return chat(user.id, data.message)
 
 
+@router.post("/chat/stream")
+@limiter.limit("10/day;5/minute")
+def chat_stream_endpoint(request: Request, data: ChatRequest, user=Depends(get_current_user)):
+    return StreamingResponse(
+        chat_stream(user.id, data.message),
+        media_type="text/event-stream"
+    )
+
+
 @router.get("/history")
 def get_history(user=Depends(get_current_user)):
     session = get_or_create_session(user.id)
-    return {"messages": session.get("messages", [])}
+    raw_msgs = session.get("messages", [])
+    sanitized = [
+        {**m, "content": clean_and_sanitize_response(m.get("content", ""))}
+        for m in raw_msgs
+        if isinstance(m, dict)
+    ]
+    return {"messages": sanitized}
 
 
 @router.delete("/chat/clear")

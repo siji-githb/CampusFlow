@@ -369,16 +369,25 @@ export default function LiveQueuePage({ onNavigate }) {
 
   // ── Derived stats ──
   const { done, waiting, servingCounter, servingProcessing } = useMemo(() => {
+    const validQueue = queue.filter(q => 
+      q.ticket.status !== 'cancelled' && 
+      q.ticket.status !== 'no_show' && 
+      q.ticket.appointments?.status !== 'cancelled'
+    )
     const done = queue.filter(q => q.ticket.status === 'completed')
-    const waiting = queue.filter(q => (q.ticket.status === 'pending' || q.ticket.status === 'waiting') && getRequiresPresence(q.steps))
-    const servingCounter = queue.filter(q => q.ticket.status === 'in_progress' && getRequiresPresence(q.steps))
-    const servingProcessing = queue.filter(q => q.ticket.status !== 'completed' && !getRequiresPresence(q.steps))
+    const waiting = validQueue.filter(q => (q.ticket.status === 'pending' || q.ticket.status === 'waiting') && getRequiresPresence(q.steps))
+    const servingCounter = validQueue.filter(q => q.ticket.status === 'in_progress' && getRequiresPresence(q.steps))
+    const servingProcessing = validQueue.filter(q => q.ticket.status !== 'completed' && !getRequiresPresence(q.steps))
     return { done, waiting, servingCounter, servingProcessing }
   }, [queue])
 
   // ── Filtered & searched queue ──
   const displayed = useMemo(() => {
     return queue.filter(({ ticket }) => {
+      // Exclude cancelled or no-show tickets from the active live queue
+      if (ticket.status === 'cancelled' || ticket.status === 'no_show' || ticket.appointments?.status === 'cancelled') {
+        return false
+      }
       const prioOk = filters.priority === 'all'
         || (filters.priority === 'high' && (ticket.appointments?.priority_class === 'alumni' || ticket.appointments?.priority_class === 'pwd' || ticket.appointments?.priority_class === 'pregnant'))
         || (filters.priority === 'regular' && ticket.appointments?.priority_class === 'regular')
@@ -390,7 +399,12 @@ export default function LiveQueuePage({ onNavigate }) {
 
   // ── Split into "At the Counter" (physical line) vs "Processing" (back office) ──
   const { atCounter, processingQueue } = useMemo(() => {
-    const nonCompleted = displayed.filter(({ ticket }) => ticket.status !== 'completed')
+    const nonCompleted = displayed.filter(({ ticket }) => 
+      ticket.status !== 'completed' && 
+      ticket.status !== 'cancelled' && 
+      ticket.status !== 'no_show' && 
+      ticket.appointments?.status !== 'cancelled'
+    )
     const atCounter = nonCompleted.filter(({ steps }) => getRequiresPresence(steps))
     const processingQueue = nonCompleted.filter(({ steps }) => !getRequiresPresence(steps))
     return { atCounter, processingQueue }

@@ -60,13 +60,17 @@ const PriorityBadge = ({ label }) => {
 function EditRoleModal({ user, onSave, onClose, saving }) {
   const [role, setRole] = useState(user.role)
   return createPortal((
-    <div className="fixed inset-0 z-99999 flex items-center justify-center p-4 sm:p-6 overflow-y-auto bg-black/60 animate-fade-in" onClick={onClose}>
+    <div className="fixed inset-0 z-99999 flex items-center justify-center p-4 sm:p-6 overflow-y-auto" onClick={onClose}>
+      <div className="fixed inset-0 bg-black/50 transition-opacity animate-fade-in" />
       <div 
-        className="animate-fade-up relative my-auto w-full max-w-105 bg-white text-text-main rounded-3xl p-6 sm:p-7 shadow-[0_25px_80px_rgba(0,0,0,0.25)] border border-border"
+        className="animate-fade-up relative my-auto w-full max-w-105 bg-white text-text-main rounded-3xl p-6 sm:p-8 shadow-[0_25px_80px_rgba(0,0,0,0.18)] border border-border z-10 font-sans overflow-hidden"
         onClick={e => e.stopPropagation()}
       >
+        {/* Top decorative accent bar */}
+        <div className="absolute top-0 left-0 right-0 h-1.5 bg-linear-to-r from-maroon via-maroon-dark to-gold" />
+
         {/* Header */}
-        <div className="flex items-center justify-between gap-3.5 mb-6">
+        <div className="flex items-center justify-between gap-3.5 mb-6 pt-1">
           <div className="flex items-center gap-3.5 min-w-0">
             <Avatar name={`${user.first_name} ${user.last_name}`} role={user.role} size={46} />
             <div className="min-w-0">
@@ -77,14 +81,14 @@ function EditRoleModal({ user, onSave, onClose, saving }) {
           <button 
             type="button"
             onClick={onClose}
-            className="w-8 h-8 rounded-full flex items-center justify-center text-text-muted hover:text-text-main hover:bg-slate-100 transition-colors cursor-pointer border-none bg-transparent shrink-0 -mr-1 -mt-1"
-            aria-label="Close modal"
+            className="w-10 h-10 rounded-full bg-surface text-text-muted hover:bg-border/80 hover:text-text-main transition-all flex items-center justify-center border border-border cursor-pointer shrink-0 shadow-xs hover:scale-105 active:scale-95"
+            title="Close"
           >
             <X size={18} />
           </button>
         </div>
 
-        <label className="text-fluid-11 font-bold text-text-muted uppercase tracking-[0.08em] block mb-2.5">Assign Role</label>
+        <label className="text-fluid-11 font-extrabold text-text-muted uppercase tracking-wider block mb-2.5">Assign Role</label>
         <div className="grid grid-cols-3 gap-2.5 mb-6">
           {['student', 'staff', 'admin'].map(r => {
             const cfg = ROLE_CFG[r]
@@ -105,11 +109,11 @@ function EditRoleModal({ user, onSave, onClose, saving }) {
           })}
         </div>
 
-        <div className="flex gap-2.5">
+        <div className="flex gap-2.5 pt-3 border-t border-border">
           <button 
             type="button"
             onClick={onClose} 
-            className="flex-1 py-3 px-4 rounded-xl border border-border bg-white text-text-main text-fluid-13-5 font-semibold cursor-pointer font-sans hover:bg-surface transition-colors shadow-2xs"
+            className="flex-1 py-2.5 px-4 rounded-xl border border-border bg-surface text-text-sub hover:text-text-main hover:bg-border/60 text-fluid-13 font-bold transition-all cursor-pointer shadow-2xs active:scale-[0.98]"
           >
             Cancel
           </button>
@@ -117,7 +121,7 @@ function EditRoleModal({ user, onSave, onClose, saving }) {
             type="button"
             onClick={() => onSave(user.id, role)} 
             disabled={saving || role === user.role}
-            className={`flex-2 py-3 px-4 rounded-xl border-none text-fluid-13-5 font-bold font-sans transition-colors shadow-2xs ${saving || role === user.role ? 'bg-border text-text-muted cursor-not-allowed' : 'bg-maroon text-white cursor-pointer hover:bg-maroon-dark'}`}
+            className={`flex-2 py-2.5 px-4 rounded-xl border-none text-fluid-13 font-bold font-sans transition-all shadow-[0_4px_14px_rgba(123,26,42,0.18)] active:scale-[0.98] ${saving || role === user.role ? 'bg-border text-text-muted cursor-not-allowed shadow-none' : 'bg-maroon text-white cursor-pointer hover:bg-maroon-dark hover:shadow-[0_6px_18px_rgba(123,26,42,0.25)]'}`}
           >
             {saving ? 'Saving…' : 'Save Changes'}
           </button>
@@ -250,22 +254,32 @@ export default function AdminUserManagementPage() {
       </div>
 
       {/* ── Stat Cards ── */}
-      <div className="grid grid-cols-4 gap-4 mb-7">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4 mb-5 sm:mb-7">
         {[
-          { label: 'All Users',        value: statsLoading ? '—' : counts.all.toLocaleString(),     icon: <Users size={18} />, bg: 'bg-maroon-light', fg: 'text-maroon' },
-          { label: 'Active Students',  value: statsLoading ? '—' : counts.student.toLocaleString(), icon: <GraduationCap size={18} />, bg: 'bg-surface', fg: 'text-text-sub' },
-          { label: 'Registrar Staff',  value: statsLoading ? '—' : counts.staff.toLocaleString(),   icon: <Briefcase size={18} />, bg: 'bg-gold-light', fg: 'text-gold' },
-          { label: 'Admin Accounts',   value: statsLoading ? '—' : counts.admin.toLocaleString(),   icon: <Shield size={18} />, bg: 'bg-maroon-light', fg: 'text-maroon' },
+          { label: 'All Users',        value: statsLoading ? '—' : counts.all.toLocaleString(),     icon: <Users size={18} strokeWidth={2.2} />, bg: 'bg-maroon-light', fg: 'text-maroon', border: 'border-maroon-border/60', sub: 'Total registered accounts', subColor: 'text-maroon' },
+          { label: 'Active Students',  value: statsLoading ? '—' : counts.student.toLocaleString(), icon: <GraduationCap size={18} strokeWidth={2.2} />, bg: 'bg-blue-light', fg: 'text-blue', border: 'border-blue-border/60', sub: 'Enrolled students', subColor: 'text-blue' },
+          { label: 'Registrar Staff',  value: statsLoading ? '—' : counts.staff.toLocaleString(),   icon: <Briefcase size={18} strokeWidth={2.2} />, bg: 'bg-gold-light', fg: 'text-gold', border: 'border-gold-border/60', sub: 'Counter & office staff', subColor: 'text-gold' },
+          { label: 'Admin Accounts',   value: statsLoading ? '—' : counts.admin.toLocaleString(),   icon: <Shield size={18} strokeWidth={2.2} />, bg: 'bg-maroon-light', fg: 'text-maroon', border: 'border-maroon-border/60', sub: 'System administrators', subColor: 'text-maroon' },
         ].map((c, i) => (
-          <div key={i} className="animate-fade-up rounded-2xl p-[18px_20px] bg-white border border-border shadow-[0_1px_4px_rgba(0,0,0,0.04)] relative overflow-hidden" style={{ animationDelay: `${0.1 * (i + 1)}s` }}>
-            <div className="flex items-start justify-between mb-2">
-              <div className="text-fluid-10 font-extrabold uppercase tracking-[0.08em] text-text-muted mt-1">{c.label}</div>
-              <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${c.bg} ${c.fg}`}>
+          <div 
+            key={i} 
+            className="animate-fade-up bg-white rounded-xl sm:rounded-2xl px-3.5 py-3 sm:px-5 sm:py-3.5 border border-border shadow-[0_1px_4px_rgba(0,0,0,0.02)] transition-all flex flex-col justify-between min-h-25.5 sm:min-h-28 gap-1.5 h-full" 
+            style={{ animationDelay: `${0.08 * (i + 1)}s` }}
+          >
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-fluid-10 sm:text-fluid-11 font-bold text-text-muted uppercase tracking-[0.08em] truncate leading-tight">{c.label}</span>
+              <div className={`w-7 h-7 sm:w-8.5 sm:h-8.5 rounded-lg sm:rounded-xl flex items-center justify-center shrink-0 border ${c.border} ${c.bg} ${c.fg}`}>
                 {c.icon}
               </div>
             </div>
-            <div className="font-sans text-fluid-36 font-extrabold leading-none m-0 min-h-9 text-text-main">
-              {statsLoading ? <div className="animate-pulse w-15 h-9 rounded-lg bg-border" /> : c.value}
+            <div>
+              <div className="font-serif text-fluid-20 sm:text-fluid-26 font-extrabold text-text-main leading-tight tracking-tight m-0">
+                {statsLoading ? <div className="animate-pulse w-14 h-6 sm:h-7 bg-border rounded-md" /> : c.value}
+              </div>
+              <div className={`text-fluid-10 sm:text-fluid-11 font-medium mt-0.5 flex items-center gap-1.5 truncate ${c.subColor}`}>
+                <span className="w-1.5 h-1.5 rounded-full bg-current inline-block shrink-0" />
+                <span>{c.sub}</span>
+              </div>
             </div>
           </div>
         ))}
@@ -275,11 +289,11 @@ export default function AdminUserManagementPage() {
       <div className="animate-fade-up bg-white rounded-2xl border border-border shadow-[0_1px_4px_rgba(0,0,0,0.04)] overflow-hidden" style={{ animationDelay: '0.5s' }}>
 
         {/* Tab bar + search row */}
-        <div className="flex items-center justify-between px-5 border-b border-border flex-wrap gap-2">
+        <div className="flex items-center justify-between px-3 sm:px-5 border-b border-border flex-wrap gap-2">
           {/* Tabs */}
-          <div className="flex gap-1">
+          <div className="flex gap-1 overflow-x-auto scrollbar-none w-full sm:w-auto">
             {TABS.map(t => (
-              <button key={t.key} onClick={() => { setActiveTab(t.key); setPage(1) }} className={`py-3.5 px-4 bg-transparent border-none border-b-2 text-fluid-13 cursor-pointer font-sans transition-colors duration-150 whitespace-nowrap flex items-center gap-1.5 ${activeTab === t.key ? 'border-maroon text-maroon font-bold' : 'border-transparent text-text-muted font-normal hover:text-maroon/80'}`}>
+              <button key={t.key} onClick={() => { setActiveTab(t.key); setPage(1) }} className={`py-3.5 px-3 sm:px-4 bg-transparent border-none border-b-2 text-fluid-13 cursor-pointer font-sans transition-colors duration-150 whitespace-nowrap flex items-center gap-1.5 shrink-0 ${activeTab === t.key ? 'border-maroon text-maroon font-bold' : 'border-transparent text-text-muted font-normal hover:text-maroon/80'}`}>
                 {t.label}
                 <span className={`text-fluid-11 font-bold py-px px-1.75 rounded-full ${activeTab === t.key ? 'bg-maroon-light text-maroon' : 'bg-surface text-text-muted'}`}>{counts[t.key]}</span>
               </button>
@@ -287,12 +301,12 @@ export default function AdminUserManagementPage() {
           </div>
 
           {/* Search + Export */}
-          <div className="flex items-center gap-2 py-2.5">
-            <div className="relative">
+          <div className="flex items-center gap-2 py-2.5 w-full sm:w-auto">
+            <div className="relative flex-1 sm:flex-initial">
               <input
                 value={search} onChange={e => { setSearch(e.target.value); setPage(1) }}
                 placeholder="Search by name, ID, email…"
-                className="py-2 pr-3.5 pl-8.5 rounded-[9px] border border-border bg-off-white text-fluid-13 text-text-main outline-none w-55 font-sans focus:border-maroon transition-colors"
+                className="py-2 pr-3.5 pl-8.5 rounded-[9px] border border-border bg-off-white text-fluid-13 text-text-main outline-none w-full sm:w-55 font-sans focus:border-maroon transition-colors"
               />
               <span className="absolute left-2.5 top-1/2 -translate-y-1/2 flex items-center text-text-muted"><Search size={14} /></span>
               {search && (

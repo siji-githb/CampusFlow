@@ -87,7 +87,7 @@ export default function AdminGlobalSearch({ setActiveNav }) {
       />
 
       {isOpen && displayItems.length > 0 && (
-        <div className="absolute right-0 top-full mt-2 w-64 sm:w-72 max-w-[calc(100vw-32px)] bg-white rounded-2xl shadow-[0_12px_40px_rgba(0,0,0,0.12),0_0_0_1px_rgba(0,0,0,0.04)] overflow-hidden z-50 flex flex-col py-2 transition-all origin-top border border-slate-100">
+        <div className="absolute left-0 top-full mt-2 w-64 sm:w-72 max-w-[calc(100vw-32px)] bg-white rounded-2xl shadow-[0_12px_40px_rgba(0,0,0,0.12),0_0_0_1px_rgba(0,0,0,0.04)] overflow-hidden z-50 flex flex-col py-2 transition-all origin-top border border-slate-100">
           {displayItems.map((item, index) => {
             const Icon = item.icon;
             const isActive = index === activeIndex;

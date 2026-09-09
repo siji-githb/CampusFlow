@@ -3,6 +3,7 @@ from openai import OpenAI
 from fastapi import HTTPException
 from config import get_settings
 from datetime import date, datetime
+import time
 import json
 import re
 import logging
@@ -15,14 +16,11 @@ logger = logging.getLogger(__name__)
 # List of fallback Gemini Flash models to rotate through if primary fails.
 # Explicitly excludes any 3.5 models (e.g. gemini-3.5-flash, gemini-3.5-flash-lite).
 FALLBACK_FLASH_MODELS = [
-    "gemini-3.7-flash",
-    "gemini-3.6-flash",
-    "gemini-3-flash-preview",
-    "gemini-3.1-flash-lite",
-    "gemini-2.5-flash",
-    "gemini-2.5-flash-lite",
     "gemini-flash-latest",
     "gemini-flash-lite-latest",
+    "gemini-3.6-flash",
+    "gemini-3.7-flash",
+    "gemini-3.1-flash-lite",
 ]
 
 
@@ -79,8 +77,45 @@ def get_openai_client():
     )
 
 
+def clean_and_sanitize_response(text: str) -> str:
+    """
+    Strips raw markdown bolding and sanitizes any mentions of CRMC, Cebu Roosevelt,
+    or CampusFlow Registrar, strictly keeping only "the Registrar's Office" or "the Registrar".
+    """
+    if not text:
+        return ""
+    cleaned = text.replace("**", "").replace("__", "")
+    # Remove variants of CampusFlow Registrar and CampusFlow Registrar's Office
+    cleaned = re.sub(r'\bCampusFlow\s+Registrar(?:\'s\s+Office)?\b', "the Registrar's Office", cleaned, flags=re.IGNORECASE)
+    cleaned = re.sub(r'\bCampusFlow\s+Registrar\b', "the Registrar", cleaned, flags=re.IGNORECASE)
+    cleaned = re.sub(r'\bCampusFlow\s+Assistant\b', "AI Assistant", cleaned, flags=re.IGNORECASE)
+    # Remove variants of Cebu Roosevelt Memorial Colleges and CRMC
+    cleaned = re.sub(r'\bCebu\s+Roosevelt\s+Memorial\s+Colleges\b', "the Registrar's Office", cleaned, flags=re.IGNORECASE)
+    cleaned = re.sub(r'\bCebu\s+Roosevelt\b', "the Registrar", cleaned, flags=re.IGNORECASE)
+    cleaned = re.sub(r'\bofficial\s+CRMC\s+options\b', "available options", cleaned, flags=re.IGNORECASE)
+    cleaned = re.sub(r'\bCRMC\s+options\b', "available options", cleaned, flags=re.IGNORECASE)
+    cleaned = re.sub(r'\bCRMC\s+Registrar(?:\'s\s+Office)?\b', "the Registrar's Office", cleaned, flags=re.IGNORECASE)
+    cleaned = re.sub(r'\bCRMC\b', "the Registrar's Office", cleaned, flags=re.IGNORECASE)
+    return cleaned.strip()
+
+
+_prompt_cache = {"prompt": None, "timestamp": 0.0, "date": None}
+CACHE_TTL = 300.0  # 5 minutes in seconds
+
+
 def get_system_prompt():
-    """Build the system prompt with current transaction types and office config."""
+    """Build the system prompt with current transaction types and office config (cached 5 min)."""
+    global _prompt_cache
+    now = time.time()
+    today_date = date.today()
+
+    if (
+        _prompt_cache["prompt"] is not None
+        and (now - _prompt_cache["timestamp"]) < CACHE_TTL
+        and _prompt_cache["date"] == today_date
+    ):
+        return _prompt_cache["prompt"]
+
     admin = get_admin()
 
     try:
@@ -108,7 +143,7 @@ def get_system_prompt():
     for tt in transaction_types:
         tt_info += f"\n- {tt['name']}: requires {', '.join(tt.get('required_documents') or [])}"
 
-    return f"""You are CampusFlow Assistant, an AI scheduling helper dedicated exclusively to the Registrar's Office of Cebu Roosevelt Memorial Colleges (CRMC).
+    prompt = f"""You are the AI Assistant for the Registrar's Office.
 
 You help students with:
 1. Booking, modifying, or cancelling registrar appointments
@@ -122,11 +157,17 @@ OFFICE HOURS: {open_time} - {close_time}, Monday to Saturday
 SLOT DURATION: {config.get('slot_duration_minutes', '30')} minutes per slot
 BOOKING CUTOFF: At least {config.get('booking_cutoff_days', '1')} day(s) in advance
 
-TODAY'S DATE: {date.today().strftime('%B %d, %Y')} ({date.today().strftime('%A')})
+TODAY'S DATE: {today_date.strftime('%B %d, %Y')} ({today_date.strftime('%A')})
+
+STRICT INSTITUTION & OFFICE NAMING RULES (MANDATORY):
+- Refer to the office ONLY as "the Registrar's Office" or "the Registrar".
+- NEVER say "CampusFlow Registrar's Office", "CampusFlow Registrar", or "CampusFlow".
+- NEVER say "CRMC", "Cebu Roosevelt", "Cebu Roosevelt Memorial Colleges", or "official CRMC options".
+- Simply say "the Registrar's Office" or "available options".
 
 STRICT SYSTEM SCOPE & CLARIFICATION RULES:
-1. EXCLUSIVE REGISTRAR SCOPE: You are STRICTLY a school registrar and appointment assistant. You MUST NOT answer questions outside of CRMC registrar services, campus queue tracking, and appointment booking (for example: coding, math, general trivia, recipes, creative writing, non-school topics, or personal advice).
-   - If a student asks any question outside of registrar procedures, politely decline with: "I can only assist with CRMC Registrar services, document requirements, queue tracking, and appointment bookings. How can I help you with your registrar requests today?"
+1. EXCLUSIVE REGISTRAR SCOPE: You are STRICTLY a school registrar and appointment assistant. You MUST NOT answer questions outside of registrar services, campus queue tracking, and appointment booking (for example: coding, math, general trivia, recipes, creative writing, non-school topics, or personal advice).
+   - If a student asks any question outside of registrar procedures, politely decline with: "I can only assist with Registrar's Office services, document requirements, queue tracking, and appointment bookings. How can I help you with your registrar requests today?"
 2. ASK FOR CLARIFICATION: If a student's request is vague, unclear, or lacks necessary details (e.g. they say "I need a document", "book me", or give an ambiguous date/subject), DO NOT guess. Politely ask clarifying questions to identify the specific transaction type, required details, or preferred date.
 3. DAYS OF OPERATION: You can only book appointments from Monday to Saturday.
 4. DOCUMENT REQUIREMENTS: Students must bring ALL required physical documents (e.g., Official Receipt) on their appointment date.
@@ -136,14 +177,14 @@ STRICT SYSTEM SCOPE & CLARIFICATION RULES:
 When a student wants to book an appointment:
 1. Do NOT force the user to type exactly the transaction name. Intelligently map abbreviations (e.g., GWA, TOR, COE) to the full transaction names from the AVAILABLE TRANSACTION TYPES.
 2. IMPORTANT: If the transaction is 'GWA' or 'General Weighted Average', you MUST ask the student for their GWA Request Details (Semester: 1st Semester, 2nd Semester, Summer; Year Level: 1st Year to 4th Year; and School Year e.g. 2025-2026) before booking. Format this as 'GWA_REQUEST: [Semester] | [Year Level] | S.Y. [School Year]' and pass it to the book_appointment tool's 'notes' parameter.
-3. IMPORTANT: If the transaction is 'COE', 'Certificate of Enrollment', 'TOR', 'Transcript of Records', 'Diploma', or any document request, you MUST ask the student for their 'Purpose of Request' based on the official CRMC options:
-   - Employment
-   - Scholarship
-   - Board Exam Application
-   - Other (please specify)
+3. IMPORTANT: If the transaction is 'COE', 'Certificate of Enrollment', 'TOR', 'Transcript of Records', 'Diploma', or any document request, you MUST ask the student for their 'Purpose of Request' based on the available options:
+   • Employment
+   • Scholarship
+   • Board Exam Application
+   • Other (please specify)
    Format this as 'PURPOSE: [User Purpose]' and pass it to the book_appointment tool's 'notes' parameter.
 4. Ask for their preferred date (must be Monday to Saturday, at least 1 day in advance).
-5. Call the check_availability tool to see open slots for that date. The slots will be returned in 12-hour AM/PM format (e.g. 01:00 PM). Present them clearly to the user.
+5. Call the check_availability tool to see open slots for that date. The slots will be returned in 12-hour AM/PM format (e.g. 01:00 PM). Present them clearly to the user using clean bullet points.
 6. Once they choose a date and time slot, call the book_appointment tool (pass the time slot as HH:MM in 24-hour format or whatever the user selected).
 7. CRITICAL: NEVER tell the user an appointment is booked UNLESS you have successfully called the book_appointment tool and it returned a success message.
 
@@ -159,9 +200,42 @@ When a student wants to cancel an appointment:
 1. Ask them to confirm.
 2. Call the cancel_appointment tool (note: they cannot cancel if the appointment is today or tomorrow).
 
-FORMATTING RULES:
-- DO NOT use markdown bolding (NEVER use ** or __).
-- Keep responses clean, complete, friendly, and easy to read using standard natural language and punctuation. Never stop mid-sentence."""
+RESPONSE STRUCTURE & READABILITY RULES (MANDATORY):
+- High Scannability: Keep your answers clean, well-spaced, and effortless to scan. NEVER output large walls of unbroken text.
+- Short Paragraphs: Keep narrative paragraphs short (1 to 2 sentences max). Always insert an empty line between paragraphs.
+- Bullet Lists: Whenever presenting multiple items (such as transaction types, required documents, purpose options, or open time slots), ALWAYS format them as bullet points using "• ", each on its own separate line.
+- Example for listing transaction options:
+  Which transaction would you like to schedule?
+  • Transcript of Records (TOR)
+  • Certificate of Enrollment (COE)
+  • Certificate of Registration (COR)
+  • General Weighted Average (GWA)
+  • Diploma Release
+  • Completion Form
+- Example for asking purpose of request:
+  For your Transcript of Records (TOR) request, what is the purpose of your request?
+
+  Please choose from the available options:
+  • Employment
+  • Scholarship
+  • Board Exam Application
+  • Other (please specify)
+- Example for presenting open time slots:
+  Here are the available time slots for [Date]:
+  • 09:00 AM
+  • 10:30 AM
+  • 01:00 PM
+  • 02:30 PM
+- Example for listing requirements:
+  To claim your Transcript of Records (TOR), please bring:
+  • Official Receipt of Payment
+  • Valid Student or Government ID
+- Call-to-Action: Always place the closing question or next step on its own separate line at the very bottom.
+- DO NOT use markdown bolding (NEVER use ** or __). Keep the text clean and natural.
+- Never leave a response unfinished or mid-sentence."""
+
+    _prompt_cache = {"prompt": prompt, "timestamp": now, "date": today_date}
+    return prompt
 
 
 def get_or_create_session(student_id: str):
@@ -309,6 +383,30 @@ AI_TOOLS = [
         }
     }
 ]
+
+
+TOOL_STATUS_MESSAGES = {
+    "check_availability": "Checking available appointment slots...",
+    "get_upcoming_appointments": "Retrieving your upcoming appointments...",
+    "book_appointment": "Booking your registrar appointment...",
+    "modify_appointment": "Updating your appointment schedule...",
+    "cancel_appointment": "Processing appointment cancellation...",
+}
+
+
+class AssembledFunction:
+    def __init__(self, name: str, arguments: str):
+        self.name = name
+        self.arguments = arguments
+
+
+class AssembledToolCall:
+    def __init__(self, tc_id: str, name: str, arguments: str, extra_content: dict = None):
+        self.id = tc_id
+        self.type = "function"
+        self.function = AssembledFunction(name, arguments)
+        self.extra_content = extra_content
+
 
 def execute_tool_call(tool_call, student_id: str):
     import json
@@ -521,7 +619,7 @@ def chat(student_id: str, user_message: str):
 
     # Clean history: only conversational messages (user/assistant with valid text content)
     clean_history = [
-        {"role": m["role"], "content": m["content"]}
+        {"role": m["role"], "content": clean_and_sanitize_response(m["content"])}
         for m in history
         if isinstance(m, dict) and m.get("role") in ("user", "assistant") and m.get("content")
     ]
@@ -549,8 +647,8 @@ def chat(student_id: str, user_message: str):
                 response = client.chat.completions.create(
                     model=model,
                     messages=current_messages,
-                    max_tokens=4096,
-                    temperature=0.7,
+                    max_tokens=1000,
+                    temperature=0.3,
                     tools=AI_TOOLS,
                     tool_choice="auto"
                 )
@@ -579,7 +677,7 @@ def chat(student_id: str, user_message: str):
             if not assistant_message:
                 assistant_message = "I have processed your request. Please check your appointments or queue for the latest status."
             else:
-                assistant_message = assistant_message.replace("**", "").replace("__", "").strip()
+                assistant_message = clean_and_sanitize_response(assistant_message)
 
             # Save clean user & assistant exchange to history
             history.append({"role": "user", "content": user_message})
@@ -607,6 +705,173 @@ def chat(student_id: str, user_message: str):
         status_code=500, 
         detail=f"AI service temporarily unavailable: {err_str}"
     )
+
+
+def chat_stream(student_id: str, user_message: str):
+    """
+    Server-Sent Events (SSE) streaming generator for real-time word-by-word responses.
+    Emits JSON events:
+    - {'type': 'status', 'content': '...'} (tool progress)
+    - {'type': 'delta', 'content': '...'} (token chunks)
+    - {'type': 'done', 'session_id': '...'}
+    - {'type': 'error', 'content': '...'}
+    """
+    providers = get_ai_providers()
+    if not providers:
+        yield f"data: {json.dumps({'type': 'error', 'content': 'AI service is not configured. Please configure GEMINI_API_KEY in backend/.env'})}\n\n"
+        return
+
+    try:
+        session = get_or_create_session(student_id)
+        session_id = session["id"]
+        history = session.get("messages") or []
+    except Exception as e:
+        yield f"data: {json.dumps({'type': 'error', 'content': f'Session error: {str(e)}'})}\n\n"
+        return
+
+    clean_history = [
+        {"role": m["role"], "content": clean_and_sanitize_response(m["content"])}
+        for m in history
+        if isinstance(m, dict) and m.get("role") in ("user", "assistant") and m.get("content")
+    ]
+    recent_history = clean_history[-10:]
+
+    base_messages = [
+        {"role": "system", "content": get_system_prompt()}
+    ] + recent_history + [{"role": "user", "content": user_message}]
+
+    last_exception = None
+
+    for idx, provider in enumerate(providers):
+        client = provider["client"]
+        model = provider["model"]
+        p_name = provider["name"]
+
+        try:
+            current_messages = list(base_messages)
+            assistant_message = ""
+            completed_successfully = False
+
+            for loop_idx in range(5):
+                stream = client.chat.completions.create(
+                    model=model,
+                    messages=current_messages,
+                    max_tokens=1000,
+                    temperature=0.3,
+                    tools=AI_TOOLS,
+                    tool_choice="auto",
+                    stream=True,
+                )
+
+                tool_calls_dict = {}
+                content_chunks = []
+
+                for chunk in stream:
+                    choice = chunk.choices[0] if chunk.choices else None
+                    if not choice or not choice.delta:
+                        continue
+                    delta = choice.delta
+
+                    if delta.tool_calls:
+                        for tc in delta.tool_calls:
+                            tc_idx = tc.index if tc.index is not None else 0
+                            extra = getattr(tc, "extra_content", None)
+                            if tc_idx not in tool_calls_dict:
+                                tool_calls_dict[tc_idx] = {
+                                    "id": tc.id or f"call_{tc_idx}",
+                                    "name": tc.function.name if tc.function and tc.function.name else "",
+                                    "arguments": tc.function.arguments if tc.function and tc.function.arguments else "",
+                                    "extra_content": extra,
+                                }
+                            else:
+                                if tc.id:
+                                    tool_calls_dict[tc_idx]["id"] = tc.id
+                                if extra:
+                                    tool_calls_dict[tc_idx]["extra_content"] = extra
+                                if tc.function:
+                                    if tc.function.name:
+                                        tool_calls_dict[tc_idx]["name"] += tc.function.name
+                                    if tc.function.arguments:
+                                        tool_calls_dict[tc_idx]["arguments"] += tc.function.arguments
+
+                    if delta.content:
+                        content_chunks.append(delta.content)
+                        yield f"data: {json.dumps({'type': 'delta', 'content': delta.content})}\n\n"
+
+                if tool_calls_dict:
+                    assembled = [
+                        AssembledToolCall(
+                            tool_calls_dict[k]["id"],
+                            tool_calls_dict[k]["name"],
+                            tool_calls_dict[k]["arguments"],
+                            tool_calls_dict[k].get("extra_content"),
+                        )
+                        for k in sorted(tool_calls_dict.keys())
+                    ]
+
+                    tool_call_payloads = []
+                    for tc in assembled:
+                        payload = {
+                            "id": tc.id,
+                            "type": "function",
+                            "function": {
+                                "name": tc.function.name,
+                                "arguments": tc.function.arguments,
+                            },
+                        }
+                        if tc.extra_content:
+                            payload["extra_content"] = tc.extra_content
+                        tool_call_payloads.append(payload)
+
+                    current_messages.append({
+                        "role": "assistant",
+                        "content": "".join(content_chunks) or None,
+                        "tool_calls": tool_call_payloads,
+                    })
+
+                    for tc in assembled:
+                        fn_name = tc.function.name
+                        status_msg = TOOL_STATUS_MESSAGES.get(fn_name, f"Processing {fn_name.replace('_', ' ')}...")
+                        yield f"data: {json.dumps({'type': 'status', 'content': status_msg})}\n\n"
+
+                        function_response = execute_tool_call(tc, student_id)
+                        current_messages.append({
+                            "tool_call_id": tc.id,
+                            "role": "tool",
+                            "name": fn_name,
+                            "content": function_response
+                        })
+                else:
+                    assistant_message = "".join(content_chunks)
+                    completed_successfully = True
+                    break
+
+            if not completed_successfully and not assistant_message:
+                assistant_message = "I have processed your request. Please check your appointments or queue for the latest status."
+                yield f"data: {json.dumps({'type': 'delta', 'content': assistant_message})}\n\n"
+
+            clean_assistant = clean_and_sanitize_response(assistant_message)
+
+            # Save clean user & assistant exchange to history
+            history.append({"role": "user", "content": user_message})
+            history.append({"role": "assistant", "content": clean_assistant})
+            save_messages(session_id, history[-12:])
+
+            yield f"data: {json.dumps({'type': 'done', 'session_id': session_id})}\n\n"
+            return
+
+        except Exception as e:
+            last_exception = e
+            logger.warning(f"AI Streaming Provider '{p_name}' failed with error: {e}. Attempting next provider...")
+            continue
+
+    # All providers failed
+    err_str = str(last_exception)
+    if "429" in err_str or "rate limit" in err_str.lower() or "quota" in err_str.lower():
+        msg = "AI assistant is temporarily busy or rate-limited. Please try again in a few moments."
+    else:
+        msg = "AI service temporarily unavailable. Please try again."
+    yield f"data: {json.dumps({'type': 'error', 'content': msg})}\n\n"
 
 
 def clear_session(student_id: str):

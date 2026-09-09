@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react'
 import { createPortal } from 'react-dom'
-import { useNavigate, Link } from 'react-router-dom'
+import { useNavigate, Link, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../../context/useAuth'
 import { useStaffEvent } from '../../context/WebSocketContext'
 import { useToast } from '../../context/ToastContext'
@@ -647,13 +647,15 @@ function AppointmentDetailsContent({
 export default function MyAppointments({ embedded = false }) {
   const { user, token } = useAuth()
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+  const targetId = searchParams.get('id')
   const [appointments, setAppointments] = useState([])
   const [selectedApptId, setSelectedApptId] = useState(null)
   const [numWindows, setNumWindows] = useState(3)
   const [isMobileViewingDetails, setIsMobileViewingDetails] = useState(false)
   
   const selectedAppt = useMemo(() => {
-    return appointments.find(a => a.id === selectedApptId) || null
+    return appointments.find(a => String(a.id) === String(selectedApptId)) || null
   }, [appointments, selectedApptId])
 
   const fmt12h = (t) => {
@@ -700,6 +702,9 @@ export default function MyAppointments({ embedded = false }) {
       }
       if (data && data.length > 0) {
         setSelectedApptId(prev => {
+          if (targetId && data.some(a => String(a.id) === String(targetId))) {
+            return data.find(a => String(a.id) === String(targetId)).id
+          }
           if (prev && data.some(a => a.id === prev)) return prev
           return data[0].id
         })
@@ -707,7 +712,7 @@ export default function MyAppointments({ embedded = false }) {
     }
     catch (e) { setError(e.message) }
     finally { setLoading(false) }
-  }, [token])
+  }, [token, targetId])
   
   // Real-time WebSocket event listener for instant 0ms updates
   useStaffEvent(['APPOINTMENTS_UPDATED', 'QUEUE_UPDATED', 'RELEASES_UPDATED', 'NOTIFICATION_RECEIVED', 'WINDOW_UPDATED', 'CONFIG_UPDATED'], () => {
@@ -719,6 +724,18 @@ export default function MyAppointments({ embedded = false }) {
     const interval = setInterval(fetch, 60000)
     return () => clearInterval(interval)
   }, [fetch])
+
+  // Automatically select and highlight appointment if targeted via URL query param (?id=...)
+  useEffect(() => {
+    if (targetId && appointments.length > 0) {
+      const match = appointments.find(a => String(a.id) === String(targetId))
+      if (match) {
+        setFilter('all')
+        setSelectedApptId(match.id)
+        setIsMobileViewingDetails(true)
+      }
+    }
+  }, [targetId, appointments])
 
   const handleCancelConfirm = async () => {
     if (!confirmCancelId) return
@@ -794,6 +811,16 @@ export default function MyAppointments({ embedded = false }) {
       setCurrentPage(1);
     }
   }, [totalPages, currentPage]);
+
+  useEffect(() => {
+    if (targetId && filteredAppointments.length > 0) {
+      const index = filteredAppointments.findIndex(a => String(a.id) === String(targetId));
+      if (index !== -1) {
+        const page = Math.floor(index / ITEMS_PER_PAGE) + 1;
+        setCurrentPage(page);
+      }
+    }
+  }, [targetId, filteredAppointments]);
 
   const paginatedAppointments = useMemo(() => {
     const start = (currentPage - 1) * ITEMS_PER_PAGE;
