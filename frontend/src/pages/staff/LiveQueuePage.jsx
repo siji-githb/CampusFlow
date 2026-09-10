@@ -5,7 +5,7 @@ import { useToast } from '../../context/ToastContext'
 import { getTodaysQueue, confirmStep, callTicket } from '../../services/queueService'
 import { updateReleaseDate } from '../../services/adminService'
 import { getTransactionTypes } from '../../services/appointmentService'
-import { Check, Clock, X, Users, CheckSquare, AlertTriangle, Inbox, Ticket, ChevronDown, SlidersHorizontal, FolderOpen, RotateCcw } from 'lucide-react'
+import { Check, Clock, X, Users, CheckSquare, AlertTriangle, Inbox, Ticket, ChevronDown, SlidersHorizontal, FolderOpen, RotateCcw, DoorOpen } from 'lucide-react'
 import QueueDetailsModal from '../../components/QueueDetailsModal'
 
 // ── Helper to determine whether student presence is required ──────────────────
