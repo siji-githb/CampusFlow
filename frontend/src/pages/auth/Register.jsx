@@ -2,8 +2,8 @@ import { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { registerUser, verifyStudent, requestStudentId } from '../../services/authService'
 import { Eye, EyeOff, ChevronLeft, ChevronRight, ChevronDown, Check, AlertTriangle, IdCard, User, Mail, Lock, GraduationCap } from 'lucide-react'
-import campusFlowLogo from '../../assets/logo.png'
-import loginImage from '../../assets/login.png'
+import campusFlowLogo from '../../assets/logo.webp'
+import loginImage from '../../assets/login.webp'
 import TermsModal from '../../components/TermsModal'
 
 const COURSES = [

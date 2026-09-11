@@ -270,8 +270,6 @@ export default function BookAppointment({ embedded = false }) {
   maxDateObj.setDate(maxDateObj.getDate() + windowDays)
   const maxDate    = fmtLocal(maxDateObj)
 
-  const selectedType = selectedTypes[0] || null
-
   // ── Dynamic Configuration Checks ──
   const needsSemester = selectedTypes.some(t => t?.config?.requires_semester);
   const needsYearLevel = selectedTypes.some(t => t?.config?.requires_year_level);
@@ -305,7 +303,7 @@ export default function BookAppointment({ embedded = false }) {
         const parts = (t.description || '').split('|||');
         let config = {};
         if (parts.length > 1) {
-          try { config = JSON.parse(parts[1]); } catch (e) {}
+          try { config = JSON.parse(parts[1]); } catch { /* ignore malformed JSON */ }
         }
         return {
           ...t,
@@ -756,7 +754,6 @@ export default function BookAppointment({ embedded = false }) {
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 items-stretch">
                   {types.map(t => {
-                    const reqDocs = t.required_documents || t.config?.required_documents || [];
                     const isSelected = selectedTypes.some(item => item.id === t.id);
                     const isStandalone = isStandaloneForm(t.name);
                     return (

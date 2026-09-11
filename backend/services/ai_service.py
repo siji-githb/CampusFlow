@@ -173,19 +173,37 @@ STRICT SYSTEM SCOPE & CLARIFICATION RULES:
 4. DOCUMENT REQUIREMENTS: Students must bring ALL required physical documents (e.g., Official Receipt) on their appointment date.
 5. GWA MAPPING: If a student mentions "GWA", they are referring to "General Weighted Average (GWA)".
 6. IN-PERSON REFERRAL: If a student inquires about complex, manual registrar disputes or issues requiring staff discretion, advise them to visit the Registrar's Office in person during office hours ({open_time} - {close_time}, Monday to Saturday).
+7. PRIORITY LANES: The Registrar's Office strictly recognizes only three priority categories: PWD (Person with Disability), Pregnant, and Alumni (in addition to Regular). There is NO Senior Citizen category or lane.
 
 When a student wants to book an appointment:
-1. Do NOT force the user to type exactly the transaction name. Intelligently map abbreviations (e.g., GWA, TOR, COE) to the full transaction names from the AVAILABLE TRANSACTION TYPES.
-2. IMPORTANT: If the transaction is 'GWA' or 'General Weighted Average', you MUST ask the student for their GWA Request Details (Semester: 1st Semester, 2nd Semester, Summer; Year Level: 1st Year to 4th Year; and School Year e.g. 2025-2026) before booking. Format this as 'GWA_REQUEST: [Semester] | [Year Level] | S.Y. [School Year]' and pass it to the book_appointment tool's 'notes' parameter.
-3. IMPORTANT: If the transaction is 'COE', 'Certificate of Enrollment', 'TOR', 'Transcript of Records', 'Diploma', or any document request, you MUST ask the student for their 'Purpose of Request' based on the available options:
-   • Employment
-   • Scholarship
-   • Board Exam Application
-   • Other (please specify)
-   Format this as 'PURPOSE: [User Purpose]' and pass it to the book_appointment tool's 'notes' parameter.
-4. Ask for their preferred date (must be Monday to Saturday, at least 1 day in advance).
-5. Call the check_availability tool to see open slots for that date. The slots will be returned in 12-hour AM/PM format (e.g. 01:00 PM). Present them clearly to the user using clean bullet points.
-6. Once they choose a date and time slot, call the book_appointment tool (pass the time slot as HH:MM in 24-hour format or whatever the user selected).
+1. MULTI-DOCUMENT BOOKING: Students can book multiple documents in a single appointment visit (for example: TOR and COE together, or TOR + COE + Diploma).
+   - Intelligently map abbreviations (e.g., GWA, TOR, COE, COR, Diploma) to the full transaction names from the AVAILABLE TRANSACTION TYPES.
+2. STANDALONE COMPLETION FORMS (MANDATORY RULE):
+   - "Completion Form - Request" and "Completion Form - Submission" are fast-track counter services and CANNOT be combined with other documents in the same appointment.
+   - If a student asks to book a Completion Form alongside any other document, politely explain: "Completion Forms are quick counter services and must be scheduled separately on their own. Which appointment would you like to schedule first?"
+3. DYNAMIC REQUIREMENTS COLLECTION:
+   - GWA / Academic Info: If ANY requested document is "General Weighted Average (GWA)" (or requires academic details), you MUST ask for:
+     • Semester (1st Semester, 2nd Semester, Summer)
+     • Year Level (1st Year, 2nd Year, 3rd Year, 4th Year)
+     • School Year (e.g. 2025-2026)
+     Format this as: "ACADEMIC INFO: Sem: [Semester] | Yr: [Year Level] | S.Y.: [School Year]" in the appointment notes.
+   - Purpose of Request: If ANY requested document is a certificate or record (TOR, COE, COR, Diploma), you MUST ask for the Purpose of Request based on the available options:
+     • Employment
+     • Scholarship
+     • Board Exam Application
+     • Other (please specify)
+     Format this as: "PURPOSE: [User Purpose]" in the appointment notes. If both academic info and purpose are collected, combine them (e.g. "ACADEMIC INFO: ...\n\nPURPOSE: ...").
+4. COMBINED PHYSICAL REQUIREMENTS:
+   - When answering what documents to bring or confirming a multi-document booking, list the combined, deduplicated requirements from all selected transactions.
+5. PREFERRED DATE & TIME SLOTS:
+   - Ask for their preferred date (must be Monday to Saturday, at least 1 day in advance).
+   - Call the check_availability tool to see open slots for that date. The slots will be returned in 12-hour AM/PM format (e.g. 01:00 PM). Present them clearly using clean bullet points.
+6. CALLING THE BOOKING TOOL:
+   - Once they choose a date and time slot, call the book_appointment tool passing:
+     • transaction_names: an array containing the exact names of all requested documents (e.g. ["Transcript of Records (TOR)", "Certificate of Enrollment (COE)"])
+     • date: YYYY-MM-DD
+     • time_slot: HH:MM in 24-hour format
+     • notes: combined academic info and/or purpose
 7. CRITICAL: NEVER tell the user an appointment is booked UNLESS you have successfully called the book_appointment tool and it returned a success message.
 
 When a student wants to check their upcoming appointments:
@@ -291,13 +309,18 @@ AI_TOOLS = [
         "type": "function",
         "function": {
             "name": "book_appointment",
-            "description": "Book a new appointment for the student.",
+            "description": "Book a new appointment for the student for one or multiple documents simultaneously.",
             "parameters": {
                 "type": "object",
                 "properties": {
+                    "transaction_names": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "List of exact names of the transaction types/documents to book together in a single appointment (e.g. ['Transcript of Records (TOR)', 'Certificate of Enrollment (COE)']). Multiple documents can be booked together in the same appointment slot, EXCEPT for Completion Forms which must be booked alone."
+                    },
                     "transaction_name": {
                         "type": "string",
-                        "description": "The exact name of the transaction type."
+                        "description": "Optional single transaction type name (used if booking only one document)."
                     },
                     "date": {
                         "type": "string",
@@ -309,10 +332,10 @@ AI_TOOLS = [
                     },
                     "notes": {
                         "type": "string",
-                        "description": "Optional notes for the appointment. MUST be used for GWA requests (e.g. 'GWA_REQUEST: 2nd Semester | 3rd Year | S.Y. 2024-2025') or COE/TOR/Diploma requests (e.g. 'PURPOSE: Scholarship Requirement')."
+                        "description": "Optional notes for the appointment. MUST include ACADEMIC INFO for GWA requests (e.g. 'ACADEMIC INFO: Sem: 2nd Semester | Yr: 3rd Year | S.Y.: 2024-2025') and/or PURPOSE for certificate requests (e.g. 'PURPOSE: Scholarship Requirement')."
                     }
                 },
-                "required": ["transaction_name", "date", "time_slot"]
+                "required": ["date", "time_slot"]
             }
         }
     },
@@ -320,20 +343,20 @@ AI_TOOLS = [
         "type": "function",
         "function": {
             "name": "cancel_appointment",
-            "description": "Cancel an upcoming appointment. Provide the appointment date and transaction name.",
+            "description": "Cancel an upcoming appointment. Provide the appointment date and optionally the transaction name to cancel.",
             "parameters": {
                 "type": "object",
                 "properties": {
                     "transaction_name": {
                         "type": "string",
-                        "description": "The name of the transaction type to cancel."
+                        "description": "The name of the transaction type to cancel, or leave empty/'all' to cancel all documents in the visit on that date."
                     },
                     "date": {
                         "type": "string",
                         "description": "The date of the appointment in YYYY-MM-DD format."
                     }
                 },
-                "required": ["transaction_name", "date"]
+                "required": ["date"]
             }
         }
     },
@@ -455,7 +478,17 @@ def execute_tool_call(tool_call, student_id: str):
             
     elif name == "book_appointment":
         try:
-            txn_name = args.get("transaction_name", "")
+            # Handle both transaction_names (list) and transaction_name (single)
+            raw_names = args.get("transaction_names")
+            if not raw_names:
+                single_name = args.get("transaction_name", "")
+                if single_name:
+                    raw_names = [single_name]
+                else:
+                    raw_names = []
+            elif isinstance(raw_names, str):
+                raw_names = [raw_names]
+
             date_str = args.get("date", "")
             
             # convert time_slot back to 24h if AI passed 12h
@@ -468,16 +501,80 @@ def execute_tool_call(tool_call, student_id: str):
             except Exception:
                 time_slot = time_slot_raw
                 
-            if not txn_name or not date_str or not time_slot:
-                return "Missing required parameters (transaction_name, date, time_slot)."
-            
-            tt_res = admin.table("transaction_types").select("id").ilike("name", f"%{txn_name}%").execute()
-            if not tt_res.data:
-                return f"Transaction type '{txn_name}' not found. Please match an available transaction type."
-            
-            # Fetch priority class for user
-            u_res = admin.table("school_students").select("priority_class").eq("student_id", student_id).execute()
-            p_class = u_res.data[0]["priority_class"] if u_res.data else "regular"
+            if not raw_names or not date_str or not time_slot:
+                return "Missing required parameters (transaction_names, date, time_slot)."
+
+            # Fetch active transaction types for fuzzy / abbreviation matching
+            all_tts_res = admin.table("transaction_types").select("*").eq("is_active", True).execute()
+            active_tts = all_tts_res.data or []
+
+            matched_tts = []
+            unmatched = []
+
+            def match_type(term: str):
+                t_lower = term.lower().strip()
+                if not t_lower:
+                    return None
+                t_norm = re.sub(r'\s+', ' ', t_lower)
+                t_compact = re.sub(r'\s*\(\s*', '(', t_norm).replace(')', '')
+                
+                if 'transcript' in t_lower or t_lower == 'tor':
+                    return next((t for t in active_tts if 'transcript' in t['name'].lower()), None)
+                if 'enrollment' in t_lower or t_lower == 'coe':
+                    return next((t for t in active_tts if 'enrollment' in t['name'].lower()), None)
+                if 'registration' in t_lower or t_lower == 'cor':
+                    return next((t for t in active_tts if 'registration' in t['name'].lower()), None)
+                if 'weighted' in t_lower or 'gwa' in t_lower:
+                    return next((t for t in active_tts if 'weighted' in t['name'].lower() or 'gwa' in t['name'].lower()), None)
+                if 'diploma' in t_lower:
+                    return next((t for t in active_tts if 'diploma' in t['name'].lower()), None)
+                if 'completion' in t_lower and 'submission' in t_lower:
+                    return next((t for t in active_tts if 'completion' in t['name'].lower() and 'submission' in t['name'].lower()), None)
+                if 'completion' in t_lower and ('request' in t_lower or 'form' in t_lower):
+                    return next((t for t in active_tts if 'completion' in t['name'].lower() and 'request' in t['name'].lower()), None)
+
+                for t in active_tts:
+                    t_name_lower = t['name'].lower()
+                    t_name_compact = re.sub(r'\s*\(\s*', '(', t_name_lower).replace(')', '')
+                    if t_norm in t_name_lower or t_name_lower in t_norm or t_compact in t_name_compact or t_name_compact in t_compact:
+                        return t
+                return None
+
+            for req_name in raw_names:
+                parts = re.split(r'\s*(?:,|&|\band\b)\s*', req_name, flags=re.IGNORECASE) if isinstance(req_name, str) else [str(req_name)]
+                for p in parts:
+                    clean_p = p.strip()
+                    if not clean_p:
+                        continue
+                    m = match_type(clean_p)
+                    if m:
+                        if m["id"] not in [t["id"] for t in matched_tts]:
+                            matched_tts.append(m)
+                    else:
+                        unmatched.append(clean_p)
+
+            if not matched_tts:
+                avail_names = ", ".join([t["name"] for t in active_tts])
+                return f"Could not match requested document(s): {', '.join(raw_names)}. Available transaction types are: {avail_names}."
+
+            if unmatched:
+                return f"Could not find document(s): {', '.join(unmatched)}. Matched: {', '.join([t['name'] for t in matched_tts])}. Please clarify the document name."
+
+            # Standalone completion form rule
+            if len(matched_tts) > 1:
+                has_completion = any("completion form" in t["name"].lower() for t in matched_tts)
+                if has_completion:
+                    return "Completion Forms are quick counter services and cannot be combined with other document requests in the same appointment. Please book Completion Form separately."
+
+            # Fetch priority class for user (syncing any verified priority status)
+            try:
+                from services.priority_service import sync_priority_status
+                sync_priority_status(student_id)
+            except Exception:
+                pass
+
+            u_res = admin.table("users").select("priority_class").eq("id", student_id).execute()
+            p_class = u_res.data[0]["priority_class"] if u_res.data and u_res.data[0].get("priority_class") else "regular"
             
             try:
                 appt_date = date.fromisoformat(date_str)
@@ -488,22 +585,32 @@ def execute_tool_call(tool_call, student_id: str):
             notes = notes_arg if notes_arg else "Booked via AI Assistant"
                 
             appt_data = AppointmentCreate(
-                transaction_type_id=tt_res.data[0]["id"],
+                transaction_type_ids=[t["id"] for t in matched_tts],
+                transaction_type_id=matched_tts[0]["id"],
                 appointment_date=appt_date,
                 time_slot=time_slot,
                 notes=notes
             )
-            res = create_appointment(student_id, p_class, appt_data)
-            return f"Successfully booked appointment for {txn_name} on {date_str} at {time_slot}."
+            create_appointment(student_id, p_class, appt_data)
+            
+            # Format time to 12h
+            try:
+                slot_12h = datetime.strptime(time_slot, "%H:%M").strftime("%I:%M %p").lstrip("0")
+            except Exception:
+                slot_12h = time_slot
+                
+            doc_titles = ", ".join([t["name"] for t in matched_tts])
+            return f"Successfully booked appointment for {doc_titles} on {date_str} at {slot_12h}."
         except Exception as e:
-            return f"Failed to book appointment: {str(e)}"
+            msg = getattr(e, "detail", str(e))
+            return f"Failed to book appointment: {msg}"
             
     elif name == "cancel_appointment":
         try:
             txn_name = args.get("transaction_name", "")
             date_str = args.get("date", "")
-            if not txn_name or not date_str:
-                return "Missing 'transaction_name' or 'date' parameters."
+            if not date_str:
+                return "Missing 'date' parameter."
             try:
                 appt_date = date.fromisoformat(date_str)
             except Exception:
@@ -513,23 +620,30 @@ def execute_tool_call(tool_call, student_id: str):
             if appt_date <= tomorrow:
                 return "You cannot cancel an appointment if it is scheduled for today or tomorrow."
             
-            tt_res = admin.table("transaction_types").select("id").ilike("name", f"%{txn_name}%").execute()
-            if not tt_res.data:
-                return f"Transaction type '{txn_name}' not found."
-            tt_id = tt_res.data[0]["id"]
+            query = admin.table("appointments").select("id, transaction_type_id, transaction_types(name)").eq("student_id", student_id).eq("appointment_date", str(appt_date)).eq("status", "confirmed")
+            
+            if txn_name and txn_name.lower() not in ("all", "visit", "any"):
+                all_tts = admin.table("transaction_types").select("id, name").execute().data or []
+                match_id = None
+                for t in all_tts:
+                    if txn_name.lower() in t["name"].lower():
+                        match_id = t["id"]
+                        break
+                if match_id:
+                    query = query.eq("transaction_type_id", match_id)
 
-            # Find the appointment
-            appt_res = admin.table("appointments").select("id").eq("student_id", student_id).eq("transaction_type_id", tt_id).eq("appointment_date", str(appt_date)).eq("status", "confirmed").execute()
-            if not appt_res.data:
-                return f"No confirmed appointment found for {txn_name} on {date_str}."
+            appts_res = query.execute()
+            if not appts_res.data:
+                return f"No confirmed appointment found for {txn_name or 'the scheduled visit'} on {date_str}."
                 
-            appt_id = appt_res.data[0]["id"]
-            svc_cancel(appointment_id=appt_id, student_id=student_id)
+            for a in appts_res.data:
+                svc_cancel(appointment_id=a["id"], student_id=student_id)
             
             # Update slots cache via config bump
             admin.table("office_config").update({"value": str(datetime.now().timestamp())}).eq("key", "last_slot_update").execute()
             
-            return f"Successfully cancelled the appointment on {date_str}."
+            cancelled_names = ", ".join([a.get("transaction_types", {}).get("name", "Document") for a in appts_res.data])
+            return f"Successfully cancelled appointment ({cancelled_names}) on {date_str}."
         except Exception as e:
             msg = getattr(e, "detail", str(e))
             return f"Failed to cancel appointment: {msg}"
@@ -537,13 +651,27 @@ def execute_tool_call(tool_call, student_id: str):
     elif name == "get_upcoming_appointments":
         try:
             today_str = str(date.today())
-            res = admin.table("appointments").select("*, transaction_types(name)").eq("student_id", student_id).eq("status", "confirmed").gte("appointment_date", today_str).execute()
+            res = admin.table("appointments").select("*, transaction_types(name)").eq("student_id", student_id).eq("status", "confirmed").gte("appointment_date", today_str).order("appointment_date").order("time_slot").execute()
             if not res.data:
                 return "You have no upcoming appointments."
-            appts = []
+            
+            # Group sibling appointments by (appointment_date, time_slot)
+            visits = {}
             for a in res.data:
-                tt_name = a.get("transaction_types", {}).get("name", "Unknown")
-                appts.append(f"{tt_name} on {a['appointment_date']} at {a['time_slot']}")
+                key = (a['appointment_date'], a['time_slot'])
+                tt_name = a.get("transaction_types", {}).get("name", "Document")
+                if key not in visits:
+                    visits[key] = []
+                visits[key].append(tt_name)
+                
+            appts = []
+            for (d, slot), doc_names in visits.items():
+                docs_str = ", ".join(doc_names)
+                try:
+                    slot_12h = datetime.strptime(slot, "%H:%M").strftime("%I:%M %p").lstrip("0")
+                except Exception:
+                    slot_12h = slot
+                appts.append(f"• {docs_str} on {d} at {slot_12h}")
             return "Upcoming appointments:\n" + "\n".join(appts)
         except Exception as e:
             return f"Failed to get appointments: {str(e)}"

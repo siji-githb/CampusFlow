@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { useAuth } from '../../context/useAuth';
 import { useToast } from '../../context/ToastContext';
@@ -54,11 +54,7 @@ export default function AdminDocumentsPage() {
   const [showCustomDoc, setShowCustomDoc] = useState(false);
   const [showCustomStep, setShowCustomStep] = useState(false);
 
-  useEffect(() => {
-    fetchTransactions();
-  }, []);
-
-  const fetchTransactions = async () => {
+  const fetchTransactions = useCallback(async () => {
     try {
       setLoading(true);
       const data = await getTransactionTypes(token);
@@ -69,7 +65,7 @@ export default function AdminDocumentsPage() {
         const descText = parts[0];
         let config = {};
         if (parts.length > 1) {
-          try { config = JSON.parse(parts[1]); } catch (e) {}
+          try { config = JSON.parse(parts[1]); } catch { /* ignore invalid config json */ }
         }
         return {
           ...t,
@@ -83,7 +79,11 @@ export default function AdminDocumentsPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [token]);
+
+  useEffect(() => {
+    fetchTransactions();
+  }, [fetchTransactions]);
 
   const handleOpenModal = (tx = null, mode = 'edit') => {
     setIsViewMode(mode === 'view');
@@ -117,33 +117,6 @@ export default function AdminDocumentsPage() {
       });
     }
     setIsModalOpen(true);
-  };
-
-  const handleCancelEdit = () => {
-    if (editingId) {
-      const tx = transactions.find(t => t.id === editingId);
-      if (tx) {
-        const rawSteps = tx.processing_steps || tx.config?.processing_steps || [];
-        const normalizedSteps = rawSteps.map(s => 
-          typeof s === 'string' ? { name: s, requires_presence: false } : { name: s.name || '', requires_presence: !!s.requires_presence }
-        );
-        setFormData({
-          name: tx.name,
-          description: tx.clean_description,
-          requires_semester: tx.config?.requires_semester || false,
-          requires_year_level: tx.config?.requires_year_level || false,
-          requires_school_year: tx.config?.requires_school_year || false,
-          requires_purpose: tx.config?.requires_purpose || false,
-          required_documents: tx.required_documents || tx.config?.required_documents || [],
-          processing_steps: normalizedSteps
-        });
-      }
-      setIsViewMode(true);
-    } else {
-      setIsModalOpen(false);
-      setShowCustomDoc(false);
-      setShowCustomStep(false);
-    }
   };
 
   const handleSave = async () => {

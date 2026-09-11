@@ -40,7 +40,7 @@ export default function AdminOfficeConfigPage() {
       })
       .catch(() => toast.error('Failed to load configuration'))
       .finally(() => setLoading(false))
-  }, [token])
+  }, [token, toast])
 
   const handleEdit = (key, value) => {
     setEdited(prev => ({ ...prev, [key]: value }))
@@ -60,14 +60,6 @@ export default function AdminOfficeConfigPage() {
       setSaving(null)
       setConfirmSave(null)
     }
-  }
-
-  const handleReset = (key) => {
-    setEdited(prev => {
-      const next = { ...prev }
-      delete next[key]
-      return next
-    })
   }
 
   const hasChanges = (key) => {
@@ -90,7 +82,7 @@ export default function AdminOfficeConfigPage() {
             <input
               type={isTimeField ? 'time' : 'number'}
               value={edited[key] ?? ''}
-              onChange={e => setEdited({ ...edited, [key]: e.target.value })}
+              onChange={e => handleEdit(key, e.target.value)}
               className={`py-2 px-3.5 sm:py-2.5 sm:px-4 rounded-xl bg-white text-fluid-13 sm:text-fluid-14 outline-none font-sans text-text-main transition-all duration-200 border-[1.5px] focus:border-maroon ${isTimeField ? 'w-32.5 text-left' : 'w-25 text-center'} ${isChanged ? 'border-maroon shadow-[0_0_0_3px_rgba(123,26,42,0.1)]' : 'border-border'}`}
             />
             <button

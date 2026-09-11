@@ -12,7 +12,12 @@ export const sendMessage = async (token, message) => {
     body: JSON.stringify({ message })
   })
   const data = await res.json()
-  if (!res.ok) throw new Error(data.detail || 'Failed to send message')
+  if (!res.ok) {
+    const err = new Error(data.detail || 'Failed to send message')
+    err.status = res.status
+    err.errorType = data.error_type
+    throw err
+  }
   return data
 }
 
@@ -26,11 +31,16 @@ export const sendMessageStream = async (token, message, { onDelta, onStatus, onE
 
   if (!res.ok) {
     let errorDetail = 'Failed to connect to AI assistant'
+    let errorType = null
     try {
       const errData = await res.json()
       errorDetail = errData.detail || errorDetail
+      errorType = errData.error_type || (res.status === 429 ? 'rate_limit' : null)
     } catch (_) {}
-    throw new Error(errorDetail)
+    const err = new Error(errorDetail)
+    err.status = res.status
+    err.errorType = errorType
+    throw err
   }
 
   const reader = res.body.getReader()

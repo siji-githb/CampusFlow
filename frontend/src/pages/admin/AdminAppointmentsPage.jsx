@@ -276,11 +276,20 @@ const RescheduleModal = ({ appt, onClose, onConfirm }) => {
 
   useEffect(() => {
     if (!date || !txTypeId) return
-    setLoadingSlots(true)
+    let cancelled = false
     getAvailableSlots(txTypeId, date)
-      .then(res => setSlots(res.slots || []))
-      .catch(() => setSlots([]))
-      .finally(() => setLoadingSlots(false))
+      .then(res => {
+        if (!cancelled) setSlots(res.slots || [])
+      })
+      .catch(() => {
+        if (!cancelled) setSlots([])
+      })
+      .finally(() => {
+        if (!cancelled) setLoadingSlots(false)
+      })
+    return () => {
+      cancelled = true
+    }
   }, [date, txTypeId])
 
   const handleSave = async () => {
@@ -373,7 +382,16 @@ const RescheduleModal = ({ appt, onClose, onConfirm }) => {
             <CustomDatePicker
               minDate={today}
               value={date}
-              onChange={val => { setDate(val); setTime('') }}
+              onChange={val => {
+                setDate(val)
+                setTime('')
+                if (val && txTypeId) {
+                  setLoadingSlots(true)
+                } else {
+                  setSlots([])
+                  setLoadingSlots(false)
+                }
+              }}
               placeholder="Choose a new date for appointment…"
               className="w-full"
             />
@@ -1425,7 +1443,6 @@ export default function AdminAppointmentsPage() {
         const mediaUrl = viewDetailsModal.media_url || viewDetailsModal.attachment_url || viewDetailsModal.file_url || null
 
         const isCompleted = viewDetailsModal.status === 'completed'
-        const isCancelled = viewDetailsModal.status === 'cancelled'
         const isPending = viewDetailsModal.status === 'pending'
         const isConfirmed = viewDetailsModal.status === 'confirmed'
 

@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { Eye, EyeOff, ChevronLeft, Lock, CheckCircle, ArrowRight, AlertCircle } from 'lucide-react'
 import { resetPassword } from '../../services/authService'
-import campusFlowLogo from '../../assets/logo.png'
+import campusFlowLogo from '../../assets/logo.webp'
 
 export default function ResetPassword() {
   const navigate = useNavigate()

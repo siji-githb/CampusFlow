@@ -37,10 +37,6 @@ export default function AdminGlobalSearch({ setActiveNav }) {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  useEffect(() => {
-    setActiveIndex(0);
-  }, [query]);
-
   const handleKeyDown = (e) => {
     if (!isOpen || displayItems.length === 0) return;
 
@@ -77,6 +73,7 @@ export default function AdminGlobalSearch({ setActiveNav }) {
         value={query}
         onChange={(e) => {
           setQuery(e.target.value);
+          setActiveIndex(0);
           setIsOpen(true);
         }}
         onFocus={() => {

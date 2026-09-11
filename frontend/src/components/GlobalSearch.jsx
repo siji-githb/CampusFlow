@@ -47,10 +47,6 @@ export default function GlobalSearch({ isMobile = false, onAiPrompt }) {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  useEffect(() => {
-    setActiveIndex(0);
-  }, [query]);
-
   const handleKeyDown = (e) => {
     if (!isOpen || displayItems.length === 0) return;
 
@@ -97,6 +93,7 @@ export default function GlobalSearch({ isMobile = false, onAiPrompt }) {
         value={query}
         onChange={(e) => {
           setQuery(e.target.value);
+          setActiveIndex(0);
           setIsOpen(true);
         }}
         onFocus={() => {

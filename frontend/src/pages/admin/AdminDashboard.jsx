@@ -1,8 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
-import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/useAuth'
 import { useStaffEvent } from '../../context/WebSocketContext'
-import campusFlowLogo from '../../assets/logo.png'
+import campusFlowLogo from '../../assets/logo.webp'
 import AdminQueueMonitoringPage from './AdminQueueMonitoringPage'
 import AdminAppointmentsPage from './AdminAppointmentsPage'
 import AdminAnalyticsPage from './AdminAnalyticsPage'
@@ -232,18 +231,6 @@ function OverviewTab() {
       .finally(() => setLoading(false))
   }, [token])
 
-  // Real-time WebSocket event listener for instant 0ms updates
-  useStaffEvent(['QUEUE_UPDATED', 'WINDOW_UPDATED', 'APPOINTMENTS_UPDATED', 'PRIORITY_REQUESTS_UPDATED', 'ID_REQUESTS_UPDATED', 'RELEASES_UPDATED'], () => {
-    fetchStats()
-    fetchReports()
-  })
-
-  useEffect(() => {
-    fetchStats()
-    const t = setInterval(fetchStats, 60000)
-    return () => clearInterval(t)
-  }, [fetchStats])
-
   const fetchReports = useCallback(() => {
     getReports(token, 7)
       .then(r => {
@@ -257,8 +244,19 @@ function OverviewTab() {
       .finally(() => setChartLoading(false))
   }, [token])
 
+  // Real-time WebSocket event listener for instant 0ms updates
+  useStaffEvent(['QUEUE_UPDATED', 'WINDOW_UPDATED', 'APPOINTMENTS_UPDATED', 'PRIORITY_REQUESTS_UPDATED', 'ID_REQUESTS_UPDATED', 'RELEASES_UPDATED'], () => {
+    fetchStats()
+    fetchReports()
+  })
+
   useEffect(() => {
-    setChartLoading(true)
+    fetchStats()
+    const t = setInterval(fetchStats, 60000)
+    return () => clearInterval(t)
+  }, [fetchStats])
+
+  useEffect(() => {
     fetchReports()
     const t = setInterval(fetchReports, 60000)
     return () => clearInterval(t)
@@ -529,7 +527,6 @@ function OverviewTab() {
 // ─────────────────────────────────────────────────────────────────────────────
 export default function AdminDashboard() {
   const { user, token, requestLogout } = useAuth()
-  const navigate = useNavigate()
   const [activeNav, setActiveNav] = useState('overview')
   const [visitedTabs, setVisitedTabs] = useState(() => new Set(['overview']))
   const [profileOpen, setProfileOpen] = useState(false)
@@ -546,7 +543,9 @@ export default function AdminDashboard() {
   useEffect(() => {
     try {
       localStorage.setItem('cf_admin_sidebar_collapsed', sidebarCollapsed ? 'true' : 'false')
-    } catch {}
+    } catch {
+      /* ignore local storage errors */
+    }
   }, [sidebarCollapsed])
 
   // Sync sidebar width CSS variable for layout-aligned overlays (like ToastContainer)
@@ -566,19 +565,20 @@ export default function AdminDashboard() {
     }
   }, [sidebarCollapsed])
 
-  const fetchBadgeStats = useCallback(async () => {
-    try {
-      const [idReqs, prioReqs] = await Promise.all([
-        getIdRequests(token).catch(() => []),
-        getPendingPriorityRequests(token).catch(() => [])
-      ])
-      setBadgeStats({
-        idRequests: (idReqs || []).filter(r => r.status === 'pending').length,
-        priorityRequests: (prioReqs || []).length
+  const fetchBadgeStats = useCallback(() => {
+    Promise.all([
+      getIdRequests(token).catch(() => []),
+      getPendingPriorityRequests(token).catch(() => [])
+    ])
+      .then(([idReqs, prioReqs]) => {
+        setBadgeStats({
+          idRequests: (idReqs || []).filter(r => r.status === 'pending').length,
+          priorityRequests: (prioReqs || []).length
+        })
       })
-    } catch (e) {
-      console.error("Error loading admin badge stats", e)
-    }
+      .catch(e => {
+        console.error("Error loading admin badge stats", e)
+      })
   }, [token])
 
   useStaffEvent(['PRIORITY_REQUESTS_UPDATED', 'ID_REQUESTS_UPDATED'], () => {

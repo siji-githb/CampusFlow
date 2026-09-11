@@ -1,11 +1,11 @@
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { createPortal } from 'react-dom'
 import { useNavigate, Link, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../../context/useAuth'
 import { useStaffEvent } from '../../context/WebSocketContext'
 import { useToast } from '../../context/ToastContext'
 import StudentLayout from '../../components/layout/StudentLayout'
-import { getMyQueue, activateQueue, getTimeEstimate, getMyDocumentsToClaim } from '../../services/queueService'
+import { getMyQueue, activateQueue } from '../../services/queueService'
 import { getMyAppointments, cancelAppointment } from '../../services/appointmentService'
 import { Clock, Hourglass, PartyPopper, Ticket, Calendar, Inbox, Cog, FileCheck, FileSignature, Loader2, FileText, MapPin, Tag, CheckCircle2, ChevronRight } from 'lucide-react'
 
@@ -43,7 +43,6 @@ const fmt12h = (t) => {
   const h12 = h % 12 || 12;
   return `${h12}:${m} ${ampm}`;
 };
-const formatTime12 = fmt12h;
 
 // ── Empty Queue State Component ────────────────────────────────────────────────
 function EmptyQueueState({
@@ -138,11 +137,9 @@ export default function MyQueue({ embedded = false }) {
   const [loading, setLoading]       = useState(true)
   const [activating, setActivating] = useState(null)
   const [error, setError]           = useState('')
-  const [estimates, setEstimates]   = useState([])
   const [searchParams] = useSearchParams()
   const tabParam = searchParams.get('tab')
   const [activeTab, setActiveTab]   = useState(tabParam === 'upcoming' ? 'upcoming' : 'active')
-  const [documentsToClaim, setDocumentsToClaim] = useState([])
   const [cancelConfirmId, setCancelConfirmId] = useState(null)
   const [activateConfirmId, setActivateConfirmId] = useState(null)
   const [cancelling, setCancelling] = useState(false)
@@ -160,15 +157,11 @@ export default function MyQueue({ embedded = false }) {
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
   };
   const today = getTodayStr(); // evaluated per-render for local UI checks
-  const pollRef  = useRef(null)
 
   const fetchQueue = useCallback(async () => {
     try {
       const data = await getMyQueue(token)
       setQueueData(data?.ticket ? data : null)
-      
-      const claims = await getMyDocumentsToClaim(token)
-      setDocumentsToClaim(claims || [])
     } catch (e) { setError(e.message) }
   }, [token])
 
@@ -205,24 +198,14 @@ export default function MyQueue({ embedded = false }) {
     }
   }, [token])
 
-  const fetchDocumentsToClaim = useCallback(async () => {
-    try {
-      const data = await getMyDocumentsToClaim(token)
-      setDocumentsToClaim(data || [])
-    } catch {
-      // non-fatal
-    }
-  }, [token])
-
   useEffect(() => {
-    Promise.all([fetchQueue(), fetchAppts(), fetchDocumentsToClaim()]).finally(() => setLoading(false))
-  }, [fetchQueue, fetchAppts, fetchDocumentsToClaim])
+    Promise.all([fetchQueue(), fetchAppts()]).finally(() => setLoading(false))
+  }, [fetchQueue, fetchAppts])
 
   // Real-time WebSocket event listener for 0ms instant sync
   useStaffEvent(['QUEUE_UPDATED', 'RELEASES_UPDATED', 'NOTIFICATION_RECEIVED', 'APPOINTMENTS_UPDATED'], () => {
     fetchQueue()
     fetchAppts()
-    fetchDocumentsToClaim()
   })
 
   // Polling every 15s as safety net
@@ -230,10 +213,9 @@ export default function MyQueue({ embedded = false }) {
     const id = setInterval(() => {
       fetchQueue()
       fetchAppts()
-      fetchDocumentsToClaim()
     }, 15000)
     return () => clearInterval(id)
-  }, [fetchQueue, fetchAppts, fetchDocumentsToClaim])
+  }, [fetchQueue, fetchAppts])
 
   const handleActivate = async () => {
     if (!activateConfirmId) return
@@ -285,7 +267,6 @@ export default function MyQueue({ embedded = false }) {
   const isCurrentStepRelease = currentStepNameLower.includes('release') || currentStepNameLower.includes('claim') || currentStepNameLower.includes('pickup') || currentStepNameLower.includes('collection') || currentStepNameLower.includes('issuance') || currentStepLocLower.includes('release')
   const isCurrentStepDocPrepared = currentStepNameLower.includes('document prepared') || currentStepNameLower.includes('document ready')
   const isCurrentStepPrep = !isCurrentStepDocPrepared && !isCurrentStepRelease && (currentStepNameLower.includes('preparation') || currentStepNameLower.includes('verification') || currentStepNameLower.includes('records') || !currentRequiresPresence)
-  const isCurrentStepReceipt = currentStepNameLower.includes('receipt') || currentStepNameLower.includes('payment')
   
   const releaseDateVal = ticket?.appointments?.release_date
   const isFutureScheduled = Boolean(releaseDateVal && releaseDateVal > today)

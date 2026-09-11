@@ -68,7 +68,7 @@ const STATUS = {
   no_show: { label: 'No Show', bg: '#F9FAFB', color: '#6B7280', border: '#E5E7EB' },
 }
 
-export const isAppointmentToday = (dateStr) => {
+const isAppointmentToday = (dateStr) => {
   if (!dateStr) return false;
   const now = new Date();
   const y = now.getFullYear();
@@ -78,7 +78,7 @@ export const isAppointmentToday = (dateStr) => {
   return dateStr === localToday;
 };
 
-export const isFutureScheduled = (appt) => {
+const isFutureScheduled = (appt) => {
   if (!appt) return false;
   const tickets = Array.isArray(appt.queue_tickets) ? appt.queue_tickets : (appt.queue_tickets ? [appt.queue_tickets] : []);
   const isTicketCompleted = tickets.some(t => t.status === 'completed');
@@ -90,7 +90,7 @@ export const isFutureScheduled = (appt) => {
   return Boolean(relDate && relDate > todayStr);
 };
 
-export const isReadyForPickup = (appt) => {
+const isReadyForPickup = (appt) => {
   if (!appt) return false;
   const tickets = Array.isArray(appt.queue_tickets) ? appt.queue_tickets : (appt.queue_tickets ? [appt.queue_tickets] : []);
   const isTicketCompleted = tickets.some(t => t.status === 'completed');
@@ -109,21 +109,21 @@ export const isReadyForPickup = (appt) => {
   return false;
 };
 
-export const fmtApptDate = (dateStr) => {
+const fmtApptDate = (dateStr) => {
   if (!dateStr) return '';
   const [y, m, d] = dateStr.split('-').map(Number);
   if (!y || !m || !d) return dateStr;
   return new Date(y, m - 1, d).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
 };
 
-export const fmtLongDate = (dateStr) => {
+const fmtLongDate = (dateStr) => {
   if (!dateStr) return '';
   const [y, m, d] = dateStr.split('-').map(Number);
   if (!y || !m || !d) return dateStr;
   return new Date(y, m - 1, d).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
 };
 
-export const getEffectiveStatus = (appt) => {
+const getEffectiveStatus = (appt) => {
   if (!appt) return 'pending';
   if (appt.status === 'cancelled') return 'cancelled';
   if (appt.status === 'completed') return 'completed';
@@ -132,7 +132,7 @@ export const getEffectiveStatus = (appt) => {
   return appt.status || 'pending';
 };
 
-export const getPriorityClassInfo = (pClass, userPClass) => {
+const getPriorityClassInfo = (pClass, userPClass) => {
   const raw = (pClass || userPClass || 'regular').toLowerCase().trim()
   if (raw === 'pwd') {
     return {
@@ -196,15 +196,9 @@ function AppointmentDetailsContent({
     ? selectedAppt.selected_documents 
     : (selectedAppt.transaction_types ? [selectedAppt.transaction_types] : []);
 
-  const mergedRequirements = useMemo(() => {
-    const reqs = [];
-    docsList.forEach(d => {
-      (d.required_documents || []).forEach(r => {
-        if (r && !reqs.includes(r)) reqs.push(r);
-      });
-    });
-    return reqs;
-  }, [docsList]);
+  const mergedRequirements = Array.from(new Set(
+    docsList.flatMap(d => d.required_documents || []).filter(Boolean)
+  ));
 
   return (
     <div className="flex flex-col flex-1 h-full">
@@ -672,7 +666,6 @@ export default function MyAppointments({ embedded = false }) {
   const [error, setError]     = useState('')
   const [filter, setFilter]   = useState('all')
   const [cancelling, setCancelling] = useState(null)
-  const [rescheduling, setRescheduling] = useState(null)
   const [clearingAll, setClearingAll] = useState(false)
   const [showClearConfirm, setShowClearConfirm] = useState(false)
   const [currentPage, setCurrentPage] = useState(1)

@@ -1,8 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
-import { createPortal } from 'react-dom';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/useAuth';
-import campusFlowLogo from '../../assets/logo.png';
+import campusFlowLogo from '../../assets/logo.webp';
 import BottomNav from './BottomNav';
 import NotificationDropdown from '../NotificationDropdown';
 import { LogOut, ClipboardList, Ticket, Home, Calendar, BotMessageSquare, User, Settings, Search, ChevronLeft, Eraser, ChevronRight, X } from 'lucide-react';
@@ -40,7 +39,7 @@ export function useOutsideClick(ref, handler) {
   }, [ref, handler]);
 }
 
-export const M = {
+const M = {
   maroon:        '#7B1A2A',
   maroonDark:    '#5C1320',
   maroonLight:   '#F9F0F1',

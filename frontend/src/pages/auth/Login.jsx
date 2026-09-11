@@ -3,8 +3,8 @@ import { useNavigate, Link, useLocation } from 'react-router-dom'
 import { useAuth } from '../../context/useAuth'
 import { loginUser } from '../../services/authService'
 import { Eye, EyeOff, ChevronLeft, ChevronRight, Mail, Lock } from 'lucide-react'
-import campusFlowLogo from '../../assets/logo.png'
-import loginImage from '../../assets/login.png'
+import campusFlowLogo from '../../assets/logo.webp'
+import loginImage from '../../assets/login.webp'
 
 export default function Login() {
   const navigate = useNavigate()

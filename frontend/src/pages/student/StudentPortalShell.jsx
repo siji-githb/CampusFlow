@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useMemo } from 'react'
 import { useLocation } from 'react-router-dom'
 import StudentLayout from '../../components/layout/StudentLayout'
 import StudentDashboard from './StudentDashboard'
@@ -27,14 +27,13 @@ export default function StudentPortalShell() {
     return 'dashboard'
   }, [location.pathname])
 
+  const [prevTab, setPrevTab] = useState(currentTab)
   const [visitedTabs, setVisitedTabs] = useState(() => new Set([currentTab]))
 
-  useEffect(() => {
-    setVisitedTabs((prev) => {
-      if (prev.has(currentTab)) return prev
-      return new Set([...prev, currentTab])
-    })
-  }, [currentTab])
+  if (currentTab !== prevTab) {
+    setPrevTab(currentTab)
+    setVisitedTabs(new Set([...visitedTabs, currentTab]))
+  }
 
   const currentConfig = TAB_CONFIG[currentTab] || TAB_CONFIG.dashboard
 

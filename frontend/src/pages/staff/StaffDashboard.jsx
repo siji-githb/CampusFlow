@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useAuth } from '../../context/useAuth'
 import { useStaffEvent } from '../../context/WebSocketContext'
-import campusFlowLogo from '../../assets/logo.png'
+import campusFlowLogo from '../../assets/logo.webp'
 import LiveQueuePage from './LiveQueuePage'
 import AppointmentsPage from './AppointmentsPage'
 import MasterListPage from './MasterListPage'
@@ -237,7 +237,9 @@ export default function StaffDashboard() {
   useEffect(() => {
     try {
       localStorage.setItem('cf_staff_sidebar_collapsed', sidebarCollapsed ? 'true' : 'false')
-    } catch {}
+    } catch {
+      // Ignore local storage errors
+    }
   }, [sidebarCollapsed])
 
   // Sync sidebar width CSS variable for layout-aligned overlays (like ToastContainer)

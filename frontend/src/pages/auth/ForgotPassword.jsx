@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Mail, ChevronLeft, CheckCircle, ArrowRight, AlertCircle, RefreshCw } from 'lucide-react'
 import { forgotPassword } from '../../services/authService'
-import campusFlowLogo from '../../assets/logo.png'
+import campusFlowLogo from '../../assets/logo.webp'
 
 export default function ForgotPassword() {
   const [email, setEmail] = useState('')

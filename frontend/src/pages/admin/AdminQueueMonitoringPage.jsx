@@ -5,14 +5,11 @@ import { useStaffEvent } from '../../context/WebSocketContext'
 import { useToast } from '../../context/ToastContext'
 import {
   getTodaysQueue,
-  getLiveQueueStats,
   getUncollectedDocuments,
   getCollectedDocuments,
-  confirmStep,
   remindStudent
 } from '../../services/queueService'
 import { getTransactionTypes } from '../../services/appointmentService'
-import { updateReleaseDate } from '../../services/adminService'
 import { getDocumentColor } from '../../utils/colors'
 import DonutChart from '../../components/DonutChart'
 import {
@@ -287,7 +284,6 @@ function AdminTicketDetailsModal({ item, onClose }) {
 export default function AdminQueueMonitoringPage() {
   const { token } = useAuth()
   const [queue, setQueue] = useState([])
-  const [queueStats, setQueueStats] = useState(null)
   const [uncollected, setUncollected] = useState([])
   const [collected, setCollected] = useState([])
   const [availableTxTypes, setAvailableTxTypes] = useState([])
@@ -310,7 +306,6 @@ export default function AdminQueueMonitoringPage() {
   // Details Modal
   const [viewingTicketData, setViewingTicketData] = useState(null)
   const [remindingId, setRemindingId] = useState(null)
-  const [confirmingKey, setConfirmingKey] = useState(null)
 
   const showToast = (msg, type = 'success') => {
     const text = typeof msg === 'string' ? msg : JSON.stringify(msg)
@@ -338,14 +333,12 @@ export default function AdminQueueMonitoringPage() {
     if (isManual) setRefreshing(true)
     setError('')
     try {
-      const [queueData, statsData, uncollectedData, collectedData] = await Promise.all([
+      const [queueData, uncollectedData, collectedData] = await Promise.all([
         getTodaysQueue(token),
-        getLiveQueueStats(token),
         getUncollectedDocuments(token),
         getCollectedDocuments(token, 100)
       ])
       setQueue(queueData || [])
-      setQueueStats(statsData)
       setUncollected(uncollectedData || [])
       setCollected(collectedData || [])
       setLastUpdated(new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }))
@@ -378,39 +371,6 @@ export default function AdminQueueMonitoringPage() {
       showToast(`Could not send reminder: ${err.message}`, 'error')
     } finally {
       setRemindingId(null)
-    }
-  }
-
-  // ── Modal Actions (Confirm / Release Date) ──
-  const handleConfirmStep = async (ticketId, stepNum, txName, studentName, confirmLabel, releaseDateToSet, releasedTo, documentVerified) => {
-    const key = `${ticketId}-${stepNum}`
-    setConfirmingKey(key)
-    try {
-      await confirmStep(token, ticketId, stepNum, releasedTo, documentVerified)
-      if (releaseDateToSet && viewingTicketData) {
-        const apptId = viewingTicketData.ticket?.appointment_id || viewingTicketData.ticket?.appointments?.id
-        if (apptId) {
-          await updateReleaseDate(token, apptId, releaseDateToSet)
-        }
-      }
-      showToast(`Step ${stepNum} for ${studentName} completed!`)
-      setViewingTicketData(null)
-      await fetchAllData(true)
-    } catch (err) {
-      showToast(`Failed to update step: ${err.message}`, 'error')
-    } finally {
-      setConfirmingKey(null)
-    }
-  }
-
-  const handleSetReleaseDate = async (appointmentId, dateVal) => {
-    try {
-      await updateReleaseDate(token, appointmentId, dateVal)
-      await fetchAllData(true)
-      showToast('Release date updated successfully!')
-    } catch (err) {
-      showToast(`Failed to update release date: ${err.message}`, 'error')
-      throw err
     }
   }
 

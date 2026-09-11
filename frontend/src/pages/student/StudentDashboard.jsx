@@ -1,12 +1,10 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
-import { createPortal } from 'react-dom';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/useAuth';
 import { useStaffEvent } from '../../context/WebSocketContext';
-import campusFlowLogo from '../../assets/logo.png';
-import StudentLayout, { useWindowWidth, ProfileDropdown } from '../../components/layout/StudentLayout';
-import { getMyAppointments, cancelAppointment } from '../../services/appointmentService';
-import { getMyQueue, getTimeEstimate, getPublicLiveQueue, getMyDocumentsToClaim } from '../../services/queueService';
+import StudentLayout, { ProfileDropdown } from '../../components/layout/StudentLayout';
+import { getMyAppointments } from '../../services/appointmentService';
+import { getMyQueue, getPublicLiveQueue, getMyDocumentsToClaim } from '../../services/queueService';
 import { LogOut, ClipboardList, Ticket, Home, Calendar, Bot, Clock, Search, ChevronRight, Bell, FileText, MapPin } from 'lucide-react';
 import NotificationDropdown from '../../components/NotificationDropdown';
 import GlobalSearch from '../../components/GlobalSearch';
@@ -22,6 +20,11 @@ const STATUS_STYLES = {
 };
 
 
+
+const cleanDocName = (name = '') => {
+  if (!name) return '';
+  return String(name).replace(/([^\s])\(/g, '$1 (').trim();
+};
 
 const formatShortDate = (dateStr) => {
   if (!dateStr) return '';
@@ -42,7 +45,6 @@ export default function StudentDashboard({ embedded = false }) {
   const [liveTicket, setLiveTicket] = useState(null);
   const [activeCounterTickets, setActiveCounterTickets] = useState([]);
   const [documentsToClaim, setDocumentsToClaim] = useState([]);
-  const [activeTab, setActiveTab] = useState('upcoming');
 
   const fetchDashboardData = useCallback(async () => {
     try {
@@ -108,8 +110,8 @@ export default function StudentDashboard({ embedded = false }) {
           isCounterActive: !!isCounterActive,
           current_step: stepLabel,
           transaction_type: (qData.ticket.appointments?.selected_documents && qData.ticket.appointments.selected_documents.length > 1)
-            ? `${qData.ticket.appointments.selected_documents.length} Documents (${qData.ticket.appointments.selected_documents.map(d => d.name).join(', ')})`
-            : (qData.ticket.appointments?.transaction_types?.name || 'Registrar')
+            ? `${qData.ticket.appointments.selected_documents.length} Documents (${qData.ticket.appointments.selected_documents.map(d => cleanDocName(d.name)).join(', ')})`
+            : cleanDocName(qData.ticket.appointments?.transaction_types?.name || 'Registrar')
         });
       } else {
         setLiveTicket(null);
@@ -129,19 +131,23 @@ export default function StudentDashboard({ embedded = false }) {
           return a.appointment_date >= today;
         })
         .slice(0, 3)
-        .map(a => ({
-          id: a.id,
-          type: (a.selected_documents && a.selected_documents.length > 1)
-            ? `${a.selected_documents.length} Documents (${a.selected_documents.map(d => d.name).join(', ')})`
-            : (a.transaction_types?.name || 'Registrar Transaction'),
-          step: 'Registrar',
-          appointment_date: a.appointment_date,
-          isToday: a.appointment_date === today,
-          formattedDate: a.appointment_date === today ? 'Today' : formatShortDate(a.appointment_date),
-          date: a.appointment_date === today ? 'Today' : a.appointment_date,
-          time: formatTime12(a.time_slot),
-          status: a.status
-        }));
+        .map(a => {
+          const docNamesList = (a.selected_documents && a.selected_documents.length > 0)
+            ? a.selected_documents.map(d => cleanDocName(d.name))
+            : [cleanDocName(a.transaction_types?.name || 'Registrar Transaction')];
+
+          return {
+            id: a.id,
+            type: docNamesList.join(', '),
+            step: 'Registrar',
+            appointment_date: a.appointment_date,
+            isToday: a.appointment_date === today,
+            formattedDate: a.appointment_date === today ? 'Today' : formatShortDate(a.appointment_date),
+            date: a.appointment_date === today ? 'Today' : a.appointment_date,
+            time: formatTime12(a.time_slot),
+            status: a.status
+          };
+        });
       setAppointments(upcoming);
 
       // 3. Set public live queue & documents to claim
@@ -377,11 +383,11 @@ export default function StudentDashboard({ embedded = false }) {
         </div>
 
         {/* ── Main Content Grid: Upcoming Appointments + Live Queue ── */}
-        <div className="grid grid-cols-1 lg:grid-cols-[1.5fr_1fr] gap-6 mb-8 items-start">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8 items-start">
           
           {/* Upcoming Appointments */}
           <div 
-            className="animate-fade-up bg-transparent lg:bg-white rounded-[20px] p-0 lg:p-7 shadow-none lg:shadow-[0_8px_30px_rgba(0,0,0,0.02),0_0_0_1px_rgba(123,26,42,0.04)]"
+            className="animate-fade-up min-w-0 w-full bg-white rounded-[20px] p-5 sm:p-6 lg:p-7 shadow-[0_8px_30px_rgba(0,0,0,0.02),0_0_0_1px_rgba(123,26,42,0.04)]"
             style={{ animationDelay: '0.3s' }}
           >
             <div className="flex justify-between items-center mb-4 lg:mb-6">
@@ -395,10 +401,9 @@ export default function StudentDashboard({ embedded = false }) {
               </div>
               <button 
                 onClick={() => navigate('/student/appointments')} 
-                className="text-[13px] font-semibold text-maroon bg-transparent lg:bg-maroon-light border-none lg:border-[1.5px] lg:border-maroon-border rounded-[10px] py-1 lg:py-2 px-0 lg:px-4 cursor-pointer font-sans transition-all duration-200 hover:text-maroon-dark lg:hover:bg-maroon lg:hover:text-white shrink-0 flex items-center gap-1"
+                className="text-[13px] font-semibold text-maroon bg-maroon-light border-[1.5px] border-maroon-border/40 rounded-[10px] py-1.5 px-3 sm:px-4 cursor-pointer font-sans transition-all duration-200 hover:text-white hover:bg-maroon shrink-0 flex items-center gap-1 shadow-2xs"
               >
-                <span className="md:hidden">View All</span>
-                <span className="hidden md:inline">View All</span>
+                <span>View All</span>
                 <ChevronRight size={14} />
               </button>
             </div>
@@ -406,15 +411,15 @@ export default function StudentDashboard({ embedded = false }) {
             {loading ? (
               <div className="flex flex-col gap-3">
                 {[1, 2, 3].map(i => (
-                  <div key={i} className="p-4 rounded-2xl border border-border bg-white lg:bg-off-white flex justify-between items-center">
+                  <div key={i} className="p-4 rounded-2xl border border-border bg-off-white flex justify-between items-center">
                     <div className="flex items-center gap-4">
-                      <div className="hidden lg:block animate-pulse w-11.5 h-11.5 rounded-xl bg-border" />
+                      <div className="hidden sm:block animate-pulse w-11.5 h-11.5 rounded-xl bg-border" />
                       <div>
                         <div className="animate-pulse w-30 h-3.5 rounded bg-border mb-2" />
                         <div className="animate-pulse w-45 h-3 rounded bg-border" />
                       </div>
                     </div>
-                    <div className="animate-pulse w-15 lg:w-20 h-6 rounded-full bg-border" />
+                    <div className="animate-pulse w-15 sm:w-20 h-6 rounded-full bg-border" />
                   </div>
                 ))}
               </div>
@@ -432,17 +437,17 @@ export default function StudentDashboard({ embedded = false }) {
                         navigate(`/student/appointments?id=${apt.id}`);
                       }
                     }}
-                    className="group relative flex justify-between items-center p-3.5 sm:p-4 rounded-2xl border border-border bg-white lg:bg-off-white/80 hover:bg-white hover:border-maroon/35 transition-all duration-300 ease-out cursor-pointer shadow-2xs hover:shadow-[0_10px_26px_rgba(123,26,42,0.08)] hover:-translate-y-0.5 active:scale-[0.995]"
+                    className="group relative flex justify-between items-center p-3.5 sm:p-4 rounded-2xl border border-border bg-off-white/80 hover:bg-white hover:border-maroon/35 transition-all duration-300 ease-out cursor-pointer shadow-2xs hover:shadow-[0_10px_26px_rgba(123,26,42,0.08)] hover:-translate-y-0.5 active:scale-[0.995]"
                   >
-                    <div className="flex items-center gap-3.5 sm:gap-4 min-w-0">
+                    <div className="flex items-center gap-3.5 sm:gap-4 flex-1 min-w-0">
                       {/* Document Icon Badge */}
                       <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-xl text-maroon bg-maroon-light border border-maroon-border/40 flex items-center justify-center shrink-0 group-hover:scale-105 group-hover:bg-maroon group-hover:text-white transition-all duration-300 shadow-2xs">
                         <ClipboardList size={20} />
                       </div>
                       
                       {/* Document Info */}
-                      <div className="min-w-0">
-                        <h3 className="text-[14px] sm:text-[15px] font-bold text-text-main group-hover:text-maroon transition-colors duration-200 m-0 mb-1 leading-snug truncate">
+                      <div className="flex-1 min-w-0">
+                        <h3 className="text-[14px] sm:text-[15px] font-bold text-text-main group-hover:text-maroon transition-colors duration-200 m-0 mb-1.5 leading-snug wrap-break-word">
                           {apt.type}
                         </h3>
                         <div className="flex flex-wrap gap-1.5 sm:gap-2 items-center text-[11px] sm:text-[12px]">
@@ -485,7 +490,7 @@ export default function StudentDashboard({ embedded = false }) {
                 ))}
               </div>
             ) : (
-              <div className="text-center py-8 px-6 bg-white lg:bg-off-white/60 rounded-2xl border border-dashed border-border flex flex-col items-center justify-center">
+              <div className="text-center py-8 px-6 bg-off-white/60 rounded-2xl border border-dashed border-border flex flex-col items-center justify-center">
                 <div className="w-11 h-11 rounded-xl bg-surface border border-border flex items-center justify-center text-text-muted mb-2.5">
                   <Calendar size={20} />
                 </div>
@@ -503,13 +508,13 @@ export default function StudentDashboard({ embedded = false }) {
 
           {/* Large Live Queue Block */}
           <div 
-            className="animate-fade-up bg-transparent lg:bg-white rounded-[20px] p-0 lg:p-7 shadow-none lg:shadow-[0_8px_30px_rgba(0,0,0,0.02),0_0_0_1px_rgba(123,26,42,0.04)] order-first lg:order-0" 
+            className="animate-fade-up min-w-0 w-full bg-white rounded-[20px] p-5 sm:p-6 lg:p-7 shadow-[0_8px_30px_rgba(0,0,0,0.02),0_0_0_1px_rgba(123,26,42,0.04)] order-first lg:order-0 flex flex-col" 
             style={{ animationDelay: '0.3s' }}
           >
-            <div className="flex justify-between items-end mb-3 lg:mb-4">
+            <div className="flex justify-between items-end mb-4">
               <div>
                 <p className="text-[11px] font-semibold text-gold tracking-widest uppercase m-0 mb-0.5">Live Queue</p>
-                <h2 className="font-serif text-[18px] lg:text-[20px] font-bold text-text-main m-0">Active Registrar Queue</h2>
+                <h2 className="font-serif text-[18px] lg:text-[20px] font-bold text-text-main m-0 whitespace-nowrap">Active Registrar Queue</h2>
               </div>
             </div>
 
@@ -546,22 +551,22 @@ export default function StudentDashboard({ embedded = false }) {
                   </div>
                   <div className="bg-white p-3 rounded-[10px] border border-maroon/5 mx-auto w-full text-center">
                     <span className="text-[10px] text-text-muted block uppercase tracking-wider font-semibold mb-0.5">Now Serving</span>
-                    <strong className="text-[13px] text-text-main font-bold truncate block">{activeCounterTickets[0].transaction_type}</strong>
+                    <strong className="text-[13px] text-text-main font-bold truncate block">{cleanDocName(activeCounterTickets[0].transaction_type)}</strong>
                   </div>
                 </div>
               ) : (
-                <div className="bg-white rounded-2xl p-5 shadow-[0_2px_8px_rgba(0,0,0,0.02),0_0_0_1px_rgba(123,26,42,0.04)]">
+                <div className="bg-white rounded-2xl p-4 sm:p-5 shadow-[0_2px_8px_rgba(0,0,0,0.02),0_0_0_1px_rgba(123,26,42,0.04)]">
                   <p className="text-[11px] font-semibold text-text-sub tracking-[0.12em] uppercase m-0 mb-3 text-center">Now Serving</p>
                   <div className="grid grid-cols-1 gap-2.5">
                     {activeCounterTickets.map((t) => (
-                      <div key={t.queue_ticket_id} className="flex items-center gap-4 p-3.5 rounded-xl border border-border bg-off-white">
-                        <div className="font-serif text-[28px] font-bold text-maroon leading-none tracking-[-0.02em] shrink-0 min-w-22 text-center">
+                      <div key={t.queue_ticket_id} className="flex items-center gap-3 sm:gap-4 p-3.5 rounded-xl border border-border bg-off-white">
+                        <div className="font-serif text-[24px] sm:text-[28px] font-bold text-maroon leading-none tracking-[-0.02em] shrink-0 min-w-20 text-center">
                           {t.queue_number}
                         </div>
                         <div className="w-px h-9 bg-border shrink-0" />
                         <div className="flex-1 min-w-0">
                           <div className="text-[11px] font-bold text-gold-dark uppercase tracking-wider block mb-0.5">{t.location}</div>
-                          <div className="text-[13px] text-text-main font-semibold truncate">{t.transaction_type}</div>
+                          <div className="text-[13px] text-text-main font-semibold truncate">{cleanDocName(t.transaction_type)}</div>
                         </div>
                       </div>
                     ))}
@@ -569,19 +574,19 @@ export default function StudentDashboard({ embedded = false }) {
                 </div>
               )
             ) : (
-              <div className="relative text-center p-8 lg:p-10 flex-1 flex flex-col justify-center items-center bg-white rounded-[20px] border border-border shadow-[0_2px_8px_rgba(0,0,0,0.02)] overflow-hidden transition-all duration-300 hover:shadow-[0_8px_24px_rgba(123,26,42,0.06)] hover:border-maroon/20">
+              <div className="relative text-center p-6 sm:p-8 flex-1 flex flex-col justify-center items-center bg-off-white/60 rounded-2xl border border-dashed border-border overflow-hidden transition-all duration-300">
                 {/* Decorative background blobs */}
-                <div className="absolute top-0 right-0 w-32 h-32 bg-maroon-light rounded-full blur-3xl opacity-60 -translate-y-1/2 translate-x-1/2 pointer-events-none" />
-                <div className="absolute bottom-0 left-0 w-24 h-24 bg-gold-light rounded-full blur-2xl opacity-60 translate-y-1/2 -translate-x-1/2 pointer-events-none" />
+                <div className="absolute top-0 right-0 w-32 h-32 bg-maroon-light rounded-full blur-3xl opacity-40 -translate-y-1/2 translate-x-1/2 pointer-events-none" />
+                <div className="absolute bottom-0 left-0 w-24 h-24 bg-gold-light rounded-full blur-2xl opacity-40 translate-y-1/2 -translate-x-1/2 pointer-events-none" />
                 
                 {/* Icon wrapper */}
-                <div className="relative z-10 w-16 h-16 bg-linear-to-br from-white to-off-white rounded-2xl shadow-[inset_0_1px_1px_rgba(255,255,255,1),0_2px_4px_rgba(0,0,0,0.04)] border border-border flex items-center justify-center mb-5 group-hover:scale-105 transition-transform duration-300">
-                  <Ticket size={28} className="text-maroon/70" />
+                <div className="relative z-10 w-14 h-14 bg-white rounded-2xl shadow-2xs border border-border flex items-center justify-center mb-3.5">
+                  <Ticket size={24} className="text-maroon/70" />
                 </div>
                 
                 {/* Typography */}
-                <h3 className="relative z-10 font-serif text-[18px] lg:text-[20px] font-bold text-text-main m-0 mb-1.5 tracking-tight">No Active Queue Ticket</h3>
-                <p className="relative z-10 text-[13px] lg:text-[14px] m-0 text-text-sub max-w-65 leading-relaxed">There's no active queue ticket at the moment. Activate your ticket to join the queue.</p>
+                <h3 className="relative z-10 font-serif text-[16px] sm:text-[18px] font-bold text-text-main m-0 mb-1.5 tracking-tight">No Active Queue Ticket</h3>
+                <p className="relative z-10 text-[12px] sm:text-[13px] m-0 text-text-sub max-w-sm leading-relaxed">There's no active queue ticket at the moment. Active tickets appear here once called.</p>
               </div>
             )}
           </div>

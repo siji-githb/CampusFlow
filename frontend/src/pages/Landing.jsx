@@ -1,8 +1,8 @@
 import { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { Calendar, Ticket, Route, Bot, Zap, BarChart3, ChevronRight, Menu, X } from 'lucide-react'
-import campusFlowLogo from '../assets/logo.png'
-import loginImage from '../assets/landing_page.png'
+import campusFlowLogo from '../assets/logo.webp'
+import loginImage from '../assets/landing_page.webp'
 
 const FEATURES = [
   { icon: <Calendar size={18} strokeWidth={2.5} className="text-maroon" />, title: 'Online Appointment Booking', desc: 'Schedule TOR, COE, or Diploma requests anytime — no need to line up just to get a number.' },

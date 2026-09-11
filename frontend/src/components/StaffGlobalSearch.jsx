@@ -1,12 +1,14 @@
 import { useState, useEffect, useRef } from 'react';
-import { Search, BarChart2, Ticket, Calendar, ClipboardList, HelpCircle, User, Settings, ChevronRight } from 'lucide-react';
+import { Search, BarChart2, Ticket, Calendar, ClipboardList, HelpCircle, User, Settings, ChevronRight, FolderOpen, ShieldCheck } from 'lucide-react';
 
 const SEARCH_ITEMS = [
   { id: 'overview', label: 'Dashboard Overview', icon: BarChart2, desc: 'View summary and statistics' },
   { id: 'queue', label: 'Live Queue Management', icon: Ticket, desc: 'Manage the current active queue' },
+  { id: 'document-releases', label: 'Document Releases', icon: FolderOpen, desc: 'Track and release student documents' },
   { id: 'appointments', label: 'Appointments', icon: Calendar, desc: 'View and manage student appointments' },
+  { id: 'priority-requests', label: 'Priority Requests', icon: ShieldCheck, desc: 'Review PWD and pregnancy requests' },
+  { id: 'id-requests', label: 'ID Requests', icon: HelpCircle, desc: 'Process student ID requests' },
   { id: 'records', label: 'Master List', icon: ClipboardList, desc: 'Manage student data and documents' },
-  { id: 'id-requests', label: 'ID Requests', icon: HelpCircle, desc: 'Process student ID replacements' },
   { id: 'profile', label: 'My Profile', icon: User, desc: 'View your profile information' },
   { id: 'settings', label: 'Account Settings', icon: Settings, desc: 'Manage your account preferences' },
 ];
@@ -32,9 +34,6 @@ export default function StaffGlobalSearch({ setActiveNav }) {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  useEffect(() => {
-    setActiveIndex(0);
-  }, [query]);
 
   const handleKeyDown = (e) => {
     if (!isOpen || displayItems.length === 0) return;
@@ -72,6 +71,7 @@ export default function StaffGlobalSearch({ setActiveNav }) {
         value={query}
         onChange={(e) => {
           setQuery(e.target.value);
+          setActiveIndex(0);
           setIsOpen(true);
         }}
         onFocus={() => {

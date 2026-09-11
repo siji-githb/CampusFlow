@@ -101,17 +101,17 @@ export default function CustomDatePicker({
   })
 
   // Sync displayed text & view when value changes from outside
-  useEffect(() => {
+  const [prevValue, setPrevValue] = useState(value)
+  if (value !== prevValue) {
+    setPrevValue(value)
+    setInputText(value ? formatDateDisplay(value) : '')
     if (value) {
-      setInputText(formatDateDisplay(value))
       const [y, m, d] = value.split('-').map(Number)
       if (y && m && d) {
         setViewDate(new Date(y, m - 1, d))
       }
-    } else {
-      setInputText('')
     }
-  }, [value])
+  }
 
   // Close when clicking outside (desktop popover only; mobile uses modal backdrop)
   useEffect(() => {

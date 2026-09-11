@@ -98,7 +98,7 @@ export function CalendarWidget({ selectedDate, onDateSelect, minDateStr, maxDate
   )
 }
 
-export const isSlotPast = (slotTime, selectedDate) => {
+const isSlotPast = (slotTime, selectedDate) => {
   const d = new Date()
   const today = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
   if (selectedDate < today) return true

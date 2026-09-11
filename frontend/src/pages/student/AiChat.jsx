@@ -2,13 +2,12 @@ import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/useAuth'
 import { useToast } from '../../context/ToastContext'
-import { sendMessage, sendMessageStream, clearChat, getChatHistory } from '../../services/aiService'
-import { BotMessageSquare, Eraser } from 'lucide-react'
+import { BotMessageSquare, Eraser, Calendar, ChevronRight, Clock, AlertCircle, Zap, ClipboardList, Info } from 'lucide-react'
 
 const SUGGESTED = [
-  'How do I book an appointment?',
+  'Book appointment for TOR and COE',
   'What requirements do I need for a TOR or COE?',
-  'Can you make an appointment for me?',
+  'How do I book an appointment?',
 ]
 
 const MicIcon = () => (
@@ -43,10 +42,14 @@ const sanitizeDisplayText = (text) => {
     .replace(/__/g, '')
 }
 
-function FormattedMessageContent({ content, isUser }) {
+function FormattedMessageContent({ content, isUser, onNavigate }) {
   if (!content) return null
   const sanitized = isUser ? content : sanitizeDisplayText(content)
   const blocks = sanitized.split(/\n\n+/)
+  const isBookingConfirmation = !isUser && (
+    sanitized.toLowerCase().includes('successfully booked') || 
+    (sanitized.toLowerCase().includes('appointment') && (sanitized.toLowerCase().includes('confirmed') || sanitized.toLowerCase().includes('has been booked')))
+  )
 
   return (
     <div className={`space-y-2 text-[13.5px] sm:text-[14px] leading-relaxed ${isUser ? 'text-white' : 'text-text-main'}`}>
@@ -63,7 +66,7 @@ function FormattedMessageContent({ content, isUser }) {
               {lines.map((line, lIdx) => {
                 const trimmed = line.trim()
                 if (trimmed.startsWith('•') || trimmed.startsWith('-') || trimmed.startsWith('*')) {
-                  const itemText = trimmed.replace(/^[•\-\*]\s*/, '').trim()
+                  const itemText = trimmed.replace(/^[•\-*]\s*/, '').trim()
                   return (
                     <div key={lIdx} className="flex items-start gap-2 pl-0.5">
                       <span className={`w-1.5 h-1.5 rounded-full shrink-0 mt-2 ${isUser ? 'bg-white/80' : 'bg-maroon'}`} />
@@ -87,19 +90,83 @@ function FormattedMessageContent({ content, isUser }) {
           </p>
         )
       })}
+
+      {isBookingConfirmation && onNavigate && (
+        <div className="pt-2 border-t border-border/40 mt-2">
+          <button
+            type="button"
+            onClick={() => onNavigate('/student/appointments')}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-maroon-light hover:bg-maroon hover:text-white text-maroon text-xs font-semibold border border-maroon-border/40 transition-all cursor-pointer shadow-2xs"
+          >
+            <Calendar size={13} />
+            <span>View in My Appointments</span>
+            <ChevronRight size={12} />
+          </button>
+        </div>
+      )}
     </div>
   )
 }
 
+function LimitErrorContent({ content, limitType, onNavigate }) {
+  const isDaily = limitType === 'daily' || content.toLowerCase().includes('daily')
+
+  return (
+    <div className="space-y-3 font-sans">
+      <div className="flex items-center justify-between gap-2 border-b border-amber-200/80 pb-2">
+        <div className="flex items-center gap-1.5 text-amber-900 font-bold text-xs sm:text-[13px]">
+          {isDaily ? <Clock size={14} className="text-amber-700 shrink-0" /> : <Zap size={14} className="text-amber-700 shrink-0" />}
+          <span>{isDaily ? "Daily Question Limit Reached" : "Sending Messages Too Quickly"}</span>
+        </div>
+        <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-amber-200/70 text-amber-900 border border-amber-300 shadow-2xs">
+          {isDaily ? "10/10 Used" : "Please Pause"}
+        </span>
+      </div>
+
+      <p className="m-0 text-xs sm:text-[13px] text-amber-950 leading-relaxed font-medium">
+        {content}
+      </p>
+
+      {isDaily && onNavigate && (
+        <div className="pt-2 border-t border-amber-200/80 flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={() => onNavigate('/student/book')}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-maroon text-white text-xs font-semibold hover:bg-maroon-dark transition-all cursor-pointer shadow-2xs border-none"
+          >
+            <Calendar size={13} />
+            <span>Book Appointment Online</span>
+            <ChevronRight size={12} />
+          </button>
+          <button
+            type="button"
+            onClick={() => onNavigate('/student/appointments')}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white text-text-main text-xs font-semibold hover:bg-off-white transition-all cursor-pointer border border-border shadow-2xs"
+          >
+            <ClipboardList size={13} />
+            <span>My Appointments</span>
+          </button>
+        </div>
+      )}
+    </div>
+  )
+}
+
+const DEFAULT_MESSAGE = {
+  role: 'assistant',
+  content: "Hi! I'm your AI Assistant for the Registrar's Office 👋 I can help you with appointment booking, transaction requirements, and registrar procedures. How can I help you today?",
+}
+
 export default function AiChat({ asWidget, headless, onClose, initialQuery }) {
+  const navigate = useNavigate()
   const { token } = useAuth()
   const toast = useToast()
-  const navigate  = useNavigate()
 
-  const DEFAULT_MESSAGE = {
-    role: 'assistant',
-    content: "Hi! I'm your AI Assistant for the Registrar's Office 👋 I can help you with appointment booking, transaction requirements, and registrar procedures. How can I help you today?",
+  const handleNavigate = (path) => {
+    navigate(path)
+    if (onClose) onClose()
   }
+
   const [messages, setMessages] = useState([DEFAULT_MESSAGE])
   const [input,   setInput]   = useState(initialQuery || '')
 
@@ -257,17 +324,52 @@ export default function AiChat({ asWidget, headless, onClose, initialQuery }) {
         }
       })
     } catch (e) {
-      if (!streamedText) {
+      const is429 = e.status === 429 || e.errorType === 'daily_limit' || e.errorType === 'minute_limit' || e.message?.toLowerCase().includes('limit')
+      if (is429) {
+        const isDaily = e.errorType === 'daily_limit' || e.message?.toLowerCase().includes('daily')
+        const friendlyMessage = e.message || (isDaily
+          ? "Daily message limit reached. You have used all 10 AI questions for today to ensure fair access for all students. You can still book appointments directly through the Book Appointment page or try again tomorrow."
+          : "You are sending messages too quickly. Please wait a moment before sending your next message.")
+          
+        setError(isDaily ? "Daily limit reached (10 questions/day)." : "Please wait a moment before sending another message.")
+        setMessages(prev => [
+          ...prev, 
+          { 
+            role: 'assistant', 
+            content: friendlyMessage, 
+            isLimitError: true,
+            limitType: isDaily ? 'daily' : 'minute'
+          }
+        ])
+      } else if (!streamedText) {
         try {
           const fallbackData = await sendMessage(token, msg)
           setMessages(prev => [...prev, { role: 'assistant', content: fallbackData.message }])
         } catch (fallbackErr) {
-          const isLengthError = e.message?.includes('1000 characters') || msg.length > 1000
-          const errorText = isLengthError 
-            ? "Your message is too long — please keep it under 1000 characters." 
-            : (e.message || "Sorry, I'm having trouble connecting. Please try again.")
-          setError(errorText)
-          setMessages(prev => [...prev, { role: 'assistant', content: errorText, isError: true }])
+          const isFallback429 = fallbackErr.status === 429 || fallbackErr.errorType === 'daily_limit' || fallbackErr.message?.toLowerCase().includes('limit')
+          if (isFallback429) {
+            const isDaily = fallbackErr.errorType === 'daily_limit' || fallbackErr.message?.toLowerCase().includes('daily')
+            const limitMsg = fallbackErr.message || (isDaily
+              ? "Daily message limit reached. You have used all 10 AI questions for today to ensure fair access for all students. You can still book appointments directly through the Book Appointment page or try again tomorrow."
+              : "You are sending messages too quickly. Please wait a moment before sending your next message.")
+            setError(isDaily ? "Daily limit reached (10 questions/day)." : "Please wait a moment before sending another message.")
+            setMessages(prev => [
+              ...prev, 
+              { 
+                role: 'assistant', 
+                content: limitMsg, 
+                isLimitError: true,
+                limitType: isDaily ? 'daily' : 'minute'
+              }
+            ])
+          } else {
+            const isLengthError = fallbackErr.message?.includes('1000 characters') || msg.length > 1000
+            const errorText = isLengthError 
+              ? "Your message is too long — please keep it under 1000 characters." 
+              : (fallbackErr.message || "Sorry, I'm having trouble connecting. Please try again.")
+            setError(errorText)
+            setMessages(prev => [...prev, { role: 'assistant', content: errorText, isError: true }])
+          }
         }
       } else {
         setMessages(prev => {
@@ -285,11 +387,17 @@ export default function AiChat({ asWidget, headless, onClose, initialQuery }) {
     }
   }
 
+  const hasDailyLimit = messages.some(m => 
+    (m.isLimitError && m.limitType === 'daily') || 
+    (m.role === 'assistant' && typeof m.content === 'string' && m.content.toLowerCase().includes('daily message limit reached'))
+  )
+
   const handleClear = async () => {
     setShowConfirm(false)
     try {
       await clearChat(token)
       setMessages([{ role: 'assistant', content: 'Chat cleared! How can I help you today?' }])
+      setError('')
       toast.info('Chat conversation cleared.')
     } catch (e) { 
       setError(e.message)
@@ -302,7 +410,7 @@ export default function AiChat({ asWidget, headless, onClose, initialQuery }) {
       {/* Chat area */}
       <div className={`flex-1 overflow-y-auto p-5 w-full box-border bg-[#F9FAFB] ${asWidget ? '' : 'max-w-170 mx-auto'}`}>
 
-        {messages.length === 1 && (
+        {messages.length === 1 && !hasDailyLimit && (
           <div className="mb-8 mt-4">
             <div className="flex flex-wrap justify-center gap-2">
               {SUGGESTED.map((q, i) => (
@@ -316,22 +424,36 @@ export default function AiChat({ asWidget, headless, onClose, initialQuery }) {
         )}
 
         <div className="flex flex-col gap-5">
-          {messages.map((msg, i) => (
-            <div key={i} className={`flex items-end gap-2.5 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-              {msg.role === 'assistant' && (
-                <div className="w-7 h-7 rounded-full bg-maroon flex items-center justify-center shrink-0 text-white shadow-sm">
-                  <BotMessageSquare size={15} />
+          {messages.map((msg, i) => {
+            const isLimit = msg.isLimitError || (msg.role === 'assistant' && typeof msg.content === 'string' && msg.content.toLowerCase().includes('daily message limit reached'))
+            return (
+              <div key={i} className={`flex items-end gap-2.5 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                {msg.role === 'assistant' && (
+                  <div className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 text-white shadow-sm ${
+                    isLimit ? 'bg-amber-600' : 'bg-maroon'
+                  }`}>
+                    {isLimit ? <Clock size={15} /> : <BotMessageSquare size={15} />}
+                  </div>
+                )}
+                <div className={`${asWidget ? 'max-w-[88%]' : 'max-w-[80%]'} py-2.5 px-4 text-[14px] leading-relaxed shadow-sm ${
+                  msg.role === 'user' ? 'rounded-[20px_20px_4px_20px] bg-maroon text-white border-none' : 
+                  isLimit ? 'rounded-[20px_20px_20px_4px] bg-amber-50/90 text-amber-950 border border-amber-200/90 shadow-2xs' :
+                  msg.isError ? 'rounded-[20px_20px_20px_4px] bg-red-50 text-red-600 border border-red-100' : 
+                  'rounded-[20px_20px_20px_4px] bg-white text-text-main border border-border/60'
+                }`}>
+                  {isLimit ? (
+                    <LimitErrorContent 
+                      content={msg.content} 
+                      limitType={msg.limitType || (msg.content?.toLowerCase().includes('daily') ? 'daily' : 'minute')} 
+                      onNavigate={handleNavigate} 
+                    />
+                  ) : (
+                    <FormattedMessageContent content={msg.content} isUser={msg.role === 'user'} onNavigate={handleNavigate} />
+                  )}
                 </div>
-              )}
-              <div className={`${asWidget ? 'max-w-[88%]' : 'max-w-[80%]'} py-2.5 px-4 text-[14px] leading-relaxed shadow-sm ${
-                msg.role === 'user' ? 'rounded-[20px_20px_4px_20px] bg-maroon text-white border-none' : 
-                msg.isError ? 'rounded-[20px_20px_20px_4px] bg-red-50 text-red-600 border border-red-100' : 
-                'rounded-[20px_20px_20px_4px] bg-white text-text-main border border-border/60'
-              }`}>
-                <FormattedMessageContent content={msg.content} isUser={msg.role === 'user'} />
               </div>
-            </div>
-          ))}
+            )
+          })}
 
           {loading && (
             <div className="flex items-end gap-2.5 animate-fade-up" style={{ animationDuration: '0.2s' }}>
@@ -356,31 +478,57 @@ export default function AiChat({ asWidget, headless, onClose, initialQuery }) {
           )}
           <div ref={bottomRef} />
         </div>
-      </div>      {/* Input area */}
+      </div>
+
+      {/* Input area */}
       <div className="bg-white px-3 sm:px-4 py-2.5 sm:py-3 shrink-0 shadow-[0_-2px_12px_rgba(0,0,0,0.02)] border-t border-border/60 z-10 relative">
         <div className={`mx-auto ${asWidget ? 'w-full px-1' : 'max-w-170'}`}>
-          {error && <p className="text-[12px] text-red-500 mb-1.5 px-2 flex items-center gap-1"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg> {error}</p>}
+          {error && (
+            <div className={`text-[12px] mb-1.5 px-2 flex items-center gap-1.5 ${
+              hasDailyLimit ? 'text-amber-800 font-medium' : 'text-red-500'
+            }`}>
+              {hasDailyLimit ? (
+                <Clock size={13} className="shrink-0 text-amber-700" />
+              ) : (
+                <AlertCircle size={13} className="shrink-0 text-red-500" />
+              )}
+              <span>{error}</span>
+            </div>
+          )}
 
           {/* Pill-shaped Chatbox Container */}
           <div className={`relative flex items-center w-full rounded-full border transition-all duration-200 pl-4.5 pr-2 py-1 ${
-            isListening 
-              ? 'border-maroon shadow-[0_0_0_3px_rgba(123,26,42,0.12)] bg-white' 
-              : 'border-slate-300 hover:border-slate-400 focus-within:border-maroon focus-within:bg-white focus-within:ring-2 focus-within:ring-maroon/10 bg-off-white/50 shadow-2xs'
+            hasDailyLimit
+              ? 'border-amber-300 bg-amber-50/40 shadow-2xs'
+              : isListening 
+                ? 'border-maroon shadow-[0_0_0_3px_rgba(123,26,42,0.12)] bg-white' 
+                : 'border-slate-300 hover:border-slate-400 focus-within:border-maroon focus-within:bg-white focus-within:ring-2 focus-within:ring-maroon/10 bg-off-white/50 shadow-2xs'
           }`}>
             <textarea
               ref={textareaRef}
               value={input}
+              disabled={hasDailyLimit || loading}
               onChange={e => setInput(e.target.value)}
               onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend() } }}
-              placeholder={isListening ? 'Listening...' : 'Send a message'}
+              placeholder={
+                hasDailyLimit 
+                  ? 'Daily question limit reached (10/10 questions used today)' 
+                  : isListening 
+                    ? 'Listening...' 
+                    : 'Send a message'
+              }
               rows={1}
               style={{ height: '38px', minHeight: '38px', maxHeight: '120px' }}
-              className="flex-1 bg-transparent border-none outline-none resize-none py-2 px-0 text-[14px] text-text-main placeholder:text-text-muted/80 leading-5 overflow-y-auto box-border"
+              className={`flex-1 bg-transparent border-none outline-none resize-none py-2 px-0 text-[14px] leading-5 overflow-y-auto box-border ${
+                hasDailyLimit 
+                  ? 'text-amber-900 placeholder:text-amber-700/70 cursor-not-allowed' 
+                  : 'text-text-main placeholder:text-text-muted/80'
+              }`}
             />
 
             <div className="flex items-center gap-1 shrink-0 ml-1">
               {/* Mic button */}
-              {voiceSupported && (
+              {voiceSupported && !hasDailyLimit && (
                 <button
                   type="button"
                   onClick={isListening ? stopListening : startListening}
@@ -397,10 +545,10 @@ export default function AiChat({ asWidget, headless, onClose, initialQuery }) {
               <button
                 type="button"
                 onClick={() => handleSend()}
-                disabled={!input.trim() || loading}
-                title="Send message"
+                disabled={!input.trim() || loading || hasDailyLimit}
+                title={hasDailyLimit ? "Daily limit reached" : "Send message"}
                 className={`w-8.5 h-8.5 rounded-full flex items-center justify-center transition-all cursor-pointer border-none ${
-                  !input.trim() || loading 
+                  !input.trim() || loading || hasDailyLimit
                     ? 'text-slate-400 bg-transparent cursor-not-allowed opacity-50' 
                     : 'text-maroon hover:text-white hover:bg-maroon active:scale-95 transition-all'
                 }`}
@@ -413,7 +561,11 @@ export default function AiChat({ asWidget, headless, onClose, initialQuery }) {
           {/* Status bar */}
           <div className="flex items-center justify-between mt-1.5 px-2">
             <div className="flex items-center gap-4 flex-1 justify-center">
-            {isListening ? (
+            {hasDailyLimit ? (
+              <p className="text-[10.5px] text-amber-800 m-0 text-center font-medium">
+                Limit resets at midnight · You can still book appointments directly via the booking page
+              </p>
+            ) : isListening ? (
               <span className="text-[10.5px] text-maroon flex items-center gap-1.5 font-medium">
                 <span className="w-1.5 h-1.5 rounded-full bg-maroon animate-pulse"></span>
                 Listening...
@@ -425,7 +577,7 @@ export default function AiChat({ asWidget, headless, onClose, initialQuery }) {
             )}
             </div>
 
-            {input.length > 800 && (
+            {!hasDailyLimit && input.length > 800 && (
               <div className={`text-[10.5px] font-medium transition-colors ${input.length > 1000 ? 'text-red-500' : 'text-gold'}`}>
                 {input.length} / 1000
               </div>

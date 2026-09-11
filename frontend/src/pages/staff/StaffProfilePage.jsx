@@ -448,7 +448,7 @@ export default function StaffProfilePage({ setActiveNav }) {
                   <button 
                     onClick={handleRemovePhoto}
                     disabled={isSavingProfile || !previewImage} 
-                    className="flex items-center gap-2 text-fluid-13 font-semibold text-red hover:text-red-dark transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="flex items-center gap-2 text-fluid-13 font-semibold text-danger hover:text-danger-dark transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     Remove
                   </button>

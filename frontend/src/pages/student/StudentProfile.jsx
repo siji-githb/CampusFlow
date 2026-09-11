@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useCallback } from 'react'
 import { createPortal } from 'react-dom'
 import { Link } from 'react-router-dom'
 import StudentLayout from '../../components/layout/StudentLayout'
@@ -6,7 +6,7 @@ import { useAuth } from '../../context/useAuth'
 import { useStaffEvent } from '../../context/WebSocketContext'
 import { useToast } from '../../context/ToastContext'
 import { Edit2, IdCard, Tag, LogOut, Trash2, X, Camera, Loader2, Eye, EyeOff, ShieldAlert, ShieldCheck, Clock, FileText, CheckCircle, Upload, Sparkles, Bell, BellOff, Check, AlertCircle, Lock } from 'lucide-react'
-import { updateProfile, changePassword, logoutAllDevices, deleteAccount, updateProfilePicture, removeProfilePicture } from '../../services/authService'
+import { changePassword, logoutAllDevices, deleteAccount, updateProfilePicture, removeProfilePicture } from '../../services/authService'
 import { getMyPriorityStatus, submitPriorityRequest } from '../../services/priorityService'
 import { uploadMedia } from '../../services/appointmentService'
 import { isNotificationSupported, getPushStatus, setPushEnabled, requestNotificationPermission, sendBrowserNotification } from '../../utils/browserNotifications'
@@ -61,12 +61,6 @@ export default function StudentProfile({ embedded = false }) {
   const [showNewPassword, setShowNewPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   
-  // Profile Form State
-  const [editData, setEditData] = useState({
-    first_name: user?.first_name || '',
-    last_name: user?.last_name || '',
-    email: user?.email || '',
-  })
   const [isSavingProfile, setIsSavingProfile] = useState(false)
   const [profileMsg, setProfileMsg] = useState({ type: '', text: '' })
   
@@ -92,7 +86,7 @@ export default function StudentProfile({ embedded = false }) {
   const [uploadProgress, setUploadProgress] = useState(0)
   const [priorityMsg, setPriorityMsg] = useState({ type: '', text: '' })
 
-  const fetchStatus = () => {
+  const fetchStatus = useCallback(() => {
     if (!token) return
     getMyPriorityStatus(token)
       .then(status => {
@@ -103,7 +97,7 @@ export default function StudentProfile({ embedded = false }) {
       })
       .catch(console.error)
       .finally(() => setLoadingPriority(false))
-  }
+  }, [token, user, updateUser])
 
   // Real-time WebSocket event listener for instant 0ms updates
   useStaffEvent('PRIORITY_REQUESTS_UPDATED', () => {
@@ -117,7 +111,7 @@ export default function StudentProfile({ embedded = false }) {
       interval = setInterval(fetchStatus, 60000)
     }
     return () => clearInterval(interval)
-  }, [token, user, updateUser])
+  }, [token, fetchStatus])
 
   const handlePrioritySubmit = async (e) => {
     e.preventDefault()
@@ -167,11 +161,6 @@ export default function StudentProfile({ embedded = false }) {
   }
 
   const handleOpenEditModal = () => {
-    setEditData({
-      first_name: user?.first_name || '',
-      last_name: user?.last_name || '',
-      email: user?.email || '',
-    })
     setPendingProfilePicture(null)
     setPendingRemovePicture(false)
     setPreviewImage(user?.profile_image || null)

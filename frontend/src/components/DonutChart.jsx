@@ -11,21 +11,23 @@ export default function DonutChart({ data, total, colors, hideLegend = false }) 
   const sumCounts = data.reduce((sum, d) => sum + (d.count || 0), 0)
   const chartTotal = total > 0 ? total : sumCounts
   
-  let currentOffset = 0
+  const segments = data.map((tx, i) => {
+    const pct = chartTotal > 0 ? tx.count / chartTotal : 0
+    const dash = pct * circ
+    const offset = data.slice(0, i).reduce((sum, prev) => {
+      const prevPct = chartTotal > 0 ? (prev.count || 0) / chartTotal : 0
+      return sum + prevPct * circ
+    }, 0)
+    const visibleDash = dash > 2 ? dash - 2 : dash
+    return { tx, i, pct, dash, offset, visibleDash }
+  })
   
   return (
     <div className="flex flex-col items-center py-4">
       <div className="relative" style={{ width: size, height: size }}>
         <svg width={size} height={size} className="-rotate-90 drop-shadow-sm">
           <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="#EAE7E2" strokeWidth={strokeWidth} />
-          {data.map((tx, i) => {
-            const pct = chartTotal > 0 ? tx.count / chartTotal : 0
-            const dash = pct * circ
-            const offset = currentOffset
-            currentOffset += dash
-            
-            // tiny gap if piece is big enough
-            const visibleDash = dash > 2 ? dash - 2 : dash
+          {segments.map(({ i, offset, visibleDash }) => {
             const isHovered = hovered === i
             
             return (

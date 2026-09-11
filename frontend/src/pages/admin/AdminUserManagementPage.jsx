@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom'
 import { useAuth } from '../../context/useAuth'
 import { useToast } from '../../context/ToastContext'
 import { getAllUsers, updateUserRole, getDashboardStats, toggleUserStatus } from '../../services/adminService'
-import { GraduationCap, Briefcase, Shield, AlertTriangle, Check, Search, X as XIcon, Users, Pencil, MoreVertical, Ban, CheckCircle, CheckCircle2, X } from 'lucide-react'
+import { GraduationCap, Briefcase, Shield, AlertTriangle, Check, Search, X, Users, Pencil, MoreVertical, Ban, CheckCircle, CheckCircle2, Download } from 'lucide-react'
 
 // ── Role config ────────────────────────────────────────────────────────────────
 const ROLE_CFG = {
@@ -155,7 +155,6 @@ function exportCSV(users, filename = 'users_export.csv') {
 export default function AdminUserManagementPage() {
   const { token }  = useAuth()
   const [users, setUsers]         = useState([])
-  const [stats, setStats]         = useState(null)
   const [loading, setLoading]     = useState(true)
   const [statsLoading, setStatsLoading] = useState(true)
   const [saving, setSaving]       = useState(false)
@@ -163,13 +162,13 @@ export default function AdminUserManagementPage() {
   const [search, setSearch]       = useState('')
   const [activeTab, setActiveTab] = useState('all')
 
-  const showToast = (msg, type = 'success') => {
+  const showToast = useCallback((msg, type = 'success') => {
     const text = typeof msg === 'string' ? msg : JSON.stringify(msg)
     if (type === 'error') toast.error(text)
     else if (type === 'warning') toast.warning(text)
     else if (type === 'info') toast.info(text)
     else toast.success(text)
-  }
+  }, [toast])
   const [editUser, setEditUser]   = useState(null)
   const [dropdownOpen, setDropdownOpen] = useState(null)
   const [page, setPage]           = useState(1)
@@ -178,13 +177,13 @@ export default function AdminUserManagementPage() {
   const fetchUsers = useCallback(async () => {
     setLoading(true)
     try { setUsers(await getAllUsers(token)) }
-    catch (e) { setError(e.message) }
+    catch (e) { showToast(e.message || 'Failed to fetch users', 'error') }
     finally { setLoading(false) }
-  }, [token])
+  }, [token, showToast])
 
   useEffect(() => {
     fetchUsers()
-    getDashboardStats(token).then(setStats).catch(() => {}).finally(() => setStatsLoading(false))
+    getDashboardStats(token).catch(() => {}).finally(() => setStatsLoading(false))
   }, [fetchUsers, token])
 
   const handleSaveRole = async (userId, role) => {
@@ -310,9 +309,18 @@ export default function AdminUserManagementPage() {
               />
               <span className="absolute left-2.5 top-1/2 -translate-y-1/2 flex items-center text-text-muted"><Search size={14} /></span>
               {search && (
-                <button onClick={() => setSearch('')} className="absolute right-2 top-1/2 -translate-y-1/2 bg-transparent border-none cursor-pointer text-text-muted flex items-center p-0.5"><XIcon size={14} /></button>
+                <button onClick={() => setSearch('')} className="absolute right-2 top-1/2 -translate-y-1/2 bg-transparent border-none cursor-pointer text-text-muted flex items-center p-0.5"><X size={14} /></button>
               )}
             </div>
+            <button
+              type="button"
+              onClick={() => exportCSV(filtered)}
+              className="py-2 px-3 rounded-[9px] border border-border bg-white text-fluid-12 font-bold text-text-main hover:bg-surface transition-colors cursor-pointer shrink-0 shadow-2xs flex items-center gap-1.5"
+              title="Export filtered list to CSV"
+            >
+              <Download size={13} className="text-text-sub" />
+              <span>Export CSV</span>
+            </button>
           </div>
         </div>
 

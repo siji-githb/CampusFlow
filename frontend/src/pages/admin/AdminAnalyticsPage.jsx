@@ -137,7 +137,7 @@ function StackedBarChart({ bars, typeNames, colors, yAxisLabel }) {
 
           return (
             <g key={bi}
-              onMouseEnter={(e) => { setHovered(bi); setTooltip({ bar, bi, total, x: cx }) }}
+              onMouseEnter={() => { setHovered(bi); setTooltip({ bar, bi, total, x: cx }) }}
               onMouseLeave={() => { setHovered(null); setTooltip(null) }}
               style={{ cursor: 'pointer' }}
             >
@@ -284,17 +284,6 @@ function exportCSV(rows, filename) {
 // ─────────────────────────────────────────────────────────────────────────────
 // MAIN AdminAnalyticsPage
 // ─────────────────────────────────────────────────────────────────────────────
-
-const fmt12h = (t) => {
-  if (!t) return ''
-  const parts = t.split(':')
-  if (parts.length < 2) return t
-  const h = parseInt(parts[0], 10)
-  const m = parts[1]
-  const ampm = h >= 12 ? 'PM' : 'AM'
-  const h12 = h % 12 || 12
-  return `${h12}:${m} ${ampm}`
-}
 
 export default function AdminAnalyticsPage() {
   const { token } = useAuth()
@@ -453,17 +442,16 @@ export default function AdminAnalyticsPage() {
     finally { setLoading(false) }
   }, [token, viewType, selectedMonth])
 
-  const loadInsights = async () => {
+  const loadInsights = useCallback(async () => {
     setInsightLoading(true)
     try { setInsights(await getAiInsights(token)) }
     catch { /* silent */ }
     finally { setInsightLoading(false) }
-  }
+  }, [token])
 
-  useEffect(() => { load(); loadInsights() }, [load])
+  useEffect(() => { load(); loadInsights() }, [load, loadInsights])
 
   // ── Derived ────────────────────────────────────────────────────────────────
-  const monthLabels = monthlyReports.map(m => m.month)
 
   // Consistent preferred order for document types
   const TYPE_ORDER = ['Transcript of Records (TOR)', 'Certificate of Enrollment (COE)', 'Diploma Release', 'General Weighted Average (GWA)', 'Completion Form - Request', 'Completion Form - Submission']
@@ -527,14 +515,8 @@ export default function AdminAnalyticsPage() {
 
   const activeColors = activeTypeNames.map(name => getDocumentColor(name))
 
-  // Most requested type
-  const mostRequested = filteredReportByType[0]
-  const mostReqPct = mostRequested && totalVol > 0
-    ? Math.round((mostRequested.count / totalVol) * 100)
-    : 0
-
   // Monthly table rows
-  const tableRows = annualReports.map((m, i) => {
+  const tableRows = annualReports.map(m => {
     const filteredTotal = docType === 'all' 
       ? Math.max(0, m.total) 
       : m.by_type.filter(t => t.name.toLowerCase().includes(docType.toLowerCase())).reduce((sum, t) => sum + t.count, 0)
@@ -1213,12 +1195,4 @@ export default function AdminAnalyticsPage() {
 
     </div>
   )
-}
-
-// ── Helper ─────────────────────────────────────────────────────────────────────
-function getMonthLabel(offset) {
-  const d = new Date()
-  d.setDate(1) // Prevent month overflow (e.g., Feb 31 -> Mar 3)
-  d.setMonth(d.getMonth() - (5 - offset))
-  return d.toLocaleDateString('en-PH', { month: 'short' })
 }

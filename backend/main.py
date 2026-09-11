@@ -22,13 +22,20 @@ app.state.limiter = limiter
 
 def custom_rate_limit_handler(request: Request, exc: RateLimitExceeded):
     detail_str = str(exc.detail).lower()
+    headers = {}
     if "day" in detail_str:
-        msg = "Daily prompt limit reached. You can send up to 10 AI questions per day. Please try again tomorrow, or visit the Registrar's Office in person for assistance."
+        msg = "Daily message limit reached. You have used all 10 AI questions for today to ensure fair access for all students. You can still book appointments directly through the Book Appointment page or try again tomorrow."
+        headers["Retry-After"] = "86400"
+        error_type = "daily_limit"
     elif "minute" in detail_str:
-        msg = "You are sending messages too quickly. Please wait a moment before sending another message."
+        msg = "You are sending messages too quickly. Please wait a moment before sending your next message."
+        headers["Retry-After"] = "60"
+        error_type = "minute_limit"
     else:
         msg = f"Rate limit exceeded: {exc.detail}"
-    return JSONResponse(status_code=429, content={"detail": msg})
+        headers["Retry-After"] = "60"
+        error_type = "rate_limit"
+    return JSONResponse(status_code=429, content={"detail": msg, "error_type": error_type, "limit": str(exc.detail)}, headers=headers)
 
 app.add_exception_handler(RateLimitExceeded, custom_rate_limit_handler)
 app.add_middleware(SlowAPIMiddleware)

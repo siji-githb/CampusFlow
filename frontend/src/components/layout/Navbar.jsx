@@ -1,6 +1,6 @@
 import { useNavigate } from 'react-router-dom'
 import { ChevronLeft } from 'lucide-react'
-import campusFlowLogo from '../../assets/logo.png'
+import campusFlowLogo from '../../assets/logo.webp'
 
 export default function Navbar({ user, onLogout, backTo, title, subtitle, children }) {
   const navigate = useNavigate()
