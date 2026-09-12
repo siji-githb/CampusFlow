@@ -471,19 +471,36 @@ export default function AdminAuditLogPage() {
 
         {/* ── Table Body ── */}
         {loading ? (
-          <div className="divide-y divide-border">
-            {[1, 2, 3, 4, 5, 6].map(i => (
-              <div key={i} className="p-5 grid grid-cols-1 lg:grid-cols-[140px_1.4fr_1.8fr_130px_1.8fr_90px_45px] gap-3 items-center bg-white">
-                <div className="animate-pulse h-4 w-24 bg-border rounded" />
-                <div className="animate-pulse h-4 w-36 bg-border rounded" />
-                <div className="animate-pulse h-5 w-44 bg-border rounded" />
-                <div className="animate-pulse h-4 w-20 bg-border rounded" />
-                <div className="animate-pulse h-4 w-48 bg-border rounded" />
-                <div className="animate-pulse h-5 w-16 bg-border rounded-full mx-auto" />
-                <div className="animate-pulse h-6 w-6 bg-border rounded" />
-              </div>
-            ))}
-          </div>
+          <>
+            {/* Mobile/Tablet Skeletons */}
+            <div className="p-4 sm:p-5 grid grid-cols-1 sm:grid-cols-2 gap-3.5 lg:hidden">
+              {[1, 2, 3, 4].map(i => (
+                <div key={i} className="p-4 rounded-2xl border border-border bg-white animate-pulse flex flex-col gap-3">
+                  <div className="flex justify-between items-center">
+                    <div className="h-4 w-28 bg-border rounded" />
+                    <div className="h-5 w-16 bg-border rounded-full" />
+                  </div>
+                  <div className="h-16 rounded-xl bg-off-white" />
+                  <div className="h-4 w-24 bg-border rounded self-end" />
+                </div>
+              ))}
+            </div>
+
+            {/* Desktop Skeletons */}
+            <div className="hidden lg:block divide-y divide-border">
+              {[1, 2, 3, 4, 5, 6].map(i => (
+                <div key={i} className="p-5 grid grid-cols-[140px_1.4fr_1.8fr_130px_1.8fr_90px_45px] gap-3 items-center bg-white">
+                  <div className="animate-pulse h-4 w-24 bg-border rounded" />
+                  <div className="animate-pulse h-4 w-36 bg-border rounded" />
+                  <div className="animate-pulse h-5 w-44 bg-border rounded" />
+                  <div className="animate-pulse h-4 w-20 bg-border rounded" />
+                  <div className="animate-pulse h-4 w-48 bg-border rounded" />
+                  <div className="animate-pulse h-5 w-16 bg-border rounded-full mx-auto" />
+                  <div className="animate-pulse h-6 w-6 bg-border rounded" />
+                </div>
+              ))}
+            </div>
+          </>
         ) : paginated.length === 0 ? (
           <div className="p-16 sm:p-24 text-center bg-white">
             <div className="w-16 h-16 rounded-2xl bg-surface border border-border flex items-center justify-center mx-auto mb-4 text-text-muted">
@@ -497,103 +514,190 @@ export default function AdminAuditLogPage() {
             </p>
           </div>
         ) : (
-          <div className="divide-y divide-border/60">
-            {paginated.map((log) => {
-              const meta = getActionMeta(log.action, log.table_name, log.severity)
-              const actorName = log.users ? `${log.users.first_name} ${log.users.last_name}` : 'System Auto'
-              const actorRole = log.users?.role ? log.users.role.toUpperCase() : 'SYSTEM'
-              const logDate = log.created_at ? new Date(log.created_at) : null
-              const relTime = formatRelativeTime(log.created_at)
+          <>
+            {/* ── Mobile & Tablet Portrait Cards (< lg) ── */}
+            <div className="p-4 sm:p-5 grid grid-cols-1 sm:grid-cols-2 gap-3.5 bg-surface/30 lg:hidden">
+              {paginated.map(log => {
+                const meta = getActionMeta(log.action, log.table_name, log.severity)
+                const actorName = log.users ? `${log.users.first_name} ${log.users.last_name}` : 'System Auto'
+                const actorRole = log.users?.role ? log.users.role.toUpperCase() : 'SYSTEM'
+                const logDate = log.created_at ? new Date(log.created_at) : null
+                const relTime = formatRelativeTime(log.created_at)
 
-              return (
-                <div 
-                  key={log.id}
-                  onClick={() => setSelectedLog(log)}
-                  className="p-4 sm:px-5 sm:py-4 grid grid-cols-1 lg:grid-cols-[140px_1.4fr_1.8fr_130px_1.8fr_90px_45px] gap-3 items-center hover:bg-surface/50 cursor-pointer transition-colors group bg-white"
-                >
-                  
-                  {/* 1. Date & Time */}
-                  <div>
-                    <span className="text-fluid-12-5 font-bold text-text-main block">
-                      {relTime}
-                    </span>
-                    <span className="text-fluid-11 text-text-muted block font-mono mt-0.5">
-                      {logDate ? logDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }) : ''}
-                    </span>
-                  </div>
-
-                  {/* 2. Actor / User */}
-                  <div className="flex items-center gap-2.5 min-w-0">
-                    <div className={`w-7 h-7 rounded-lg flex items-center justify-center font-bold text-fluid-11 shrink-0 border ${
-                      actorRole === 'ADMIN' ? 'bg-maroon-light text-maroon border-maroon-border' :
-                      actorRole === 'STAFF' ? 'bg-gold-light text-gold border-gold-border' :
-                      'bg-surface text-text-main border-border'
-                    }`}>
-                      {actorName[0]?.toUpperCase() || 'S'}
+                return (
+                  <div
+                    key={log.id}
+                    onClick={() => setSelectedLog(log)}
+                    className="bg-white rounded-2xl border border-border p-4 shadow-2xs hover:shadow-md transition-all flex flex-col justify-between gap-3 cursor-pointer group animate-fade-up"
+                  >
+                    {/* Card Top: Relative Time & Severity */}
+                    <div className="flex items-center justify-between gap-2">
+                      <div>
+                        <span className="text-fluid-12-5 font-bold text-text-main block">
+                          {relTime}
+                        </span>
+                        <span className="text-fluid-11 text-text-muted block font-mono">
+                          {logDate ? logDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }) : ''}
+                        </span>
+                      </div>
+                      <span className={`text-fluid-10 font-extrabold uppercase tracking-wider px-2.5 py-0.5 rounded-full border ${
+                        log.severity === 'Critical' ? 'bg-danger-light text-danger border-danger-border' :
+                        log.severity === 'Warning' ? 'bg-gold-light text-gold border-gold-border' :
+                        'bg-info-light text-info border-info-border'
+                      }`}>
+                        {log.severity || 'Info'}
+                      </span>
                     </div>
+
+                    {/* Card Body: Actor & Action Box */}
+                    <div className="p-2.5 rounded-xl bg-off-white border border-border/70 flex flex-col gap-2">
+                      {/* Actor */}
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <div className={`w-7 h-7 rounded-lg flex items-center justify-center font-bold text-fluid-11 shrink-0 border ${
+                          actorRole === 'ADMIN' ? 'bg-maroon-light text-maroon border-maroon-border' :
+                          actorRole === 'STAFF' ? 'bg-gold-light text-gold border-gold-border' :
+                          'bg-surface text-text-main border-border'
+                        }`}>
+                          {actorName[0]?.toUpperCase() || 'S'}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <div className="text-fluid-13 font-bold text-text-main truncate group-hover:text-maroon transition-colors">
+                            {actorName}
+                          </div>
+                          <div className="text-fluid-10 font-extrabold uppercase tracking-wider text-text-muted">
+                            {actorRole}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Action Tag */}
+                      <div className="pt-1.5 border-t border-border/50 flex items-center justify-between gap-2">
+                        <span className={`inline-flex items-center gap-1.5 text-fluid-11 font-bold px-2 py-0.5 rounded-lg border max-w-[65%] truncate ${meta.bg}`}>
+                          {meta.icon}
+                          <span className="truncate">{log.action}</span>
+                        </span>
+                        <span className="text-fluid-11 font-mono text-text-muted font-bold truncate">
+                          {log.table_name || 'system'}
+                        </span>
+                      </div>
+
+                      {/* Changes snippet if available */}
+                      {log.changes && (
+                        <p className="text-fluid-11-5 text-text-sub font-medium m-0 truncate pt-1 border-t border-border/40">
+                          {log.changes}
+                        </p>
+                      )}
+                    </div>
+
+                    {/* Card Action Link */}
+                    <div className="pt-1 flex items-center justify-between text-fluid-12 font-bold text-maroon">
+                      <span>View Details</span>
+                      <ChevronRight size={14} className="group-hover:translate-x-1 transition-transform" />
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+
+            {/* ── Desktop Table (>= lg) ── */}
+            <div className="hidden lg:block divide-y divide-border/60">
+              {paginated.map((log) => {
+                const meta = getActionMeta(log.action, log.table_name, log.severity)
+                const actorName = log.users ? `${log.users.first_name} ${log.users.last_name}` : 'System Auto'
+                const actorRole = log.users?.role ? log.users.role.toUpperCase() : 'SYSTEM'
+                const logDate = log.created_at ? new Date(log.created_at) : null
+                const relTime = formatRelativeTime(log.created_at)
+
+                return (
+                  <div 
+                    key={log.id}
+                    onClick={() => setSelectedLog(log)}
+                    className="p-4 sm:px-5 sm:py-4 grid grid-cols-[140px_1.4fr_1.8fr_130px_1.8fr_90px_45px] gap-3 items-center hover:bg-surface/50 cursor-pointer transition-colors group bg-white"
+                  >
+                    
+                    {/* 1. Date & Time */}
+                    <div>
+                      <span className="text-fluid-12-5 font-bold text-text-main block">
+                        {relTime}
+                      </span>
+                      <span className="text-fluid-11 text-text-muted block font-mono mt-0.5">
+                        {logDate ? logDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }) : ''}
+                      </span>
+                    </div>
+
+                    {/* 2. Actor / User */}
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <div className={`w-7 h-7 rounded-lg flex items-center justify-center font-bold text-fluid-11 shrink-0 border ${
+                        actorRole === 'ADMIN' ? 'bg-maroon-light text-maroon border-maroon-border' :
+                        actorRole === 'STAFF' ? 'bg-gold-light text-gold border-gold-border' :
+                        'bg-surface text-text-main border-border'
+                      }`}>
+                        {actorName[0]?.toUpperCase() || 'S'}
+                      </div>
+                      <div className="min-w-0">
+                        <span className="text-fluid-13 font-bold text-text-main block truncate group-hover:text-maroon transition-colors">
+                          {actorName}
+                        </span>
+                        <span className="text-fluid-10 font-extrabold uppercase tracking-wider text-text-muted block">
+                          {actorRole}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* 3. Action Performed */}
                     <div className="min-w-0">
-                      <span className="text-fluid-13 font-bold text-text-main block truncate group-hover:text-maroon transition-colors">
-                        {actorName}
-                      </span>
-                      <span className="text-fluid-10 font-extrabold uppercase tracking-wider text-text-muted block">
-                        {actorRole}
+                      <span className={`inline-flex items-center gap-1.5 text-fluid-11 font-bold px-2.5 py-1 rounded-lg border max-w-full truncate ${meta.bg}`}>
+                        {meta.icon}
+                        <span className="truncate">{log.action}</span>
                       </span>
                     </div>
-                  </div>
 
-                  {/* 3. Action Performed */}
-                  <div className="min-w-0">
-                    <span className={`inline-flex items-center gap-1.5 text-fluid-11 font-bold px-2.5 py-1 rounded-lg border max-w-full truncate ${meta.bg}`}>
-                      {meta.icon}
-                      <span className="truncate">{log.action}</span>
-                    </span>
-                  </div>
-
-                  {/* 4. Target Entity / Table */}
-                  <div className="min-w-0">
-                    <span className="text-fluid-12 font-bold font-mono text-text-main block truncate">
-                      {log.table_name || 'system'}
-                    </span>
-                    {log.record_id && (
-                      <span className="text-fluid-10-5 text-text-muted font-mono block truncate" title={log.record_id}>
-                        ID: {log.record_id.slice(0, 8)}...
+                    {/* 4. Target Entity / Table */}
+                    <div className="min-w-0">
+                      <span className="text-fluid-12 font-bold font-mono text-text-main block truncate">
+                        {log.table_name || 'system'}
                       </span>
-                    )}
-                  </div>
+                      {log.record_id && (
+                        <span className="text-fluid-10-5 text-text-muted font-mono block truncate" title={log.record_id}>
+                          ID: {log.record_id.slice(0, 8)}...
+                        </span>
+                      )}
+                    </div>
 
-                  {/* 5. Changes & Context */}
-                  <div className="min-w-0">
-                    <p className="text-fluid-12 text-text-sub font-medium m-0 truncate" title={log.changes || 'No additional payload'}>
-                      {log.changes || '—'}
-                    </p>
-                  </div>
+                    {/* 5. Changes & Context */}
+                    <div className="min-w-0">
+                      <p className="text-fluid-12 text-text-sub font-medium m-0 truncate" title={log.changes || 'No additional payload'}>
+                        {log.changes || '—'}
+                      </p>
+                    </div>
 
-                  {/* 6. Severity Badge */}
-                  <div className="text-center">
-                    <span className={`inline-block text-fluid-10 font-extrabold uppercase tracking-wider px-2.5 py-0.5 rounded-full border ${
-                      log.severity === 'Critical' ? 'bg-danger-light text-danger border-danger-border' :
-                      log.severity === 'Warning' ? 'bg-gold-light text-gold border-gold-border' :
-                      'bg-info-light text-info border-info-border'
-                    }`}>
-                      {log.severity || 'Info'}
-                    </span>
-                  </div>
+                    {/* 6. Severity Badge */}
+                    <div className="text-center">
+                      <span className={`inline-block text-fluid-10 font-extrabold uppercase tracking-wider px-2.5 py-0.5 rounded-full border ${
+                        log.severity === 'Critical' ? 'bg-danger-light text-danger border-danger-border' :
+                        log.severity === 'Warning' ? 'bg-gold-light text-gold border-gold-border' :
+                        'bg-info-light text-info border-info-border'
+                      }`}>
+                        {log.severity || 'Info'}
+                      </span>
+                    </div>
 
-                  {/* 7. Action Button */}
-                  <div className="flex justify-end lg:justify-center">
-                    <button 
-                      onClick={(e) => { e.stopPropagation(); setSelectedLog(log) }}
-                      className="w-8 h-8 rounded-lg border border-border bg-white flex items-center justify-center text-text-muted hover:text-maroon hover:border-maroon/30 transition-colors shadow-2xs cursor-pointer"
-                      title="Inspect event details"
-                    >
-                      <Eye size={14} />
-                    </button>
-                  </div>
+                    {/* 7. Action Button */}
+                    <div className="flex justify-center">
+                      <button 
+                        onClick={(e) => { e.stopPropagation(); setSelectedLog(log) }}
+                        className="w-8 h-8 rounded-lg border border-border bg-white flex items-center justify-center text-text-muted hover:text-maroon hover:border-maroon/30 transition-colors shadow-2xs cursor-pointer"
+                        title="Inspect event details"
+                      >
+                        <Eye size={14} />
+                      </button>
+                    </div>
 
-                </div>
-              )
-            })}
-          </div>
+                  </div>
+                )
+              })}
+            </div>
+          </>
         )}
 
         {/* ── Pagination Footer ── */}

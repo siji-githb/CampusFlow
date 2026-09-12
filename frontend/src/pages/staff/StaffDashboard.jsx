@@ -228,10 +228,13 @@ export default function StaffDashboard() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
     try {
-      return localStorage.getItem('cf_staff_sidebar_collapsed') === 'true'
+      const saved = localStorage.getItem('cf_staff_sidebar_collapsed');
+      if (saved !== null) return saved === 'true';
     } catch {
-      return false
+      // Ignore local storage errors
     }
+    // Default to compact icon rail (80px) on tablet portrait (<1024px) for optimal content width
+    return typeof window !== 'undefined' ? window.innerWidth < 1024 : false;
   })
 
   useEffect(() => {

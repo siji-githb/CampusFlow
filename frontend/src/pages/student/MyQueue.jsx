@@ -437,7 +437,7 @@ export default function MyQueue({ embedded = false }) {
                       <Ticket size={13} className="text-maroon shrink-0" />
                       <span>Queue Ticket</span>
                     </div>
-                    <div className="font-serif text-[38px] sm:text-[46px] md:text-[52px] font-black text-maroon whitespace-nowrap leading-none tracking-tight my-1">
+                    <div className="font-serif text-fluid-42 font-black text-maroon whitespace-nowrap leading-none tracking-tight my-1">
                       {ticket.queue_number}
                     </div>
                   </div>
@@ -755,7 +755,7 @@ export default function MyQueue({ embedded = false }) {
                                             <p className="text-[10px] sm:text-[11px] text-gold-dark m-0 mb-1 uppercase tracking-[0.12em] font-bold flex items-center gap-1.5">
                                               <Ticket size={12} className="text-gold shrink-0" /> Official Claim Stub
                                             </p>
-                                            <div className="font-serif text-[28px] sm:text-[38px] md:text-[42px] font-extrabold text-maroon whitespace-nowrap leading-none tracking-tight">
+                                            <div className="font-serif text-fluid-32 font-extrabold text-maroon whitespace-nowrap leading-none tracking-tight">
                                               {ticket.queue_number}
                                             </div>
                                           </div>
@@ -957,9 +957,9 @@ export default function MyQueue({ embedded = false }) {
                           isReadyForPickup ? 'bg-success' : isToday ? 'bg-linear-to-r from-gold via-gold-dark to-gold' : 'bg-maroon'
                         }`} />
 
-                        <div className="grid grid-cols-1 md:grid-cols-12 relative">
+                        <div className="grid grid-cols-1 lg:grid-cols-12 relative">
                           {/* ── Left Ticket Section (Main Body) ── */}
-                          <div className="md:col-span-8 p-5 sm:p-6 md:p-7 flex flex-col justify-between gap-3.5">
+                          <div className="col-span-1 lg:col-span-8 p-5 sm:p-6 lg:p-7 flex flex-col justify-between gap-3.5">
                             <div>
                               {/* Header Meta Row */}
                               <div className="flex items-center justify-between gap-2 mb-3.5">
@@ -1047,13 +1047,13 @@ export default function MyQueue({ embedded = false }) {
                           </div>
 
                           {/* ── Perforation & Right Ticket Stub ── */}
-                          <div className="md:col-span-4 border-t md:border-t-0 md:border-l border-dashed border-border/80 relative bg-off-white/60 p-6 sm:p-7 flex flex-col justify-between items-center text-center gap-4">
+                          <div className="col-span-1 lg:col-span-4 border-t lg:border-t-0 lg:border-l border-dashed border-border/80 relative bg-off-white/60 p-6 sm:p-7 flex flex-col justify-between items-center text-center gap-4">
                             {/* Desktop Semicircular Punch Notches */}
-                            <div className="hidden md:block absolute -top-3.5 -left-3.5 w-7 h-7 rounded-full bg-surface border border-border/80 z-10" />
-                            <div className="hidden md:block absolute -bottom-3.5 -left-3.5 w-7 h-7 rounded-full bg-surface border border-border/80 z-10" />
-                            {/* Mobile Semicircular Punch Notches */}
-                            <div className="md:hidden absolute -top-3.5 -left-3.5 w-7 h-7 rounded-full bg-surface border border-border/80 z-10" />
-                            <div className="md:hidden absolute -top-3.5 -right-3.5 w-7 h-7 rounded-full bg-surface border border-border/80 z-10" />
+                            <div className="hidden lg:block absolute -top-3.5 -left-3.5 w-7 h-7 rounded-full bg-surface border border-border/80 z-10" />
+                            <div className="hidden lg:block absolute -bottom-3.5 -left-3.5 w-7 h-7 rounded-full bg-surface border border-border/80 z-10" />
+                            {/* Mobile/Tablet Portrait Semicircular Punch Notches */}
+                            <div className="lg:hidden absolute -top-3.5 -left-3.5 w-7 h-7 rounded-full bg-surface border border-border/80 z-10" />
+                            <div className="lg:hidden absolute -top-3.5 -right-3.5 w-7 h-7 rounded-full bg-surface border border-border/80 z-10" />
 
                             {/* Stub Content */}
                             <div className="w-full flex flex-col items-center justify-center my-auto py-2.5 sm:py-3">

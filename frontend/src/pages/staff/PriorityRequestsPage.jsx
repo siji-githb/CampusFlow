@@ -168,7 +168,7 @@ export default function PriorityRequestsPage() {
         /* Request Cards Skeleton */
         <div className="grid gap-4">
           {[1, 2, 3].map(i => (
-            <div key={i} className="bg-white rounded-2xl border border-border shadow-sm p-6 flex flex-col md:flex-row items-stretch justify-between gap-6 animate-pulse">
+            <div key={i} className="bg-white rounded-2xl border border-border shadow-sm p-6 flex flex-col lg:flex-row items-stretch justify-between gap-6 animate-pulse">
               
               {/* Left Content Skeleton */}
               <div className="flex-1 flex flex-col justify-between">
@@ -197,7 +197,7 @@ export default function PriorityRequestsPage() {
               </div>
 
               {/* Right Action Sidebar Skeleton */}
-              <div className="flex flex-col gap-3 shrink-0 w-full md:w-52 justify-center">
+              <div className="flex flex-col gap-3 shrink-0 w-full lg:w-52 justify-center">
                 <div className="h-10 w-full bg-border/40 rounded-xl" />
                 <div className="h-10 w-full bg-border/60 rounded-xl" />
                 <div className="h-10 w-full bg-border/40 rounded-xl" />
@@ -221,7 +221,7 @@ export default function PriorityRequestsPage() {
               : 'text-danger border-danger bg-danger-light/30';
             
             return (
-              <div key={req.id} className="animate-fade-up bg-white rounded-2xl border border-border shadow-sm hover:shadow-md transition-all flex flex-col md:flex-row items-stretch justify-between group overflow-hidden">
+              <div key={req.id} className="animate-fade-up bg-white rounded-2xl border border-border shadow-sm hover:shadow-md transition-all flex flex-col lg:flex-row items-stretch justify-between group overflow-hidden">
                 
                 {/* Main Content Area */}
                 <div className="flex-1 p-6 flex flex-col justify-between">
@@ -272,7 +272,7 @@ export default function PriorityRequestsPage() {
                 </div>
 
                 {/* Actions Sidebar */}
-                <div className="flex flex-col gap-3 shrink-0 w-full md:w-55 p-6 justify-center">
+                <div className="flex flex-col gap-3 shrink-0 w-full lg:w-55 p-6 justify-center">
                   <button
                     onClick={() => setPreviewUrl(req.document_url)}
                     className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-white text-text-main font-bold text-fluid-13 border border-border shadow-sm cursor-pointer hover:bg-slate-50 hover:shadow-md hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-200"

@@ -534,10 +534,13 @@ export default function AdminDashboard() {
   const [badgeStats, setBadgeStats] = useState({ idRequests: 0, priorityRequests: 0 })
   const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
     try {
-      return localStorage.getItem('cf_admin_sidebar_collapsed') === 'true'
+      const saved = localStorage.getItem('cf_admin_sidebar_collapsed')
+      if (saved !== null) return saved === 'true'
     } catch {
-      return false
+      /* ignore local storage errors */
     }
+    // Default to compact icon rail (80px) on tablet portrait (< 1024px) for optimal content width
+    return typeof window !== 'undefined' ? window.innerWidth < 1024 : false
   })
 
   useEffect(() => {

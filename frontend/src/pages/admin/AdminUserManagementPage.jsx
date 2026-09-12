@@ -324,27 +324,49 @@ export default function AdminUserManagementPage() {
           </div>
         </div>
 
-        {/* Table header */}
+        {/* Desktop Table header (>= lg) */}
         <div className="hidden lg:grid grid-cols-[120px_1.6fr_1.4fr_130px_100px] p-[14px_24px] bg-off-white border-b border-border">
           {['ID', 'NAME', 'EMAIL', 'ROLE', 'ACTIONS'].map(h => (
             <span key={h} className="text-fluid-11 font-bold text-text-muted uppercase tracking-[0.08em]">{h}</span>
           ))}
         </div>
 
-        {/* Rows */}
+        {/* Rows Container */}
         {loading ? (
-          [1, 2, 3, 4, 5].map((n, idx) => (
-            <div key={n} className={`grid grid-cols-1 lg:grid-cols-[120px_1.6fr_1.4fr_130px_100px] p-[16px_24px] items-center ${idx === 4 ? 'border-none' : 'border-b border-border/60'} bg-white`}>
-              <div className="animate-pulse h-4 w-17.5 rounded bg-border" />
-              <div className="flex items-center gap-4">
-                <div className="animate-pulse w-10 h-10 rounded-full bg-border" />
-                <div className="animate-pulse h-5 w-[60%] rounded bg-border" />
-              </div>
-              <div className="animate-pulse h-4 w-[80%] rounded bg-border" />
-              <div className="animate-pulse h-6 w-17.5 rounded-full bg-border" />
-              <div className="animate-pulse h-8 w-15 rounded bg-border" />
+          <>
+            {/* Mobile/Tablet Loading Skeletons */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 p-4 lg:hidden">
+              {[1, 2, 3, 4].map(n => (
+                <div key={n} className="p-4 rounded-2xl border border-border bg-white animate-pulse flex flex-col gap-3">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-border" />
+                    <div className="flex-1 space-y-1.5">
+                      <div className="h-4 w-32 bg-border rounded" />
+                      <div className="h-3 w-20 bg-border rounded" />
+                    </div>
+                  </div>
+                  <div className="h-4 w-48 bg-border/60 rounded" />
+                  <div className="h-8 w-full bg-border/40 rounded-xl" />
+                </div>
+              ))}
             </div>
-          ))
+
+            {/* Desktop Loading Skeletons */}
+            <div className="hidden lg:block">
+              {[1, 2, 3, 4, 5].map((n, idx) => (
+                <div key={n} className={`grid grid-cols-[120px_1.6fr_1.4fr_130px_100px] p-[16px_24px] items-center ${idx === 4 ? 'border-none' : 'border-b border-border/60'} bg-white`}>
+                  <div className="animate-pulse h-4 w-17.5 rounded bg-border" />
+                  <div className="flex items-center gap-4">
+                    <div className="animate-pulse w-10 h-10 rounded-full bg-border" />
+                    <div className="animate-pulse h-5 w-[60%] rounded bg-border" />
+                  </div>
+                  <div className="animate-pulse h-4 w-[80%] rounded bg-border" />
+                  <div className="animate-pulse h-6 w-17.5 rounded-full bg-border" />
+                  <div className="animate-pulse h-8 w-15 rounded bg-border" />
+                </div>
+              ))}
+            </div>
+          </>
         ) : paginated.length === 0 ? (
           <div className="p-[60px_24px] text-center">
             <div className="flex justify-center mb-4 text-text-muted/50"><Users size={52} strokeWidth={1.5} /></div>
@@ -354,68 +376,154 @@ export default function AdminUserManagementPage() {
             </p>
           </div>
         ) : (
-          paginated.map((user, idx) => {
-            const name     = `${user.first_name} ${user.last_name}`
-            const uid      = user.student_id || user.staff_id || `UID-${user.id?.slice(0, 8)}`
-            const isLast   = idx === paginated.length - 1
+          <>
+            {/* ── Mobile & Tablet Portrait Cards (< lg) ── */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 p-4 lg:hidden bg-surface/30">
+              {paginated.map((user) => {
+                const name = `${user.first_name} ${user.last_name}`
+                const uid = user.student_id || user.staff_id || `UID-${user.id?.slice(0, 8)}`
 
-            return (
-              <div key={user.id} className={`grid grid-cols-1 lg:grid-cols-[120px_1.6fr_1.4fr_130px_100px] p-[16px_24px] items-center transition-all duration-200 hover:bg-surface group ${isLast ? 'border-none' : 'border-b border-border'} bg-white ${user.is_active === false ? 'opacity-60 grayscale-[0.2]' : 'opacity-100'}`}>
-                {/* ID */}
-                <div className="text-fluid-12-5 text-text-muted font-mono font-medium">{uid}</div>
-
-                {/* Name */}
-                <div className="flex items-center gap-3.5 min-w-0 pr-4">
-                  <div className="shadow-sm rounded-full bg-white"><Avatar name={name} role={user.role} size={38} /></div>
-                  <div className="flex flex-col gap-0.5 min-w-0">
-                    <div className="text-fluid-14 font-bold text-text-main whitespace-nowrap overflow-hidden text-ellipsis group-hover:text-maroon transition-colors">{name}</div>
-                    {user.is_active === false && <span className="text-fluid-10 font-bold text-danger bg-danger-light py-0.5 px-1.5 rounded-sm w-fit border border-danger-border leading-none">SUSPENDED</span>}
-                  </div>
-                </div>
-
-                {/* Email */}
-                <div className="text-fluid-13 font-medium text-text-sub whitespace-nowrap overflow-hidden text-ellipsis pr-4">{user.email}</div>
-
-                {/* Role */}
-                <div className="flex items-center">
-                  <div className="bg-surface py-1 px-2.5 rounded-md border border-border/50">
-                    <RoleBadge role={user.role} />
-                  </div>
-                </div>
-
-                {/* Actions */}
-                <div className="flex items-center gap-2 relative">
-                  <button
-                    onClick={() => setEditUser(user)}
-                    title="Update role"
-                    className="w-8 h-8 rounded-lg border border-border bg-white text-text-sub cursor-pointer flex items-center justify-center transition-all duration-200 hover:bg-maroon hover:border-maroon hover:text-white shadow-sm"
-                  ><Pencil size={14} /></button>
-                  <button
-                    onClick={() => setDropdownOpen(dropdownOpen === user.id ? null : user.id)}
-                    title="More options"
-                    className={`w-8 h-8 rounded-lg border cursor-pointer flex items-center justify-center transition-all duration-200 ${dropdownOpen === user.id ? 'border-border bg-off-white text-text-main shadow-sm' : 'border-transparent bg-transparent text-text-sub hover:bg-off-white hover:border-border hover:shadow-sm'}`}
-                  ><MoreVertical size={16} /></button>
-                  
-                  {dropdownOpen === user.id && (
-                    <div className="absolute top-full right-0 mt-2 bg-white border border-border rounded-xl shadow-[0_8px_24px_rgba(0,0,0,0.12)] p-1.5 z-10 min-w-35 animate-fade-up" style={{ animationDuration: '0.15s' }}>
-                      <button
-                        onClick={() => handleToggleStatus(user.id, user.is_active !== false)}
-                        className={`w-full py-2 px-3 border-none bg-transparent text-left text-fluid-13 cursor-pointer rounded-lg flex items-center gap-2.5 transition-colors duration-150 font-sans font-semibold ${user.is_active !== false ? 'text-danger hover:bg-danger-light' : 'text-success hover:bg-success-light'}`}
-                      >
-                        <span className="flex items-center shrink-0">{user.is_active !== false ? <Ban size={15} /> : <CheckCircle size={15} />}</span> 
-                        {user.is_active !== false ? 'Suspend User' : 'Reactivate User'}
-                      </button>
+                return (
+                  <div
+                    key={user.id}
+                    className={`bg-white rounded-2xl border border-border p-4 shadow-2xs hover:shadow-md transition-all flex flex-col justify-between gap-3.5 animate-fade-up ${user.is_active === false ? 'opacity-70 grayscale-[0.2]' : 'opacity-100'}`}
+                  >
+                    {/* Top: Avatar, Name, Status */}
+                    <div className="flex items-start gap-3 min-w-0">
+                      <div className="shadow-xs rounded-full shrink-0">
+                        <Avatar name={name} role={user.role} size={40} />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="text-fluid-14 font-bold text-text-main truncate">
+                          {name}
+                        </div>
+                        <div className="flex items-center gap-1.5 flex-wrap mt-0.5">
+                          <span className="text-fluid-11 font-mono text-text-muted font-medium">
+                            {uid}
+                          </span>
+                          {user.is_active === false && (
+                            <span className="text-[10px] font-bold text-danger bg-danger-light py-0.5 px-1.5 rounded-sm border border-danger-border leading-none">
+                              SUSPENDED
+                            </span>
+                          )}
+                        </div>
+                      </div>
                     </div>
-                  )}
-                </div>
-              </div>
-            )
-          })
+
+                    {/* Middle: Email & Role */}
+                    <div className="p-2.5 rounded-xl bg-off-white border border-border/70 flex flex-col gap-2">
+                      <div className="text-fluid-12 text-text-sub truncate font-medium">
+                        {user.email}
+                      </div>
+                      <div className="flex items-center justify-between pt-1.5 border-t border-border/50">
+                        <span className="text-[10.5px] font-extrabold uppercase tracking-wider text-text-muted">Role:</span>
+                        <RoleBadge role={user.role} />
+                      </div>
+                    </div>
+
+                    {/* Bottom: Action Buttons */}
+                    <div className="flex items-center justify-between gap-2 pt-1 border-t border-border/60">
+                      <button
+                        onClick={() => setEditUser(user)}
+                        className="flex-1 py-1.75 px-3 rounded-xl border border-border bg-white text-text-main text-fluid-12 font-bold cursor-pointer hover:bg-surface hover:border-maroon/30 transition-all shadow-2xs flex items-center justify-center gap-1.5 active:scale-[0.98]"
+                      >
+                        <Pencil size={13} className="text-maroon shrink-0" />
+                        <span>Edit Role</span>
+                      </button>
+
+                      <div className="relative">
+                        <button
+                          onClick={() => setDropdownOpen(dropdownOpen === user.id ? null : user.id)}
+                          title="More options"
+                          className={`w-8.5 h-8.5 rounded-xl border cursor-pointer flex items-center justify-center transition-all ${dropdownOpen === user.id ? 'border-border bg-off-white text-text-main shadow-sm' : 'border-border bg-white text-text-sub hover:bg-surface shadow-2xs'}`}
+                        >
+                          <MoreVertical size={15} />
+                        </button>
+
+                        {dropdownOpen === user.id && (
+                          <div className="absolute bottom-full right-0 mb-1.5 bg-white border border-border rounded-xl shadow-[0_8px_24px_rgba(0,0,0,0.12)] p-1.5 z-20 min-w-36 animate-fade-up">
+                            <button
+                              onClick={() => handleToggleStatus(user.id, user.is_active !== false)}
+                              className={`w-full py-2 px-3 border-none bg-transparent text-left text-fluid-12 cursor-pointer rounded-lg flex items-center gap-2 font-sans font-bold transition-colors ${user.is_active !== false ? 'text-danger hover:bg-danger-light' : 'text-success hover:bg-success-light'}`}
+                            >
+                              <span className="shrink-0">{user.is_active !== false ? <Ban size={14} /> : <CheckCircle size={14} />}</span>
+                              <span>{user.is_active !== false ? 'Suspend User' : 'Reactivate User'}</span>
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+
+            {/* ── Desktop Table (>= lg) ── */}
+            <div className="hidden lg:block">
+              {paginated.map((user, idx) => {
+                const name     = `${user.first_name} ${user.last_name}`
+                const uid      = user.student_id || user.staff_id || `UID-${user.id?.slice(0, 8)}`
+                const isLast   = idx === paginated.length - 1
+
+                return (
+                  <div key={user.id} className={`grid grid-cols-[120px_1.6fr_1.4fr_130px_100px] p-[16px_24px] items-center transition-all duration-200 hover:bg-surface group ${isLast ? 'border-none' : 'border-b border-border'} bg-white ${user.is_active === false ? 'opacity-60 grayscale-[0.2]' : 'opacity-100'}`}>
+                    {/* ID */}
+                    <div className="text-fluid-12-5 text-text-muted font-mono font-medium">{uid}</div>
+
+                    {/* Name */}
+                    <div className="flex items-center gap-3.5 min-w-0 pr-4">
+                      <div className="shadow-sm rounded-full bg-white"><Avatar name={name} role={user.role} size={38} /></div>
+                      <div className="flex flex-col gap-0.5 min-w-0">
+                        <div className="text-fluid-14 font-bold text-text-main whitespace-nowrap overflow-hidden text-ellipsis group-hover:text-maroon transition-colors">{name}</div>
+                        {user.is_active === false && <span className="text-fluid-10 font-bold text-danger bg-danger-light py-0.5 px-1.5 rounded-sm w-fit border border-danger-border leading-none">SUSPENDED</span>}
+                      </div>
+                    </div>
+
+                    {/* Email */}
+                    <div className="text-fluid-13 font-medium text-text-sub whitespace-nowrap overflow-hidden text-ellipsis pr-4">{user.email}</div>
+
+                    {/* Role */}
+                    <div className="flex items-center">
+                      <div className="bg-surface py-1 px-2.5 rounded-md border border-border/50">
+                        <RoleBadge role={user.role} />
+                      </div>
+                    </div>
+
+                    {/* Actions */}
+                    <div className="flex items-center gap-2 relative">
+                      <button
+                        onClick={() => setEditUser(user)}
+                        title="Update role"
+                        className="w-8 h-8 rounded-lg border border-border bg-white text-text-sub cursor-pointer flex items-center justify-center transition-all duration-200 hover:bg-maroon hover:border-maroon hover:text-white shadow-sm"
+                      ><Pencil size={14} /></button>
+                      <button
+                        onClick={() => setDropdownOpen(dropdownOpen === user.id ? null : user.id)}
+                        title="More options"
+                        className={`w-8 h-8 rounded-lg border cursor-pointer flex items-center justify-center transition-all duration-200 ${dropdownOpen === user.id ? 'border-border bg-off-white text-text-main shadow-sm' : 'border-transparent bg-transparent text-text-sub hover:bg-off-white hover:border-border hover:shadow-sm'}`}
+                      ><MoreVertical size={16} /></button>
+                      
+                      {dropdownOpen === user.id && (
+                        <div className="absolute top-full right-0 mt-2 bg-white border border-border rounded-xl shadow-[0_8px_24px_rgba(0,0,0,0.12)] p-1.5 z-10 min-w-35 animate-fade-up" style={{ animationDuration: '0.15s' }}>
+                          <button
+                            onClick={() => handleToggleStatus(user.id, user.is_active !== false)}
+                            className={`w-full py-2 px-3 border-none bg-transparent text-left text-fluid-13 cursor-pointer rounded-lg flex items-center gap-2.5 transition-colors duration-150 font-sans font-semibold ${user.is_active !== false ? 'text-danger hover:bg-danger-light' : 'text-success hover:bg-success-light'}`}
+                          >
+                            <span className="flex items-center shrink-0">{user.is_active !== false ? <Ban size={15} /> : <CheckCircle size={15} />}</span> 
+                            {user.is_active !== false ? 'Suspend User' : 'Reactivate User'}
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </>
         )}
 
         {/* Pagination footer */}
         {filtered.length > 0 && (
-          <div className="p-[13px_24px] border-t border-border flex items-center justify-between bg-surface">
+          <div className="p-[13px_24px] border-t border-border flex items-center justify-between bg-surface flex-wrap gap-2">
             <span className="text-fluid-12 text-text-muted">
               Showing {filtered.length === 0 ? 0 : (page - 1) * PER_PAGE + 1}–{Math.min(page * PER_PAGE, filtered.length)} of {filtered.length} entries
             </span>
@@ -424,18 +532,28 @@ export default function AdminUserManagementPage() {
                 className={`py-1 px-3 rounded-md border border-border bg-white text-fluid-12 font-semibold font-sans ${page === 1 ? 'cursor-not-allowed text-text-muted' : 'cursor-pointer text-text-main hover:bg-off-white'}`}>
                 Prev
               </button>
-              {Array.from({ length: Math.min(totalPages, 7) }, (_, i) => {
-                const p = totalPages <= 7 ? i + 1
-                  : page <= 4 ? i + 1
-                  : page >= totalPages - 3 ? totalPages - 6 + i
-                  : page - 3 + i
-                if (p < 1 || p > totalPages) return null
-                return (
-                  <button key={p} onClick={() => setPage(p)} className={`w-7.5 h-7.5 rounded-md text-fluid-12 font-semibold cursor-pointer font-sans border ${page === p ? 'border-maroon bg-maroon text-white' : 'border-border bg-white text-text-main hover:bg-off-white'}`}>
-                    {p}
-                  </button>
-                )
-              })}
+
+              {/* Mobile page indicator */}
+              <div className="sm:hidden text-fluid-12 font-bold text-text-main px-2">
+                {page} / {totalPages}
+              </div>
+
+              {/* Desktop/Tablet numbered buttons */}
+              <div className="hidden sm:flex items-center gap-1">
+                {Array.from({ length: Math.min(totalPages, 7) }, (_, i) => {
+                  const p = totalPages <= 7 ? i + 1
+                    : page <= 4 ? i + 1
+                    : page >= totalPages - 3 ? totalPages - 6 + i
+                    : page - 3 + i
+                  if (p < 1 || p > totalPages) return null
+                  return (
+                    <button key={p} onClick={() => setPage(p)} className={`w-7.5 h-7.5 rounded-md text-fluid-12 font-semibold cursor-pointer font-sans border ${page === p ? 'border-maroon bg-maroon text-white' : 'border-border bg-white text-text-main hover:bg-off-white'}`}>
+                      {p}
+                    </button>
+                  )
+                })}
+              </div>
+
               <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages}
                 className={`py-1 px-3 rounded-md border border-border bg-white text-fluid-12 font-semibold font-sans ${page === totalPages ? 'cursor-not-allowed text-text-muted' : 'cursor-pointer text-text-main hover:bg-off-white'}`}>
                 Next

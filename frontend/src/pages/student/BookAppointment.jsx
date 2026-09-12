@@ -101,8 +101,8 @@ function Stepper({ step }) {
   ]
   return (
     <>
-      {/* Mobile Stepper Card */}
-      <div className="bg-white/95 backdrop-blur-xs rounded-2xl border border-border/80 p-4 mb-5 md:hidden shadow-xs">
+      {/* Mobile & Tablet Portrait Stepper (Compact Segmented Bar) */}
+      <div className="bg-white/95 backdrop-blur-xs rounded-2xl border border-border/80 p-4 mb-5 lg:hidden shadow-xs">
         <div className="flex items-center justify-between mb-2">
           <span className="text-[10px] font-extrabold tracking-widest text-gold uppercase flex items-center gap-1.5">
             <span className="w-1.5 h-1.5 rounded-full bg-gold animate-pulse" />
@@ -154,7 +154,7 @@ function Stepper({ step }) {
       </div>
 
       {/* Desktop Vertical Stepper */}
-      <div className="hidden md:block bg-linear-to-b from-white via-white to-off-white/40 rounded-2xl border border-border/80 p-4.5 sm:p-5 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] relative overflow-hidden">
+      <div className="hidden lg:block bg-linear-to-b from-white via-white to-off-white/40 rounded-2xl border border-border/80 p-4.5 sm:p-5 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] relative overflow-hidden">
         {/* Ambient Top Accent */}
         <div className="absolute top-0 left-0 right-0 h-1 bg-linear-to-r from-maroon via-gold to-maroon opacity-85" />
         
@@ -552,11 +552,11 @@ export default function BookAppointment({ embedded = false }) {
           </div>
           <div className="h-4 w-28 bg-border/40 rounded" />
         </div>
-        <div className="md:flex md:gap-8 items-start">
-          <div className="w-full md:w-64 lg:w-72 shrink-0 mb-6 md:mb-0">
+        <div className="lg:flex lg:gap-8 items-start">
+          <div className="w-full lg:w-64 xl:w-72 shrink-0 mb-6 lg:mb-0 hidden lg:block">
             <div className="bg-white rounded-2xl border border-border p-6 h-64" />
           </div>
-          <div className="flex-1 bg-white rounded-3xl border border-border p-6 md:p-8">
+          <div className="flex-1 bg-white rounded-3xl border border-border p-6 lg:p-8">
             <div className="h-5 w-44 bg-border/70 rounded mb-6" />
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {[1, 2, 3, 4, 5, 6].map(i => (
@@ -578,7 +578,7 @@ export default function BookAppointment({ embedded = false }) {
         <div className="hidden md:flex justify-between items-start mb-8 animate-fade-up" style={{ animationDelay: '0.05s' }}>
           <div>
             <div className="text-[11px] font-bold text-gold uppercase tracking-[0.06em] mb-2">SCHEDULING</div>
-            <h1 className="font-serif text-[26px] font-bold text-maroon m-0 mb-2 flex items-center gap-3">
+            <h1 className="font-serif text-fluid-26 font-bold text-maroon m-0 mb-2 flex items-center gap-3">
               <Calendar className="text-maroon" size={24} /> Book Appointment
             </h1>
             <p className="text-[12px] text-text-sub m-0 leading-relaxed max-w-162.5">
@@ -592,13 +592,13 @@ export default function BookAppointment({ embedded = false }) {
           </div>
         </div>
 
-        <div className="md:flex md:gap-8 md:items-start">
+        <div className="lg:flex lg:gap-8 lg:items-start">
           
           {/* ── Left Column: Tracker & Summary ── */}
-          <div className="w-full md:w-64 lg:w-72 shrink-0 md:sticky md:top-24 md:self-start mb-4 md:mb-0 animate-fade-up" style={{ animationDelay: '0.1s' }}>
+          <div className="w-full lg:w-64 xl:w-72 shrink-0 lg:sticky lg:top-24 lg:self-start mb-4 lg:mb-0 animate-fade-up" style={{ animationDelay: '0.1s' }}>
             <Stepper step={step} />
             
-            <div className="hidden md:block mt-4 bg-linear-to-b from-white to-[#FAF9F6] rounded-2xl border border-border/80 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] overflow-hidden transition-all">
+            <div className="hidden lg:block mt-4 bg-linear-to-b from-white to-[#FAF9F6] rounded-2xl border border-border/80 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] overflow-hidden transition-all">
               {/* Premium Top Ribbon */}
               <div className="h-1 w-full bg-linear-to-r from-maroon via-gold to-maroon" />
 
@@ -707,7 +707,7 @@ export default function BookAppointment({ embedded = false }) {
           </div>
 
           {/* ── Right Column: Form Area ── */}
-          <div ref={formTopRef} className="flex-1 md:min-w-0 md:bg-white md:p-8 md:rounded-3xl md:border md:border-border md:shadow-sm animate-fade-up scroll-mt-24" style={{ animationDelay: '0.15s' }}>
+          <div ref={formTopRef} className="flex-1 lg:min-w-0 bg-transparent lg:bg-white p-0 sm:p-4 lg:p-8 rounded-3xl lg:border lg:border-border lg:shadow-sm animate-fade-up scroll-mt-24" style={{ animationDelay: '0.15s' }}>
 
             {error && (
               <div className="py-2.5 px-3.5 rounded-xl bg-danger-light border border-danger-border text-danger text-xs sm:text-sm mb-4 font-medium flex items-center gap-2">
@@ -718,7 +718,7 @@ export default function BookAppointment({ embedded = false }) {
 
             {/* ─── STEP 1: Select Documents ─── */}
             {step === 1 && (
-              <div className="animate-fade-up pb-16 md:pb-0">
+              <div className="animate-fade-up pb-20 lg:pb-0">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4 sm:mb-6">
                   <div>
                     <h1 className="font-serif text-xl sm:text-2xl md:text-3xl font-bold text-maroon m-0 mb-1 leading-snug">

@@ -278,7 +278,7 @@ export default function StudentDashboard({ embedded = false }) {
 
       {/* ── Unified Hero greeting card ── */}
       <div 
-        className="animate-fade-up bg-white rounded-3xl pt-6 px-5 pb-8 md:py-10 md:px-12 mb-8 relative overflow-hidden shadow-[0_16px_50px_rgba(0,0,0,0.04),0_0_0_1px_rgba(123,26,42,0.08)]"
+        className="animate-fade-up bg-white rounded-3xl pt-6 px-5 pb-8 sm:p-7 md:p-8 lg:py-10 lg:px-12 mb-6 sm:mb-8 relative overflow-hidden shadow-[0_16px_50px_rgba(0,0,0,0.04),0_0_0_1px_rgba(123,26,42,0.08)]"
         style={{ animationDelay: '0.1s' }}
       >
           {/* Blurred abstract glows (light theme) */}
@@ -301,20 +301,20 @@ export default function StudentDashboard({ embedded = false }) {
 
           {/* Compact action + queue row */}
           <div
-            className="animate-fade-up grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6"
+            className="animate-fade-up grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-4 md:gap-6"
             style={{ animationDelay: '0.2s' }}
           >
             {/* Book Appointment card */}
             <button
               onClick={() => navigate('/student/book')}
-              className="bg-white rounded-2xl p-5 md:p-6 border border-border cursor-pointer text-left shadow-[0_2px_8px_rgba(0,0,0,0.02)] flex items-center gap-4 transition-all duration-300 font-sans hover:border-maroon/30 hover:shadow-[0_8px_24px_rgba(123,26,42,0.08)] hover:-translate-y-0.5 group"
+              className="bg-white rounded-2xl p-5 md:p-6 border border-border cursor-pointer text-left shadow-[0_2px_8px_rgba(0,0,0,0.02)] flex items-center gap-3.5 sm:gap-4 transition-all duration-300 font-sans hover:border-maroon/30 hover:shadow-[0_8px_24px_rgba(123,26,42,0.08)] hover:-translate-y-0.5 group"
             >
               <div className="w-12 h-12 rounded-[14px] text-maroon bg-linear-to-br from-maroon/10 to-maroon/5 border border-maroon/10 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform duration-300">
                 <Calendar size={22} className="text-maroon/90" />
               </div>
-              <div className="flex-1">
-                <div className="text-[15px] font-bold text-text-main font-serif group-hover:text-maroon transition-colors duration-200">Book Appointment</div>
-                <div className="text-[12px] text-text-sub mt-1 leading-snug pr-4">Schedule a new appointment with the campus registrar</div>
+              <div className="flex-1 min-w-0">
+                <div className="text-[15px] font-bold text-text-main font-serif group-hover:text-maroon transition-colors duration-200 truncate">Book Appointment</div>
+                <div className="text-[12px] text-text-sub mt-1 leading-snug line-clamp-2 pr-1">Schedule a new appointment with the campus registrar</div>
               </div>
               <div className="w-8 h-8 rounded-full bg-off-white flex items-center justify-center text-text-muted group-hover:bg-maroon-light group-hover:text-maroon transition-colors duration-300 shrink-0">
                 <ChevronRight size={18} className="transition-transform duration-300 group-hover:translate-x-0.5" />
@@ -532,7 +532,7 @@ export default function StudentDashboard({ embedded = false }) {
             ) : (liveTicket && liveTicket.isCounterActive) ? (
               <div className="bg-surface rounded-2xl py-6 px-5 shadow-[0_4px_12px_rgba(0,0,0,0.03),0_0_0_1px_rgba(123,26,42,0.04)] text-center">
                 <p className="text-[11px] font-semibold text-text-sub tracking-[0.12em] uppercase m-0 mb-2">Your Queue Number</p>
-                <div className="font-serif text-[42px] lg:text-[56px] font-bold text-maroon leading-none m-0 mb-3 tracking-[-0.02em]">
+                <div className="font-serif text-fluid-42 font-bold text-maroon leading-none m-0 mb-3 tracking-[-0.02em]">
                   {liveTicket.queue_number}
                 </div>
                 <div className="bg-white p-3 rounded-[10px] border border-maroon/5 mx-auto mb-4 w-full text-center">
@@ -546,7 +546,7 @@ export default function StudentDashboard({ embedded = false }) {
                   <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-gold/10 text-gold-dark text-[11px] font-extrabold uppercase tracking-wider mb-2.5 border border-gold/25">
                     <span className="w-1.5 h-1.5 rounded-full bg-gold animate-pulse" /> {activeCounterTickets[0].location || 'Window'}
                   </div>
-                  <div className="font-serif text-[42px] lg:text-[56px] font-bold text-maroon leading-none m-0 mb-3 tracking-[-0.02em]">
+                  <div className="font-serif text-fluid-42 font-bold text-maroon leading-none m-0 mb-3 tracking-[-0.02em]">
                     {activeCounterTickets[0].queue_number}
                   </div>
                   <div className="bg-white p-3 rounded-[10px] border border-maroon/5 mx-auto w-full text-center">

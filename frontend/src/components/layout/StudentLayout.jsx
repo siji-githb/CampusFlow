@@ -247,7 +247,25 @@ export function ProfileDropdown() {
 export default function StudentLayout({ children, activeTab, mobileTitle, backTo }) {
   const location = useLocation();
   const isDesktop = useWindowWidth() >= 768;
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
+    try {
+      const saved = localStorage.getItem('cf_student_sidebar_collapsed');
+      if (saved !== null) return saved === 'true';
+    } catch {
+      // Ignore localStorage errors
+    }
+    // Default to compact icon rail (80px) on tablet portrait (<1024px) for optimal content width
+    return typeof window !== 'undefined' ? window.innerWidth < 1024 : false;
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('cf_student_sidebar_collapsed', sidebarCollapsed ? 'true' : 'false');
+    } catch {
+      // Ignore localStorage errors
+    }
+  }, [sidebarCollapsed]);
+
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [position, setPosition] = useState(null);
   const [isDragging, setIsDragging] = useState(false);
@@ -584,7 +602,7 @@ export default function StudentLayout({ children, activeTab, mobileTitle, backTo
 
         {/* Desktop Top Bar (Hidden on Mobile) */}
         <header className="hidden md:flex items-center justify-end sticky top-0 z-40 bg-white border-b border-border h-17.5" style={{ background: M.white, borderBottom: `1px solid ${M.border}`, height: '70px', position: 'sticky', top: 0, zIndex: 40 }}>
-          <div style={{ maxWidth: '1200px', margin: '0 auto', width: '100%', height: '100%', padding: '0 40px', display: 'flex', alignItems: 'center', gap: '24px' }}>
+          <div className="w-full max-w-300 mx-auto h-full px-4 md:px-6 lg:px-10 flex items-center justify-end gap-4 sm:gap-6" style={{ maxWidth: '1200px' }}>
             <GlobalSearch onAiPrompt={handleAiPrompt} />
             <NotificationDropdown />
             <ProfileDropdown />
@@ -592,7 +610,7 @@ export default function StudentLayout({ children, activeTab, mobileTitle, backTo
         </header>
 
         {/* Body */}
-        <main className="flex-1 w-full max-w-300 mx-auto p-0 md:p-10 pb-22 md:pb-10" style={{ maxWidth: '1200px', margin: '0 auto', width: '100%' }}>
+        <main className="flex-1 w-full max-w-300 mx-auto p-0 sm:p-4 md:p-6 lg:p-8 xl:p-10 pb-22 md:pb-10" style={{ maxWidth: '1200px', margin: '0 auto', width: '100%' }}>
           {children}
         </main>
 

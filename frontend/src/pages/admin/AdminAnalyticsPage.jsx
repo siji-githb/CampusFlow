@@ -1111,86 +1111,91 @@ export default function AdminAnalyticsPage() {
           <span className="text-fluid-11-5 text-text-muted font-medium">Showing all 12 months</span>
         </div>
 
-        {/* Column Headers */}
-        <div className="hidden lg:grid grid-cols-[140px_repeat(4,1fr)_160px] p-[14px_28px] bg-surface/60 border-b border-border text-fluid-10-5 font-extrabold text-text-muted uppercase tracking-[0.08em]">
-          <span>Month</span>
-          <span>Total</span>
-          <span>Completed</span>
-          <span>Cancelled</span>
-          <span>No Show</span>
-          <span>Completion Rate</span>
-        </div>
+        {/* Column Headers, Rows & Summary in Scrollable Container */}
+        <div className="overflow-x-auto">
+          <div className="min-w-180">
+            {/* Column Headers */}
+            <div className="grid grid-cols-[140px_repeat(4,1fr)_160px] p-[14px_28px] bg-surface/60 border-b border-border text-fluid-10-5 font-extrabold text-text-muted uppercase tracking-[0.08em]">
+              <span>Month</span>
+              <span>Total</span>
+              <span>Completed</span>
+              <span>Cancelled</span>
+              <span>No Show</span>
+              <span>Completion Rate</span>
+            </div>
 
-        {/* Table Rows */}
-        <div className="bg-white">
-          {loading ? (
-            <div>
-              {[1, 2, 3, 4].map((i) => (
-                <div key={i} className="grid grid-cols-1 lg:grid-cols-[140px_repeat(4,1fr)_160px] p-[18px_28px] border-b border-border/50">
-                  <div className="flex items-center gap-3">
-                    <div className="w-2 h-2 bg-border rounded-full animate-pulse" />
-                    <div className="animate-pulse h-4.5 w-[60%] bg-border rounded" />
-                  </div>
-                  {[1, 2, 3, 4, 5].map((j) => (
-                    <div key={j} className="animate-pulse h-4.5 w-[50%] bg-border rounded my-auto" />
+            {/* Table Rows */}
+            <div className="bg-white">
+              {loading ? (
+                <div>
+                  {[1, 2, 3, 4].map((i) => (
+                    <div key={i} className="grid grid-cols-[140px_repeat(4,1fr)_160px] p-[18px_28px] border-b border-border/50">
+                      <div className="flex items-center gap-3">
+                        <div className="w-2 h-2 bg-border rounded-full animate-pulse" />
+                        <div className="animate-pulse h-4.5 w-[60%] bg-border rounded" />
+                      </div>
+                      {[1, 2, 3, 4, 5].map((j) => (
+                        <div key={j} className="animate-pulse h-4.5 w-[50%] bg-border rounded my-auto" />
+                      ))}
+                    </div>
                   ))}
                 </div>
-              ))}
-            </div>
-          ) : tableRows.length === 0 ? (
-            <div className="p-[60px_24px] text-center text-text-muted font-medium">No monthly data available yet.</div>
-          ) : (
-            tableRows.map((row, i) => {
-              const compRate = parseInt(row['Completion Rate']) || 0
-              const barColor = compRate >= 90 ? 'bg-success' : compRate >= 70 ? 'bg-gold' : 'bg-danger'
-              const textColor = compRate >= 90 ? 'text-success' : compRate >= 70 ? 'text-gold' : 'text-danger'
-              return (
-                <div key={i} className={`group grid grid-cols-1 lg:grid-cols-[140px_repeat(4,1fr)_160px] p-[16px_28px] items-center transition-all duration-200 hover:bg-off-white/70 ${i < tableRows.length - 1 ? 'border-b border-border/50' : 'border-none'} bg-white`}>
-                  <div className="flex items-center gap-3">
-                    <div className="w-2 h-2 rounded-full bg-border group-hover:bg-maroon transition-colors" />
-                    <span className="font-serif text-fluid-14-5 font-bold text-text-main group-hover:text-maroon transition-colors">{row.Period}</span>
-                  </div>
-                  <span className="text-fluid-14-5 font-bold text-text-main">{row.Total.toLocaleString()}</span>
-                  <div className="flex items-center gap-2">
-                    <div className="w-1.5 h-1.5 rounded-full bg-success"></div>
-                    <span className="text-fluid-13-5 font-semibold text-text-sub">{row.Completed.toLocaleString()}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="w-1.5 h-1.5 rounded-full bg-danger"></div>
-                    <span className="text-fluid-13-5 font-semibold text-text-sub">{row.Cancelled.toLocaleString()}</span>
-                  </div>
-                  <span className="text-fluid-13-5 font-medium text-text-sub pl-2">{row['No Show'].toLocaleString()}</span>
-                  <div className="flex items-center gap-3">
-                    <div className="flex-1 h-2 bg-surface rounded-full overflow-hidden">
-                      <div className={`h-full rounded-full transition-all duration-700 ${barColor}`} style={{ width: `${compRate}%` }} />
+              ) : tableRows.length === 0 ? (
+                <div className="p-[60px_24px] text-center text-text-muted font-medium">No monthly data available yet.</div>
+              ) : (
+                tableRows.map((row, i) => {
+                  const compRate = parseInt(row['Completion Rate']) || 0
+                  const barColor = compRate >= 90 ? 'bg-success' : compRate >= 70 ? 'bg-gold' : 'bg-danger'
+                  const textColor = compRate >= 90 ? 'text-success' : compRate >= 70 ? 'text-gold' : 'text-danger'
+                  return (
+                    <div key={i} className={`group grid grid-cols-[140px_repeat(4,1fr)_160px] p-[16px_28px] items-center transition-all duration-200 hover:bg-off-white/70 ${i < tableRows.length - 1 ? 'border-b border-border/50' : 'border-none'} bg-white`}>
+                      <div className="flex items-center gap-3">
+                        <div className="w-2 h-2 rounded-full bg-border group-hover:bg-maroon transition-colors" />
+                        <span className="font-serif text-fluid-14-5 font-bold text-text-main group-hover:text-maroon transition-colors">{row.Period}</span>
+                      </div>
+                      <span className="text-fluid-14-5 font-bold text-text-main">{row.Total.toLocaleString()}</span>
+                      <div className="flex items-center gap-2">
+                        <div className="w-1.5 h-1.5 rounded-full bg-success"></div>
+                        <span className="text-fluid-13-5 font-semibold text-text-sub">{row.Completed.toLocaleString()}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div className="w-1.5 h-1.5 rounded-full bg-danger"></div>
+                        <span className="text-fluid-13-5 font-semibold text-text-sub">{row.Cancelled.toLocaleString()}</span>
+                      </div>
+                      <span className="text-fluid-13-5 font-medium text-text-sub pl-2">{row['No Show'].toLocaleString()}</span>
+                      <div className="flex items-center gap-3">
+                        <div className="flex-1 h-2 bg-surface rounded-full overflow-hidden">
+                          <div className={`h-full rounded-full transition-all duration-700 ${barColor}`} style={{ width: `${compRate}%` }} />
+                        </div>
+                        <span className={`text-fluid-12-5 font-bold min-w-9 ${textColor}`}>{row['Completion Rate']}</span>
+                      </div>
                     </div>
-                    <span className={`text-fluid-12-5 font-bold min-w-9 ${textColor}`}>{row['Completion Rate']}</span>
-                  </div>
-                </div>
-              )
-            })
-          )}
-        </div>
+                  )
+                })
+              )}
+            </div>
 
-        {/* Summary Footer */}
-        {!loading && tableRows.length > 0 && (
-          <div className="grid grid-cols-[140px_repeat(4,1fr)_160px] p-[18px_28px] bg-maroon-light border-t border-maroon-border items-center">
-            <div className="flex items-center gap-3">
-              <div className="w-2.5 h-2.5 rounded-full bg-maroon shadow-xs" />
-              <span className="text-fluid-11 font-extrabold text-maroon uppercase tracking-widest pt-0.5">Annual Total</span>
-            </div>
-            <span className="font-serif text-fluid-17 font-bold text-maroon">{performanceTotals.total.toLocaleString()}</span>
-            <span className="font-serif text-fluid-17 font-bold text-success">{performanceTotals.completed.toLocaleString()}</span>
-            <span className="font-serif text-fluid-17 font-bold text-danger">{performanceTotals.cancelled.toLocaleString()}</span>
-            <span className="font-serif text-fluid-17 font-bold text-text-main pl-2">{performanceTotals.noShow.toLocaleString()}</span>
-            <div className="flex items-center gap-3">
-              <div className="flex-1 h-2 bg-maroon-border rounded-full overflow-hidden">
-                <div className="h-full rounded-full bg-maroon transition-all duration-700" style={{ width: `${completionPct}%` }} />
+            {/* Summary Footer */}
+            {!loading && tableRows.length > 0 && (
+              <div className="grid grid-cols-[140px_repeat(4,1fr)_160px] p-[18px_28px] bg-maroon-light border-t border-maroon-border items-center">
+                <div className="flex items-center gap-3">
+                  <div className="w-2.5 h-2.5 rounded-full bg-maroon shadow-xs" />
+                  <span className="text-fluid-11 font-extrabold text-maroon uppercase tracking-widest pt-0.5">Annual Total</span>
+                </div>
+                <span className="font-serif text-fluid-17 font-bold text-maroon">{performanceTotals.total.toLocaleString()}</span>
+                <span className="font-serif text-fluid-17 font-bold text-success">{performanceTotals.completed.toLocaleString()}</span>
+                <span className="font-serif text-fluid-17 font-bold text-danger">{performanceTotals.cancelled.toLocaleString()}</span>
+                <span className="font-serif text-fluid-17 font-bold text-text-main pl-2">{performanceTotals.noShow.toLocaleString()}</span>
+                <div className="flex items-center gap-3">
+                  <div className="flex-1 h-2 bg-maroon-border rounded-full overflow-hidden">
+                    <div className="h-full rounded-full bg-maroon transition-all duration-700" style={{ width: `${completionPct}%` }} />
+                  </div>
+                  <span className="font-serif text-fluid-16 font-bold text-maroon">{completionPct}%</span>
+                </div>
               </div>
-              <span className="font-serif text-fluid-16 font-bold text-maroon">{completionPct}%</span>
-            </div>
+            )}
           </div>
-        )}
+        </div>
       </div>
 
     </div>

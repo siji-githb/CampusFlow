@@ -251,7 +251,7 @@ export default function StaffProfilePage({ setActiveNav }) {
             </button>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6 md:gap-8 text-left w-full">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 lg:gap-8 text-left w-full">
             <div className="flex flex-col gap-1 md:gap-2">
               <span className="text-fluid-10-5 md:text-fluid-12 font-bold text-text-muted uppercase tracking-widest">First Name</span>
               <span className="text-fluid-15 font-bold md:font-semibold text-text-main">{user?.first_name || '-'}</span>
@@ -260,7 +260,7 @@ export default function StaffProfilePage({ setActiveNav }) {
               <span className="text-fluid-10-5 md:text-fluid-12 font-bold text-text-muted uppercase tracking-widest">Last Name</span>
               <span className="text-fluid-15 font-bold md:font-semibold text-text-main">{user?.last_name || '-'}</span>
             </div>
-            <div className="flex flex-col gap-1 md:gap-2 sm:col-span-2 md:col-span-2">
+            <div className="flex flex-col gap-1 md:gap-2 sm:col-span-2 lg:col-span-2">
               <span className="text-fluid-10-5 md:text-fluid-12 font-bold text-text-muted uppercase tracking-widest">Email Address</span>
               <span className="text-fluid-15 font-bold md:font-semibold text-text-main break-all">
                 {user?.email || 'staff@crmc.edu.ph'}

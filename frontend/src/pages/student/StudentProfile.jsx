@@ -412,7 +412,7 @@ export default function StudentProfile({ embedded = false }) {
             </button>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 md:gap-8 text-left">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 lg:gap-8 text-left">
             <div className="flex flex-col gap-1.5 md:gap-2">
               <span className="text-[12px] font-bold text-text-muted uppercase tracking-widest">First Name</span>
               <span className="text-[15px] font-semibold text-text-main">{user?.first_name || '-'}</span>
@@ -421,7 +421,7 @@ export default function StudentProfile({ embedded = false }) {
               <span className="text-[12px] font-bold text-text-muted uppercase tracking-widest">Last Name</span>
               <span className="text-[15px] font-semibold text-text-main">{user?.last_name || '-'}</span>
             </div>
-            <div className="flex flex-col gap-1.5 md:gap-2 sm:col-span-2 md:col-span-2">
+            <div className="flex flex-col gap-1.5 md:gap-2 sm:col-span-2 lg:col-span-2">
               <span className="text-[12px] font-bold text-text-muted uppercase tracking-widest">Email Address</span>
               <span className="text-[15px] font-semibold text-text-main flex items-center gap-2">
                 {user?.email || 'student@crmc.edu.ph'}

@@ -290,7 +290,7 @@ export default function AdminRegistrarRecordsPage() {
             </div>          {/* Table */}
           <div className="flex flex-col gap-3">
             {/* Column headers */}
-            <div className="hidden md:grid grid-cols-[110px_1fr_180px_110px_40px] px-5 pb-2 pt-1 border-b border-border/60">
+            <div className="hidden lg:grid grid-cols-[110px_1fr_180px_110px_40px] px-5 pb-2 pt-1 border-b border-border/60">
               {['Record ID', 'Student & Document', 'Dates', 'Status', ''].map(h => (
                 <span key={h} className="text-fluid-11 font-extrabold text-text-muted uppercase tracking-[0.08em]">{h}</span>
               ))}
@@ -317,7 +317,8 @@ export default function AdminRegistrarRecordsPage() {
 
                 return (
                   <div key={rec.id} className={`group bg-white rounded-2xl border transition-all duration-200 shadow-sm overflow-hidden ${isExpanded ? 'border-maroon ring-1 ring-maroon/20' : 'border-border hover:border-maroon/30 hover:shadow-md'}`}>
-                    <div className="grid grid-cols-1 lg:grid-cols-[110px_1fr_180px_110px_40px] p-[16px_20px] items-center cursor-pointer bg-white"
+                    {/* Desktop Table Row (>= lg) */}
+                    <div className="hidden lg:grid grid-cols-[110px_1fr_180px_110px_40px] p-[16px_20px] items-center cursor-pointer bg-white"
                       onClick={() => setExpandedId(isExpanded ? null : rec.id)}
                     >
                       <span className="font-mono text-fluid-13 font-bold text-maroon">{rec.id}</span>
@@ -356,10 +357,50 @@ export default function AdminRegistrarRecordsPage() {
                       <span className={`text-text-muted transition-transform duration-200 flex justify-end ${isExpanded ? 'rotate-180 text-maroon' : 'rotate-0'}`}><ChevronDown size={20} /></span>
                     </div>
 
+                    {/* Mobile/Tablet Card View (< lg) */}
+                    <div className="lg:hidden p-4 sm:p-5 flex flex-col gap-3 cursor-pointer bg-white"
+                      onClick={() => setExpandedId(isExpanded ? null : rec.id)}
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="font-mono text-fluid-12 font-extrabold text-maroon bg-maroon/5 px-2.5 py-1 rounded-lg border border-maroon/15">{rec.id}</span>
+                        <div className="flex items-center gap-2">
+                          <StatusBadge status={rec.status} />
+                          <span className={`text-text-muted transition-transform duration-200 ${isExpanded ? 'rotate-180 text-maroon' : 'rotate-0'}`}>
+                            <ChevronDown size={18} />
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="min-w-0">
+                        <div className="text-fluid-14 font-bold text-text-main group-hover:text-maroon transition-colors">{rec.student}</div>
+                        <div className="text-fluid-11 font-medium text-text-muted font-mono mt-0.5">{rec.studentId}</div>
+                      </div>
+
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        {rec.selected_documents && rec.selected_documents.length > 1 ? (
+                          rec.selected_documents.map((d, idx) => (
+                            <span key={d.id || idx} className="text-[10.5px] font-bold text-maroon bg-maroon-light py-0.5 px-2 rounded-md border border-maroon-border/30">
+                              {d.name}
+                            </span>
+                          ))
+                        ) : (
+                          <div className="flex items-center gap-1.5">
+                            <div className="w-2 h-2 rounded-full shrink-0" style={{ background: typeColor }} />
+                            <span className="text-fluid-12 font-medium text-text-sub">{rec.type}</span>
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="flex items-center justify-between pt-2.5 border-t border-border/60 text-fluid-11 font-medium text-text-muted">
+                        <div><span className="font-bold text-text-sub">Req:</span> {rec.requested}</div>
+                        <div><span className="font-bold text-text-sub">Pro:</span> {rec.processed}</div>
+                      </div>
+                    </div>
+
                     {/* Expanded row detail */}
                     {isExpanded && (
-                      <div className="p-[20px_24px] bg-surface/50 border-t border-border">
-                        <div className="grid grid-cols-4 gap-6">
+                      <div className="p-4 sm:p-[20px_24px] bg-surface/50 border-t border-border">
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-6">
                           {[
                             { l: 'Record ID', v: rec.id, mono: true },
                             { l: 'Student ID', v: rec.studentId, mono: true },
@@ -368,11 +409,11 @@ export default function AdminRegistrarRecordsPage() {
                           ].map((d, i) => (
                             <div key={i}>
                               <div className="text-fluid-10 font-extrabold text-text-muted uppercase tracking-[0.08em] mb-1.5">{d.l}</div>
-                              <div className={`text-fluid-14 font-bold text-text-main ${d.mono ? 'font-mono' : 'font-sans'}`}>{d.v}</div>
+                              <div className={`text-fluid-13 sm:text-fluid-14 font-bold text-text-main ${d.mono ? 'font-mono' : 'font-sans'}`}>{d.v}</div>
                             </div>
                           ))}
                         </div>
-                        <div className="flex gap-2 mt-4 pt-4 border-t border-border/60">
+                        <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t border-border/60">
                           <button onClick={() => setViewingRecord(rec)} className="py-2 px-4 rounded-xl border-none bg-maroon text-white text-fluid-12 font-bold cursor-pointer font-sans hover:bg-maroon-dark transition-colors shadow-sm">
                             View Full Record
                           </button>
@@ -396,26 +437,31 @@ export default function AdminRegistrarRecordsPage() {
 
             {/* Pagination footer */}
             {filtered.length > 0 && (
-              <div className="p-[16px_20px] flex items-center justify-between">
-                <span className="text-fluid-12 font-medium text-text-muted">
+              <div className="p-4 sm:p-[16px_20px] flex flex-col sm:flex-row items-center justify-between gap-3">
+                <span className="text-fluid-12 font-medium text-text-muted text-center sm:text-left">
                   Showing {Math.min((page - 1) * PER_PAGE + 1, filtered.length)}–{Math.min(page * PER_PAGE, filtered.length)} of {filtered.length} records
                 </span>
-                <div className="flex gap-1.5">
+                <div className="flex items-center gap-1.5">
                   <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}
                     className={`py-1.5 px-3 rounded-lg border text-fluid-12 font-bold font-sans transition-colors ${page === 1 ? 'border-border/50 bg-surface/50 text-text-muted/50 cursor-not-allowed' : 'border-border bg-white text-text-main hover:bg-off-white hover:border-maroon/30 cursor-pointer shadow-sm'}`}>
                     Prev
                   </button>
-                  {Array.from({ length: Math.min(totalPages, 7) }, (_, i) => {
-                    const p = totalPages <= 7 ? i + 1
-                      : page <= 4 ? i + 1
-                        : page >= totalPages - 3 ? totalPages - 6 + i
-                          : page - 3 + i
-                    return (
-                      <button key={p} onClick={() => setPage(p)} className={`w-8 h-8 rounded-lg text-fluid-12 font-bold cursor-pointer font-sans border transition-all ${page === p ? 'border-maroon bg-maroon text-white shadow-sm' : 'border-border bg-white text-text-main hover:bg-off-white hover:border-maroon/30 shadow-sm'}`}>
-                        {p}
-                      </button>
-                    )
-                  })}
+                  <span className="sm:hidden text-fluid-12 font-bold text-text-sub px-2">
+                    {page} / {totalPages}
+                  </span>
+                  <div className="hidden sm:flex items-center gap-1.5">
+                    {Array.from({ length: Math.min(totalPages, 7) }, (_, i) => {
+                      const p = totalPages <= 7 ? i + 1
+                        : page <= 4 ? i + 1
+                          : page >= totalPages - 3 ? totalPages - 6 + i
+                            : page - 3 + i
+                      return (
+                        <button key={p} onClick={() => setPage(p)} className={`w-8 h-8 rounded-lg text-fluid-12 font-bold cursor-pointer font-sans border transition-all ${page === p ? 'border-maroon bg-maroon text-white shadow-sm' : 'border-border bg-white text-text-main hover:bg-off-white hover:border-maroon/30 shadow-sm'}`}>
+                          {p}
+                        </button>
+                      )
+                    })}
+                  </div>
                   <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages}
                     className={`py-1.5 px-3 rounded-lg border text-fluid-12 font-bold font-sans transition-colors ${page === totalPages ? 'border-border/50 bg-surface/50 text-text-muted/50 cursor-not-allowed' : 'border-border bg-white text-text-main hover:bg-off-white hover:border-maroon/30 cursor-pointer shadow-sm'}`}>
                     Next
@@ -568,9 +614,9 @@ export default function AdminRegistrarRecordsPage() {
                </button>
              </div>
              
-             {/* Body */}
-             <div className="p-6 sm:p-8 flex flex-col gap-6">
-                <div className="grid grid-cols-2 gap-6">
+              {/* Body */}
+              <div className="p-5 sm:p-8 flex flex-col gap-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 sm:gap-6">
                   {/* Student Info */}
                   <div>
                     <h3 className="text-fluid-11 font-bold text-text-muted uppercase tracking-[0.06em] m-0 mb-3">Student Information</h3>

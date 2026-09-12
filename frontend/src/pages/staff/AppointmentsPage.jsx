@@ -8,7 +8,7 @@ import {
   Clock, CheckCircle, CheckCircle2, AlertCircle, Mail, GraduationCap, MapPin, Ticket, 
   ExternalLink, Paperclip, ChevronRight, ChevronLeft, ChevronDown, CalendarCheck, CalendarX, ShieldCheck, 
   Sparkles, DollarSign, Layers, ArrowRight, FolderOpen, ClipboardList, Info, Search, RotateCcw,
-  Check, AlertTriangle
+  Check, AlertTriangle, Eye
 } from 'lucide-react'
 import { getPhilippineHoliday } from '../../utils/philippineHolidays'
 
@@ -533,7 +533,7 @@ export default function AppointmentsPage() {
           })()}
 
           {/* Card Header & Controls */}
-          <div className="p-4 sm:p-5 lg:p-6 border-b border-border flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3.5 sm:gap-4 bg-white">
+          <div className="p-4 sm:p-5 lg:p-6 border-b border-border flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3.5 sm:gap-4 bg-white">
             {/* Title & Badge */}
             <div className="min-w-0">
               <div className="flex items-center gap-2.5 flex-wrap sm:flex-nowrap">
@@ -550,7 +550,7 @@ export default function AppointmentsPage() {
             </div>
 
             {/* Controls: Search + Status Filter */}
-            <div className="flex items-center gap-2 sm:gap-3 flex-wrap sm:flex-nowrap shrink-0">
+            <div className="flex items-center gap-2 sm:gap-3 flex-wrap sm:flex-nowrap shrink-0 w-full sm:w-auto">
               {/* Search input */}
               <div className="relative flex-1 sm:flex-initial sm:w-56 md:w-60 min-w-44">
                 <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted pointer-events-none" />
@@ -583,148 +583,178 @@ export default function AppointmentsPage() {
             </div>
           </div>
 
-          {/* Schedule Table */}
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse table-fixed min-w-220">
-              <thead>
-                <tr className="bg-white border-b border-border">
-                  <th className="py-3 px-3.5 sm:px-4 text-fluid-10-5 sm:text-fluid-11 font-extrabold text-text-muted uppercase tracking-[0.08em] w-[12%]">Time</th>
-                  <th className="py-3 px-3.5 sm:px-4 text-fluid-10-5 sm:text-fluid-11 font-extrabold text-text-muted uppercase tracking-[0.08em] w-[24%]">Student</th>
-                  <th className="py-3 px-3.5 sm:px-4 text-fluid-10-5 sm:text-fluid-11 font-extrabold text-text-muted uppercase tracking-[0.08em] w-[24%]">Transaction</th>
-                  <th className="py-3 px-3.5 sm:px-4 text-fluid-10-5 sm:text-fluid-11 font-extrabold text-text-muted uppercase tracking-[0.08em] w-[11%]">Priority</th>
-                  <th className="py-3 px-3.5 sm:px-4 text-fluid-10-5 sm:text-fluid-11 font-extrabold text-text-muted uppercase tracking-[0.08em] w-[15%]">Status</th>
-                  <th className="py-3 px-3.5 sm:px-4 text-fluid-10-5 sm:text-fluid-11 font-extrabold text-text-muted uppercase tracking-[0.08em] w-[14%] text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border">
-                {apptLoading ? (
-                  [1, 2, 3, 4].map(n => (
-                    <tr key={n} className="animate-pulse">
-                      <td className="py-3.5 px-3.5 sm:px-4"><div className="h-5 w-14 rounded bg-border" /></td>
-                      <td className="py-3.5 px-3.5 sm:px-4">
-                        <div className="flex items-center gap-3">
-                          <div className="w-8.5 h-8.5 rounded-full bg-border shrink-0" />
-                          <div className="space-y-1.5 w-32">
-                            <div className="h-4 w-full rounded bg-border" />
-                            <div className="h-3 w-16 rounded bg-border" />
-                          </div>
-                        </div>
-                      </td>
-                      <td className="py-3.5 px-3.5 sm:px-4"><div className="h-4 w-36 rounded bg-border" /></td>
-                      <td className="py-3.5 px-3.5 sm:px-4"><div className="h-5 w-16 rounded-full bg-border" /></td>
-                      <td className="py-3.5 px-3.5 sm:px-4"><div className="h-6 w-24 rounded-full bg-border" /></td>
-                      <td className="py-3.5 px-3.5 sm:px-4 text-right"><div className="h-7 w-20 rounded-lg bg-border inline-block" /></td>
+          {/* Main Content Area: Skeletons | Empty State | Data Views */}
+          {apptLoading ? (
+            <>
+              {/* Mobile/Tablet Loading Skeleton */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5 sm:gap-4 p-4 sm:p-5 lg:hidden">
+                {[1, 2, 3, 4].map(n => (
+                  <div key={n} className="p-4.5 rounded-2xl border border-border bg-white animate-pulse flex flex-col gap-3">
+                    <div className="flex justify-between items-center">
+                      <div className="w-28 h-5 rounded bg-border" />
+                      <div className="w-20 h-5 rounded-full bg-border" />
+                    </div>
+                    <div className="h-16 rounded-xl bg-off-white" />
+                    <div className="w-full h-9 rounded-xl bg-border" />
+                  </div>
+                ))}
+              </div>
+
+              {/* Desktop Loading Skeleton Table */}
+              <div className="hidden lg:block overflow-x-auto">
+                <table className="w-full text-left border-collapse table-fixed min-w-220">
+                  <thead>
+                    <tr className="bg-white border-b border-border">
+                      <th className="py-3 px-3.5 sm:px-4 text-fluid-10-5 sm:text-fluid-11 font-extrabold text-text-muted uppercase tracking-[0.08em] w-[12%]">Time</th>
+                      <th className="py-3 px-3.5 sm:px-4 text-fluid-10-5 sm:text-fluid-11 font-extrabold text-text-muted uppercase tracking-[0.08em] w-[24%]">Student</th>
+                      <th className="py-3 px-3.5 sm:px-4 text-fluid-10-5 sm:text-fluid-11 font-extrabold text-text-muted uppercase tracking-[0.08em] w-[24%]">Transaction</th>
+                      <th className="py-3 px-3.5 sm:px-4 text-fluid-10-5 sm:text-fluid-11 font-extrabold text-text-muted uppercase tracking-[0.08em] w-[11%]">Priority</th>
+                      <th className="py-3 px-3.5 sm:px-4 text-fluid-10-5 sm:text-fluid-11 font-extrabold text-text-muted uppercase tracking-[0.08em] w-[15%]">Status</th>
+                      <th className="py-3 px-3.5 sm:px-4 text-fluid-10-5 sm:text-fluid-11 font-extrabold text-text-muted uppercase tracking-[0.08em] w-[14%] text-right">Actions</th>
                     </tr>
-                  ))
-                ) : paginated.length === 0 ? (
-                  <tr>
-                    <td colSpan={6} className="py-16 px-6 text-center">
-                      {(() => {
-                        const phHoliday = getPhilippineHoliday(selectedDate)
-                        const currentOverride = dateOverrides[selectedDate]
-                        const isBlocked = currentOverride ? currentOverride.is_blocked : Boolean(phHoliday)
-                        const title = currentOverride?.note || (phHoliday ? phHoliday.name : "Date Blocked")
-
-                        if (isBlocked) {
-                          return (
-                            <div className="max-w-md mx-auto">
-                              <div className="w-14 h-14 rounded-2xl bg-danger-light text-danger flex items-center justify-center mx-auto mb-3 border border-danger-border shadow-2xs">
-                                <AlertTriangle size={28} />
-                              </div>
-                              <span className="px-2.5 py-0.5 rounded-full bg-danger-light text-danger text-fluid-11 font-extrabold uppercase tracking-wider mb-2 inline-block border border-danger-border">
-                                Date Blocked
-                              </span>
-                              <p className="font-serif text-fluid-18 font-bold text-text-main m-0 mb-1">
-                                {title}
-                              </p>
-                              <p className="text-fluid-12-5 text-text-muted m-0 leading-relaxed">
-                                {phHoliday 
-                                  ? `This date is an official Philippine ${phHoliday.type}. Campus appointments and office queues are closed.` 
-                                  : "There are no bookings recorded and new appointments cannot be scheduled on this blocked date."}
-                              </p>
+                  </thead>
+                  <tbody className="divide-y divide-border">
+                    {[1, 2, 3, 4].map(n => (
+                      <tr key={n} className="animate-pulse">
+                        <td className="py-3.5 px-3.5 sm:px-4"><div className="h-5 w-14 rounded bg-border" /></td>
+                        <td className="py-3.5 px-3.5 sm:px-4">
+                          <div className="flex items-center gap-3">
+                            <div className="w-8.5 h-8.5 rounded-full bg-border shrink-0" />
+                            <div className="space-y-1.5 w-32">
+                              <div className="h-4 w-full rounded bg-border" />
+                              <div className="h-3 w-16 rounded bg-border" />
                             </div>
-                          )
-                        }
-
-                        return (
-                          <>
-                            <div className="w-14 h-14 rounded-2xl bg-surface text-text-muted/60 flex items-center justify-center mx-auto mb-3 border border-border">
-                              <Calendar size={28} strokeWidth={1.5} />
-                            </div>
-                            <p className="font-serif text-fluid-17 font-bold text-text-main m-0 mb-1">
-                              No appointments found {isToday ? 'for today' : `for ${selectedDate}`}
-                            </p>
-                            <p className="text-fluid-12-5 text-text-muted m-0 max-w-sm mx-auto leading-relaxed">
-                              {searchQuery 
-                                ? `No bookings match "${searchQuery}". Try clearing your search query.`
-                                : statusFilter !== 'all' 
-                                ? 'Try switching to "All Statuses" to view other bookings.' 
-                                : 'There are no student bookings recorded on this date.'}
-                            </p>
-                          </>
-                        )
-                      })()}
-                    </td>
-                  </tr>
-                ) : (
-                  paginated.map(apt => {
-                    const student = apt.users
-                    const name = student ? `${student.first_name || ''} ${student.last_name || ''}`.trim() || 'Unknown Student' : 'Unknown Student'
-                    const txName = apt.transaction_types?.name || apt.transaction_type?.name || 'Transaction'
-                    const time = fmt12h(apt.time_slot)
-                    const effStatus = getEffectiveStatus(apt)
-                    const isPriority = apt.priority_class && apt.priority_class !== 'regular'
-
-                    return (
-                      <tr key={apt.id} className="hover:bg-surface/50 transition-colors group">
-                        {/* Time */}
-                        <td className="py-3.5 px-3.5 sm:px-4 whitespace-nowrap">
-                          <div className="font-sans text-fluid-13 font-bold text-text-main flex items-center gap-1.5">
-                            <Clock size={13} className="text-text-muted shrink-0" />
-                            <span>{time}</span>
                           </div>
+                        </td>
+                        <td className="py-3.5 px-3.5 sm:px-4"><div className="h-4 w-36 rounded bg-border" /></td>
+                        <td className="py-3.5 px-3.5 sm:px-4"><div className="h-5 w-16 rounded-full bg-border" /></td>
+                        <td className="py-3.5 px-3.5 sm:px-4"><div className="h-6 w-24 rounded-full bg-border" /></td>
+                        <td className="py-3.5 px-3.5 sm:px-4 text-right"><div className="h-7 w-20 rounded-lg bg-border inline-block" /></td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </>
+          ) : paginated.length === 0 ? (
+            /* Responsive Empty State */
+            <div className="py-14 sm:py-16 px-4 sm:px-6 text-center">
+              {(() => {
+                const phHoliday = getPhilippineHoliday(selectedDate)
+                const currentOverride = dateOverrides[selectedDate]
+                const isBlocked = currentOverride ? currentOverride.is_blocked : Boolean(phHoliday)
+                const title = currentOverride?.note || (phHoliday ? phHoliday.name : "Date Blocked")
+
+                if (isBlocked) {
+                  return (
+                    <div className="max-w-md mx-auto">
+                      <div className="w-14 h-14 rounded-2xl bg-danger-light text-danger flex items-center justify-center mx-auto mb-3 border border-danger-border shadow-2xs">
+                        <AlertTriangle size={28} />
+                      </div>
+                      <span className="px-2.5 py-0.5 rounded-full bg-danger-light text-danger text-fluid-11 font-extrabold uppercase tracking-wider mb-2 inline-block border border-danger-border">
+                        Date Blocked
+                      </span>
+                      <p className="font-serif text-fluid-18 font-bold text-text-main m-0 mb-1">
+                        {title}
+                      </p>
+                      <p className="text-fluid-12-5 text-text-muted m-0 leading-relaxed">
+                        {phHoliday 
+                          ? `This date is an official Philippine ${phHoliday.type}. Campus appointments and office queues are closed.` 
+                          : "There are no bookings recorded and new appointments cannot be scheduled on this blocked date."}
+                      </p>
+                    </div>
+                  )
+                }
+
+                return (
+                  <div className="max-w-md mx-auto">
+                    <div className="w-14 h-14 rounded-2xl bg-surface text-text-muted/60 flex items-center justify-center mx-auto mb-3 border border-border">
+                      <Calendar size={28} strokeWidth={1.5} />
+                    </div>
+                    <p className="font-serif text-fluid-17 font-bold text-text-main m-0 mb-1">
+                      No appointments found {isToday ? 'for today' : `for ${selectedDate}`}
+                    </p>
+                    <p className="text-fluid-12-5 text-text-muted m-0 max-w-sm mx-auto leading-relaxed">
+                      {searchQuery 
+                        ? `No bookings match "${searchQuery}". Try clearing your search query.`
+                        : statusFilter !== 'all' 
+                        ? 'Try switching to "All Statuses" to view other bookings.' 
+                        : 'There are no student bookings recorded on this date.'}
+                    </p>
+                  </div>
+                )
+              })()}
+            </div>
+          ) : (
+            <>
+              {/* ── Mobile & Tablet Portrait Cards (< lg) ── */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5 sm:gap-4 p-4 sm:p-5 lg:hidden bg-surface/30">
+                {paginated.map(apt => {
+                  const student = apt.users
+                  const name = student ? `${student.first_name || ''} ${student.last_name || ''}`.trim() || 'Unknown Student' : 'Unknown Student'
+                  const txName = apt.transaction_types?.name || apt.transaction_type?.name || 'Transaction'
+                  const time = fmt12h(apt.time_slot)
+                  const effStatus = getEffectiveStatus(apt)
+                  const isPriority = apt.priority_class && apt.priority_class !== 'regular'
+
+                  return (
+                    <div 
+                      key={apt.id} 
+                      className="bg-white rounded-2xl border border-border p-4 sm:p-4.5 shadow-2xs hover:shadow-md transition-all flex flex-col justify-between gap-3.5 group animate-fade-up"
+                    >
+                      {/* Card Top: Time & Status */}
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-1.5 font-sans text-fluid-13 font-bold text-text-main">
+                          <Clock size={14} className="text-maroon shrink-0" />
+                          <span>{time}</span>
                           {apt.slot_duration_minutes && (
-                            <span className="text-fluid-10 sm:text-fluid-10-5 font-medium text-text-muted mt-0.5 block">
-                              {apt.slot_duration_minutes} min duration
+                            <span className="text-fluid-10 font-semibold px-2 py-0.5 rounded-full bg-surface text-text-muted border border-border">
+                              {apt.slot_duration_minutes}m
                             </span>
                           )}
-                        </td>
+                        </div>
+                        <StatusBadge status={effStatus} />
+                      </div>
 
-                        {/* Student */}
-                        <td className="py-3.5 px-3.5 sm:px-4">
-                          <div className="flex items-center gap-2.5">
-                            <Av name={name} size={32} />
-                            <div className="min-w-0">
-                              <div className="text-fluid-13 font-bold text-text-main truncate group-hover:text-maroon transition-colors">
-                                {name}
-                              </div>
-                              {student?.student_id && (
-                                <div className="text-fluid-10-5 font-mono font-medium text-text-muted mt-0.5">
-                                  ID: {student.student_id}
-                                </div>
+                      {/* Student & Transaction Info Box */}
+                      <div className="bg-off-white/70 rounded-xl p-3 border border-border/70 flex flex-col gap-2.5">
+                        {/* Student Info */}
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <Av name={name} size={34} />
+                          <div className="min-w-0 flex-1">
+                            <div className="text-fluid-13-5 font-bold text-text-main truncate group-hover:text-maroon transition-colors">
+                              {name}
+                            </div>
+                            <div className="flex items-center gap-2 flex-wrap text-fluid-11 font-mono text-text-muted mt-0.5">
+                              <span>ID: <strong className="text-text-sub font-semibold">{student?.student_id || 'N/A'}</strong></span>
+                              {isPriority && (
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-maroon-light text-maroon text-fluid-9-5 font-extrabold uppercase border border-maroon-border/60">
+                                  <ShieldCheck size={10} className="shrink-0" />
+                                  <span>{apt.priority_class}</span>
+                                </span>
                               )}
                             </div>
                           </div>
-                        </td>
+                        </div>
 
-                        {/* Transaction */}
-                        <td className="py-3.5 px-3.5 sm:px-4">
+                        {/* Transaction Documents */}
+                        <div className="pt-2 border-t border-border/60">
                           {apt.selected_documents && apt.selected_documents.length > 1 ? (
                             <div>
-                              <div className="flex flex-wrap gap-1 mb-1">
+                              <span className="text-fluid-10-5 text-text-muted font-semibold uppercase tracking-wider block mb-1">
+                                {apt.selected_documents.length} Requested Documents:
+                              </span>
+                              <div className="flex flex-wrap gap-1">
                                 {apt.selected_documents.map((d, idx) => (
-                                  <span key={d.id || idx} className="text-[11px] font-bold text-maroon bg-maroon-light py-0.5 px-2 rounded-md border border-maroon-border/40">
+                                  <span key={d.id || idx} className="text-fluid-10-5 font-semibold text-maroon bg-maroon-light py-0.5 px-2 rounded-md border border-maroon-border/40">
                                     {d.name}
                                   </span>
                                 ))}
                               </div>
-                              <span className="text-fluid-10-5 text-text-muted font-medium block">
-                                {apt.selected_documents.length} requested documents
-                              </span>
                             </div>
                           ) : (
-                            <>
-                              <div className="text-fluid-13 font-bold text-text-main leading-snug line-clamp-2">
+                            <div>
+                              <div className="text-fluid-12-5 font-bold text-maroon leading-snug line-clamp-2">
                                 {txName}
                               </div>
                               {apt.transaction_types?.required_documents?.length > 0 && (
@@ -732,51 +762,152 @@ export default function AppointmentsPage() {
                                   {apt.transaction_types.required_documents.length} required document{apt.transaction_types.required_documents.length !== 1 ? 's' : ''}
                                 </span>
                               )}
-                            </>
+                            </div>
                           )}
-                        </td>
+                        </div>
+                      </div>
 
-                        {/* Priority */}
-                        <td className="py-3.5 px-3.5 sm:px-4 whitespace-nowrap">
-                          {isPriority ? (
-                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-maroon-light text-maroon text-fluid-10 font-extrabold uppercase border border-maroon-border/60">
-                              <ShieldCheck size={11} className="shrink-0" />
-                              <span>{apt.priority_class}</span>
-                            </span>
-                          ) : (
-                            <span className="text-fluid-11-5 font-medium text-text-muted">
-                              Regular
-                            </span>
-                          )}
-                        </td>
+                      {/* Action Button */}
+                      <div className="pt-1">
+                        <button 
+                          type="button"
+                          onClick={() => setViewDetailsModal(apt)} 
+                          className="w-full py-2.25 px-3 rounded-xl border border-border bg-white text-text-main text-fluid-12 font-bold cursor-pointer font-sans hover:border-maroon-border hover:text-maroon hover:bg-surface transition-all shadow-2xs flex items-center justify-center gap-1.5 active:scale-[0.98]"
+                        >
+                          <Eye size={14} className="text-maroon shrink-0" />
+                          <span>View Details</span>
+                        </button>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
 
-                        {/* Status */}
-                        <td className="py-3.5 px-3.5 sm:px-4 whitespace-nowrap">
-                          <StatusBadge status={effStatus} />
-                        </td>
+              {/* ── Desktop Table (>= lg) ── */}
+              <div className="hidden lg:block overflow-x-auto">
+                <table className="w-full text-left border-collapse table-fixed min-w-220">
+                  <thead>
+                    <tr className="bg-white border-b border-border">
+                      <th className="py-3 px-3.5 sm:px-4 text-fluid-10-5 sm:text-fluid-11 font-extrabold text-text-muted uppercase tracking-[0.08em] w-[12%]">Time</th>
+                      <th className="py-3 px-3.5 sm:px-4 text-fluid-10-5 sm:text-fluid-11 font-extrabold text-text-muted uppercase tracking-[0.08em] w-[24%]">Student</th>
+                      <th className="py-3 px-3.5 sm:px-4 text-fluid-10-5 sm:text-fluid-11 font-extrabold text-text-muted uppercase tracking-[0.08em] w-[24%]">Transaction</th>
+                      <th className="py-3 px-3.5 sm:px-4 text-fluid-10-5 sm:text-fluid-11 font-extrabold text-text-muted uppercase tracking-[0.08em] w-[11%]">Priority</th>
+                      <th className="py-3 px-3.5 sm:px-4 text-fluid-10-5 sm:text-fluid-11 font-extrabold text-text-muted uppercase tracking-[0.08em] w-[15%]">Status</th>
+                      <th className="py-3 px-3.5 sm:px-4 text-fluid-10-5 sm:text-fluid-11 font-extrabold text-text-muted uppercase tracking-[0.08em] w-[14%] text-right">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-border">
+                    {paginated.map(apt => {
+                      const student = apt.users
+                      const name = student ? `${student.first_name || ''} ${student.last_name || ''}`.trim() || 'Unknown Student' : 'Unknown Student'
+                      const txName = apt.transaction_types?.name || apt.transaction_type?.name || 'Transaction'
+                      const time = fmt12h(apt.time_slot)
+                      const effStatus = getEffectiveStatus(apt)
+                      const isPriority = apt.priority_class && apt.priority_class !== 'regular'
 
-                        {/* Actions */}
-                        <td className="py-3.5 px-3.5 sm:px-4 text-right whitespace-nowrap">
-                          <button 
-                            type="button"
-                            onClick={() => setViewDetailsModal(apt)} 
-                            className="py-1.5 px-2.5 sm:px-3 rounded-xl border border-border bg-white text-text-main text-fluid-11-5 font-bold cursor-pointer font-sans hover:border-maroon-border hover:text-maroon hover:bg-surface transition-all shadow-2xs"
-                            title="View full booking details"
-                          >
-                            View Details
-                          </button>
-                        </td>
-                      </tr>
-                    )
-                  })
-                )}
-              </tbody>
-            </table>
-          </div>
+                      return (
+                        <tr key={apt.id} className="hover:bg-surface/50 transition-colors group">
+                          {/* Time */}
+                          <td className="py-3.5 px-3.5 sm:px-4 whitespace-nowrap">
+                            <div className="font-sans text-fluid-13 font-bold text-text-main flex items-center gap-1.5">
+                              <Clock size={13} className="text-text-muted shrink-0" />
+                              <span>{time}</span>
+                            </div>
+                            {apt.slot_duration_minutes && (
+                              <span className="text-fluid-10 sm:text-fluid-10-5 font-medium text-text-muted mt-0.5 block">
+                                {apt.slot_duration_minutes} min duration
+                              </span>
+                            )}
+                          </td>
+
+                          {/* Student */}
+                          <td className="py-3.5 px-3.5 sm:px-4">
+                            <div className="flex items-center gap-2.5">
+                              <Av name={name} size={32} />
+                              <div className="min-w-0">
+                                <div className="text-fluid-13 font-bold text-text-main truncate group-hover:text-maroon transition-colors">
+                                  {name}
+                                </div>
+                                {student?.student_id && (
+                                  <div className="text-fluid-10-5 font-mono font-medium text-text-muted mt-0.5">
+                                    ID: {student.student_id}
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          </td>
+
+                          {/* Transaction */}
+                          <td className="py-3.5 px-3.5 sm:px-4">
+                            {apt.selected_documents && apt.selected_documents.length > 1 ? (
+                              <div>
+                                <div className="flex flex-wrap gap-1 mb-1">
+                                  {apt.selected_documents.map((d, idx) => (
+                                    <span key={d.id || idx} className="text-[11px] font-bold text-maroon bg-maroon-light py-0.5 px-2 rounded-md border border-maroon-border/40">
+                                      {d.name}
+                                    </span>
+                                  ))}
+                                </div>
+                                <span className="text-fluid-10-5 text-text-muted font-medium block">
+                                  {apt.selected_documents.length} requested documents
+                                </span>
+                              </div>
+                            ) : (
+                              <>
+                                <div className="text-fluid-13 font-bold text-text-main leading-snug line-clamp-2">
+                                  {txName}
+                                </div>
+                                {apt.transaction_types?.required_documents?.length > 0 && (
+                                  <span className="text-fluid-10-5 text-text-muted font-medium mt-0.5 block">
+                                    {apt.transaction_types.required_documents.length} required document{apt.transaction_types.required_documents.length !== 1 ? 's' : ''}
+                                  </span>
+                                )}
+                              </>
+                            )}
+                          </td>
+
+                          {/* Priority */}
+                          <td className="py-3.5 px-3.5 sm:px-4 whitespace-nowrap">
+                            {isPriority ? (
+                              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-maroon-light text-maroon text-fluid-10 font-extrabold uppercase border border-maroon-border/60">
+                                <ShieldCheck size={11} className="shrink-0" />
+                                <span>{apt.priority_class}</span>
+                              </span>
+                            ) : (
+                              <span className="text-fluid-11-5 font-medium text-text-muted">
+                                Regular
+                              </span>
+                            )}
+                          </td>
+
+                          {/* Status */}
+                          <td className="py-3.5 px-3.5 sm:px-4 whitespace-nowrap">
+                            <StatusBadge status={effStatus} />
+                          </td>
+
+                          {/* Actions */}
+                          <td className="py-3.5 px-3.5 sm:px-4 text-right whitespace-nowrap">
+                            <button 
+                              type="button"
+                              onClick={() => setViewDetailsModal(apt)} 
+                              className="py-1.5 px-2.5 sm:px-3 rounded-xl border border-border bg-white text-text-main text-fluid-11-5 font-bold cursor-pointer font-sans hover:border-maroon-border hover:text-maroon hover:bg-surface transition-all shadow-2xs"
+                              title="View full booking details"
+                            >
+                              View Details
+                            </button>
+                          </td>
+                        </tr>
+                      )
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </>
+          )}
 
           {/* Table Footer / Pagination */}
           {filtered.length > 0 && (
-            <div className="p-4 px-6 border-t border-border flex items-center justify-between bg-white flex-wrap gap-3">
+            <div className="p-4 sm:px-6 border-t border-border flex items-center justify-between bg-white flex-wrap gap-3">
               <span className="text-fluid-12 text-text-muted font-medium">
                 Showing {Math.min((page - 1) * ITEMS_PER_PAGE + 1, filtered.length)}–{Math.min(page * ITEMS_PER_PAGE, filtered.length)} of {filtered.length} bookings
               </span>
@@ -792,26 +923,36 @@ export default function AppointmentsPage() {
                 >
                   Prev
                 </button>
-                {Array.from({ length: totalPages }, (_, i) => (
-                  <button 
-                    key={i} 
-                    type="button"
-                    onClick={() => setPage(i + 1)} 
-                    className={`w-8 h-8 rounded-lg text-fluid-12 font-bold cursor-pointer font-sans border transition-all ${
-                      page === i + 1 
-                        ? 'border-maroon bg-maroon text-white shadow-2xs' 
-                        : 'border-border bg-white text-text-main hover:bg-surface'
-                    }`}
-                  >
-                    {i + 1}
-                  </button>
-                ))}
+
+                {/* Mobile compact pagination indicator */}
+                <div className="sm:hidden text-fluid-12 font-bold text-text-main px-2">
+                  {page} / {totalPages}
+                </div>
+
+                {/* Desktop/Tablet numbered buttons */}
+                <div className="hidden sm:flex items-center gap-1.5">
+                  {Array.from({ length: totalPages }, (_, i) => (
+                    <button 
+                      key={i} 
+                      type="button"
+                      onClick={() => setPage(i + 1)} 
+                      className={`w-8 h-8 rounded-lg text-fluid-12 font-bold cursor-pointer font-sans border transition-all ${
+                        page === i + 1 
+                          ? 'border-maroon bg-maroon text-white shadow-2xs' 
+                          : 'border-border bg-white text-text-main hover:bg-surface'
+                      }`}
+                    >
+                      {i + 1}
+                    </button>
+                  ))}
+                </div>
+
                 <button 
                   type="button"
                   onClick={() => setPage(p => Math.min(totalPages, p + 1))} 
                   disabled={page === totalPages}
                   className={`py-1.5 px-3 rounded-lg border border-border bg-white text-fluid-12 font-bold font-sans transition-all ${
-                    page === totalPages ? 'opacity-40 cursor-not-allowed text-text-muted' : 'cursor-pointer text-text-main'
+                    page === totalPages ? 'opacity-40 cursor-not-allowed text-text-muted' : 'cursor-pointer text-text-main hover:bg-surface'
                   }`}
                 >
                   Next
