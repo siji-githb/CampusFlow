@@ -10,10 +10,11 @@ import AdminUserManagementPage from './AdminUserManagementPage'
 import AdminOfficeConfigPage from './AdminOfficeConfigPage'
 import AdminAuditLogPage from './AdminAuditLogPage'
 import AdminDocumentsPage from './AdminDocumentsPage'
+import AdminProfilePage from './AdminProfilePage'
 import MasterListPage from '../staff/MasterListPage'
 import PriorityRequestsPage from '../staff/PriorityRequestsPage'
 import IdRequestsPage from '../staff/IdRequestsPage'
-import { Calendar, Ticket, Clock, Bot, Search, Shield, BarChart2, LineChart as LineChartIcon, FolderOpen, Users, Settings, MessageSquare, Bell, LogOut, LayoutDashboard, CheckSquare, CheckCircle, ChevronLeft, ChevronRight, ClipboardList, FileText, Menu, X, PanelLeftClose, ShieldCheck, HelpCircle } from 'lucide-react'
+import { Calendar, Ticket, Clock, Bot, Search, Shield, BarChart2, LineChart as LineChartIcon, FolderOpen, Users, User, Settings, MessageSquare, Bell, LogOut, LayoutDashboard, CheckSquare, CheckCircle, ChevronLeft, ChevronRight, ClipboardList, FileText, Menu, X, PanelLeftClose, ShieldCheck, HelpCircle } from 'lucide-react'
 import {
   getDashboardStats, getReports, getIdRequests
 } from '../../services/adminService'
@@ -786,7 +787,21 @@ export default function AdminDashboard() {
                       </div>
                     </div>
                   </div>
-                  <div className="h-px bg-border mb-3" />
+                  <div className="h-px bg-border my-2.5" />
+
+                  <div className="flex flex-col gap-1 py-1">
+                    <button onClick={() => { setProfileOpen(false); handleNavChange('profile'); }} className="flex items-center gap-3 w-full px-3 py-2.5 rounded-xl border-none bg-transparent hover:bg-slate-50 cursor-pointer text-left transition-colors font-sans">
+                      <User size={16} className="text-text-main" />
+                      <span className="text-fluid-13 font-semibold text-text-main">Manage Profile</span>
+                    </button>
+                    <button onClick={() => { setProfileOpen(false); handleNavChange('settings'); }} className="flex items-center gap-3 w-full px-3 py-2.5 rounded-xl border-none bg-transparent hover:bg-slate-50 cursor-pointer text-left transition-colors font-sans">
+                      <Settings size={16} className="text-text-main" />
+                      <span className="text-fluid-13 font-semibold text-text-main">Account Settings</span>
+                    </button>
+                  </div>
+
+                  <div className="h-px bg-border my-2.5" />
+
                   <button onClick={() => { requestLogout(); }} className="w-full py-2.5 px-3 rounded-xl border-none bg-danger-light text-danger text-fluid-13 font-bold cursor-pointer flex items-center justify-center gap-2 font-sans hover:bg-danger-border transition-colors">
                     <LogOut size={16} strokeWidth={2.5} /> Log Out
                   </button>
@@ -856,6 +871,11 @@ export default function AdminDashboard() {
           {visitedTabs.has('student_records') && (
             <div className={activeNav === 'student_records' ? 'block' : 'hidden'}>
               <MasterListPage />
+            </div>
+          )}
+          {(visitedTabs.has('profile') || visitedTabs.has('settings')) && (
+            <div className={(activeNav === 'profile' || activeNav === 'settings') ? 'block' : 'hidden'}>
+              <AdminProfilePage setActiveNav={handleNavChange} />
             </div>
           )}
         </main>

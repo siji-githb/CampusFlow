@@ -19,7 +19,7 @@ export default function BottomNav({ active }) {
   return (
     <>
       <style>{`
-        @media (min-width: 1024px) {
+        @media (min-width: 768px) {
           .mobile-bottom-nav {
             display: none !important;
           }

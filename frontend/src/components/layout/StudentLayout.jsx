@@ -529,7 +529,7 @@ export default function StudentLayout({ children, activeTab, mobileTitle, backTo
   const mlClass = sidebarCollapsed ? 'md:ml-[80px]' : 'md:ml-[260px]';
 
   return (
-    <div className="min-h-screen bg-off-white font-sans flex relative" style={{ minHeight: '100vh', display: 'flex', background: M.offWhite, fontFamily: "'Poppins', sans-serif" }}>
+    <div className="min-h-dvh w-full bg-off-white font-sans flex relative" style={{ minHeight: '100dvh', width: '100%', display: 'flex', background: M.offWhite, fontFamily: "'Poppins', sans-serif" }}>
       
       {/* ── Left Sidebar (Desktop Only) ── */}
       <aside className="hidden md:flex flex-col fixed left-0 top-0 bottom-0 z-50 bg-white border-r border-border transition-all" style={{ width: sidebarCollapsed ? '80px' : '260px', padding: sidebarCollapsed ? '32px 10px' : '32px 20px', background: M.white, borderRight: `1px solid ${M.border}`, position: 'fixed', zIndex: 50 }}>
@@ -560,7 +560,7 @@ export default function StudentLayout({ children, activeTab, mobileTitle, backTo
       </aside>
 
       {/* ── Main Content Area ── */}
-      <div className={`flex-1 flex flex-col min-h-screen transition-all w-full ml-0 ${mlClass}`} style={{ transition: 'margin-left 0.3s cubic-bezier(0.16, 1, 0.3, 1)' }}>
+      <div className={`flex-1 flex flex-col min-h-dvh min-w-0 transition-all ml-0 ${mlClass}`} style={{ transition: 'margin-left 0.3s cubic-bezier(0.16, 1, 0.3, 1)' }}>
 
         {/* Mobile Header (Hidden on Desktop) */}
         <header className="md:hidden flex justify-between items-center px-3.5 sm:px-5 py-3 sm:py-3.5 sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-border shadow-[0_2px_12px_rgba(0,0,0,0.03)] gap-2 min-h-14.5 sm:min-h-16">

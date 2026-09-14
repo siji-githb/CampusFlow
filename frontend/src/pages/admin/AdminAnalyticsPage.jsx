@@ -8,33 +8,47 @@ import DonutChart from '../../components/DonutChart'
 const SERIES_COLORS = ['#7B1A2A', '#B8900A', '#1D4ED8', '#15803D', '#6D28D9', '#EA580C']
 
 // ── Filter Pill ────────────────────────────────────────────────────────────────
-const FilterSelect = ({ label, value, options, onChange, disabled, widthClass = "min-w-36" }) => {
-  const [isOpen, setIsOpen] = useState(false)
+const FilterSelect = ({
+  label,
+  value,
+  options,
+  onChange,
+  disabled,
+  isOpen,
+  onToggle,
+  onClose,
+  widthClass = "w-full sm:min-w-36",
+  dropdownWidthClass = "w-full min-w-44",
+  align = "left",
+}) => {
   const currentLabel = options.find(o => o.value === value)?.label || value
 
   return (
-    <div className={`flex items-center gap-2.5 mr-1 ${disabled ? 'opacity-40 pointer-events-none' : ''}`}>
+    <div className={`flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2.5 ${isOpen ? 'relative z-50' : 'relative z-20'} ${disabled ? 'opacity-40 pointer-events-none' : ''}`}>
       <span className="text-fluid-10 font-extrabold text-text-muted uppercase tracking-[0.08em] whitespace-nowrap">{label}</span>
-      <div className="relative z-30 group">
+      <div className="relative w-full sm:w-auto">
         <button
           type="button"
-          onClick={() => setIsOpen(!isOpen)}
+          onClick={onToggle}
           disabled={disabled}
-          className={`flex items-center justify-between py-2 px-3.5 rounded-xl border border-border bg-white shadow-2xs text-fluid-12-5 font-bold text-text-main outline-none cursor-pointer font-sans ${widthClass} transition-all hover:border-maroon/40 hover:shadow-xs disabled:bg-gray-50 disabled:text-gray-400`}
+          className={`w-full flex items-center justify-between py-2 px-3 sm:px-3.5 rounded-xl border border-border bg-white shadow-2xs text-fluid-12-5 font-bold text-text-main outline-none cursor-pointer font-sans ${widthClass} transition-all hover:border-maroon/40 hover:shadow-xs disabled:bg-gray-50 disabled:text-gray-400`}
         >
           <span className="truncate pr-2 text-left">{currentLabel}</span>
           <ChevronDown size={14} className={`text-text-muted transition-transform duration-200 shrink-0 ${isOpen ? 'rotate-180 text-maroon' : 'group-hover:text-text-main'}`} />
         </button>
         {isOpen && (
           <>
-            <div className="fixed inset-0 z-40" onClick={() => setIsOpen(false)} />
-            <div className={`absolute left-0 top-full mt-1.5 bg-white rounded-xl border border-border shadow-xl p-1.5 z-50 min-w-full ${widthClass === 'w-65' ? 'w-65' : 'min-w-44'} animate-fade-up max-h-64 overflow-y-auto`} style={{ animationDuration: '0.15s' }}>
+            <div className="fixed inset-0 z-40" onClick={onClose} />
+            <div 
+              className={`absolute ${align === 'right' ? 'right-0' : 'left-0'} top-full mt-1.5 bg-white rounded-xl border border-border shadow-xl p-1.5 z-50 ${dropdownWidthClass} max-w-[calc(100vw-2.5rem)] animate-fade-up max-h-64 overflow-y-auto`} 
+              style={{ animationDuration: '0.15s' }}
+            >
               {options.map(o => {
                 const isActive = value === o.value;
                 return (
                   <div
                     key={o.value}
-                    onClick={() => { onChange(o.value); setIsOpen(false); }}
+                    onClick={() => { onChange(o.value); onClose(); }}
                     className={`px-3 py-2 rounded-lg cursor-pointer flex items-center justify-between text-fluid-12 font-medium transition-colors ${isActive ? 'bg-maroon/5 text-maroon font-bold' : 'text-text-main hover:bg-off-white'}`}
                   >
                     <span className="truncate pr-2">{o.label}</span>
@@ -292,6 +306,7 @@ export default function AdminAnalyticsPage() {
   const [viewType, setViewType] = useState('monthly') // 'monthly' | 'annually'
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth().toString()) // '0' to '11'
   const [docType, setDocType]       = useState('all')
+  const [activeDropdown, setActiveDropdown] = useState(null)
 
   // Data
   const [report, setReport]             = useState(null)
@@ -750,39 +765,94 @@ export default function AdminAnalyticsPage() {
       </div>
 
       {/* ── Filter Bar ── */}
-      <div className="animate-fade-up relative z-30 flex items-center gap-4 p-4 bg-surface rounded-2xl border border-border mb-7 flex-wrap" style={{ animationDelay: '0.2s' }}>
-        <FilterSelect label="Timeframe" value={viewType} onChange={setViewType} options={[
-          { value: 'monthly', label: 'Monthly' },
-          { value: 'annually', label: 'Annually' },
-        ]} />
-        <div className="w-px h-6 bg-border mx-1" />
-        <FilterSelect label="Month" value={selectedMonth} onChange={setSelectedMonth} disabled={viewType === 'annually'} options={[
-          { value: '0', label: 'January' },
-          { value: '1', label: 'February' },
-          { value: '2', label: 'March' },
-          { value: '3', label: 'April' },
-          { value: '4', label: 'May' },
-          { value: '5', label: 'June' },
-          { value: '6', label: 'July' },
-          { value: '7', label: 'August' },
-          { value: '8', label: 'September' },
-          { value: '9', label: 'October' },
-          { value: '10', label: 'November' },
-          { value: '11', label: 'December' },
-        ]} />
-        <div className="w-px h-6 bg-border mx-1" />
-        <FilterSelect label="Document" value={docType} onChange={setDocType} widthClass="w-65" options={[
-          { value: 'all', label: 'All Types' },
-          ...transactionTypes.map(t => ({ value: t.name, label: t.name }))
-        ]} />
+      <div 
+        className="animate-fade-up relative z-30 flex flex-col md:flex-row md:items-center justify-between gap-3.5 sm:gap-4 p-3.5 sm:p-4 bg-surface rounded-2xl border border-border mb-7" 
+        style={{ animationDelay: '0.2s' }}
+      >
+        {/* Filters Group */}
+        <div className="flex flex-wrap items-center gap-3 sm:gap-4 w-full md:w-auto">
+          <div className="flex-1 sm:flex-initial min-w-32.5">
+            <FilterSelect 
+              label="Timeframe" 
+              value={viewType} 
+              onChange={setViewType} 
+              isOpen={activeDropdown === 'timeframe'}
+              onToggle={() => setActiveDropdown(prev => prev === 'timeframe' ? null : 'timeframe')}
+              onClose={() => setActiveDropdown(null)}
+              widthClass="w-full sm:w-36"
+              dropdownWidthClass="w-full sm:w-40"
+              options={[
+                { value: 'monthly', label: 'Monthly' },
+                { value: 'annually', label: 'Annually' },
+              ]} 
+            />
+          </div>
 
-        <div className="ml-auto flex items-center gap-2.5">
-          <button onClick={() => exportCSV(tableRows, 'campusflow_annual_report.csv')}
-            className="py-2 px-4 rounded-xl border border-border bg-white shadow-sm text-text-main text-fluid-13 font-bold cursor-pointer font-sans flex items-center gap-2 hover:bg-off-white hover:-translate-y-0.5 transition-all">
-            <Download size={14} /> Export Data
+          <div className="hidden xl:block w-px h-6 bg-border mx-0.5" />
+
+          <div className="flex-1 sm:flex-initial min-w-35">
+            <FilterSelect 
+              label="Month" 
+              value={selectedMonth} 
+              onChange={setSelectedMonth} 
+              disabled={viewType === 'annually'} 
+              isOpen={activeDropdown === 'month'}
+              onToggle={() => setActiveDropdown(prev => prev === 'month' ? null : 'month')}
+              onClose={() => setActiveDropdown(null)}
+              widthClass="w-full sm:w-40"
+              dropdownWidthClass="w-full sm:min-w-44"
+              options={[
+                { value: '0', label: 'January' },
+                { value: '1', label: 'February' },
+                { value: '2', label: 'March' },
+                { value: '3', label: 'April' },
+                { value: '4', label: 'May' },
+                { value: '5', label: 'June' },
+                { value: '6', label: 'July' },
+                { value: '7', label: 'August' },
+                { value: '8', label: 'September' },
+                { value: '9', label: 'October' },
+                { value: '10', label: 'November' },
+                { value: '11', label: 'December' },
+              ]} 
+            />
+          </div>
+
+          <div className="hidden xl:block w-px h-6 bg-border mx-0.5" />
+
+          <div className="w-full sm:w-auto sm:flex-initial">
+            <FilterSelect 
+              label="Document" 
+              value={docType} 
+              onChange={setDocType} 
+              isOpen={activeDropdown === 'document'}
+              onToggle={() => setActiveDropdown(prev => prev === 'document' ? null : 'document')}
+              onClose={() => setActiveDropdown(null)}
+              widthClass="w-full sm:w-56 lg:w-64"
+              dropdownWidthClass="w-full sm:w-72"
+              options={[
+                { value: 'all', label: 'All Types' },
+                ...transactionTypes.map(t => ({ value: t.name, label: t.name }))
+              ]} 
+            />
+          </div>
+        </div>
+
+        {/* Action Buttons (Export Data & Refresh Data) */}
+        <div className="flex items-center gap-2 sm:gap-2.5 w-full md:w-auto justify-end pt-2 sm:pt-0 border-t sm:border-t-0 md:border-t-0 border-border/70">
+          <button 
+            onClick={() => exportCSV(tableRows, 'campusflow_annual_report.csv')}
+            className="flex-1 sm:flex-initial py-2 px-3.5 sm:px-4 rounded-xl border border-border bg-white shadow-xs text-text-main text-fluid-12 sm:text-fluid-13 font-bold cursor-pointer font-sans flex items-center justify-center gap-2 hover:bg-off-white hover:border-maroon/30 active:scale-[0.98] transition-all whitespace-nowrap"
+          >
+            <Download size={14} className="text-text-sub shrink-0" />
+            <span>Export Data</span>
           </button>
-          <button onClick={load} className="py-2 px-4 rounded-xl border border-border bg-white shadow-sm text-text-main text-fluid-13 font-bold cursor-pointer font-sans flex items-center gap-2 hover:bg-off-white hover:-translate-y-0.5 transition-all">
-            <RotateCcw size={14} /> Refresh Data
+          <button 
+            onClick={load} 
+            className="flex-1 sm:flex-initial py-2 px-3.5 sm:px-4 rounded-xl border border-border bg-white shadow-xs text-text-main text-fluid-12 sm:text-fluid-13 font-bold cursor-pointer font-sans flex items-center justify-center gap-2 hover:bg-off-white hover:border-maroon/30 active:scale-[0.98] transition-all whitespace-nowrap"
+          >
+            <RotateCcw size={14} className="text-text-sub shrink-0" />
+            <span>Refresh Data</span>
           </button>
         </div>
       </div>

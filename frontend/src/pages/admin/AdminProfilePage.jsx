@@ -1,0 +1,506 @@
+import { useState, useRef } from 'react'
+import { createPortal } from 'react-dom'
+import { useAuth } from '../../context/useAuth'
+import { useToast } from '../../context/ToastContext'
+import { Edit2, IdCard, Tag, LogOut, Trash2, X, Camera, Loader2, Eye, EyeOff, ChevronLeft, Shield } from 'lucide-react'
+import { updateProfile, changePassword, logoutAllDevices, deleteAccount, updateProfilePicture, removeProfilePicture } from '../../services/authService'
+
+export default function AdminProfilePage({ setActiveNav }) {
+  const { user, token, updateUser, logout } = useAuth()
+  const toast = useToast()
+  
+  const [isChangingPassword, setIsChangingPassword] = useState(false)
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false)
+  
+  // Password Visibility State
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false)
+  const [showNewPassword, setShowNewPassword] = useState(false)
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
+  
+  // Profile Form State
+  const [editData, setEditData] = useState({
+    first_name: user?.first_name || '',
+    last_name: user?.last_name || '',
+    email: user?.email || '',
+  })
+  const [isSavingProfile, setIsSavingProfile] = useState(false)
+  const [profileMsg, setProfileMsg] = useState({ type: '', text: '' })
+  
+  // Password Form State
+  const [passwordData, setPasswordData] = useState({
+    current_password: '',
+    new_password: '',
+    confirm_password: '',
+  })
+  const [isSavingPassword, setIsSavingPassword] = useState(false)
+  const [passwordMsg, setPasswordMsg] = useState({ type: '', text: '' })
+  
+  const fileInputRef = useRef(null)
+  const [pendingProfilePicture, setPendingProfilePicture] = useState(null)
+  const [pendingRemovePicture, setPendingRemovePicture] = useState(false)
+  const [previewImage, setPreviewImage] = useState(user?.profile_image || null)
+
+  const handleOpenEditModal = () => {
+    setEditData({
+      first_name: user?.first_name || '',
+      last_name: user?.last_name || '',
+      email: user?.email || '',
+    })
+    setPendingProfilePicture(null)
+    setPendingRemovePicture(false)
+    setPreviewImage(user?.profile_image || null)
+    setProfileMsg({ type: '', text: '' })
+    setIsEditModalOpen(true)
+  }
+
+  const handleCloseEditModal = () => {
+    setIsEditModalOpen(false)
+    setPendingProfilePicture(null)
+    setPendingRemovePicture(false)
+    setPreviewImage(user?.profile_image || null)
+    setProfileMsg({ type: '', text: '' })
+  }
+
+  const handleFileChange = (e) => {
+    const file = e.target.files[0]
+    if (!file) return
+    if (!file.type.startsWith('image/')) {
+      setProfileMsg({ type: 'error', text: 'Please select an image file.' })
+      return
+    }
+    if (file.size > 2 * 1024 * 1024) {
+      setProfileMsg({ type: 'error', text: 'Image size must be less than 2MB.' })
+      return
+    }
+    
+    setPendingProfilePicture(file)
+    setPendingRemovePicture(false)
+    const reader = new FileReader()
+    reader.onload = () => setPreviewImage(reader.result)
+    reader.readAsDataURL(file)
+  }
+
+  const handleRemovePhoto = () => {
+    setPendingProfilePicture(null)
+    setPendingRemovePicture(true)
+    setPreviewImage(null)
+  }
+
+  const handleSaveProfile = async (e) => {
+    e.preventDefault()
+    setProfileMsg({ type: '', text: '' })
+    
+    if (!editData.first_name || !editData.last_name || !editData.email) {
+      setProfileMsg({ type: 'error', text: 'Please fill out all required fields.' })
+      return
+    }
+    
+    setIsSavingProfile(true)
+    try {
+      // 1. Update text profile
+      const res = await updateProfile(editData, token)
+      
+      let finalProfileImage = user?.profile_image
+      
+      // 2. Handle picture changes if any
+      if (pendingRemovePicture) {
+         await removeProfilePicture(token)
+         finalProfileImage = null
+      } else if (pendingProfilePicture) {
+         const picRes = await updateProfilePicture(pendingProfilePicture, token)
+         finalProfileImage = `${picRes.profile_image}?t=${new Date().getTime()}`
+      }
+      
+      updateUser({ 
+          ...res.user,
+          profile_image: finalProfileImage 
+      })
+      
+      setProfileMsg({ type: 'success', text: 'Profile updated successfully!' })
+      toast.success('Profile updated successfully!')
+      setTimeout(() => {
+        handleCloseEditModal()
+      }, 1500)
+    } catch (err) {
+      setProfileMsg({ type: 'error', text: err.message || 'Failed to update profile' })
+      toast.error(err.message || 'Failed to update profile')
+    } finally {
+      setIsSavingProfile(false)
+    }
+  }
+
+  const handleChangePassword = async () => {
+    setPasswordMsg({ type: '', text: '' })
+    if (!passwordData.current_password || !passwordData.new_password) {
+      setPasswordMsg({ type: 'error', text: 'Please fill out all fields.' })
+      return
+    }
+    if (passwordData.new_password !== passwordData.confirm_password) {
+      setPasswordMsg({ type: 'error', text: 'New passwords do not match.' })
+      return
+    }
+    
+    setIsSavingPassword(true)
+    try {
+      await changePassword({ 
+        current_password: passwordData.current_password, 
+        new_password: passwordData.new_password 
+      }, token)
+      setPasswordMsg({ type: 'success', text: 'Password changed successfully!' })
+      toast.success('Password changed successfully!')
+      setPasswordData({ current_password: '', new_password: '', confirm_password: '' })
+      setTimeout(() => {
+        setIsChangingPassword(false)
+        setPasswordMsg({ type: '', text: '' })
+      }, 2000)
+    } catch (err) {
+      setPasswordMsg({ type: 'error', text: err.message || 'Failed to change password' })
+      toast.error(err.message || 'Failed to change password')
+    } finally {
+      setIsSavingPassword(false)
+    }
+  }
+  
+  const [isLoggingOutAll, setIsLoggingOutAll] = useState(false)
+  const [isDeletingAccount, setIsDeletingAccount] = useState(false)
+
+  const handleLogoutAll = async () => {
+    setIsLoggingOutAll(true)
+    try {
+      await logoutAllDevices(token)
+      logout()
+    } catch (err) {
+      toast.error(err.message || 'Failed to logout from all devices')
+      setIsLoggingOutAll(false)
+    }
+  }
+
+  const [deleteConfirmText, setDeleteConfirmText] = useState('')
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+
+  const handleDeleteAccount = () => {
+    setShowDeleteConfirm(true)
+  }
+
+  const handleConfirmDeleteAccount = async () => {
+    if (deleteConfirmText.trim().toUpperCase() !== 'DELETE') return
+    setIsDeletingAccount(true)
+    try {
+      await deleteAccount(token)
+      logout()
+    } catch (err) {
+      toast.error(err.message || 'Failed to delete account')
+      setIsDeletingAccount(false)
+      setShowDeleteConfirm(false)
+      setDeleteConfirmText('')
+    }
+  }
+
+  return (
+    <>
+      <div className="w-full max-w-262.5 mx-auto px-1 sm:px-4 py-2 sm:py-6 md:px-0 md:py-0 pb-20 md:pb-0">
+        
+        {/* Mobile Header with Back Button */}
+        <div className="flex md:hidden items-center justify-between mb-4">
+          <button 
+            onClick={() => setActiveNav('overview')} 
+            className="flex items-center gap-1 text-maroon font-serif font-bold text-fluid-18 bg-transparent border-none p-0 cursor-pointer hover:opacity-80 transition-opacity"
+          >
+            <ChevronLeft size={22} strokeWidth={2.5} /> Profile
+          </button>
+        </div>
+
+        {/* Desktop Header */}
+        <div className="hidden md:flex justify-between items-center mb-8">
+          <div>
+            <h1 className="font-serif text-fluid-28 font-bold text-maroon m-0">Administrator Profile</h1>
+            <p className="text-fluid-13 text-text-sub font-medium mt-1 m-0">
+              Manage your administrator credentials, security, and account preferences.
+            </p>
+          </div>
+          <div className="text-fluid-13 text-text-sub font-medium flex items-center gap-2">
+            <button onClick={() => setActiveNav('overview')} className="bg-transparent border-none p-0 text-maroon hover:underline cursor-pointer font-sans">Home</button>
+            <span className="text-border-strong">›</span>
+            <span>Profile</span>
+          </div>
+        </div>
+
+        {/* Profile Card */}
+        <div className="bg-white rounded-2xl sm:rounded-3xl border border-border p-5 sm:p-6 md:p-8 shadow-sm animate-fade-up">
+          
+          <div className="flex flex-col md:flex-row items-center md:items-start justify-between pb-5 sm:pb-6 md:pb-8 mb-5 sm:mb-6 md:mb-8 border-b border-border/70 gap-4 md:gap-0 w-full">
+            <div className="flex flex-col md:flex-row items-center gap-3.5 md:gap-6 text-center md:text-left w-full md:w-auto">
+              <div className="w-20 h-20 md:w-24 md:h-24 shrink-0 rounded-full bg-maroon-light border-[3px] border-maroon-border flex items-center justify-center text-maroon text-fluid-28 md:text-fluid-32 font-bold overflow-hidden shadow-sm">
+                {user?.profile_image ? (
+                  <img src={user.profile_image} alt="Profile" className="w-full h-full object-cover" />
+                ) : (
+                  user?.first_name?.[0]?.toUpperCase() || 'A'
+                )}
+              </div>
+              <div className="min-w-0">
+                <h2 className="font-serif text-fluid-20 md:text-fluid-24 font-bold text-text-main m-0 mb-1.5 md:mb-2 truncate">
+                  {user?.first_name} {user?.last_name}
+                </h2>
+                <div className="flex flex-wrap justify-center md:justify-start items-center gap-2 md:gap-4 text-fluid-12 md:text-fluid-14 text-text-sub font-medium">
+                  <span className="flex items-center gap-1.5">
+                    <IdCard size={15} className="text-gold shrink-0" /> ID: {user?.id?.substring(0,8) || 'ADMIN'}
+                  </span>
+                  <span className="hidden md:inline-block w-1 h-1 rounded-full bg-border-strong" />
+                  <span className="flex items-center gap-1.5 text-maroon font-semibold">
+                    <Shield size={15} className="text-gold shrink-0" /> Administrator
+                  </span>
+                </div>
+              </div>
+            </div>
+            <button 
+              onClick={handleOpenEditModal}
+              className="flex items-center justify-center gap-2 px-5 py-2.5 rounded-full md:rounded-xl border border-border text-fluid-13 md:text-fluid-14 font-bold text-text-main bg-white hover:bg-off-white hover:border-maroon-border hover:text-maroon transition-all shadow-2xs cursor-pointer w-full md:w-auto mt-1 md:mt-0"
+            >
+              <Edit2 size={14} /> Edit Profile
+            </button>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 lg:gap-8 text-left w-full">
+            <div className="flex flex-col gap-1 md:gap-2">
+              <span className="text-fluid-10-5 md:text-fluid-12 font-bold text-text-muted uppercase tracking-widest">First Name</span>
+              <span className="text-fluid-15 font-bold md:font-semibold text-text-main">{user?.first_name || '-'}</span>
+            </div>
+            <div className="flex flex-col gap-1 md:gap-2">
+              <span className="text-fluid-10-5 md:text-fluid-12 font-bold text-text-muted uppercase tracking-widest">Last Name</span>
+              <span className="text-fluid-15 font-bold md:font-semibold text-text-main">{user?.last_name || '-'}</span>
+            </div>
+            <div className="flex flex-col gap-1 md:gap-2 sm:col-span-2 lg:col-span-1">
+              <span className="text-fluid-10-5 md:text-fluid-12 font-bold text-text-muted uppercase tracking-widest">Email Address</span>
+              <span className="text-fluid-15 font-bold md:font-semibold text-text-main break-all">
+                {user?.email || 'admin@campusflow.com'}
+              </span>
+            </div>
+            <div className="flex flex-col gap-1 md:gap-2 sm:col-span-2 lg:col-span-1">
+              <span className="text-fluid-10-5 md:text-fluid-12 font-bold text-text-muted uppercase tracking-widest">System Access</span>
+              <span className="text-fluid-15 font-bold md:font-semibold text-maroon flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block" /> Super Administrator
+              </span>
+            </div>
+          </div>
+          
+        </div>
+
+        {/* Account Settings Header */}
+        <div className="flex justify-between items-center mt-8 md:mt-12 mb-5 md:mb-8">
+          <h2 className="font-serif text-fluid-22 md:text-fluid-28 font-bold text-maroon m-0">Account Settings</h2>
+        </div>
+
+        {/* Settings Sections */}
+        <div className="flex flex-col gap-6">
+          
+          {/* Security Card */}
+          <div className="bg-white rounded-2xl sm:rounded-3xl border border-border p-5 sm:p-8 shadow-sm animate-fade-up" style={{ animationDelay: '0.1s' }}>
+            <h3 className="font-serif text-fluid-18 md:text-fluid-20 font-bold text-text-main m-0 mb-4 sm:mb-6">Security</h3>
+            
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 md:gap-0">
+              <div>
+                <h4 className="text-fluid-15 sm:text-fluid-16 font-bold text-text-main m-0 mb-1">Change Password</h4>
+                <p className="text-fluid-12-5 sm:text-fluid-13 text-text-sub m-0">Update your account password to maintain security.</p>
+              </div>
+              <button 
+                onClick={() => setIsChangingPassword(!isChangingPassword)}
+                className="flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl border border-border text-fluid-13 sm:text-fluid-14 font-semibold text-text-main bg-white hover:bg-off-white hover:border-maroon-border hover:text-maroon transition-colors shadow-sm cursor-pointer w-full md:w-auto"
+              >
+                <Edit2 size={15} /> {isChangingPassword ? 'Cancel' : 'Change Password'}
+              </button>
+            </div>
+
+            <div className={`overflow-hidden transition-all duration-300 ease-in-out ${isChangingPassword ? 'max-h-125 opacity-100 mt-6' : 'max-h-0 opacity-0 mt-0'}`}>
+              <div className="pt-6 border-t border-border flex flex-col gap-4">
+                
+                {passwordMsg.text && (
+                  <div className={`p-3 rounded-lg text-fluid-13 font-medium ${passwordMsg.type === 'error' ? 'bg-red-50 text-red-600' : 'bg-green-50 text-green-600'}`}>
+                    {passwordMsg.text}
+                  </div>
+                )}
+
+                <div>
+                  <label className="block text-fluid-12-5 sm:text-fluid-13 font-semibold text-text-main mb-1.5">Current Password</label>
+                  <div className="relative">
+                    <input type={showCurrentPassword ? "text" : "password"} placeholder="Enter current password" 
+                      value={passwordData.current_password} onChange={(e) => setPasswordData({...passwordData, current_password: e.target.value})}
+                      className="w-full px-3.5 sm:px-4 py-2.5 pr-10 rounded-xl border border-border bg-white text-fluid-13 sm:text-fluid-14 text-text-main focus:outline-none focus:border-maroon focus:ring-1 focus:ring-maroon transition-colors" />
+                    <button type="button" onClick={() => setShowCurrentPassword(!showCurrentPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-text-sub hover:text-text-main transition-colors cursor-pointer">
+                      {showCurrentPassword ? <Eye size={16} /> : <EyeOff size={16} />}
+                    </button>
+                  </div>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-fluid-12-5 sm:text-fluid-13 font-semibold text-text-main mb-1.5">New Password</label>
+                    <div className="relative">
+                      <input type={showNewPassword ? "text" : "password"} placeholder="Enter new password" 
+                        value={passwordData.new_password} onChange={(e) => setPasswordData({...passwordData, new_password: e.target.value})}
+                        className="w-full px-3.5 sm:px-4 py-2.5 pr-10 rounded-xl border border-border bg-white text-fluid-13 sm:text-fluid-14 text-text-main focus:outline-none focus:border-maroon focus:ring-1 focus:ring-maroon transition-colors" />
+                      <button type="button" onClick={() => setShowNewPassword(!showNewPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-text-sub hover:text-text-main transition-colors cursor-pointer">
+                        {showNewPassword ? <Eye size={16} /> : <EyeOff size={16} />}
+                      </button>
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-fluid-12-5 sm:text-fluid-13 font-semibold text-text-main mb-1.5">Confirm New Password</label>
+                    <div className="relative">
+                      <input type={showConfirmPassword ? "text" : "password"} placeholder="Confirm new password" 
+                        value={passwordData.confirm_password} onChange={(e) => setPasswordData({...passwordData, confirm_password: e.target.value})}
+                        className="w-full px-3.5 sm:px-4 py-2.5 pr-10 rounded-xl border border-border bg-white text-fluid-13 sm:text-fluid-14 text-text-main focus:outline-none focus:border-maroon focus:ring-1 focus:ring-maroon transition-colors" />
+                      <button type="button" onClick={() => setShowConfirmPassword(!showConfirmPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-text-sub hover:text-text-main transition-colors cursor-pointer">
+                        {showConfirmPassword ? <Eye size={16} /> : <EyeOff size={16} />}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+                <div className="flex justify-end mt-2">
+                  <button onClick={handleChangePassword} disabled={isSavingPassword} className="flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl bg-maroon text-white text-fluid-13-5 sm:text-fluid-14 font-semibold hover:bg-maroon-dark transition-colors shadow-sm cursor-pointer disabled:opacity-70 disabled:cursor-not-allowed w-full sm:w-auto">
+                    {isSavingPassword ? <><Loader2 size={16} className="animate-spin" /> Saving</> : 'Save Password'}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Danger Zone Card */}
+          <div className="bg-white rounded-2xl sm:rounded-3xl border border-border p-5 sm:p-8 shadow-sm animate-fade-up" style={{ animationDelay: '0.2s' }}>
+            <h3 className="font-serif text-fluid-18 md:text-fluid-20 font-bold text-text-main m-0 mb-4 sm:mb-6">Danger Zone</h3>
+            
+            <div className="flex flex-col md:flex-row md:items-center justify-between pb-5 sm:pb-6 mb-5 sm:mb-6 border-b border-border gap-4 md:gap-0">
+              <div>
+                <h4 className="text-fluid-15 sm:text-fluid-16 font-bold text-text-main m-0 mb-1">Logout all devices</h4>
+                <p className="text-fluid-12-5 sm:text-fluid-13 text-text-sub m-0">Sign out from every active administrator session across all browsers.</p>
+              </div>
+              <button onClick={handleLogoutAll} disabled={isLoggingOutAll} className="flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl border border-border text-fluid-13 sm:text-fluid-14 font-semibold text-text-main bg-white hover:bg-off-white hover:border-maroon-border hover:text-maroon transition-colors shadow-sm cursor-pointer disabled:opacity-70 disabled:cursor-not-allowed w-full md:w-auto">
+                {isLoggingOutAll ? <Loader2 size={16} className="animate-spin" /> : <LogOut size={16} />} 
+                {isLoggingOutAll ? 'Logging out...' : 'Logout All'}
+              </button>
+            </div>
+            
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 md:gap-0">
+              <div>
+                <h4 className="text-fluid-16 font-bold text-text-main m-0 mb-1">Delete account</h4>
+                <p className="text-fluid-13 text-text-sub m-0">Permanently delete your account. This action is irreversible.</p>
+              </div>
+              {!showDeleteConfirm ? (
+                <button onClick={handleDeleteAccount} disabled={isDeletingAccount} className="flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl border border-red-200 text-fluid-14 font-semibold text-red-600 bg-red-50 hover:bg-red-600 hover:text-white transition-colors shadow-sm cursor-pointer disabled:opacity-70 disabled:cursor-not-allowed w-full md:w-auto">
+                  <Trash2 size={16} /> 
+                  Delete account
+                </button>
+              ) : (
+                <div className="flex flex-col gap-3 w-full md:w-auto mt-4 md:mt-0">
+                  <input 
+                    type="text" 
+                    placeholder="Type DELETE to confirm" 
+                    value={deleteConfirmText} 
+                    onChange={e => setDeleteConfirmText(e.target.value)}
+                    className="w-full px-4 py-2.5 rounded-xl border border-border bg-white text-fluid-14 text-text-main focus:outline-none focus:border-maroon focus:ring-1 focus:ring-maroon transition-colors"
+                  />
+                  <div className="flex gap-2">
+                    <button onClick={() => { setShowDeleteConfirm(false); setDeleteConfirmText(''); }} disabled={isDeletingAccount} className="flex-1 px-4 py-2.5 rounded-xl border border-border text-fluid-14 font-semibold text-text-main bg-white hover:bg-gray-50 transition-colors shadow-sm cursor-pointer disabled:opacity-50">
+                      Cancel
+                    </button>
+                    <button onClick={handleConfirmDeleteAccount} disabled={isDeletingAccount || deleteConfirmText.trim().toUpperCase() !== 'DELETE'} className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-maroon text-white text-fluid-14 font-semibold hover:bg-maroon-dark transition-colors shadow-sm cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">
+                      {isDeletingAccount ? <><Loader2 size={16} className="animate-spin" /> Deleting</> : 'Confirm'}
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+          
+        </div>
+
+      </div>
+
+      {/* Manage Profile Modal */}
+      {isEditModalOpen && createPortal((
+        <div className="fixed inset-0 z-99999 flex items-center justify-center p-4 bg-black/60 overflow-y-auto animate-fade-in" onClick={handleCloseEditModal}>
+          <div className="bg-white rounded-3xl w-full max-w-125 my-auto shadow-[0_25px_80px_rgba(0,0,0,0.2)] border border-border overflow-hidden animate-fade-up" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between p-6 border-b border-border bg-off-white">
+              <h2 className="font-serif text-fluid-22 font-bold text-maroon m-0">Manage Administrator Profile</h2>
+              <button 
+                onClick={handleCloseEditModal}
+                className="p-2 rounded-full hover:bg-border transition-colors text-text-sub hover:text-text-main cursor-pointer"
+              >
+                <X size={20} />
+              </button>
+            </div>
+            <div className="p-6 flex flex-col gap-5">
+              
+              {profileMsg.text && (
+                <div className={`p-3 rounded-lg text-fluid-13 font-medium ${profileMsg.type === 'error' ? 'bg-red-50 text-red-600' : 'bg-green-50 text-green-600'}`}>
+                  {profileMsg.text}
+                </div>
+              )}
+
+              <div className="flex flex-col gap-3">
+                <label className="block text-fluid-13 font-semibold text-text-main">Profile Picture</label>
+                <div className="flex items-center gap-5">
+                  <div className="w-16 h-16 rounded-full bg-maroon-light border-2 border-maroon-border flex items-center justify-center text-maroon text-fluid-22 font-bold overflow-hidden shadow-sm">
+                    {previewImage ? (
+                      <img src={previewImage} alt="Profile" className="w-full h-full object-cover" />
+                    ) : (
+                      user?.first_name?.[0]?.toUpperCase() || 'A'
+                    )}
+                  </div>
+                  <input 
+                    type="file" 
+                    ref={fileInputRef} 
+                    hidden 
+                    accept="image/png, image/jpeg" 
+                    onChange={handleFileChange}
+                  />
+                  <button 
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={isSavingProfile}
+                    className="flex items-center gap-2 px-4 py-2 rounded-xl border border-border text-fluid-13 font-semibold text-text-main bg-white hover:bg-off-white hover:border-maroon-border hover:text-maroon transition-colors shadow-sm cursor-pointer disabled:opacity-70 disabled:cursor-not-allowed"
+                  >
+                    <Camera size={14} /> 
+                    Change Picture
+                  </button>
+                  <button 
+                    onClick={handleRemovePhoto}
+                    disabled={isSavingProfile || !previewImage} 
+                    className="flex items-center gap-2 text-fluid-13 font-semibold text-danger hover:text-danger-dark transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Remove
+                  </button>
+                </div>
+              </div>
+              
+              <div className="h-px bg-border w-full" />
+              
+              <div className="grid grid-cols-2 gap-5">
+                <div>
+                  <label className="block text-fluid-13 font-semibold text-text-main mb-1.5">First Name</label>
+                  <input type="text" value={editData.first_name} onChange={e => setEditData({...editData, first_name: e.target.value})} className="w-full px-4 py-2.5 rounded-xl border border-border bg-white text-fluid-14 text-text-main focus:outline-none focus:border-maroon focus:ring-1 focus:ring-maroon transition-colors" />
+                </div>
+                <div>
+                  <label className="block text-fluid-13 font-semibold text-text-main mb-1.5">Last Name</label>
+                  <input type="text" value={editData.last_name} onChange={e => setEditData({...editData, last_name: e.target.value})} className="w-full px-4 py-2.5 rounded-xl border border-border bg-white text-fluid-14 text-text-main focus:outline-none focus:border-maroon focus:ring-1 focus:ring-maroon transition-colors" />
+                </div>
+              </div>
+              <div>
+                <label className="block text-fluid-13 font-semibold text-text-main mb-1.5">Email Address</label>
+                <input type="email" value={editData.email} onChange={e => setEditData({...editData, email: e.target.value})} className="w-full px-4 py-2.5 rounded-xl border border-border bg-white text-fluid-14 text-text-main focus:outline-none focus:border-maroon focus:ring-1 focus:ring-maroon transition-colors" />
+              </div>
+            </div>
+            <div className="p-6 border-t border-border bg-off-white flex justify-end gap-3">
+              <button 
+                onClick={handleCloseEditModal}
+                className="px-6 py-2.5 rounded-xl border border-border text-fluid-14 font-semibold text-text-main bg-white hover:bg-gray-50 transition-colors shadow-sm cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button onClick={handleSaveProfile} disabled={isSavingProfile} className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-maroon text-white text-fluid-14 font-semibold hover:bg-maroon-dark transition-colors shadow-sm cursor-pointer disabled:opacity-70 disabled:cursor-not-allowed">
+                {isSavingProfile ? <><Loader2 size={16} className="animate-spin" /> Saving</> : 'Save Changes'}
+              </button>
+            </div>
+          </div>
+        </div>
+      ), document.body)}
+    </>
+  )
+}

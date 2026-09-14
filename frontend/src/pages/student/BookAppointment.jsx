@@ -10,6 +10,12 @@ import {
   Loader2, ClipboardList, Award, Bell
 } from 'lucide-react'
 
+// ── Document Name Cleaner ──
+const cleanDocName = (name = '') => {
+  if (!name) return '';
+  return String(name).replace(/([^\s])\(/g, '$1 (').trim();
+};
+
 // ── Custom Dropdown Component ──
 const CustomSelect = ({ label, value, onChange, options, placeholder = 'Select…', icon, className = '' }) => {
   const [isOpen, setIsOpen] = useState(false)
@@ -307,6 +313,7 @@ export default function BookAppointment({ embedded = false }) {
         }
         return {
           ...t,
+          name: cleanDocName(t.name),
           clean_description: parts[0],
           config
         };
@@ -760,52 +767,52 @@ export default function BookAppointment({ embedded = false }) {
                       <div 
                         key={t.id} 
                         onClick={() => toggleTypeSelection(t)}
-                        className={`group h-full text-left rounded-2xl p-4.5 sm:p-5.5 cursor-pointer transition-all duration-200 shadow-2xs flex flex-col justify-between select-none ${
+                        className={`group h-full text-left rounded-2xl p-4 sm:p-5 cursor-pointer transition-all duration-200 shadow-2xs flex flex-col justify-between select-none relative overflow-hidden ${
                           isSelected 
                             ? 'bg-maroon-light/30 border-2 border-maroon ring-2 ring-maroon/20 shadow-md -translate-y-px' 
                             : 'bg-white border border-border sm:border-[1.5px] hover:border-maroon/60 hover:shadow-md hover:-translate-y-0.5'
                         }`}
                       >
-                        {/* Top: Title, Checkbox & Description */}
+                        {/* Top: Header with Icon, Title, Description & Top-Right Selection Indicator */}
                         <div className="flex-1 flex flex-col w-full">
-                          <div className="flex items-start gap-3 sm:gap-3.5">
-                            <div className={`w-8.5 h-8.5 sm:w-9.5 sm:h-9.5 rounded-xl flex items-center justify-center shrink-0 border transition-colors mt-0.5 ${
-                              isSelected 
-                                ? 'bg-maroon text-white border-maroon shadow-xs' 
-                                : 'bg-maroon-light text-maroon border-maroon-border/40 group-hover:bg-maroon group-hover:text-white'
-                            }`}>
-                              <FileText size={16} />
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-start justify-between gap-2.5">
-                                <div>
-                                  <h3 className={`font-serif text-sm sm:text-base font-bold m-0 leading-snug transition-colors ${
-                                    isSelected ? 'text-maroon' : 'text-text-main group-hover:text-maroon'
-                                  }`}>
-                                    {t.name}
-                                  </h3>
-                                  {isStandalone && (
-                                    <span className="text-[10px] sm:text-[10.5px] font-extrabold text-amber-800 bg-amber-50 py-1 px-2.5 rounded-md border border-amber-300/90 inline-flex items-center gap-1.5 mt-2 shadow-2xs">
-                                      <AlertTriangle size={11} className="text-amber-600 shrink-0" />
-                                      <span>Single document only</span>
-                                    </span>
-                                  )}
-                                </div>
-                                <div className={`w-5.5 h-5.5 rounded-full border-[1.75px] flex items-center justify-center shrink-0 transition-all duration-300 mt-0.5 ${
-                                  isSelected 
-                                    ? 'bg-linear-to-br from-maroon via-maroon to-[#5C0D18] border-maroon text-white shadow-[0_2px_8px_rgba(123,26,42,0.35),0_0_0_2.5px_rgba(123,26,42,0.12)] scale-100' 
-                                    : 'border-border-strong/70 bg-white group-hover:border-maroon/60 group-hover:bg-maroon-light/20 group-hover:scale-105 shadow-2xs'
-                                }`}>
-                                  {isSelected ? (
-                                    <Check size={12} strokeWidth={3} className="text-white drop-shadow-xs animate-scale-in" />
-                                  ) : (
-                                    <span className="w-1.5 h-1.5 rounded-full bg-transparent group-hover:bg-maroon/30 transition-colors" />
-                                  )}
-                                </div>
+                          <div className="flex items-start justify-between gap-2.5 sm:gap-3 w-full">
+                            <div className="flex items-start gap-3 sm:gap-3.5 min-w-0 flex-1">
+                              <div className={`w-8.5 h-8.5 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center shrink-0 border transition-colors mt-0.5 ${
+                                isSelected 
+                                  ? 'bg-maroon text-white border-maroon shadow-xs' 
+                                  : 'bg-maroon-light text-maroon border-maroon-border/40 group-hover:bg-maroon group-hover:text-white'
+                              }`}>
+                                <FileText size={16} />
                               </div>
-                              <p className="text-xs sm:text-[13px] text-text-sub m-0 mt-2 leading-relaxed font-normal">
-                                {t.clean_description}
-                              </p>
+                              <div className="min-w-0 flex-1">
+                                <h3 className={`font-serif text-sm sm:text-base font-bold m-0 leading-snug wrap-break-word transition-colors ${
+                                  isSelected ? 'text-maroon' : 'text-text-main group-hover:text-maroon'
+                                }`}>
+                                  {cleanDocName(t.name)}
+                                </h3>
+                                {isStandalone && (
+                                  <span className="text-[10px] sm:text-[10.5px] font-extrabold text-amber-800 bg-amber-50 py-0.5 px-2 rounded-md border border-amber-300/90 inline-flex items-center gap-1 mt-1.5 shadow-2xs">
+                                    <AlertTriangle size={11} className="text-amber-600 shrink-0" />
+                                    <span>Single document only</span>
+                                  </span>
+                                )}
+                                <p className="text-xs sm:text-[13px] text-text-sub m-0 mt-2 leading-relaxed font-normal">
+                                  {t.clean_description}
+                                </p>
+                              </div>
+                            </div>
+
+                            {/* Top-Right Selection Indicator */}
+                            <div className={`w-5.5 h-5.5 rounded-full border-[1.75px] flex items-center justify-center shrink-0 transition-all duration-300 mt-0.5 ${
+                              isSelected 
+                                ? 'bg-linear-to-br from-maroon via-maroon to-[#5C0D18] border-maroon text-white shadow-[0_2px_8px_rgba(123,26,42,0.35),0_0_0_2.5px_rgba(123,26,42,0.12)] scale-100' 
+                                : 'border-border-strong/70 bg-white group-hover:border-maroon/60 group-hover:bg-maroon-light/20 group-hover:scale-105 shadow-2xs'
+                            }`}>
+                              {isSelected ? (
+                                <Check size={12} strokeWidth={3} className="text-white drop-shadow-xs animate-scale-in" />
+                              ) : (
+                                <span className="w-1.5 h-1.5 rounded-full bg-transparent group-hover:bg-maroon/30 transition-colors" />
+                              )}
                             </div>
                           </div>
                         </div>

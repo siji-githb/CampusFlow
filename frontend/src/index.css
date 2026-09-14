@@ -69,6 +69,20 @@
 
 html {
   scroll-behavior: smooth;
+  min-height: 100%;
+  background-color: var(--color-off-white, #F9F7F4);
+}
+
+body {
+  min-height: 100%;
+  background-color: var(--color-off-white, #F9F7F4);
+  overflow-x: hidden;
+  margin: 0;
+}
+
+#root {
+  min-height: 100%;
+  background-color: var(--color-off-white, #F9F7F4);
 }
 
 * {
