@@ -139,6 +139,8 @@ export default function StudentDashboard({ embedded = false }) {
           return {
             id: a.id,
             type: docNamesList.join(', '),
+            primaryDoc: docNamesList[0] || 'Registrar Transaction',
+            docCount: docNamesList.length,
             step: 'Registrar',
             appointment_date: a.appointment_date,
             isToday: a.appointment_date === today,
@@ -390,7 +392,7 @@ export default function StudentDashboard({ embedded = false }) {
             className="animate-fade-up min-w-0 w-full bg-white rounded-[20px] p-5 sm:p-6 lg:p-7 shadow-[0_8px_30px_rgba(0,0,0,0.02),0_0_0_1px_rgba(123,26,42,0.04)]"
             style={{ animationDelay: '0.3s' }}
           >
-            <div className="flex justify-between items-center mb-4 lg:mb-6">
+            <div className="flex justify-between items-end mb-4 lg:mb-5 gap-2">
               <div>
                 <p className="text-[11px] font-bold text-gold tracking-[0.12em] uppercase m-0 mb-1">
                   Schedule Overview
@@ -401,10 +403,10 @@ export default function StudentDashboard({ embedded = false }) {
               </div>
               <button 
                 onClick={() => navigate('/student/appointments')} 
-                className="text-[13px] font-semibold text-maroon bg-maroon-light border-[1.5px] border-maroon-border/40 rounded-[10px] py-1.5 px-3 sm:px-4 cursor-pointer font-sans transition-all duration-200 hover:text-white hover:bg-maroon shrink-0 flex items-center gap-1 shadow-2xs"
+                className="group flex items-center gap-1 text-[11px] sm:text-[12px] font-bold text-maroon bg-white hover:bg-maroon hover:text-white border border-maroon-border/60 hover:border-maroon rounded-full px-2.5 sm:px-3.5 py-1 sm:py-1.5 cursor-pointer font-sans transition-all duration-200 shadow-2xs hover:shadow-xs shrink-0"
               >
                 <span>View All</span>
-                <ChevronRight size={14} />
+                <ChevronRight size={13} className="transition-transform duration-200 group-hover:translate-x-0.5" />
               </button>
             </div>
 
@@ -439,18 +441,28 @@ export default function StudentDashboard({ embedded = false }) {
                     }}
                     className="group relative flex justify-between items-center p-3.5 sm:p-4 rounded-2xl border border-border bg-off-white/80 hover:bg-white hover:border-maroon/35 transition-all duration-300 ease-out cursor-pointer shadow-2xs hover:shadow-[0_10px_26px_rgba(123,26,42,0.08)] hover:-translate-y-0.5 active:scale-[0.995]"
                   >
-                    <div className="flex items-center gap-3.5 sm:gap-4 flex-1 min-w-0">
+                    <div className="flex items-center gap-3 sm:gap-4 flex-1 min-w-0">
                       {/* Document Icon Badge */}
-                      <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-xl text-maroon bg-maroon-light border border-maroon-border/40 flex items-center justify-center shrink-0 group-hover:scale-105 group-hover:bg-maroon group-hover:text-white transition-all duration-300 shadow-2xs">
-                        <ClipboardList size={20} />
+                      <div className="w-9.5 h-9.5 sm:w-11 sm:h-11 rounded-xl text-maroon bg-maroon-light border border-maroon-border/40 flex items-center justify-center shrink-0 group-hover:scale-105 group-hover:bg-maroon group-hover:text-white transition-all duration-300 shadow-2xs">
+                        <ClipboardList size={18} className="sm:w-5 sm:h-5" />
                       </div>
                       
                       {/* Document Info */}
                       <div className="flex-1 min-w-0">
-                        <h3 className="text-[14px] sm:text-[15px] font-bold text-text-main group-hover:text-maroon transition-colors duration-200 m-0 mb-1.5 leading-snug wrap-break-word">
-                          {apt.type}
-                        </h3>
-                        <div className="flex flex-wrap gap-1.5 sm:gap-2 items-center text-[11px] sm:text-[12px]">
+                        <div className="flex items-center gap-1.5 flex-wrap mb-1">
+                          <h3 
+                            className="text-[12.5px] sm:text-[13.5px] font-semibold sm:font-bold text-text-main group-hover:text-maroon transition-colors duration-200 m-0 leading-snug line-clamp-1 sm:line-clamp-2"
+                            title={apt.type}
+                          >
+                            {apt.type}
+                          </h3>
+                          {apt.docCount > 1 && (
+                            <span className="text-[10px] font-extrabold px-1.5 py-0.5 rounded-full bg-maroon-light text-maroon border border-maroon-border/50 shrink-0 whitespace-nowrap">
+                              {apt.docCount} Docs
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex flex-wrap gap-1.5 sm:gap-2 items-center text-[10.5px] sm:text-[12px]">
                           <span className={`py-0.5 px-2 rounded-md font-semibold flex items-center gap-1.5 shadow-2xs ${
                             apt.isToday 
                               ? 'bg-gold-light text-gold-dark border border-gold-border/60' 
@@ -471,9 +483,9 @@ export default function StudentDashboard({ embedded = false }) {
                     </div>
 
                     {/* Status & Click Affordance */}
-                    <div className="flex items-center gap-2 sm:gap-3 shrink-0 ml-3">
+                    <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0 ml-2 sm:ml-3">
                       <span 
-                        className="text-[10px] sm:text-[10.5px] font-extrabold py-1 px-2.5 sm:px-3 rounded-full uppercase tracking-wider shadow-2xs whitespace-nowrap"
+                        className="text-[9.5px] sm:text-[10.5px] font-extrabold py-0.5 sm:py-1 px-2 sm:px-2.5 rounded-full uppercase tracking-wider shadow-2xs whitespace-nowrap"
                         style={{
                           background: STATUS_STYLES[apt.status]?.bg || '#F0FDF4',
                           color: STATUS_STYLES[apt.status]?.color || '#15803D',
@@ -482,8 +494,8 @@ export default function StudentDashboard({ embedded = false }) {
                       >
                         {apt.status === 'in_progress' ? 'Serving' : apt.status}
                       </span>
-                      <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-white border border-border/70 flex items-center justify-center text-text-muted group-hover:bg-maroon-light group-hover:text-maroon group-hover:border-maroon-border/40 transition-all duration-200 shrink-0 shadow-2xs">
-                        <ChevronRight size={15} className="transition-transform duration-200 group-hover:translate-x-0.5" />
+                      <div className="w-6.5 h-6.5 sm:w-7.5 sm:h-7.5 rounded-full bg-white border border-border/70 flex items-center justify-center text-text-muted group-hover:bg-maroon-light group-hover:text-maroon group-hover:border-maroon-border/40 transition-all duration-200 shrink-0 shadow-2xs">
+                        <ChevronRight size={13} className="sm:w-3.5 sm:h-3.5 transition-transform duration-200 group-hover:translate-x-0.5" />
                       </div>
                     </div>
                   </div>

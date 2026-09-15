@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/useAuth'
 import { useToast } from '../../context/ToastContext'
 import { BotMessageSquare, Eraser, Calendar, ChevronRight, Clock, AlertCircle, Zap, ClipboardList, Info } from 'lucide-react'
+import { sendMessage, sendMessageStream, clearChat, getChatHistory } from '../../services/aiService'
 
 const SUGGESTED = [
   'Book appointment for TOR and COE',
