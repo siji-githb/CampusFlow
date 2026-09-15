@@ -254,11 +254,32 @@ def get_registrar_records(days: int = 30):
 
     try:
         records = admin.table("appointments") \
-            .select("*, transaction_types(name, required_documents), users(first_name, last_name, student_id)") \
+            .select("*, transaction_types(name, required_documents), users(first_name, last_name, student_id, course, email, priority_class)") \
             .gte("appointment_date", str(start_date)) \
             .order("appointment_date", desc=True) \
             .execute()
             
+        # Enrich course from school_students for records where users.course is missing
+        missing_course_sids = [
+            (row.get("users") or {}).get("student_id")
+            for row in (records.data or [])
+            if (row.get("users") or {}).get("student_id") and not (row.get("users") or {}).get("course")
+        ]
+        if missing_course_sids:
+            try:
+                unique_sids = list(set(missing_course_sids))
+                school_res = admin.table("school_students") \
+                    .select("student_id, course") \
+                    .in_("student_id", unique_sids) \
+                    .execute()
+                course_map = {s["student_id"]: s.get("course") for s in (school_res.data or []) if s.get("course")}
+                for row in (records.data or []):
+                    u = row.get("users")
+                    if u and not u.get("course") and u.get("student_id") in course_map:
+                        u["course"] = course_map[u["student_id"]]
+            except Exception:
+                pass
+
         # Group siblings by (student_id, appointment_date, time_slot, status)
         slot_map = {}
         for row in (records.data or []):

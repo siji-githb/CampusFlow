@@ -14,6 +14,11 @@ SHEET_COURSE_MAP = {
     "BSIT": "Bachelor of Science in Information Technology",
     "BS IT": "Bachelor of Science in Information Technology",
     "BACHELOR OF SCIENCE IN INFORMATION TECHNOLOGY": "Bachelor of Science in Information Technology",
+    "INFORMATION TECHNOLOGY": "Bachelor of Science in Information Technology",
+    "IT": "Bachelor of Science in Information Technology",
+    "CCS": "Bachelor of Science in Information Technology",
+    "COLLEGE OF COMPUTER STUDIES": "Bachelor of Science in Information Technology",
+    "COLLEGE OF COMPUTER STUDIES (CCS)": "Bachelor of Science in Information Technology",
     
     "BSHM": "Bachelor of Science in Hospitality Management",
     "BS HM": "Bachelor of Science in Hospitality Management",
@@ -24,11 +29,17 @@ SHEET_COURSE_MAP = {
     "BS CRIM": "Bachelor of Science in Criminology",
     "CRIMINOLOGY": "Bachelor of Science in Criminology",
     "BACHELOR OF SCIENCE IN CRIMINOLOGY": "Bachelor of Science in Criminology",
+    "CCJE": "Bachelor of Science in Criminology",
+    "COLLEGE OF CRIMINAL JUSTICE EDUCATION": "Bachelor of Science in Criminology",
+    "COLLEGE OF CRIMINAL JUSTICE EDUCATION (CCJE)": "Bachelor of Science in Criminology",
     
     "BEED": "Bachelor of Elementary Education",
     "BE ED": "Bachelor of Elementary Education",
     "ELEMENTARY EDUCATION": "Bachelor of Elementary Education",
     "BACHELOR OF ELEMENTARY EDUCATION": "Bachelor of Elementary Education",
+    "CTE": "Bachelor of Elementary Education",
+    "COLLEGE OF TEACHER EDUCATION": "Bachelor of Elementary Education",
+    "COLLEGE OF TEACHER EDUCATION (CTE)": "Bachelor of Elementary Education",
     
     "BSTM": "Bachelor of Science in Tourism Management",
     "BS-TM": "Bachelor of Science in Tourism Management",
@@ -41,6 +52,9 @@ SHEET_COURSE_MAP = {
     "BS BA": "Bachelor of Science in Financial Management",
     "BUSINESS ADMINISTRATION": "Bachelor of Science in Financial Management",
     "BACHELOR OF SCIENCE IN BUSINESS ADMINISTRATION": "Bachelor of Science in Financial Management",
+    "CBE": "Bachelor of Science in Financial Management",
+    "COLLEGE OF BUSINESS EDUCATION": "Bachelor of Science in Financial Management",
+    "COLLEGE OF BUSINESS EDUCATION (CBE)": "Bachelor of Science in Financial Management",
     "BSBA-FM": "Bachelor of Science in Financial Management",
     "BSBAFM": "Bachelor of Science in Financial Management",
     "BSBA FM": "Bachelor of Science in Financial Management",
@@ -76,6 +90,8 @@ SHEET_COURSE_MAP = {
     "BSPSYCHOLOGY": "Bachelor of Science in Psychology",
     "BS PSYCHOLOGY": "Bachelor of Science in Psychology",
     "PSYCHOLOGY": "Bachelor of Science in Psychology",
+    "PSYCH": "Bachelor of Science in Psychology",
+    "PSYCHOLOGY (PSYCH)": "Bachelor of Science in Psychology",
     "BACHELOR OF SCIENCE IN PSYCHOLOGY": "Bachelor of Science in Psychology",
 }
 
@@ -88,6 +104,9 @@ HEADER_FIELD_ALIASES = {
     "last name": "last_name",
     "first name": "first_name",
     "priority class": "priority_class",
+    "course": "course",
+    "department": "course",
+    "program": "course",
 }
 
 
@@ -169,14 +188,15 @@ async def upload_student_records(file: UploadFile, default_priority: str = "regu
             skipped_sheets.append(f"{sheet_name} (empty)")
             continue
 
-        course = SHEET_COURSE_MAP.get(_normalize_sheet_name(sheet_name))
-        if not course:
-            skipped_sheets.append(f"{sheet_name} (unrecognized course/tab name)")
-            continue
-
         header_idx, col_map = _find_header_row(sheet, rows)
         if header_idx is None:
             skipped_sheets.append(f"{sheet_name} (no header row found)")
+            continue
+
+        sheet_course = SHEET_COURSE_MAP.get(_normalize_sheet_name(sheet_name))
+        # If sheet name is not a known course, check if there's a course/department column
+        if not sheet_course and "course" not in col_map:
+            skipped_sheets.append(f"{sheet_name} (unrecognized course/tab name and no course column)")
             continue
 
         sheet_count = 0
@@ -201,6 +221,17 @@ async def upload_student_records(file: UploadFile, default_priority: str = "regu
             # Guard against stray annotation rows (e.g. a leftover note sitting alone
             # in the student-id column) that aren't real student records.
             if not first_name_val and not last_name_val:
+                continue
+
+            # Determine course: prefer row-level course column if present, fallback to sheet-level course
+            course = sheet_course
+            if "course" in col_map:
+                row_c = _read_span_value(row, col_map["course"])
+                if row_c:
+                    norm_c = _normalize_sheet_name(str(row_c))
+                    course = SHEET_COURSE_MAP.get(norm_c, str(row_c).strip())
+
+            if not course:
                 continue
 
             records_to_upsert.append({
@@ -265,8 +296,22 @@ async def add_student_record(student_id: str, first_name: str, last_name: str, c
 async def get_student_records() -> dict:
     admin = get_supabase_admin()
     try:
-        res = admin.table("school_students").select("*").order("created_at", desc=True).limit(500).execute()
-        return {"records": res.data}
+        all_records = []
+        page_size = 1000
+        start = 0
+        while True:
+            res = admin.table("school_students") \
+                .select("*") \
+                .order("created_at", desc=True) \
+                .range(start, start + page_size - 1) \
+                .execute()
+            data = res.data or []
+            all_records.extend(data)
+            if len(data) < page_size:
+                break
+            start += page_size
+            
+        return {"records": all_records}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to fetch records: {str(e)}")
 

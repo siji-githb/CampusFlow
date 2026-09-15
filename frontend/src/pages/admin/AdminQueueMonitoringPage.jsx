@@ -47,33 +47,42 @@ const PIPELINE_COLORS = {
   completed: '#7B1A2A',  // Maroon
 }
 
-const CustomDropdown = ({ value, onChange, options, label }) => {
-  const [isOpen, setIsOpen] = useState(false)
+const cleanDocName = (name = '') => {
+  if (!name) return ''
+  return String(name).replace(/([^\s])\(/g, '$1 (').trim()
+}
+
+const CustomDropdown = ({ value, onChange, options, label, isOpen, onToggle, onClose, align = 'left' }) => {
   const currentLabel = options.find(o => o.value === value)?.label || value
 
   return (
     <div className="relative z-20 group min-w-36">
       {label && <div className="text-fluid-10 font-extrabold text-text-muted uppercase tracking-[0.08em] mb-1">{label}</div>}
       <button
-        onClick={() => setIsOpen(!isOpen)}
-        className="w-full flex items-center justify-between px-3.5 py-2 rounded-xl border border-border bg-white text-fluid-12 text-text-main font-semibold outline-none cursor-pointer font-sans hover:border-maroon/30 transition-all shadow-xs"
+        type="button"
+        onClick={(e) => { e.stopPropagation(); onToggle?.(); }}
+        className={`w-full flex items-center justify-between gap-2 px-3.5 py-2 rounded-xl border bg-white text-fluid-12 text-text-main font-semibold outline-none cursor-pointer font-sans transition-all shadow-2xs ${
+          isOpen ? 'border-maroon/50 ring-2 ring-maroon/10 shadow-xs' : 'border-border hover:border-maroon/30 hover:bg-surface/30'
+        }`}
       >
-        <span className="truncate pr-2">{currentLabel}</span>
-        <ChevronDown size={14} className={`text-text-muted transition-transform duration-200 shrink-0 ${isOpen ? 'rotate-180' : 'group-hover:text-text-main'}`} />
+        <span className="truncate pr-1 text-left">{currentLabel}</span>
+        <ChevronDown size={14} className={`text-text-muted transition-transform duration-200 shrink-0 ${isOpen ? 'rotate-180 text-maroon' : 'group-hover:text-text-main'}`} />
       </button>
       {isOpen && (
         <>
-          <div className="fixed inset-0 z-40" onClick={() => setIsOpen(false)} />
-          <div className="absolute left-0 top-full mt-1.5 w-full min-w-48 bg-white rounded-xl border border-border shadow-lg p-1.5 z-50 animate-fade-up max-h-60 overflow-y-auto">
+          <div className="fixed inset-0 z-40" onClick={onClose} />
+          <div className={`absolute ${align === 'right' ? 'right-0' : 'left-0'} top-full mt-1.5 w-max min-w-48 max-w-72 sm:max-w-80 bg-white rounded-2xl border border-border shadow-[0_12px_36px_rgba(0,0,0,0.12)] p-1.5 z-50 animate-fade-up max-h-64 overflow-y-auto overflow-x-hidden custom-scrollbar`}>
             {options.map(o => {
               const isActive = value === o.value;
               return (
                 <div
                   key={o.value}
-                  onClick={() => { onChange(o.value); setIsOpen(false); }}
-                  className={`px-3 py-2 rounded-lg cursor-pointer flex items-center justify-between text-fluid-12 font-medium transition-colors ${isActive ? 'bg-maroon/5 text-maroon font-bold' : 'text-text-main hover:bg-off-white'}`}
+                  onClick={() => { onChange(o.value); onClose?.(); }}
+                  className={`px-3 py-2 rounded-xl cursor-pointer flex items-center justify-between gap-2.5 text-fluid-12 font-medium transition-colors ${
+                    isActive ? 'bg-maroon/5 text-maroon font-bold' : 'text-text-main hover:bg-off-white'
+                  }`}
                 >
-                  <span>{o.label}</span>
+                  <span className="truncate pr-1" title={o.label}>{o.label}</span>
                   {isActive && <Check size={13} className="text-maroon shrink-0" />}
                 </div>
               )
@@ -300,6 +309,7 @@ export default function AdminQueueMonitoringPage() {
   const [search, setSearch] = useState('')
   const [txTypeFilter, setTxTypeFilter] = useState('all')
   const [priorityFilter, setPriorityFilter] = useState('all')
+  const [openDropdown, setOpenDropdown] = useState(null)
   const [currentPage, setCurrentPage] = useState(1)
   const PER_PAGE = 10
 
@@ -750,6 +760,12 @@ export default function AdminQueueMonitoringPage() {
       let prioMatch = true
       if (priorityFilter === 'high') {
         prioMatch = item.priority_class === 'alumni' || item.priority_class === 'pwd' || item.priority_class === 'pregnant'
+      } else if (priorityFilter === 'pregnant') {
+        prioMatch = item.priority_class === 'pregnant'
+      } else if (priorityFilter === 'pwd') {
+        prioMatch = item.priority_class === 'pwd'
+      } else if (priorityFilter === 'alumni') {
+        prioMatch = item.priority_class === 'alumni'
       } else if (priorityFilter === 'regular') {
         prioMatch = item.priority_class === 'regular' || !item.priority_class
       }
@@ -1077,18 +1093,29 @@ export default function AdminQueueMonitoringPage() {
               <CustomDropdown
                 value={txTypeFilter}
                 onChange={val => { setTxTypeFilter(val); setCurrentPage(1); }}
+                isOpen={openDropdown === 'txType'}
+                onToggle={() => setOpenDropdown(openDropdown === 'txType' ? null : 'txType')}
+                onClose={() => setOpenDropdown(null)}
+                align="left"
                 options={[
                   { value: 'all', label: 'All Document Types' },
-                  ...availableTxTypes.map(t => ({ value: t, label: t }))
+                  ...availableTxTypes.map(t => ({ value: t, label: cleanDocName(t) }))
                 ]}
               />
 
               <CustomDropdown
                 value={priorityFilter}
                 onChange={val => { setPriorityFilter(val); setCurrentPage(1); }}
+                isOpen={openDropdown === 'priority'}
+                onToggle={() => setOpenDropdown(openDropdown === 'priority' ? null : 'priority')}
+                onClose={() => setOpenDropdown(null)}
+                align="right"
                 options={[
                   { value: 'all', label: 'All Priorities' },
-                  { value: 'high', label: 'High Priority (Alumni/PWD)' },
+                  { value: 'high', label: 'High Priority (PWD / Pregnant / Alumni)' },
+                  { value: 'pregnant', label: 'Pregnant' },
+                  { value: 'pwd', label: 'PWD' },
+                  { value: 'alumni', label: 'Alumni' },
                   { value: 'regular', label: 'Regular Students' },
                 ]}
               />

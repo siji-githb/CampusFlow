@@ -76,7 +76,7 @@ function TimeframeDropdown({ value, onChange }) {
       {isOpen && (
         <>
           <div className="fixed inset-0 z-40" onClick={() => setIsOpen(false)} />
-          <div className="absolute right-0 top-full mt-1.5 w-48 bg-white rounded-xl border border-border shadow-lg p-1.5 z-50 animate-fade-up">
+          <div className="absolute right-0 top-full mt-1.5 w-48 bg-white rounded-2xl border border-border shadow-[0_12px_36px_rgba(0,0,0,0.12)] p-1.5 z-50 animate-fade-up max-h-60 overflow-y-auto overflow-x-hidden custom-scrollbar">
             <div className="px-2.5 py-1 text-fluid-10 font-extrabold text-text-muted uppercase tracking-wider">Timeframe</div>
             {options.map(o => {
               const isActive = value === o.value
@@ -84,7 +84,7 @@ function TimeframeDropdown({ value, onChange }) {
                 <div
                   key={o.value}
                   onClick={() => { onChange(o.value); setIsOpen(false); }}
-                  className={`px-3 py-2 rounded-lg cursor-pointer flex items-center justify-between text-fluid-12 font-medium transition-colors ${
+                  className={`px-3 py-2 rounded-xl cursor-pointer flex items-center justify-between text-fluid-12 font-medium transition-colors ${
                     isActive ? 'bg-maroon/5 text-maroon font-bold' : 'text-text-main hover:bg-off-white'
                   }`}
                 >
@@ -135,13 +135,21 @@ export default function AdminRegistrarRecordsPage() {
       const mapped = rawRecords.map(r => ({
         id: `REC-${r.id.split('-')[0].toUpperCase()}`,
         rawId: r.id,
-        student: `${r.users?.first_name || ''} ${r.users?.last_name || ''}`.trim(),
+        student: `${r.users?.first_name || ''} ${r.users?.last_name || ''}`.trim() || 'Unknown Student',
         studentId: r.users?.student_id || 'N/A',
+        email: r.users?.email || '—',
+        course: r.users?.course || 'General Student',
+        priority_class: r.priority_class || r.users?.priority_class || 'regular',
         type: r.transaction_types?.name || 'Unknown',
         selected_documents: r.selected_documents || [],
-        requested: new Date(r.created_at).toLocaleDateString('en-PH', { year: 'numeric', month: 'short', day: 'numeric' }),
-        processed: (r.status === 'pending' || r.status === 'processing') ? '—' : new Date(r.appointment_date).toLocaleDateString('en-PH', { year: 'numeric', month: 'short', day: 'numeric' }),
+        appointmentDate: r.appointment_date ? new Date(r.appointment_date).toLocaleDateString('en-PH', { year: 'numeric', month: 'short', day: 'numeric' }) : '—',
+        timeSlot: r.time_slot || '—',
+        requested: r.created_at ? new Date(r.created_at).toLocaleDateString('en-PH', { year: 'numeric', month: 'short', day: 'numeric' }) : '—',
+        processed: (r.status === 'pending' || r.status === 'processing') ? '—' : (r.release_date ? new Date(r.release_date).toLocaleDateString('en-PH', { year: 'numeric', month: 'short', day: 'numeric' }) : new Date(r.appointment_date).toLocaleDateString('en-PH', { year: 'numeric', month: 'short', day: 'numeric' })),
+        releaseDate: r.release_date ? new Date(r.release_date).toLocaleDateString('en-PH', { year: 'numeric', month: 'short', day: 'numeric' }) : null,
         status: r.status,
+        notes: r.notes || null,
+        required_documents: r.transaction_types?.required_documents || [],
         copies: (r.selected_documents && r.selected_documents.length > 0) ? r.selected_documents.length : 1,
       }))
       setRecords(mapped)
@@ -267,28 +275,131 @@ export default function AdminRegistrarRecordsPage() {
         ))}
       </div>
 
-      {/* ── Main Grid: Table + Breakdown ── */}
-      <div className="animate-fade-up grid grid-cols-1 lg:grid-cols-[1fr_220px] gap-5" style={{ animationDelay: '0.5s' }}>
+      {/* ── Records Table Section ── */}
+      <div className="animate-fade-up w-full" style={{ animationDelay: '0.5s' }}>
 
-        {/* Left: Records Table */}
-        <div>
-          {/* Search + Type dropdown */}
-          <div className="mb-4 flex flex-col sm:flex-row gap-3">
-            {/* Search */}
-            <div className="relative flex-1">
-              <input
-                value={search} onChange={e => { setSearch(e.target.value); setPage(1) }}
-                placeholder="Search by student name, record ID, or student ID…"
-                className="w-full py-2.5 pr-5 pl-10 rounded-full border border-border bg-white text-fluid-13 text-text-main outline-none font-sans box-border focus:border-maroon transition-colors"
-              />
-              <span className="absolute left-3.5 top-1/2 -translate-y-1/2 flex items-center text-text-muted"><Search size={16} /></span>
-              {search && (
-                <button onClick={() => setSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 bg-transparent border-none cursor-pointer text-text-muted flex items-center p-0.5 hover:text-text-main transition-colors"><XIcon size={16} /></button>
+        {/* Search & Filter Controls (Side-by-side next to each other) */}
+        <div className="mb-4 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
+          {/* Search (shortened width) */}
+          <div className="relative w-full md:w-80 shrink-0">
+            <input
+              value={search} onChange={e => { setSearch(e.target.value); setPage(1) }}
+              placeholder="Search by student, ID, record…"
+              className="w-full py-2.25 pr-9 pl-10 rounded-xl border border-border bg-white text-fluid-12-5 text-text-main outline-none font-sans box-border focus:border-maroon transition-colors shadow-2xs"
+            />
+            <span className="absolute left-3.5 top-1/2 -translate-y-1/2 flex items-center text-text-muted pointer-events-none"><Search size={15} /></span>
+            {search && (
+              <button onClick={() => setSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 bg-transparent border-none cursor-pointer text-text-muted flex items-center p-0.5 hover:text-text-main transition-colors"><XIcon size={14} /></button>
+            )}
+          </div>
+
+          {/* Filters next to Search Bar */}
+          <div className="flex items-center gap-2.5 flex-wrap">
+            {/* Filter by Status Dropdown */}
+            <div className="relative z-20">
+              <button
+                type="button"
+                onClick={() => setOpenDropdown(openDropdown === 'status' ? null : 'status')}
+                className={`flex items-center justify-between gap-2 px-3.5 py-2 rounded-xl border bg-white text-fluid-12 text-text-main font-semibold outline-none cursor-pointer font-sans transition-all shadow-2xs ${
+                  openDropdown === 'status' ? 'border-maroon/50 ring-2 ring-maroon/10 shadow-xs' : 'border-border hover:border-maroon/30 hover:bg-surface/30'
+                }`}
+              >
+                <span>{statusFilter === 'all' ? 'All Statuses' : (STATUS_CFG[statusFilter]?.label || statusFilter)}</span>
+                <span className="text-fluid-10 font-bold text-text-muted bg-surface px-1.5 py-0.5 rounded-full">
+                  {statusFilter === 'all' ? records.length : records.filter(r => r.status === statusFilter).length}
+                </span>
+                <ChevronDown size={14} className={`text-text-muted transition-transform duration-200 shrink-0 ${openDropdown === 'status' ? 'rotate-180 text-maroon' : ''}`} />
+              </button>
+              {openDropdown === 'status' && (
+                <>
+                  <div className="fixed inset-0 z-40" onClick={() => setOpenDropdown(null)} />
+                  <div className="absolute left-0 top-full mt-1.5 w-max min-w-44 bg-white rounded-2xl border border-border shadow-[0_12px_36px_rgba(0,0,0,0.12)] p-1.5 z-50 animate-fade-up max-h-64 overflow-y-auto overflow-x-hidden custom-scrollbar">
+                    {['all', 'completed', 'released', 'processing', 'pending', 'archived'].map(s => {
+                      const count = s === 'all' ? records.length : records.filter(r => r.status === s).length
+                      const label = s === 'all' ? 'All Statuses' : (STATUS_CFG[s]?.label || s)
+                      const isActive = statusFilter === s
+                      return (
+                        <div
+                          key={s}
+                          onClick={() => { setStatusFilter(s); setPage(1); setOpenDropdown(null); }}
+                          className={`px-3 py-2 rounded-xl cursor-pointer flex items-center justify-between gap-3 text-fluid-12 transition-colors ${
+                            isActive ? 'bg-maroon/5 text-maroon font-bold' : 'text-text-main font-medium hover:bg-off-white'
+                          }`}
+                        >
+                          <span>{label}</span>
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-fluid-10 font-bold text-text-muted bg-surface px-1.5 py-0.5 rounded-full">{count}</span>
+                            {isActive && <Check size={13} className="text-maroon shrink-0" />}
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </>
               )}
             </div>
 
-            </div>          {/* Table */}
-          <div className="flex flex-col gap-3">
+            {/* Document Types Dropdown (clean document names only, no donut circle or progress bar) */}
+            <div className="relative z-20">
+              <button
+                type="button"
+                onClick={() => setOpenDropdown(openDropdown === 'type' ? null : 'type')}
+                className={`flex items-center justify-between gap-2 px-3.5 py-2 rounded-xl border bg-white text-fluid-12 text-text-main font-semibold outline-none cursor-pointer font-sans transition-all shadow-2xs max-w-72 ${
+                  openDropdown === 'type' ? 'border-maroon/50 ring-2 ring-maroon/10 shadow-xs' : 'border-border hover:border-maroon/30 hover:bg-surface/30'
+                }`}
+              >
+                <span className="truncate">{activeType === 'all' ? 'All Document Types' : activeType}</span>
+                <ChevronDown size={14} className={`text-text-muted transition-transform duration-200 shrink-0 ${openDropdown === 'type' ? 'rotate-180 text-maroon' : ''}`} />
+              </button>
+              {openDropdown === 'type' && (
+                <>
+                  <div className="fixed inset-0 z-40" onClick={() => setOpenDropdown(null)} />
+                  <div className="absolute right-0 top-full mt-1.5 w-max min-w-56 max-w-80 sm:max-w-96 bg-white rounded-2xl border border-border shadow-[0_12px_36px_rgba(0,0,0,0.12)] p-1.5 z-50 animate-fade-up max-h-72 overflow-y-auto overflow-x-hidden custom-scrollbar">
+                    <div
+                      onClick={() => { setActiveType('all'); setPage(1); setOpenDropdown(null); }}
+                      className={`px-3 py-2 rounded-xl cursor-pointer flex items-center justify-between gap-2 text-fluid-12 transition-colors ${
+                        activeType === 'all' ? 'bg-maroon/5 text-maroon font-bold' : 'text-text-main font-medium hover:bg-off-white'
+                      }`}
+                    >
+                      <span className="truncate">All Document Types</span>
+                      {activeType === 'all' && <Check size={13} className="text-maroon shrink-0" />}
+                    </div>
+                    {typeNames.map((name, i) => {
+                      const isActive = activeType === name
+                      return (
+                        <div
+                          key={i}
+                          onClick={() => { setActiveType(name); setPage(1); setOpenDropdown(null); }}
+                          className={`px-3 py-2 rounded-xl cursor-pointer flex items-center justify-between gap-2 text-fluid-12 transition-colors ${
+                            isActive ? 'bg-maroon/5 text-maroon font-bold' : 'text-text-main font-medium hover:bg-off-white'
+                          }`}
+                        >
+                          <span className="truncate" title={name}>{name}</span>
+                          {isActive && <Check size={13} className="text-maroon shrink-0" />}
+                        </div>
+                      )
+                    })}
+                  </div>
+                </>
+              )}
+            </div>
+
+            {/* Reset Filters button */}
+            {(activeType !== 'all' || statusFilter !== 'all' || search) && (
+              <button
+                type="button"
+                onClick={() => { setActiveType('all'); setStatusFilter('all'); setSearch(''); setPage(1); }}
+                className="flex items-center gap-1 px-2.5 py-1.5 text-fluid-11 font-bold text-text-muted hover:text-maroon cursor-pointer bg-transparent border-none transition-colors"
+              >
+                <XIcon size={13} />
+                <span>Reset filters</span>
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Table */}
+        <div className="flex flex-col gap-3">
             {/* Column headers */}
             <div className="hidden lg:grid grid-cols-[110px_1fr_180px_110px_40px] px-5 pb-2 pt-1 border-b border-border/60">
               {['Record ID', 'Student & Document', 'Dates', 'Status', ''].map(h => (
@@ -470,212 +581,192 @@ export default function AdminRegistrarRecordsPage() {
               </div>
             )}
           </div>
-        </div>
-
-        {/* Right: Sidebar */}
-        <div className="flex flex-col gap-4">
-
-          {/* Status Filter Panel */}
-          <div className="bg-white rounded-2xl border border-border p-5 shadow-sm">
-            <p className="text-fluid-11 font-bold text-gold uppercase tracking-widest m-0 mb-3">Filter by Status</p>
-            <div className="relative">
-              <button
-                onClick={() => setOpenDropdown(openDropdown === 'status' ? null : 'status')}
-                className="w-full flex items-center justify-between py-2.5 px-4 rounded-xl border border-border bg-white hover:border-maroon/30 transition-colors group"
-              >
-                <div className="flex items-center gap-2">
-                  <span className="text-fluid-13 font-semibold text-text-main">{statusFilter === 'all' ? 'All Statuses' : STATUS_CFG[statusFilter]?.label || statusFilter}</span>
-                  <span className="text-fluid-11 font-bold text-text-muted bg-surface group-hover:bg-off-white px-2 py-0.5 rounded-full transition-colors">
-                    {statusFilter === 'all' ? records.length : records.filter(r => r.status === statusFilter).length}
-                  </span>
-                </div>
-                <ChevronDown size={15} className={`text-text-muted transition-transform duration-200 ${openDropdown === 'status' ? 'rotate-180' : ''}`} />
-              </button>
-              
-              {openDropdown === 'status' && (
-                <>
-                  <div className="fixed inset-0 z-40" onClick={() => setOpenDropdown(null)} />
-                  <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-xl border border-border shadow-lg py-2 z-50 animate-fade-up" style={{ animationDuration: '0.2s' }}>
-                    {['all', 'completed', 'released', 'processing', 'pending', 'archived'].map(s => {
-                      const count = s === 'all' ? records.length : records.filter(r => r.status === s).length
-                      const label = s === 'all' ? 'All Statuses' : (STATUS_CFG[s]?.label || s)
-                      const isActive = statusFilter === s
-                      return (
-                        <div 
-                          key={s} 
-                          onClick={() => { setStatusFilter(s); setPage(1); setOpenDropdown(null); }}
-                          className={`px-4 py-2 text-fluid-13 font-medium cursor-pointer flex items-center justify-between transition-colors ${isActive ? 'bg-maroon/5 text-maroon' : 'text-text-main hover:bg-off-white'}`}
-                        >
-                          <div className="flex items-center gap-2">
-                             <div className={`w-3 h-3 rounded-full border flex items-center justify-center ${isActive ? 'border-maroon' : 'border-text-muted/40'}`}>
-                               {isActive && <div className="w-1.5 h-1.5 bg-maroon rounded-full" />}
-                             </div>
-                             <span>{label}</span>
-                          </div>
-                          <span className="text-fluid-11 font-bold text-text-muted bg-surface px-2 py-0.5 rounded-full">{count}</span>
-                        </div>
-                      )
-                    })}
-                  </div>
-                </>
-              )}
-            </div>
-          </div>
-
-          {/* Document Type Breakdown */}
-          <div className="bg-white rounded-2xl border border-border p-5 shadow-sm">
-            <p className="text-fluid-11 font-bold text-gold uppercase tracking-widest m-0 mb-3.5">Document Types</p>
-            {loading ? (
-              <div className="text-text-muted text-fluid-13 py-5 text-center">Loading…</div>
-            ) : (
-              <div className="relative">
-                <button
-                  onClick={() => setOpenDropdown(openDropdown === 'type' ? null : 'type')}
-                  className="w-full flex items-center justify-between py-2.5 px-4 rounded-xl border border-border bg-white text-fluid-13 text-text-main font-semibold hover:border-maroon/30 transition-colors"
-                >
-                  <span className="truncate pr-2">{activeType === 'all' ? 'All Documents' : activeType}</span>
-                  <ChevronDown size={15} className={`transition-transform duration-200 shrink-0 ${openDropdown === 'type' ? 'rotate-180' : ''}`} />
-                </button>
-                
-                {openDropdown === 'type' && (
-                  <>
-                    <div className="fixed inset-0 z-40" onClick={() => setOpenDropdown(null)} />
-                    <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-xl border border-border shadow-lg p-2 z-50 animate-fade-up flex flex-col gap-1 max-h-87.5 overflow-y-auto" style={{ animationDuration: '0.2s' }}>
-                      <div 
-                        onClick={() => { setActiveType('all'); setPage(1); setOpenDropdown(null); }}
-                        className={`p-2.5 rounded-lg cursor-pointer transition-colors ${activeType === 'all' ? 'bg-maroon/5 border border-maroon/20' : 'hover:bg-off-white border border-transparent'}`}
-                      >
-                        <div className="flex items-center gap-2">
-                          <div className={`w-3 h-3 rounded-full border flex items-center justify-center shrink-0 ${activeType === 'all' ? 'border-maroon' : 'border-text-muted/40'}`}>
-                            {activeType === 'all' && <div className="w-1.5 h-1.5 bg-maroon rounded-full" />}
-                          </div>
-                          <span className={`text-fluid-12 font-semibold ${activeType === 'all' ? 'text-maroon' : 'text-text-main'}`}>All Documents</span>
-                        </div>
-                      </div>
-                      {typeBreakdown.map((t, i) => {
-                        const isActive = activeType === t.name;
-                        return (
-                          <div 
-                            key={i} 
-                            onClick={() => { setActiveType(t.name); setPage(1); setOpenDropdown(null); }}
-                            className={`p-2.5 rounded-lg cursor-pointer transition-colors ${isActive ? 'bg-maroon/5 border border-maroon/20' : 'hover:bg-off-white border border-transparent'}`}
-                          >
-                            <div className="flex items-center justify-between mb-1">
-                              <div className="flex items-center gap-2">
-                                <div className={`w-3 h-3 rounded-full border flex items-center justify-center shrink-0 ${isActive ? 'border-maroon' : 'border-text-muted/40'}`}>
-                                  {isActive && <div className="w-1.5 h-1.5 bg-maroon rounded-full" />}
-                                </div>
-                                <span className={`text-fluid-12 font-semibold truncate ${isActive ? 'text-maroon' : 'text-text-main'}`}>{t.name}</span>
-                              </div>
-                              <span className="text-fluid-11 font-bold shrink-0" style={{ color: t.color }}>{t.pct}%</span>
-                            </div>
-                            <div className="w-full h-1 bg-surface rounded-full mt-1.5 mb-1 ml-5" style={{ width: 'calc(100% - 20px)' }}>
-                              <div className="h-1 rounded-full transition-[width] duration-600 ease-in-out" style={{ background: t.color, width: `${t.pct}%` }} />
-                            </div>
-                            <div className="text-fluid-10 text-text-muted ml-5 font-medium">{t.count.toLocaleString()} records</div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </>
-                )}
-              </div>
-            )}
-          </div>
-        </div>
       </div>
 
       {/* ── View Record Modal ── */}
       {viewingRecord && createPortal((
         <div className="fixed inset-0 z-99999 flex items-center justify-center p-4 sm:p-6 bg-black/50 overflow-y-auto animate-fade-in" onClick={() => setViewingRecord(null)}>
-          <div className="bg-white rounded-3xl w-full max-w-150 my-auto shadow-[0_25px_80px_rgba(0,0,0,0.18)] border border-border/80 overflow-hidden animate-fade-up relative flex flex-col" onClick={e => e.stopPropagation()}>
+          <div className="bg-white rounded-3xl w-full max-w-160 my-auto shadow-[0_25px_80px_rgba(0,0,0,0.18)] border border-border/80 overflow-hidden animate-fade-up relative flex flex-col" onClick={e => e.stopPropagation()}>
              {/* Decorative top accent bar */}
              <div className="h-1.5 w-full bg-linear-to-r from-maroon via-maroon-dark to-gold shrink-0" />
 
              {/* Header */}
-             <div className="p-6 sm:p-8 pb-4 sm:pb-5 border-b border-border/60 flex items-start justify-between bg-white relative">
+             <div className="p-6 sm:p-7 pb-4 sm:pb-5 border-b border-border/60 flex items-start justify-between bg-white relative">
                <div>
-                 <div className="flex items-center gap-2 mb-1.5">
+                 <div className="flex items-center gap-2 mb-1.5 flex-wrap">
                    <span className="text-fluid-10 font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-maroon-light text-maroon border border-maroon-border/60">
                      Registrar Record
                    </span>
                    <span className="text-fluid-11 font-mono font-semibold text-text-sub bg-surface px-2 py-0.5 rounded-md border border-border">
                      {viewingRecord.id}
                    </span>
+                   <StatusBadge status={viewingRecord.status} />
                  </div>
                  <h2 className="font-serif text-fluid-22 sm:text-fluid-24 font-bold text-text-main m-0">Record Details</h2>
                </div>
                <button 
                  onClick={() => setViewingRecord(null)}
-                 className="w-10 h-10 rounded-full border border-border/80 bg-surface flex items-center justify-center text-text-muted hover:text-text-main hover:bg-off-white transition-all cursor-pointer shrink-0"
+                 className="w-9 h-9 rounded-full border border-border/80 bg-surface flex items-center justify-center text-text-muted hover:text-text-main hover:bg-off-white transition-all cursor-pointer shrink-0"
                  title="Close"
                >
-                 <XIcon size={18} />
+                 <XIcon size={17} />
                </button>
              </div>
              
               {/* Body */}
-              <div className="p-5 sm:p-8 flex flex-col gap-6">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 sm:gap-6">
-                  {/* Student Info */}
-                  <div>
-                    <h3 className="text-fluid-11 font-bold text-text-muted uppercase tracking-[0.06em] m-0 mb-3">Student Information</h3>
-                    <div className="text-fluid-16 font-semibold text-text-main">{viewingRecord.student}</div>
-                    <div className="text-fluid-13 text-text-sub font-mono mt-1">ID: {viewingRecord.studentId}</div>
-                    <div className="text-fluid-13 text-text-sub mt-1">Course: BS Information Technology</div>
-                    <div className="text-fluid-13 text-text-sub mt-1">Year Level: 3rd Year</div>
+              <div className="p-5 sm:p-7 flex flex-col gap-5 max-h-[75vh] overflow-y-auto custom-scrollbar">
+                {/* Section 1: Student Information & Appointment Overview */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {/* Student Info Card */}
+                  <div className="bg-surface/40 p-4 rounded-2xl border border-border/70 flex flex-col justify-between">
+                    <div>
+                      <h3 className="text-fluid-10 font-extrabold text-text-muted uppercase tracking-[0.08em] m-0 mb-2">Student Information</h3>
+                      <div className="text-fluid-15 font-bold text-text-main">{viewingRecord.student}</div>
+                      <div className="text-fluid-12 text-text-sub font-mono mt-1">ID: {viewingRecord.studentId}</div>
+                      {viewingRecord.email && viewingRecord.email !== '—' && (
+                        <div className="text-fluid-12 text-text-sub mt-1 truncate" title={viewingRecord.email}>
+                          Email: {viewingRecord.email}
+                        </div>
+                      )}
+                    </div>
+                    <div className="mt-3 pt-2.5 border-t border-border/60 flex items-center justify-between flex-wrap gap-2">
+                      <div className="min-w-0 flex-1">
+                        <span className="text-fluid-10 font-bold text-text-muted uppercase block">Course</span>
+                        <span className="text-fluid-12 font-semibold text-text-main truncate block" title={viewingRecord.course}>
+                          {viewingRecord.course || 'General Student'}
+                        </span>
+                      </div>
+                      <div className="text-right shrink-0">
+                        <span className="text-fluid-10 font-bold text-text-muted uppercase block">Priority</span>
+                        <span className="text-fluid-10 font-bold px-2 py-0.5 rounded-full bg-gold-light text-gold border border-gold-border inline-block uppercase tracking-wider">
+                          {viewingRecord.priority_class || 'Regular'}
+                        </span>
+                      </div>
+                    </div>
                   </div>
-                  {/* Document Info */}
-                  <div>
-                    <h3 className="text-fluid-11 font-bold text-text-muted uppercase tracking-[0.06em] m-0 mb-3">
-                      {viewingRecord.selected_documents && viewingRecord.selected_documents.length > 1 ? `Documents (${viewingRecord.selected_documents.length})` : 'Document Details'}
+
+                  {/* Appointment Schedule Card */}
+                  <div className="bg-surface/40 p-4 rounded-2xl border border-border/70 flex flex-col justify-between">
+                    <div>
+                      <h3 className="text-fluid-10 font-extrabold text-text-muted uppercase tracking-[0.08em] m-0 mb-2">Appointment Schedule</h3>
+                      <div className="flex items-center gap-2">
+                        <Calendar size={14} className="text-maroon shrink-0" />
+                        <span className="text-fluid-13 font-bold text-text-main">{viewingRecord.appointmentDate}</span>
+                      </div>
+                      <div className="flex items-center gap-2 mt-1.5">
+                        <Clock size={14} className="text-gold shrink-0" />
+                        <span className="text-fluid-12 font-semibold text-text-sub">Slot: {viewingRecord.timeSlot}</span>
+                      </div>
+                      {viewingRecord.releaseDate && (
+                        <div className="text-fluid-11 text-text-sub mt-2 bg-white/80 p-2 rounded-lg border border-border">
+                          <span className="font-bold text-text-muted block">Target Release Date:</span>
+                          <span className="font-semibold text-success">{viewingRecord.releaseDate}</span>
+                        </div>
+                      )}
+                    </div>
+                    {viewingRecord.notes && (
+                      <div className="mt-3 pt-2 border-t border-border/60 text-fluid-11 text-text-muted italic">
+                        &ldquo;{viewingRecord.notes}&rdquo;
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Section 2: Requested Documents */}
+                <div className="bg-white p-4 rounded-2xl border border-border/70">
+                  <div className="flex items-center justify-between mb-2">
+                    <h3 className="text-fluid-10 font-extrabold text-text-muted uppercase tracking-[0.08em] m-0">
+                      Requested Documents ({viewingRecord.copies})
                     </h3>
-                    {viewingRecord.selected_documents && viewingRecord.selected_documents.length > 1 ? (
-                      <div className="flex flex-wrap gap-1.5 mb-2 mt-1">
-                        {viewingRecord.selected_documents.map((d, idx) => (
-                          <span key={d.id || idx} className="text-xs font-bold text-maroon bg-maroon-light py-0.5 px-2 rounded-md border border-maroon-border/40">
-                            {d.name}
+                  </div>
+                  {viewingRecord.selected_documents && viewingRecord.selected_documents.length > 1 ? (
+                    <div className="flex flex-wrap gap-2">
+                      {viewingRecord.selected_documents.map((d, idx) => (
+                        <span key={d.id || idx} className="text-fluid-12 font-bold text-maroon bg-maroon-light py-1 px-2.5 rounded-lg border border-maroon-border/40">
+                          {d.name}
+                        </span>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-fluid-14 font-bold text-text-main">{viewingRecord.type}</div>
+                  )}
+
+                  {/* Required Documents Checklist */}
+                  {viewingRecord.required_documents && viewingRecord.required_documents.length > 0 && (
+                    <div className="mt-3 pt-3 border-t border-border/60">
+                      <span className="text-fluid-10 font-bold text-text-muted uppercase block mb-1.5">Requirements Checklist</span>
+                      <div className="flex flex-wrap gap-1.5">
+                        {viewingRecord.required_documents.map((req, rIdx) => (
+                          <span key={rIdx} className="text-fluid-11 font-medium bg-surface text-text-sub py-0.5 px-2 rounded-md border border-border flex items-center gap-1">
+                            <CheckCircle size={12} className="text-success" />
+                            <span>{req}</span>
                           </span>
                         ))}
                       </div>
-                    ) : (
-                      <div className="text-fluid-15 font-semibold text-text-main">{viewingRecord.type}</div>
-                    )}
-                    <div className="text-fluid-13 text-text-sub mt-1">Total Documents: {viewingRecord.copies}</div>
-                  </div>
+                    </div>
+                  )}
                 </div>
 
                 <hr className="border-none border-t border-border m-0" />
 
-                {/* Timeline */}
+                {/* Section 3: Processing Timeline */}
                 <div>
-                   <h3 className="text-fluid-11 font-bold text-text-muted uppercase tracking-[0.06em] m-0 mb-4">Processing Timeline</h3>
-                   <div className="flex flex-col gap-5 relative">
+                   <h3 className="text-fluid-10 font-extrabold text-text-muted uppercase tracking-[0.08em] m-0 mb-3.5">Official Processing Timeline</h3>
+                   <div className="flex flex-col gap-4 relative pl-1">
                      {/* Connecting Line */}
-                     <div className="absolute left-1.75 top-2.5 bottom-2.5 w-0.5 bg-border" />
+                     <div className="absolute left-2.75 top-2.5 bottom-2.5 w-0.5 bg-border" />
                      
-                     <div className="flex gap-4 relative">
-                       <div className="w-4 h-4 rounded-full bg-white border-[3px] border-maroon z-10 mt-0.5" />
+                     {/* Step 1: Request Created */}
+                     <div className="flex gap-3.5 relative items-start">
+                       <div className="w-4 h-4 rounded-full bg-white border-[3px] border-maroon z-10 shrink-0 mt-0.5" />
                        <div>
-                         <div className="text-fluid-13 font-bold text-text-main">Request Submitted</div>
-                         <div className="text-fluid-12 text-text-muted mt-0.5">{viewingRecord.requested} • Verified via Student Portal</div>
+                         <div className="text-fluid-13 font-bold text-text-main">Request Created</div>
+                         <div className="text-fluid-11-5 text-text-muted mt-0.5">{viewingRecord.requested} • Logged via Student Portal</div>
                        </div>
                      </div>
                      
-                     <div className="flex gap-4 relative">
-                       <div className="w-4 h-4 rounded-full bg-white border-[3px] border-gold z-10 mt-0.5" />
+                     {/* Step 2: Scheduled Appointment */}
+                     <div className="flex gap-3.5 relative items-start">
+                       <div className="w-4 h-4 rounded-full bg-white border-[3px] border-gold z-10 shrink-0 mt-0.5" />
                        <div>
-                         <div className="text-fluid-13 font-bold text-text-main">Processing Started</div>
-                         <div className="text-fluid-12 text-text-muted mt-0.5">Reviewing clearance and generating document.</div>
+                         <div className="text-fluid-13 font-bold text-text-main">Appointment Scheduled</div>
+                         <div className="text-fluid-11-5 text-text-muted mt-0.5">Reserved for {viewingRecord.appointmentDate} ({viewingRecord.timeSlot})</div>
                        </div>
                      </div>
 
-                     {(viewingRecord.status === 'completed' || viewingRecord.status === 'released') && (
-                       <div className="flex gap-4 relative">
-                         <div className="w-4 h-4 rounded-full bg-white border-[3px] border-success z-10 mt-0.5" />
+                     {/* Step 3: Current Status & Fulfillment */}
+                     {viewingRecord.status === 'cancelled' ? (
+                       <div className="flex gap-3.5 relative items-start">
+                         <div className="w-4 h-4 rounded-full bg-white border-[3px] border-danger z-10 shrink-0 mt-0.5" />
                          <div>
-                           <div className="text-fluid-13 font-bold text-success">Ready for Release</div>
-                           <div className="text-fluid-12 text-text-muted mt-0.5">{viewingRecord.processed} • Available at Window 2</div>
+                           <div className="text-fluid-13 font-bold text-danger">Appointment Cancelled</div>
+                           <div className="text-fluid-11-5 text-text-muted mt-0.5">Appointment was cancelled before processing.</div>
+                         </div>
+                       </div>
+                     ) : (viewingRecord.status === 'completed' || viewingRecord.status === 'released') ? (
+                       <div className="flex gap-3.5 relative items-start">
+                         <div className="w-4 h-4 rounded-full bg-white border-[3px] border-success z-10 shrink-0 mt-0.5" />
+                         <div>
+                           <div className="text-fluid-13 font-bold text-success">Document Released / Fulfilled</div>
+                           <div className="text-fluid-11-5 text-text-muted mt-0.5">
+                             {viewingRecord.processed !== '—' ? `${viewingRecord.processed} • ` : ''}Transaction successfully finalized
+                           </div>
+                         </div>
+                       </div>
+                     ) : viewingRecord.status === 'processing' ? (
+                       <div className="flex gap-3.5 relative items-start">
+                         <div className="w-4 h-4 rounded-full bg-white border-[3px] border-gold z-10 shrink-0 mt-0.5 animate-pulse" />
+                         <div>
+                           <div className="text-fluid-13 font-bold text-gold">In Preparation</div>
+                           <div className="text-fluid-11-5 text-text-muted mt-0.5">Registrar staff currently reviewing requirements and preparing document.</div>
+                         </div>
+                       </div>
+                     ) : (
+                       <div className="flex gap-3.5 relative items-start">
+                         <div className="w-4 h-4 rounded-full bg-white border-[3px] border-border z-10 shrink-0 mt-0.5" />
+                         <div>
+                           <div className="text-fluid-13 font-bold text-text-sub">Awaiting Appointment Verification</div>
+                           <div className="text-fluid-11-5 text-text-muted mt-0.5">Student is scheduled to arrive at the Registrar Office on the appointment date.</div>
                          </div>
                        </div>
                      )}

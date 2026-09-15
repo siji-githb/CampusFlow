@@ -795,7 +795,7 @@ export default function MasterListPage() {
               {openDropdown === 'courseFilter' && (
                 <>
                   <div className="fixed inset-0 z-40" onClick={() => setOpenDropdown(null)} />
-                  <div className="absolute right-0 sm:left-0 top-full mt-2 bg-white rounded-xl border border-border shadow-xl p-2 z-50 min-w-65 max-w-[calc(100vw-2rem)] animate-fade-up max-h-75 overflow-y-auto custom-scrollbar" style={{ animationDuration: '0.15s' }}>
+                  <div className="absolute right-0 top-full mt-2 bg-white rounded-xl border border-border shadow-xl p-2 z-50 min-w-65 max-w-[calc(100vw-2rem)] animate-fade-up max-h-75 overflow-y-auto custom-scrollbar" style={{ animationDuration: '0.15s' }}>
                     {COURSE_FILTER_OPTIONS.map(c => {
                       const isActive = courseFilter === c.v
                       return (
