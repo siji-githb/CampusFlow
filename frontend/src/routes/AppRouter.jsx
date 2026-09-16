@@ -9,6 +9,7 @@ import Login from '../pages/auth/Login'
 import Register from '../pages/auth/Register'
 import ForgotPassword from '../pages/auth/ForgotPassword'
 import ResetPassword from '../pages/auth/ResetPassword'
+import VerifyEmailPage from '../pages/auth/VerifyEmailPage'
 import StudentPortalShell from '../pages/student/StudentPortalShell'
 import StaffDashboard from '../pages/staff/StaffDashboard'
 import AdminDashboard from '../pages/admin/AdminDashboard'
@@ -23,6 +24,7 @@ export default function AppRouter() {
         <Route path="/register" element={<PublicRoute><Register /></PublicRoute>} />
         <Route path="/forgot-password" element={<PublicRoute><ForgotPassword /></PublicRoute>} />
         <Route path="/reset-password" element={<PublicRoute><ResetPassword /></PublicRoute>} />
+        <Route path="/verify-email" element={<VerifyEmailPage />} />
 
         {/* Student Portal Shell (Instant 0ms cached navigation with visitedTabs) */}
         <Route path="/student" element={

@@ -1,8 +1,8 @@
 import { useState } from 'react'
 import { useNavigate, Link, useLocation } from 'react-router-dom'
 import { useAuth } from '../../context/useAuth'
-import { loginUser } from '../../services/authService'
-import { Eye, EyeOff, ChevronLeft, ChevronRight, Mail, Lock } from 'lucide-react'
+import { loginUser, resendVerification } from '../../services/authService'
+import { Eye, EyeOff, ChevronLeft, ChevronRight, Mail, Lock, RefreshCw } from 'lucide-react'
 import campusFlowLogo from '../../assets/logo.webp'
 import loginImage from '../../assets/login.webp'
 
@@ -12,30 +12,64 @@ export default function Login() {
   const { login } = useAuth()
   const [form, setForm] = useState({ email: localStorage.getItem('rememberedEmail') || '', password: '' })
   const [error, setError] = useState('')
+  const [isUnverified, setIsUnverified] = useState(false)
+  const [resendStatus, setResendStatus] = useState(null)
+  const [isResending, setIsResending] = useState(false)
   const [loading, setLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
   const [rememberMe, setRememberMe] = useState(!!localStorage.getItem('rememberedEmail'))
   const successMessage = location.state?.message
 
-  const handleChange = (e) => { setForm({ ...form, [e.target.name]: e.target.value }); setError('') }
+  const handleChange = (e) => { 
+    setForm({ ...form, [e.target.name]: e.target.value })
+    setError('')
+    setIsUnverified(false)
+    setResendStatus(null)
+  }
 
   const handleSubmit = async (e) => {
-    e.preventDefault(); setLoading(true); setError('')
+    e.preventDefault(); setLoading(true); setError(''); setIsUnverified(false); setResendStatus(null)
     try {
+      const emailToUse = form.email.trim()
       if (rememberMe) {
-        localStorage.setItem('rememberedEmail', form.email)
+        localStorage.setItem('rememberedEmail', emailToUse)
       } else {
         localStorage.removeItem('rememberedEmail')
       }
-      const result = await loginUser(form)
+      const result = await loginUser({ email: emailToUse, password: form.password })
       login(result.access_token, result.user, result.refresh_token)
       const role = result.user.role
       if (role === 'student') navigate('/student/dashboard')
       else if (role === 'staff') navigate('/staff/dashboard')
       else navigate('/admin/dashboard')
-    } catch (err) { setError(err.message) }
+    } catch (err) { 
+      const msg = err.message || ''
+      setError(msg)
+      if (msg.toLowerCase().includes('verified') || msg.toLowerCase().includes('activation link')) {
+        setIsUnverified(true)
+      }
+    }
     finally { setLoading(false) }
   }
+
+  const handleResend = async () => {
+    const emailToResend = form.email.trim()
+    if (!emailToResend || isResending) {
+      if (!emailToResend) setResendStatus({ type: 'error', text: 'Please enter your email address above first.' })
+      return
+    }
+    setIsResending(true)
+    setResendStatus(null)
+    try {
+      const res = await resendVerification(emailToResend)
+      setResendStatus({ type: 'success', text: res.message || 'Verification link sent! Check your inbox.' })
+    } catch (err) {
+      setResendStatus({ type: 'error', text: err.message || 'Failed to resend verification link.' })
+    } finally {
+      setIsResending(false)
+    }
+  }
+
 
   return (
     <div className="min-h-screen bg-slate-50 flex items-center justify-center p-3 sm:p-5 md:p-8 py-8 sm:py-12 font-sans relative overflow-y-auto">
@@ -124,11 +158,40 @@ export default function Login() {
               </div>
             )}
             {error && (
-              <div className="py-2.5 px-3.5 sm:py-3 sm:px-4 rounded-xl bg-red-50 border border-red-100 text-red-600 text-[12px] sm:text-[13px] font-medium mb-4 sm:mb-6 flex gap-2.5 items-center shadow-sm">
-                <span className="bg-red-100 text-red-500 rounded-full w-4.5 h-4.5 sm:w-5 sm:h-5 flex items-center justify-center text-[10px] font-bold shrink-0">!</span> 
-                {error}
-              </div>
+              isUnverified ? (
+                <div className="py-3 px-3.5 sm:py-3.5 sm:px-4 rounded-xl bg-amber-50 border border-amber-200/80 text-slate-800 text-[12px] sm:text-[13px] font-medium mb-4 sm:mb-6 shadow-xs">
+                  <div className="flex gap-2.5 items-start">
+                    <span className="bg-amber-100 text-amber-700 rounded-full w-4.5 h-4.5 sm:w-5 sm:h-5 flex items-center justify-center text-[10px] font-bold shrink-0 mt-0.5">!</span> 
+                    <div className="flex-1">
+                      <p className="text-amber-900 m-0 leading-relaxed font-semibold">{error}</p>
+                      <div className="mt-2.5 pt-2.5 border-t border-amber-200/60">
+                        {resendStatus ? (
+                          <p className={`font-bold m-0 text-[11.5px] ${resendStatus.type === 'error' ? 'text-red-600' : 'text-emerald-700'}`}>
+                            {resendStatus.text}
+                          </p>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={handleResend}
+                            disabled={isResending}
+                            className="inline-flex items-center gap-1.5 text-[11.5px] font-bold text-maroon hover:text-maroon-dark bg-transparent border-none p-0 cursor-pointer transition-colors"
+                          >
+                            {isResending ? <RefreshCw size={12} className="animate-spin" /> : <Mail size={12} />}
+                            Click here to resend verification email
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="py-2.5 px-3.5 sm:py-3 sm:px-4 rounded-xl bg-red-50 border border-red-100 text-red-600 text-[12px] sm:text-[13px] font-medium mb-4 sm:mb-6 flex gap-2.5 items-center shadow-sm">
+                  <span className="bg-red-100 text-red-500 rounded-full w-4.5 h-4.5 sm:w-5 sm:h-5 flex items-center justify-center text-[10px] font-bold shrink-0">!</span> 
+                  <span>{error}</span>
+                </div>
+              )
             )}
+
 
             <form onSubmit={handleSubmit}>
               <div className="mb-3.5 sm:mb-5">

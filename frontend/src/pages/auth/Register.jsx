@@ -1,7 +1,7 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
-import { registerUser, verifyStudent, requestStudentId } from '../../services/authService'
-import { Eye, EyeOff, ChevronLeft, ChevronRight, ChevronDown, Check, AlertTriangle, IdCard, User, Mail, Lock, GraduationCap } from 'lucide-react'
+import { registerUser, verifyStudent, requestStudentId, resendVerification } from '../../services/authService'
+import { Eye, EyeOff, ChevronLeft, ChevronRight, ChevronDown, Check, AlertTriangle, IdCard, User, Mail, Lock, GraduationCap, CheckCircle2, RefreshCw, Info } from 'lucide-react'
 import campusFlowLogo from '../../assets/logo.webp'
 import loginImage from '../../assets/login.webp'
 import TermsModal from '../../components/TermsModal'
@@ -108,6 +108,19 @@ export default function Register() {
   const [reqSuccess, setReqSuccess] = useState(false)
   const [termsAccepted, setTermsAccepted] = useState(false)
   const [showTerms, setShowTerms] = useState(false)
+  
+  // Email verification sent state
+  const [registeredEmail, setRegisteredEmail] = useState('')
+  const [resendCooldown, setResendCooldown] = useState(0)
+  const [resendMsg, setResendMsg] = useState('')
+
+  useEffect(() => {
+    if (resendCooldown <= 0) return
+    const interval = setInterval(() => {
+      setResendCooldown((prev) => prev - 1)
+    }, 1000)
+    return () => clearInterval(interval)
+  }, [resendCooldown])
 
   const handleChange = (e) => { setForm({ ...form, [e.target.name]: e.target.value }); setError('') }
 
@@ -136,11 +149,34 @@ export default function Register() {
       return
     }
     try {
-      await registerUser(form)
-      navigate('/login', { state: { message: 'Account created! Please sign in.' } })
+      const res = await registerUser(form)
+      if (res.requires_verification) {
+        setRegisteredEmail(form.email)
+        setStep(3)
+        setResendCooldown(60)
+      } else {
+        navigate('/login', { state: { message: 'Account created! Please sign in.' } })
+      }
     } catch (err) { setError(err.message) }
     finally { setLoading(false) }
   }
+
+  const handleResendLink = async () => {
+    if (resendCooldown > 0 || !registeredEmail) return
+    setLoading(true)
+    setResendMsg('')
+    setError('')
+    try {
+      const res = await resendVerification(registeredEmail)
+      setResendMsg(res.message || 'Verification link resent! Check your inbox.')
+      setResendCooldown(60)
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setLoading(false)
+    }
+  }
+
   
   const handleRequestId = async (e) => {
     e.preventDefault(); setLoading(true); setError(''); setReqSuccess(false);
@@ -301,6 +337,13 @@ export default function Register() {
                   </div>
                 )}
 
+                <div className="p-3 sm:p-3.5 rounded-xl bg-blue-50 border border-blue-100 text-blue-900 text-[12px] sm:text-[12.5px] mb-4 sm:mb-5 flex gap-2.5 items-start leading-relaxed">
+                  <Info size={16} className="text-blue-600 shrink-0 mt-0.5" />
+                  <div>
+                    <span className="font-semibold text-blue-950">Notice:</span> Please provide a legitimate, active email or Gmail account. The registrar will send your Student ID directly to this email.
+                  </div>
+                </div>
+
                 <div className="mb-3 sm:mb-4">
                   <label className={lblClass}>First Name</label>
                   <div className="relative flex items-center">
@@ -331,6 +374,10 @@ export default function Register() {
                     <Mail size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
                     <input type="email" name="email" value={form.email} onChange={handleChange} required placeholder="your@gmail.com" className={inpClass} />
                   </div>
+                  <p className="text-[11.5px] sm:text-[12px] text-slate-500 mt-1.5 flex items-center gap-1.5">
+                    <Info size={13} className="text-slate-400 shrink-0" />
+                    <span>Use an active Gmail or legitimate personal email address you can access.</span>
+                  </p>
                 </div>
                 <button type="submit" disabled={loading} className={btnClass}>
                   {loading ? <span className="spinner" /> : <>Submit Request <ChevronRight size={15} strokeWidth={2.5} /></>}
@@ -403,6 +450,73 @@ export default function Register() {
                 </button>
               </form>
             )}
+
+            {/* Step 3: Verification Sent / Check Your Inbox */}
+            {step === 3 && (
+              <div className="py-2 animate-fade-in text-center">
+                <div className="w-16 h-16 mx-auto rounded-full bg-maroon/5 border border-maroon/20 flex items-center justify-center text-maroon mb-4 shadow-xs">
+                  <Mail size={32} />
+                </div>
+
+                <span className="inline-block px-3 py-1 rounded-full bg-maroon/10 text-maroon text-[11px] font-extrabold uppercase tracking-wider mb-2">
+                  Action Required
+                </span>
+
+                <h2 className="font-serif text-2xl font-bold text-slate-800 mb-2">
+                  Verify Your Email
+                </h2>
+
+                <p className="text-[13px] sm:text-sm text-slate-600 mb-6 leading-relaxed">
+                  We've sent an activation link to <br />
+                  <strong className="text-slate-900 font-bold break-all">{registeredEmail}</strong>
+                </p>
+
+                {resendMsg && (
+                  <div className="py-2 px-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-medium mb-4 animate-fade-in">
+                    {resendMsg}
+                  </div>
+                )}
+
+                <div className="bg-slate-50 border border-slate-200/80 rounded-2xl p-4 sm:p-5 text-left mb-6 text-xs sm:text-[13px] text-slate-600 space-y-2.5">
+                  <div className="flex items-start gap-2.5">
+                    <span className="w-5 h-5 rounded-full bg-maroon text-white font-bold text-[10px] flex items-center justify-center shrink-0 mt-0.5">1</span>
+                    <span>Check your email inbox on your phone or computer.</span>
+                  </div>
+                  <div className="flex items-start gap-2.5">
+                    <span className="w-5 h-5 rounded-full bg-maroon text-white font-bold text-[10px] flex items-center justify-center shrink-0 mt-0.5">2</span>
+                    <span>Click the <strong>Verify Email & Go to Dashboard</strong> button.</span>
+                  </div>
+                  <div className="flex items-start gap-2.5">
+                    <span className="w-5 h-5 rounded-full bg-maroon text-white font-bold text-[10px] flex items-center justify-center shrink-0 mt-0.5">3</span>
+                    <span>You'll be instantly logged in and redirected to your dashboard!</span>
+                  </div>
+                </div>
+
+                <div className="space-y-3">
+                  <button
+                    type="button"
+                    onClick={handleResendLink}
+                    disabled={loading || resendCooldown > 0}
+                    className="w-full py-3 px-5 rounded-xl border border-slate-200 bg-white text-slate-700 text-xs sm:text-sm font-bold shadow-xs hover:bg-slate-50 hover:border-slate-300 transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {loading ? (
+                      <RefreshCw size={14} className="animate-spin text-maroon" />
+                    ) : resendCooldown > 0 ? (
+                      `Resend link in ${resendCooldown}s`
+                    ) : (
+                      <>
+                        <RefreshCw size={14} className="text-maroon" /> Resend Verification Link
+                      </>
+                    )}
+                  </button>
+
+                  <p className="text-[11.5px] text-slate-400 m-0">
+                    Didn't receive it? Please check your <strong>Spam</strong> or <strong>Junk</strong> folder.
+                  </p>
+                </div>
+              </div>
+            )}
+
 
             <div className="mt-5 sm:mt-8 pt-4 sm:pt-6 border-t border-slate-100 text-center">
               <p className="text-[12.5px] sm:text-[13.5px] text-slate-500 font-medium m-0">

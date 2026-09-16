@@ -11,9 +11,55 @@ from services.websocket_manager import manager
 settings = get_settings()
 
 
-async def register_user(data: RegisterRequest) -> dict:
+DISPOSABLE_EMAIL_DOMAINS = {
+    "mailinator.com", "10minutemail.com", "tempmail.com", "temp-mail.org", "guerrillamail.com",
+    "yopmail.com", "trashmail.com", "getairmail.com", "dispostable.com", "sharklasers.com",
+    "fakemailgenerator.com", "dropmail.me", "mohmal.com", "generator.email", "nada.ltd",
+    "crazymailing.com", "throwawaymail.com", "mytemp.email", "tempail.com", "burnerdelivery.com",
+    "discard.email", "inboxkitten.com", "mailcatch.com", "tempinbox.com", "burnermail.io"
+}
+
+def is_disposable_email(email: str) -> bool:
+    domain = email.split("@")[-1].lower().strip()
+    return domain in DISPOSABLE_EMAIL_DOMAINS
+
+def generate_verification_token(user_id: str, email: str) -> str:
+    from datetime import datetime, timedelta, timezone
+    from jose import jwt
+    payload = {
+        "sub": user_id,
+        "email": email,
+        "type": "email_verification",
+        "exp": datetime.now(timezone.utc) + timedelta(hours=24)
+    }
+    return jwt.encode(payload, settings.secret_key, algorithm=settings.algorithm)
+
+def generate_password_reset_token(user_id: str, email: str) -> str:
+    from datetime import datetime, timedelta, timezone
+    from jose import jwt
+    payload = {
+        "sub": user_id,
+        "email": email,
+        "type": "password_reset",
+        "exp": datetime.now(timezone.utc) + timedelta(hours=1)
+    }
+    return jwt.encode(payload, settings.secret_key, algorithm=settings.algorithm)
+
+def get_verification_url(token: str, base_url: str = None) -> str:
+    root = (base_url or settings.frontend_url).rstrip("/")
+    return f"{root}/verify-email?token={token}"
+
+
+async def register_user(data: RegisterRequest, base_url: str = None) -> dict:
     supabase = get_supabase_anon()
     admin = get_supabase_admin()
+    
+    # Check disposable email domains
+    if is_disposable_email(data.email):
+        raise HTTPException(
+            status_code=400,
+            detail="Disposable or temporary email addresses are not permitted. Please use your legitimate personal or school email address."
+        )
     
     # Explicitly check for duplicate email to return a clear error
     try:
@@ -30,11 +76,18 @@ async def register_user(data: RegisterRequest) -> dict:
     except Exception:
         pass
 
-    # Step 1: Create auth user in Supabase Auth
+    # Step 1: Create auth user in Supabase Auth with unverified metadata
     try:
         auth_response = supabase.auth.sign_up({
             "email": data.email,
             "password": data.password,
+            "options": {
+                "data": {
+                    "email_verified": False,
+                    "first_name": data.first_name,
+                    "last_name": data.last_name,
+                }
+            }
         })
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Auth error: {str(e)}")
@@ -71,11 +124,134 @@ async def register_user(data: RegisterRequest) -> dict:
         admin.auth.admin.delete_user(user_id)
         raise HTTPException(status_code=400, detail=f"Profile error: {str(e)}")
 
+    # Step 4: Generate verification token & dispatch branded activation email
+    token = generate_verification_token(user_id, data.email)
+    verify_url = get_verification_url(token, base_url)
+    student_name = f"{data.first_name} {data.last_name}".strip()
+
+    try:
+        from services.email_service import send_verification_email
+        send_verification_email(to_email=data.email, student_name=student_name, verification_url=verify_url)
+    except Exception as e:
+        print(f"[AUTH] Failed to send verification email to {data.email}: {e}")
+
     return {
-        "message": "Registration successful",
+        "message": "Registration successful! Please check your email to verify your account.",
+        "requires_verification": True,
         "user_id": user_id,
         "email": data.email,
     }
+
+
+async def verify_email_token(token: str) -> dict:
+    from jose import jwt, ExpiredSignatureError, JWTError
+    admin = get_supabase_admin()
+    supabase = get_supabase_anon()
+
+    try:
+        payload = jwt.decode(token, settings.secret_key, algorithms=[settings.algorithm])
+        if payload.get("type") != "email_verification":
+            raise HTTPException(status_code=400, detail="Invalid verification token type.")
+        user_id = payload.get("sub")
+        email = payload.get("email")
+        if not user_id or not email:
+            raise HTTPException(status_code=400, detail="Malformed verification token.")
+    except ExpiredSignatureError:
+        raise HTTPException(status_code=400, detail="The verification link has expired. Please request a new one.")
+    except JWTError:
+        raise HTTPException(status_code=400, detail="Invalid or corrupted verification link.")
+
+    # Mark user verified in Supabase Auth
+    try:
+        admin.auth.admin.update_user_by_id(
+            user_id,
+            {
+                "email_confirm": True,
+                "user_metadata": {
+                    "email_verified": True
+                }
+            }
+        )
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Failed to verify user: {str(e)}")
+
+    # Fetch user profile
+    try:
+        profile_response = admin.table("users").select("*").eq("id", user_id).single().execute()
+        profile = profile_response.data
+        if not profile:
+            raise HTTPException(status_code=404, detail="User profile not found")
+    except Exception:
+        raise HTTPException(status_code=404, detail="User profile not found")
+
+    from services.priority_service import sync_priority_status
+    sync_priority_status(user_id)
+
+    # Generate live login session for instant dashboard redirect
+    try:
+        link_res = admin.auth.admin.generate_link({"type": "magiclink", "email": email})
+        session = supabase.auth.verify_otp({"token_hash": link_res.properties.hashed_token, "type": "magiclink"})
+        access_token = session.session.access_token
+        refresh_token = session.session.refresh_token
+    except Exception as e:
+        # Fallback if magiclink session generation fails: user is verified, can log in with password
+        return {
+            "message": "Email verified successfully! Please sign in with your password.",
+            "already_logged_in": False,
+            "email": email
+        }
+
+    return {
+        "message": "Email verified successfully! Welcome to CampusFlow.",
+        "already_logged_in": True,
+        "access_token": access_token,
+        "refresh_token": refresh_token,
+        "token_type": "bearer",
+        "user": {
+            "id": user_id,
+            "email": profile["email"],
+            "first_name": profile["first_name"],
+            "last_name": profile["last_name"],
+            "role": profile["role"],
+            "priority_class": profile["priority_class"],
+            "student_id": profile.get("student_id"),
+            "course": profile.get("course"),
+            "profile_image": profile.get("profile_image"),
+        }
+    }
+
+
+async def resend_verification_email(email: str, base_url: str = None) -> dict:
+    admin = get_supabase_admin()
+
+    # Check if user exists in public.users
+    user_res = admin.table("users").select("*").eq("email", email).execute()
+    if not user_res.data:
+        raise HTTPException(status_code=404, detail="No account found with this email address.")
+
+    profile = user_res.data[0]
+    user_id = profile["id"]
+
+    # Check verification status in Supabase auth
+    try:
+        auth_res = admin.auth.admin.get_user_by_id(user_id)
+        auth_user = getattr(auth_res, "user", auth_res)
+        is_verified = (getattr(auth_user, "user_metadata", {}) or {}).get("email_verified")
+        if is_verified is True or getattr(auth_user, "email_confirmed_at", None):
+            raise HTTPException(status_code=400, detail="This email is already verified. You can sign in directly.")
+    except HTTPException:
+        raise
+    except Exception:
+        pass
+
+    token = generate_verification_token(user_id, email)
+    verify_url = get_verification_url(token, base_url)
+    student_name = f"{profile['first_name']} {profile['last_name']}".strip()
+
+    from services.email_service import send_verification_email
+    send_verification_email(to_email=email, student_name=student_name, verification_url=verify_url)
+
+    return {"message": f"A fresh verification link has been sent to {email}."}
 
 
 async def login_user(data: LoginRequest) -> dict:
@@ -95,6 +271,16 @@ async def login_user(data: LoginRequest) -> dict:
         raise HTTPException(status_code=401, detail="Invalid email or password")
 
     user_id = auth_response.user.id
+
+    # Check if user email is verified
+    # Existing users before this feature won't have email_verified == False, so only explicitly False is blocked
+    is_verified = (auth_response.user.user_metadata or {}).get("email_verified")
+    if is_verified is False:
+        raise HTTPException(
+            status_code=403,
+            detail="Your email address has not been verified yet. Please check your inbox for the activation link, or request a new one."
+        )
+
     access_token = auth_response.session.access_token
     refresh_token = auth_response.session.refresh_token
 
@@ -133,7 +319,6 @@ async def login_user(data: LoginRequest) -> dict:
             "course": profile.get("course"),
             "profile_image": profile.get("profile_image"),
         }
-
     }
 
 async def refresh_session(refresh_token: str) -> dict:
@@ -193,26 +378,61 @@ async def verify_student(student_id: str) -> dict:
         raise generic_error
 
 
-async def forgot_password(email: str) -> dict:
+async def forgot_password(email: str, base_url: str = None) -> dict:
     """
-    Triggers Supabase's built-in password reset flow.
-    Supabase sends an email with a magic link that includes a recovery token.
-    The redirect_to URL points the user back to the frontend's reset-password page.
+    Generates a secure, tamper-proof signed JWT recovery link and sends a
+    branded CampusFlow password reset email via Brevo.
+    This avoids Supabase's single-use OTP links being consumed by email security
+    scanners or expiring prematurely.
     """
-    supabase = get_supabase_anon()
+    import logging
+    logger = logging.getLogger(__name__)
     from config import get_settings
+    from services.email_service import send_password_reset_email
     settings = get_settings()
+    admin = get_supabase_admin()
+    
+    clean_email = email.strip().lower()
+
     try:
-        # Supabase handles the email sending; we just trigger it.
-        # The redirect URL tells Supabase where to send the user after they click the link.
-        frontend_url = settings.frontend_url.rstrip('/')
-        supabase.auth.reset_password_for_email(email, {
-            "redirect_to": f"{frontend_url}/reset-password"
-        })
-    except Exception:
+        # Check if user exists in public users table using ilike (case-insensitive)
+        user_res = admin.table("users").select("id, first_name, last_name, email").ilike("email", clean_email).maybe_single().execute()
+        user_data = user_res.data if user_res else None
+        
+        user_id = None
+        user_name = "CampusFlow User"
+        if user_data:
+            user_id = user_data.get("id")
+            first = user_data.get("first_name") or ""
+            last = user_data.get("last_name") or ""
+            full = f"{first} {last}".strip()
+            if full:
+                user_name = full
+        else:
+            # Fallback: check auth users directly
+            try:
+                auth_users = admin.auth.admin.list_users()
+                for u in auth_users:
+                    if u.email and u.email.lower() == clean_email:
+                        user_id = u.id
+                        break
+            except Exception:
+                pass
+
+        if user_id:
+            frontend_root = (base_url or settings.frontend_url).rstrip('/')
+            token = generate_password_reset_token(user_id, clean_email)
+            reset_url = f"{frontend_root}/reset-password?token={token}"
+
+            send_password_reset_email(to_email=clean_email, user_name=user_name, reset_url=reset_url)
+            logger.info(f"JWT password reset email dispatched via Brevo to {clean_email}")
+        else:
+            logger.info(f"Password reset requested for nonexistent email: {clean_email}")
+
+    except Exception as e:
+        logger.error(f"Error in forgot_password via Brevo: {str(e)}")
         # Intentionally swallow errors: we don't want to reveal whether
         # an email exists in the system (prevents account enumeration).
-        pass
 
     # Always return success to prevent email enumeration
     return {
@@ -222,24 +442,38 @@ async def forgot_password(email: str) -> dict:
 
 async def reset_password(access_token: str, new_password: str) -> dict:
     """
-    Uses the recovery access token from the Supabase magic link to identify the user,
-    then updates their password via the admin SDK.
+    Validates either our signed JWT recovery token or a Supabase access token,
+    then updates the user's password via the admin SDK.
     """
-    supabase = get_supabase_anon()
+    from jose import jwt, ExpiredSignatureError, JWTError
+    admin = get_supabase_admin()
+    user_id = None
 
-    # Step 1: Verify the recovery token is valid and identify the user
+    # Step 1: Check if access_token is our signed JWT password_reset token
     try:
-        user_response = supabase.auth.get_user(access_token)
-        if not user_response or not user_response.user:
-            raise HTTPException(status_code=401, detail="Invalid or expired reset link. Please request a new one.")
-        user_id = user_response.user.id
-    except HTTPException:
-        raise
-    except Exception:
+        payload = jwt.decode(access_token, settings.secret_key, algorithms=[settings.algorithm])
+        if payload.get("type") == "password_reset":
+            user_id = payload.get("sub")
+    except ExpiredSignatureError:
+        raise HTTPException(status_code=400, detail="This password reset link has expired. Please request a new one.")
+    except JWTError:
+        # Not a JWT or token invalid; fallback to Supabase access token check below
+        pass
+
+    # Step 2: Fallback to Supabase access token verification if not a JWT
+    if not user_id:
+        supabase = get_supabase_anon()
+        try:
+            user_response = supabase.auth.get_user(access_token)
+            if user_response and user_response.user:
+                user_id = user_response.user.id
+        except Exception:
+            pass
+
+    if not user_id:
         raise HTTPException(status_code=401, detail="Invalid or expired reset link. Please request a new one.")
 
-    # Step 2: Update password via admin SDK (bypasses needing a session)
-    admin = get_supabase_admin()
+    # Step 3: Update user's password via Supabase Admin SDK
     try:
         admin.auth.admin.update_user_by_id(user_id, {"password": new_password})
     except Exception as e:

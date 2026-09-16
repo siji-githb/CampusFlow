@@ -147,5 +147,28 @@ export const removeProfilePicture = async (token) => {
   return result
 }
 
+export const verifyEmail = async (token) => {
+  const response = await fetch(`${API_URL}/auth/verify-email`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ token }),
+  })
+  const result = await response.json()
+  if (!response.ok) throw new Error(result.detail || 'Email verification failed')
+  return result
+}
+
+export const resendVerification = async (email) => {
+  const response = await fetch(`${API_URL}/auth/resend-verification`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email }),
+  })
+  const result = await response.json()
+  if (!response.ok) throw new Error(result.detail || 'Failed to resend verification email')
+  return result
+}
+
+
 
 

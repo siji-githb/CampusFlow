@@ -1,6 +1,15 @@
 from fastapi import APIRouter, Request, Depends, UploadFile, File
-from models.auth_models import RegisterRequest, LoginRequest, RefreshRequest, ForgotPasswordRequest, ResetPasswordRequest, IdRequestCreate, UpdateProfileRequest, ChangePasswordRequest
-from services.auth_service import register_user, login_user, verify_student, refresh_session, forgot_password, reset_password, request_student_id, update_profile, change_password, logout_all, delete_account, update_profile_picture, remove_profile_picture
+from models.auth_models import (
+    RegisterRequest, LoginRequest, RefreshRequest, ForgotPasswordRequest,
+    ResetPasswordRequest, IdRequestCreate, UpdateProfileRequest, ChangePasswordRequest,
+    VerifyEmailRequest, ResendVerificationRequest
+)
+from services.auth_service import (
+    register_user, login_user, verify_student, refresh_session,
+    forgot_password, reset_password, request_student_id, update_profile,
+    change_password, logout_all, delete_account, update_profile_picture,
+    remove_profile_picture, verify_email_token, resend_verification_email
+)
 from rate_limit import limiter
 from deps import get_current_user
 
@@ -10,7 +19,20 @@ router = APIRouter(prefix="/auth", tags=["Authentication"])
 @router.post("/register")
 @limiter.limit("5/minute")
 async def register(request: Request, data: RegisterRequest):
-    return await register_user(data)
+    return await register_user(data, base_url=request.headers.get("origin"))
+
+
+@router.post("/verify-email")
+@limiter.limit("10/minute")
+async def handle_verify_email(request: Request, data: VerifyEmailRequest):
+    return await verify_email_token(data.token)
+
+
+@router.post("/resend-verification")
+@limiter.limit("3/minute")
+async def handle_resend_verification(request: Request, data: ResendVerificationRequest):
+    return await resend_verification_email(data.email, base_url=request.headers.get("origin"))
+
 
 
 @router.post("/login")
@@ -33,7 +55,8 @@ async def verify(student_id: str):
 @router.post("/forgot-password")
 @limiter.limit("3/minute")
 async def handle_forgot_password(request: Request, data: ForgotPasswordRequest):
-    return await forgot_password(data.email)
+    base_url = request.headers.get("origin") or None
+    return await forgot_password(data.email, base_url=base_url)
 
 
 @router.post("/reset-password")

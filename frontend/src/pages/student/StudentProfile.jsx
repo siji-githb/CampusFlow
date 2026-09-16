@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
+import DeleteAccountModal from '../../components/common/DeleteAccountModal'
 import { createPortal } from 'react-dom'
 import { Link } from 'react-router-dom'
 import StudentLayout from '../../components/layout/StudentLayout'
@@ -282,6 +283,7 @@ export default function StudentProfile({ embedded = false }) {
   
   const [isLoggingOutAll, setIsLoggingOutAll] = useState(false)
   const [isDeletingAccount, setIsDeletingAccount] = useState(false)
+  const [showDeleteModal, setShowDeleteModal] = useState(false)
 
   const handleLogoutAll = async () => {
     setIsLoggingOutAll(true)
@@ -295,16 +297,14 @@ export default function StudentProfile({ embedded = false }) {
   }
 
   const handleDeleteAccount = async () => {
-    if (!window.confirm("Are you absolutely sure you want to delete your account? This action cannot be undone.")) {
-      return
-    }
     setIsDeletingAccount(true)
     try {
       await deleteAccount(token)
       logout()
     } catch (err) {
-      alert(err.message || 'Failed to delete account')
+      toast.error(err.message || 'Failed to delete account')
       setIsDeletingAccount(false)
+      setShowDeleteModal(false)
     }
   }
 
@@ -798,9 +798,8 @@ export default function StudentProfile({ embedded = false }) {
                 <h4 className="text-[16px] font-bold text-text-main m-0 mb-1">Delete account</h4>
                 <p className="text-[13px] text-text-sub m-0">Once you delete your account, there is no going back. Please be certain.</p>
               </div>
-              <button onClick={handleDeleteAccount} disabled={isDeletingAccount} className="flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl border border-red-200 text-[14px] font-semibold text-red-600 bg-red-50 hover:bg-red-600 hover:text-white transition-colors shadow-sm cursor-pointer disabled:opacity-70 disabled:cursor-not-allowed w-full md:w-auto">
-                {isDeletingAccount ? <Loader2 size={16} className="animate-spin" /> : <Trash2 size={16} />} 
-                {isDeletingAccount ? 'Deleting...' : 'Delete account'}
+              <button onClick={() => setShowDeleteModal(true)} className="flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl border border-red-200 text-[14px] font-semibold text-red-600 bg-red-50 hover:bg-red-600 hover:text-white transition-colors shadow-sm cursor-pointer w-full md:w-auto">
+                <Trash2 size={16} /> Delete account
               </button>
             </div>
           </div>
@@ -989,6 +988,14 @@ export default function StudentProfile({ embedded = false }) {
           </div>
         </div>
       ), document.body)}
+
+      <DeleteAccountModal
+        isOpen={showDeleteModal}
+        onClose={() => { setShowDeleteModal(false); setIsDeletingAccount(false) }}
+        onConfirm={handleDeleteAccount}
+        isDeleting={isDeletingAccount}
+        userEmail={user?.email}
+      />
     </>
   );
 

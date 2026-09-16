@@ -12,10 +12,12 @@ export default function ForgotPassword() {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
+    const cleanEmail = email.trim()
+    if (!cleanEmail) return
     setLoading(true)
     setError('')
     try {
-      await forgotPassword(email)
+      await forgotPassword(cleanEmail)
       setSent(true)
     } catch (err) {
       setError(err.message)

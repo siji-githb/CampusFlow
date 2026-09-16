@@ -4,6 +4,10 @@ import { Eye, EyeOff, ChevronLeft, Lock, CheckCircle, ArrowRight, AlertCircle } 
 import { resetPassword } from '../../services/authService'
 import campusFlowLogo from '../../assets/logo.webp'
 
+// Module-level cache: survives React StrictMode's unmount→remount cycle
+// (component state and refs are reset between mounts, but module scope is not)
+let cachedResetToken = null
+
 export default function ResetPassword() {
   const navigate = useNavigate()
   const [password, setPassword] = useState('')
@@ -17,16 +21,38 @@ export default function ResetPassword() {
   const [tokenError, setTokenError] = useState(false)
 
   useEffect(() => {
+    // 1. Check URL query parameters (?token=... or ?access_token=...)
+    const searchParams = new URLSearchParams(window.location.search)
+    
+    // 2. Check URL hash parameters (#access_token=... or #error=...)
     const hash = window.location.hash.substring(1)
-    const params = new URLSearchParams(hash)
-    const token = params.get('access_token')
-    const type = params.get('type')
+    const hashParams = new URLSearchParams(hash)
 
-    if (token && type === 'recovery') {
+    // Check if an error was passed in URL (e.g. from Supabase redirect or link expiration)
+    const errorDesc = searchParams.get('error_description') || hashParams.get('error_description')
+    if (errorDesc) {
+      setError(decodeURIComponent(errorDesc).replace(/\+/g, ' '))
+      setTokenError(true)
+      return
+    }
+
+    const token = searchParams.get('token') || searchParams.get('access_token') || hashParams.get('access_token')
+
+    if (token) {
+      cachedResetToken = token
       setAccessToken(token)
+      // Clean up URL bar without reloading
       window.history.replaceState(null, '', window.location.pathname)
+    } else if (cachedResetToken) {
+      // StrictMode second mount: URL was already cleaned, use cached value
+      setAccessToken(cachedResetToken)
     } else {
       setTokenError(true)
+    }
+
+    return () => {
+      // Cleanup on unmount — but don't clear cachedResetToken here
+      // so the StrictMode remount can still access it
     }
   }, [])
 
@@ -106,7 +132,7 @@ export default function ResetPassword() {
                 Invalid or Expired Link
               </h1>
               <p className="text-[12.5px] sm:text-[13.5px] text-slate-500 m-0 mb-4 sm:mb-6 leading-relaxed">
-                This password reset link is invalid or has already expired. Please request a fresh reset link to continue.
+                {error || 'This password reset link is invalid or has already expired. Please request a fresh reset link to continue.'}
               </p>
               <Link
                 to="/forgot-password"

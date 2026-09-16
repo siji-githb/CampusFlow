@@ -1,4 +1,5 @@
 import { useState, useRef } from 'react'
+import DeleteAccountModal from '../../components/common/DeleteAccountModal'
 import { createPortal } from 'react-dom'
 import { useAuth } from '../../context/useAuth'
 import { useToast } from '../../context/ToastContext'
@@ -163,6 +164,7 @@ export default function AdminProfilePage({ setActiveNav }) {
   
   const [isLoggingOutAll, setIsLoggingOutAll] = useState(false)
   const [isDeletingAccount, setIsDeletingAccount] = useState(false)
+  const [showDeleteModal, setShowDeleteModal] = useState(false)
 
   const handleLogoutAll = async () => {
     setIsLoggingOutAll(true)
@@ -175,15 +177,7 @@ export default function AdminProfilePage({ setActiveNav }) {
     }
   }
 
-  const [deleteConfirmText, setDeleteConfirmText] = useState('')
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
-
-  const handleDeleteAccount = () => {
-    setShowDeleteConfirm(true)
-  }
-
   const handleConfirmDeleteAccount = async () => {
-    if (deleteConfirmText.trim().toUpperCase() !== 'DELETE') return
     setIsDeletingAccount(true)
     try {
       await deleteAccount(token)
@@ -191,8 +185,7 @@ export default function AdminProfilePage({ setActiveNav }) {
     } catch (err) {
       toast.error(err.message || 'Failed to delete account')
       setIsDeletingAccount(false)
-      setShowDeleteConfirm(false)
-      setDeleteConfirmText('')
+      setShowDeleteModal(false)
     }
   }
 
@@ -383,30 +376,10 @@ export default function AdminProfilePage({ setActiveNav }) {
                 <h4 className="text-fluid-16 font-bold text-text-main m-0 mb-1">Delete account</h4>
                 <p className="text-fluid-13 text-text-sub m-0">Permanently delete your account. This action is irreversible.</p>
               </div>
-              {!showDeleteConfirm ? (
-                <button onClick={handleDeleteAccount} disabled={isDeletingAccount} className="flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl border border-red-200 text-fluid-14 font-semibold text-red-600 bg-red-50 hover:bg-red-600 hover:text-white transition-colors shadow-sm cursor-pointer disabled:opacity-70 disabled:cursor-not-allowed w-full md:w-auto">
-                  <Trash2 size={16} /> 
-                  Delete account
-                </button>
-              ) : (
-                <div className="flex flex-col gap-3 w-full md:w-auto mt-4 md:mt-0">
-                  <input 
-                    type="text" 
-                    placeholder="Type DELETE to confirm" 
-                    value={deleteConfirmText} 
-                    onChange={e => setDeleteConfirmText(e.target.value)}
-                    className="w-full px-4 py-2.5 rounded-xl border border-border bg-white text-fluid-14 text-text-main focus:outline-none focus:border-maroon focus:ring-1 focus:ring-maroon transition-colors"
-                  />
-                  <div className="flex gap-2">
-                    <button onClick={() => { setShowDeleteConfirm(false); setDeleteConfirmText(''); }} disabled={isDeletingAccount} className="flex-1 px-4 py-2.5 rounded-xl border border-border text-fluid-14 font-semibold text-text-main bg-white hover:bg-gray-50 transition-colors shadow-sm cursor-pointer disabled:opacity-50">
-                      Cancel
-                    </button>
-                    <button onClick={handleConfirmDeleteAccount} disabled={isDeletingAccount || deleteConfirmText.trim().toUpperCase() !== 'DELETE'} className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-maroon text-white text-fluid-14 font-semibold hover:bg-maroon-dark transition-colors shadow-sm cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">
-                      {isDeletingAccount ? <><Loader2 size={16} className="animate-spin" /> Deleting</> : 'Confirm'}
-                    </button>
-                  </div>
-                </div>
-              )}
+              <button onClick={() => setShowDeleteModal(true)} className="flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl border border-red-200 text-fluid-14 font-semibold text-red-600 bg-red-50 hover:bg-red-600 hover:text-white transition-colors shadow-sm cursor-pointer w-full md:w-auto">
+                <Trash2 size={16} />
+                Delete account
+              </button>
             </div>
           </div>
           
@@ -501,6 +474,14 @@ export default function AdminProfilePage({ setActiveNav }) {
           </div>
         </div>
       ), document.body)}
+
+      <DeleteAccountModal
+        isOpen={showDeleteModal}
+        onClose={() => { setShowDeleteModal(false); setIsDeletingAccount(false) }}
+        onConfirm={handleConfirmDeleteAccount}
+        isDeleting={isDeletingAccount}
+        userEmail={user?.email}
+      />
     </>
   )
 }

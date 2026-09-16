@@ -278,10 +278,10 @@ export default function AdminRegistrarRecordsPage() {
       {/* ── Records Table Section ── */}
       <div className="animate-fade-up w-full" style={{ animationDelay: '0.5s' }}>
 
-        {/* Search & Filter Controls (Side-by-side next to each other) */}
-        <div className="mb-4 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
+        {/* Search Bar & Filters (Filters placed directly below search bar) */}
+        <div className="mb-5 flex flex-col gap-3 items-start">
           {/* Search (shortened width) */}
-          <div className="relative w-full md:w-80 shrink-0">
+          <div className="relative w-full max-w-sm sm:max-w-md">
             <input
               value={search} onChange={e => { setSearch(e.target.value); setPage(1) }}
               placeholder="Search by student, ID, record…"
@@ -293,7 +293,7 @@ export default function AdminRegistrarRecordsPage() {
             )}
           </div>
 
-          {/* Filters next to Search Bar */}
+          {/* Filters Bar (Directly below search bar) */}
           <div className="flex items-center gap-2.5 flex-wrap">
             {/* Filter by Status Dropdown */}
             <div className="relative z-20">
@@ -354,7 +354,7 @@ export default function AdminRegistrarRecordsPage() {
               {openDropdown === 'type' && (
                 <>
                   <div className="fixed inset-0 z-40" onClick={() => setOpenDropdown(null)} />
-                  <div className="absolute right-0 top-full mt-1.5 w-max min-w-56 max-w-80 sm:max-w-96 bg-white rounded-2xl border border-border shadow-[0_12px_36px_rgba(0,0,0,0.12)] p-1.5 z-50 animate-fade-up max-h-72 overflow-y-auto overflow-x-hidden custom-scrollbar">
+                  <div className="absolute left-0 top-full mt-1.5 w-max min-w-56 max-w-80 sm:max-w-96 bg-white rounded-2xl border border-border shadow-[0_12px_36px_rgba(0,0,0,0.12)] p-1.5 z-50 animate-fade-up max-h-72 overflow-y-auto overflow-x-hidden custom-scrollbar">
                     <div
                       onClick={() => { setActiveType('all'); setPage(1); setOpenDropdown(null); }}
                       className={`px-3 py-2 rounded-xl cursor-pointer flex items-center justify-between gap-2 text-fluid-12 transition-colors ${
