@@ -1011,7 +1011,7 @@ export default function MyAppointments({ embedded = false }) {
                               {appt.selected_documents.length} Requested Documents
                             </h3>
                           ) : (
-                            <h3 className="font-serif text-[15.5px] font-bold text-text-main m-0 group-hover:text-maroon transition-colors leading-snug truncate">
+                            <h3 className="font-serif text-[15.5px] font-bold text-text-main m-0 group-hover:text-maroon transition-colors leading-snug line-clamp-2">
                               {(appt.selected_documents?.[0]?.name || appt.transaction_types?.name || 'Transaction')?.replace(/([a-zA-Z])\(/g, '$1 (')}
                             </h3>
                           )}
@@ -1081,7 +1081,7 @@ export default function MyAppointments({ embedded = false }) {
 
                 {/* ── Pagination Controls ── */}
                 {totalPages > 1 && (
-                  <div className="flex items-center justify-between pt-3 mt-1 border-t border-border/80 flex-wrap gap-2">
+                  <div className="flex flex-col sm:flex-row items-center justify-between pt-3 mt-1 border-t border-border/80 gap-2.5">
                     <span className="text-[12px] font-semibold text-text-muted">
                       Page <strong className="text-text-main font-bold">{currentPage}</strong> of <strong className="text-text-main font-bold">{totalPages}</strong>
                     </span>

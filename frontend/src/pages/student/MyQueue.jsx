@@ -80,7 +80,7 @@ function EmptyQueueState({
         {todayAppt && (
           <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-gold-light border border-gold-border text-gold-dark text-[11.5px] font-bold mb-6">
             <span className="w-2 h-2 rounded-full bg-gold animate-pulse shrink-0" />
-            <span className="truncate">Today at {fmt12h(todayAppt.time_slot)} · {todayAppt.transaction_types?.name || 'Document Transaction'}</span>
+            <span className="truncate">Today at {fmt12h(todayAppt.time_slot)} · {(todayAppt.transaction_types?.name || 'Document Transaction')?.replace(/([a-zA-Z])\(/g, '$1 (')}</span>
           </div>
         )}
 
@@ -484,14 +484,14 @@ export default function MyQueue({ embedded = false }) {
                       {ticket.appointments.selected_documents.map((d, idx) => (
                         <span key={d.id || idx} className="text-xs sm:text-[12.5px] font-bold text-text-main bg-surface px-3 py-1.5 rounded-xl border border-border/80 shadow-2xs flex items-center gap-2">
                           <span className="w-1.5 h-1.5 rounded-full bg-maroon shrink-0" />
-                          {d.name}
+                          {d.name?.replace(/([a-zA-Z])\(/g, '$1 (')}
                         </span>
                       ))}
                     </div>
                   ) : (
                     <div className="text-xs sm:text-[12.5px] font-bold text-text-main bg-surface px-3.5 py-1.5 rounded-xl border border-border/80 inline-flex items-center gap-2 shadow-2xs">
                       <span className="w-1.5 h-1.5 rounded-full bg-maroon shrink-0" />
-                      {ticket.appointments?.transaction_types?.name || ticket.transaction_type || 'Registrar Service'}
+                      {(ticket.appointments?.transaction_types?.name || ticket.transaction_type || 'Registrar Service')?.replace(/([a-zA-Z])\(/g, '$1 (')}
                     </div>
                   )}
                 </div>
@@ -767,7 +767,7 @@ export default function MyQueue({ embedded = false }) {
                                         {/* Document & Window info */}
                                         <div className="relative z-10 bg-off-white/80 p-3 sm:p-4 rounded-xl border border-border">
                                           <p className="text-[13.5px] sm:text-[15px] font-bold text-text-main m-0 mb-1 leading-snug truncate">
-                                            {ticket.appointments?.transaction_types?.name || 'Document'}
+                                            {(ticket.appointments?.transaction_types?.name || 'Document')?.replace(/([a-zA-Z])\(/g, '$1 (')}
                                           </p>
                                           <p className="text-xs sm:text-[12.5px] text-text-sub m-0 font-medium">
                                             Pickup Location: <span className="text-maroon font-bold">{releaseWindow}</span>

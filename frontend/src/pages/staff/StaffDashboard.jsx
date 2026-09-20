@@ -559,8 +559,8 @@ export default function StaffDashboard() {
                   )}
                 </div>
                 <div className="hidden sm:flex items-center gap-1.5 mr-1">
-                  <span className="text-fluid-14 font-bold text-text-main font-sans">
-                    {user?.first_name || 'Staff'}
+                  <span className="text-fluid-14 font-bold text-text-main font-sans max-w-45 sm:max-w-55 truncate" title={[user?.first_name, user?.last_name].filter(Boolean).join(' ') || user?.name || 'Staff'}>
+                    {[user?.first_name, user?.last_name].filter(Boolean).join(' ') || user?.name || 'Staff'}
                   </span>
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={`text-text-sub transition-transform duration-300 ${profileOpen ? 'rotate-180' : ''}`}>
                     <polyline points="6 9 12 15 18 9"></polyline>

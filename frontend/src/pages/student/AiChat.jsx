@@ -388,10 +388,7 @@ export default function AiChat({ asWidget, headless, onClose, initialQuery }) {
     }
   }
 
-  const hasDailyLimit = messages.some(m => 
-    (m.isLimitError && m.limitType === 'daily') || 
-    (m.role === 'assistant' && typeof m.content === 'string' && m.content.toLowerCase().includes('daily message limit reached'))
-  )
+  const hasDailyLimit = messages.some(m => m.isLimitError && m.limitType === 'daily')
 
   const handleClear = async () => {
     setShowConfirm(false)
@@ -426,7 +423,7 @@ export default function AiChat({ asWidget, headless, onClose, initialQuery }) {
 
         <div className="flex flex-col gap-5">
           {messages.map((msg, i) => {
-            const isLimit = msg.isLimitError || (msg.role === 'assistant' && typeof msg.content === 'string' && msg.content.toLowerCase().includes('daily message limit reached'))
+            const isLimit = msg.isLimitError
             return (
               <div key={i} className={`flex items-end gap-2.5 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                 {msg.role === 'assistant' && (

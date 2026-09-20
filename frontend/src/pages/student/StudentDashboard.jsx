@@ -11,12 +11,14 @@ import GlobalSearch from '../../components/GlobalSearch';
 
 // ── Status Styles ──
 const STATUS_STYLES = {
-  confirmed:   { bg: '#F0FDF4', color: '#15803D', border: '#BBF7D0' },
-  completed:   { bg: '#EFF6FF', color: '#1D4ED8', border: '#BFDBFE' },
-  cancelled:   { bg: '#FEF2F2', color: '#DC2626', border: '#FECACA' },
-  pending:     { bg: '#FDF6E3', color: '#B8900A', border: '#FDE68A' },
-  in_progress: { bg: '#FDF6E3', color: '#B8900A', border: '#FDE68A' },
-  no_show:     { bg: '#F9F9F9', color: '#A8A29E', border: '#EAE7E2' },
+  confirmed:         { bg: '#EFF6FF', color: '#1D4ED8', border: '#BFDBFE', label: 'Confirmed' },
+  completed:         { bg: '#F0FDF4', color: '#15803D', border: '#BBF7D0', label: 'Completed' },
+  cancelled:         { bg: '#FEF2F2', color: '#DC2626', border: '#FECACA', label: 'Cancelled' },
+  pending:           { bg: '#FEFCE8', color: '#854D0E', border: '#FEF08A', label: 'Pending' },
+  in_progress:       { bg: '#FEFCE8', color: '#854D0E', border: '#FEF08A', label: 'Serving' },
+  no_show:           { bg: '#F9FAFB', color: '#6B7280', border: '#E5E7EB', label: 'No Show' },
+  ready_for_pickup:  { bg: '#F0FDF4', color: '#15803D', border: '#BBF7D0', label: 'Ready' },
+  scheduled_release: { bg: '#FEFCE8', color: '#854D0E', border: '#FEF08A', label: 'Scheduled' },
 };
 
 
@@ -61,6 +63,7 @@ export default function StudentDashboard({ embedded = false }) {
 
       const formatTime12 = (t) => {
         if (!t) return '';
+        if (t.includes('AM') || t.includes('PM') || t.includes('am') || t.includes('pm')) return t;
         const parts = t.split(':');
         if (parts.length < 2) return t;
         const h = parseInt(parts[0], 10);
@@ -110,7 +113,7 @@ export default function StudentDashboard({ embedded = false }) {
           isCounterActive: !!isCounterActive,
           current_step: stepLabel,
           transaction_type: (qData.ticket.appointments?.selected_documents && qData.ticket.appointments.selected_documents.length > 1)
-            ? `${qData.ticket.appointments.selected_documents.length} Documents (${qData.ticket.appointments.selected_documents.map(d => cleanDocName(d.name)).join(', ')})`
+            ? `${qData.ticket.appointments.selected_documents.length} Documents (${qData.ticket.appointments.selected_documents.map(d => cleanDocName(typeof d === 'string' ? d : (d?.name || ''))).join(', ')})`
             : cleanDocName(qData.ticket.appointments?.transaction_types?.name || 'Registrar')
         });
       } else {
@@ -130,16 +133,25 @@ export default function StudentDashboard({ embedded = false }) {
           }
           return a.appointment_date >= today;
         })
+        .sort((a, b) => {
+          const dateDiff = (a.appointment_date || '').localeCompare(b.appointment_date || '');
+          if (dateDiff !== 0) return dateDiff;
+          return (a.time_slot || '').localeCompare(b.time_slot || '');
+        })
         .slice(0, 3)
         .map(a => {
-          const docNamesList = (a.selected_documents && a.selected_documents.length > 0)
-            ? a.selected_documents.map(d => cleanDocName(d.name))
+          const selectedDocs = a.selected_documents || [];
+          const hasMultipleDocs = selectedDocs.length > 1;
+          const docNamesList = (selectedDocs.length > 0)
+            ? selectedDocs.map(d => cleanDocName(typeof d === 'string' ? d : (d?.name || '')))
             : [cleanDocName(a.transaction_types?.name || 'Registrar Transaction')];
 
           return {
             id: a.id,
             type: docNamesList.join(', '),
             primaryDoc: docNamesList[0] || 'Registrar Transaction',
+            hasMultipleDocs,
+            selected_documents: selectedDocs,
             docCount: docNamesList.length,
             step: 'Registrar',
             appointment_date: a.appointment_date,
@@ -385,11 +397,11 @@ export default function StudentDashboard({ embedded = false }) {
         </div>
 
         {/* ── Main Content Grid: Upcoming Appointments + Live Queue ── */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8 items-start">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8 items-stretch">
           
           {/* Upcoming Appointments */}
           <div 
-            className="animate-fade-up min-w-0 w-full bg-white rounded-[20px] p-5 sm:p-6 lg:p-7 shadow-[0_8px_30px_rgba(0,0,0,0.02),0_0_0_1px_rgba(123,26,42,0.04)]"
+            className="animate-fade-up min-w-0 w-full bg-white rounded-[20px] p-5 sm:p-6 lg:p-7 shadow-[0_8px_30px_rgba(0,0,0,0.02),0_0_0_1px_rgba(123,26,42,0.04)] flex flex-col h-full"
             style={{ animationDelay: '0.3s' }}
           >
             <div className="flex justify-between items-end mb-4 lg:mb-5 gap-2">
@@ -411,7 +423,7 @@ export default function StudentDashboard({ embedded = false }) {
             </div>
 
             {loading ? (
-              <div className="flex flex-col gap-3">
+              <div className="flex flex-col gap-3 flex-1">
                 {[1, 2, 3].map(i => (
                   <div key={i} className="p-4 rounded-2xl border border-border bg-off-white flex justify-between items-center">
                     <div className="flex items-center gap-4">
@@ -426,7 +438,7 @@ export default function StudentDashboard({ embedded = false }) {
                 ))}
               </div>
             ) : appointments.length > 0 ? (
-              <div className="flex flex-col gap-3">
+              <div className="flex flex-col gap-3 flex-1">
                 {appointments.map(apt => (
                   <div 
                     key={apt.id} 
@@ -441,7 +453,7 @@ export default function StudentDashboard({ embedded = false }) {
                     }}
                     className="group relative flex justify-between items-center p-3.5 sm:p-4 rounded-2xl border border-border bg-off-white/80 hover:bg-white hover:border-maroon/35 transition-all duration-300 ease-out cursor-pointer shadow-2xs hover:shadow-[0_10px_26px_rgba(123,26,42,0.08)] hover:-translate-y-0.5 active:scale-[0.995]"
                   >
-                    <div className="flex items-center gap-3 sm:gap-4 flex-1 min-w-0">
+                    <div className="flex items-center gap-2.5 sm:gap-3.5 flex-1 min-w-0">
                       {/* Document Icon Badge */}
                       <div className="w-9.5 h-9.5 sm:w-11 sm:h-11 rounded-xl text-maroon bg-maroon-light border border-maroon-border/40 flex items-center justify-center shrink-0 group-hover:scale-105 group-hover:bg-maroon group-hover:text-white transition-all duration-300 shadow-2xs">
                         <ClipboardList size={18} className="sm:w-5 sm:h-5" />
@@ -449,19 +461,30 @@ export default function StudentDashboard({ embedded = false }) {
                       
                       {/* Document Info */}
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-1.5 flex-wrap mb-1">
-                          <h3 
-                            className="text-[12.5px] sm:text-[13.5px] font-semibold sm:font-bold text-text-main group-hover:text-maroon transition-colors duration-200 m-0 leading-snug line-clamp-1 sm:line-clamp-2"
-                            title={apt.type}
-                          >
-                            {apt.type}
-                          </h3>
-                          {apt.docCount > 1 && (
-                            <span className="text-[10px] font-extrabold px-1.5 py-0.5 rounded-full bg-maroon-light text-maroon border border-maroon-border/50 shrink-0 whitespace-nowrap">
-                              {apt.docCount} Docs
-                            </span>
-                          )}
-                        </div>
+                        {apt.hasMultipleDocs ? (
+                          <div className="mb-1.5">
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <h3 className="text-[13px] sm:text-[14px] font-bold text-text-main group-hover:text-maroon transition-colors duration-200 m-0 leading-snug">
+                                {apt.docCount} Requested Documents
+                              </h3>
+                              <span className="text-[9.5px] sm:text-[10px] font-extrabold px-1.5 py-0.5 rounded-full bg-maroon-light text-maroon border border-maroon-border/50 shrink-0 whitespace-nowrap">
+                                {apt.docCount} Docs
+                              </span>
+                            </div>
+                            <p className="text-[11px] sm:text-[12px] text-text-sub truncate m-0 mt-0.5 leading-tight" title={apt.type}>
+                              {apt.type}
+                            </p>
+                          </div>
+                        ) : (
+                          <div className="mb-1.5">
+                            <h3 
+                              className="text-[13px] sm:text-[14px] font-bold text-text-main group-hover:text-maroon transition-colors duration-200 m-0 leading-snug line-clamp-2 wrap-break-word"
+                              title={apt.primaryDoc}
+                            >
+                              {apt.primaryDoc}
+                            </h3>
+                          </div>
+                        )}
                         <div className="flex flex-wrap gap-1.5 sm:gap-2 items-center text-[10.5px] sm:text-[12px]">
                           <span className={`py-0.5 px-2 rounded-md font-semibold flex items-center gap-1.5 shadow-2xs ${
                             apt.isToday 
@@ -483,18 +506,18 @@ export default function StudentDashboard({ embedded = false }) {
                     </div>
 
                     {/* Status & Click Affordance */}
-                    <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0 ml-2 sm:ml-3">
+                    <div className="flex flex-col items-center justify-center gap-1.5 shrink-0 ml-2.5 sm:ml-3.5">
                       <span 
-                        className="text-[9.5px] sm:text-[10.5px] font-extrabold py-0.5 sm:py-1 px-2 sm:px-2.5 rounded-full uppercase tracking-wider shadow-2xs whitespace-nowrap"
+                        className="text-[9.5px] sm:text-[10px] font-extrabold py-0.5 px-2.5 rounded-full uppercase tracking-wider shadow-2xs whitespace-nowrap text-center"
                         style={{
-                          background: STATUS_STYLES[apt.status]?.bg || '#F0FDF4',
-                          color: STATUS_STYLES[apt.status]?.color || '#15803D',
-                          border: `1.5px solid ${STATUS_STYLES[apt.status]?.border || '#BBF7D0'}`,
+                          background: STATUS_STYLES[apt.status]?.bg || '#EFF6FF',
+                          color: STATUS_STYLES[apt.status]?.color || '#1D4ED8',
+                          border: `1.5px solid ${STATUS_STYLES[apt.status]?.border || '#BFDBFE'}`,
                         }}
                       >
-                        {apt.status === 'in_progress' ? 'Serving' : apt.status}
+                        {STATUS_STYLES[apt.status]?.label || apt.status}
                       </span>
-                      <div className="w-6.5 h-6.5 sm:w-7.5 sm:h-7.5 rounded-full bg-white border border-border/70 flex items-center justify-center text-text-muted group-hover:bg-maroon-light group-hover:text-maroon group-hover:border-maroon-border/40 transition-all duration-200 shrink-0 shadow-2xs">
+                      <div className="w-6.5 h-6.5 sm:w-7 sm:h-7 rounded-full bg-white border border-border/70 flex items-center justify-center text-text-muted group-hover:bg-maroon-light group-hover:text-maroon group-hover:border-maroon-border/40 transition-all duration-200 shrink-0 shadow-2xs">
                         <ChevronRight size={13} className="sm:w-3.5 sm:h-3.5 transition-transform duration-200 group-hover:translate-x-0.5" />
                       </div>
                     </div>
@@ -586,19 +609,19 @@ export default function StudentDashboard({ embedded = false }) {
                 </div>
               )
             ) : (
-              <div className="relative text-center p-6 sm:p-8 flex-1 flex flex-col justify-center items-center bg-off-white/60 rounded-2xl border border-dashed border-border overflow-hidden transition-all duration-300">
+              <div className="relative text-center p-5 sm:p-6 flex-1 flex flex-col justify-center items-center bg-off-white/60 rounded-2xl border border-dashed border-border overflow-hidden transition-all duration-300 min-h-35">
                 {/* Decorative background blobs */}
                 <div className="absolute top-0 right-0 w-32 h-32 bg-maroon-light rounded-full blur-3xl opacity-40 -translate-y-1/2 translate-x-1/2 pointer-events-none" />
                 <div className="absolute bottom-0 left-0 w-24 h-24 bg-gold-light rounded-full blur-2xl opacity-40 translate-y-1/2 -translate-x-1/2 pointer-events-none" />
                 
                 {/* Icon wrapper */}
-                <div className="relative z-10 w-14 h-14 bg-white rounded-2xl shadow-2xs border border-border flex items-center justify-center mb-3.5">
-                  <Ticket size={24} className="text-maroon/70" />
+                <div className="relative z-10 w-11 h-11 sm:w-12 sm:h-12 bg-white rounded-2xl shadow-2xs border border-border flex items-center justify-center mb-2.5">
+                  <Ticket size={22} className="text-maroon/70" />
                 </div>
                 
                 {/* Typography */}
-                <h3 className="relative z-10 font-serif text-[16px] sm:text-[18px] font-bold text-text-main m-0 mb-1.5 tracking-tight">No Active Queue Ticket</h3>
-                <p className="relative z-10 text-[12px] sm:text-[13px] m-0 text-text-sub max-w-sm leading-relaxed">There's no active queue ticket at the moment. Active tickets appear here once called.</p>
+                <h3 className="relative z-10 font-serif text-[15px] sm:text-[17px] font-bold text-text-main m-0 mb-1 tracking-tight">No Active Queue Ticket</h3>
+                <p className="relative z-10 text-[11.5px] sm:text-[12.5px] m-0 text-text-sub max-w-xs leading-relaxed">There's no active queue ticket at the moment. Active tickets appear here once called.</p>
               </div>
             )}
           </div>

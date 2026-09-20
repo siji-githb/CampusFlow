@@ -663,8 +663,7 @@ export default function BookAppointment({ embedded = false }) {
 
                   {selectedSlot ? (
                     <div className="mt-1.5 p-2.5 rounded-xl bg-white border border-maroon/20 shadow-2xs flex flex-col gap-2">
-                      <div className="flex items-center justify-between gap-2">
-                        <div>
+                      <div>
                           <p className="text-[11px] font-bold text-text-main m-0 flex items-center gap-1.5">
                             <span>{fmtDate(selectedDate)}</span>
                           </p>
@@ -672,10 +671,6 @@ export default function BookAppointment({ embedded = false }) {
                             <Clock size={11} className="shrink-0 text-maroon/70" />
                             <span>{fmt12h(selectedSlot)}</span>
                           </p>
-                        </div>
-                        <span className="shrink-0 text-[9px] font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">
-                          Confirmed
-                        </span>
                       </div>
 
                       {/* Purpose Display below time */}
