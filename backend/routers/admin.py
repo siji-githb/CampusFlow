@@ -10,6 +10,7 @@ from services.admin_service import (
     get_all_users,
     update_user_role,
     toggle_user_status,
+    delete_user_account,
     get_transaction_types,
     get_ai_insights,          # ← M12
     get_window_assignments,   # ← Window Assignment
@@ -75,6 +76,11 @@ def change_role(user_id: str, role: str, user=Depends(require_admin)):
 @router.patch("/users/{user_id}/status")
 def change_status(user_id: str, is_active: bool, user=Depends(require_admin)):
     return toggle_user_status(user_id, is_active, user.id)
+
+
+@router.delete("/users/{user_id}")
+def remove_user(user_id: str, user=Depends(require_admin)):
+    return delete_user_account(user_id, user.id)
 
 
 @router.get("/transaction-types")

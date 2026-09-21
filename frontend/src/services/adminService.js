@@ -138,6 +138,16 @@ export const toggleUserStatus = async (token, userId, isActive) => {
   return data
 }
 
+export const deleteUserAccount = async (token, userId) => {
+  const res = await fetch(`${API_URL}/admin/users/${userId}`, {
+    method: 'DELETE',
+    headers: authHeader(token)
+  })
+  const data = await res.json()
+  if (!res.ok) throw new Error(data.detail || 'Failed to delete user account')
+  return data
+}
+
 // ── M12: AI-Generated Admin Insights ─────────────────────────────────────────
 
 export const getAiInsights = async (token) => {

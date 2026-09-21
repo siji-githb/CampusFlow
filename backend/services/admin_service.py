@@ -548,6 +548,103 @@ def toggle_user_status(target_user_id: str, is_active: bool, actor_id: str = Non
         raise HTTPException(status_code=500, detail=str(e))
 
 
+def delete_user_account(target_user_id: str, actor_id: str = None):
+    admin = get_admin()
+    if actor_id and target_user_id == actor_id:
+        raise HTTPException(status_code=400, detail="You cannot delete your own administrator account.")
+
+    # 1. Fetch target user to verify existence and role
+    try:
+        user_res = admin.table("users").select("id, first_name, last_name, email, role, student_id").eq("id", target_user_id).execute()
+        if not user_res.data:
+            raise HTTPException(status_code=404, detail="User account not found.")
+        target_user = user_res.data[0]
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+    # 2. Prevent deleting the last remaining admin
+    if target_user.get("role") == "admin":
+        other_admins = admin.table("users").select("id").eq("role", "admin").neq("id", target_user_id).execute()
+        if not other_admins.data:
+            raise HTTPException(status_code=400, detail="Cannot delete this account because it is the only remaining administrator.")
+
+    name = f"{target_user.get('first_name', '')} {target_user.get('last_name', '')}".strip() or "User"
+    email = target_user.get("email", "")
+
+    try:
+        # 3. Cascade cleanup of dependent child records:
+        # 3a. Notifications
+        try:
+            admin.table("notifications").delete().eq("user_id", target_user_id).execute()
+        except Exception as e:
+            logger.warning(f"Error cleaning notifications for {target_user_id}: {e}")
+
+        # 3b. Queue tickets & transaction steps
+        try:
+            tickets_res = admin.table("queue_tickets").select("id").eq("student_id", target_user_id).execute()
+            ticket_ids = [t["id"] for t in (tickets_res.data or []) if t.get("id")]
+            if ticket_ids:
+                admin.table("transaction_steps").delete().in_("queue_ticket_id", ticket_ids).execute()
+            
+            admin.table("transaction_steps").delete().eq("confirmed_by", target_user_id).execute()
+            admin.table("queue_tickets").delete().eq("student_id", target_user_id).execute()
+        except Exception as e:
+            logger.warning(f"Error cleaning queue tickets/steps for {target_user_id}: {e}")
+
+        # 3c. Appointments
+        try:
+            admin.table("appointments").delete().eq("student_id", target_user_id).execute()
+        except Exception as e:
+            logger.warning(f"Error cleaning appointments for {target_user_id}: {e}")
+
+        # 3d. Window assignments (if staff)
+        try:
+            admin.table("window_assignments").delete().eq("staff_id", target_user_id).execute()
+        except Exception as e:
+            logger.warning(f"Error cleaning window assignments for {target_user_id}: {e}")
+
+        # 3e. Audit logs referencing target_user_id
+        try:
+            admin.table("audit_log").delete().eq("user_id", target_user_id).execute()
+        except Exception as e:
+            logger.warning(f"Error cleaning audit logs for {target_user_id}: {e}")
+
+        # 4. Delete profile from public.users
+        admin.table("users").delete().eq("id", target_user_id).execute()
+
+        # 5. Delete authentication record from Supabase Auth
+        try:
+            admin.auth.admin.delete_user(target_user_id)
+        except Exception as auth_err:
+            logger.warning(f"Supabase auth delete user warning for {target_user_id}: {auth_err}")
+
+        # 6. Audit action
+        if actor_id:
+            log_audit_action(
+                user_id=actor_id,
+                action="Permanently deleted user account",
+                table_name="users",
+                record_id=target_user_id,
+                status="Success",
+                changes=f"Deleted account {name} ({email}, {target_user.get('role')}) and purged associated records",
+                severity="Critical"
+            )
+
+        # 7. Broadcast updates
+        try:
+            manager.broadcast_staff_event("CONFIG_UPDATED")
+            manager.broadcast_staff_event("QUEUE_UPDATED")
+            manager.broadcast_staff_event("WINDOW_UPDATED")
+        except Exception:
+            pass
+
+        return {"message": f"Account for {name} ({email}) was permanently deleted successfully."}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to delete account: {str(e)}")
+
+
 def get_transaction_types():
     admin = get_admin()
     try:

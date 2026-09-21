@@ -2,8 +2,8 @@ import { useState, useEffect, useCallback } from 'react'
 import { createPortal } from 'react-dom'
 import { useAuth } from '../../context/useAuth'
 import { useToast } from '../../context/ToastContext'
-import { getAllUsers, updateUserRole, getDashboardStats, toggleUserStatus } from '../../services/adminService'
-import { GraduationCap, Briefcase, Shield, AlertTriangle, Check, Search, X, Users, Pencil, MoreVertical, Ban, CheckCircle, CheckCircle2, Download } from 'lucide-react'
+import { getAllUsers, updateUserRole, getDashboardStats, toggleUserStatus, deleteUserAccount } from '../../services/adminService'
+import { GraduationCap, Briefcase, Shield, AlertTriangle, Check, Search, X, Users, Pencil, MoreVertical, Ban, CheckCircle, CheckCircle2, Download, Trash2 } from 'lucide-react'
 
 // ── Role config ────────────────────────────────────────────────────────────────
 const ROLE_CFG = {
@@ -131,6 +131,103 @@ function EditRoleModal({ user, onSave, onClose, saving }) {
   ), document.body)
 }
 
+// ── Delete User Confirmation Modal ───────────────────────────────────────────
+function DeleteUserModal({ user, onConfirm, onClose, deleting }) {
+  if (!user) return null
+
+  const name = `${user.first_name} ${user.last_name}`.trim() || 'User'
+  const uid = user.student_id || user.staff_id || `UID-${user.id?.slice(0, 8)}`
+
+  return createPortal((
+    <div className="fixed inset-0 z-99999 flex items-center justify-center p-4 sm:p-6 overflow-y-auto" onClick={onClose}>
+      <div className="fixed inset-0 bg-black/50 transition-opacity animate-fade-in" />
+      <div 
+        className="animate-fade-up relative my-auto w-full max-w-105 bg-white text-text-main rounded-3xl p-6 sm:p-7 shadow-[0_25px_80px_rgba(0,0,0,0.22)] border border-border z-10 font-sans overflow-hidden"
+        onClick={e => e.stopPropagation()}
+      >
+        {/* Top decorative danger accent bar */}
+        <div className="absolute top-0 left-0 right-0 h-1.5 bg-danger" />
+
+        {/* Modal Header */}
+        <div className="flex items-start justify-between gap-3 mb-4 pt-1">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="w-11 h-11 rounded-2xl bg-danger-light text-danger flex items-center justify-center border border-danger-border shrink-0 shadow-2xs">
+              <Trash2 size={22} className="stroke-[2.2]" />
+            </div>
+            <div className="min-w-0">
+              <h3 className="font-serif text-fluid-18 font-bold text-text-main leading-tight m-0">Delete User Account</h3>
+              <p className="text-fluid-11-5 text-text-muted m-0 mt-0.5 font-medium">Permanent &amp; irreversible action</p>
+            </div>
+          </div>
+          <button 
+            type="button"
+            onClick={onClose}
+            disabled={deleting}
+            className="w-8.5 h-8.5 rounded-full bg-surface text-text-muted hover:bg-border/80 hover:text-text-main transition-all flex items-center justify-center border border-border cursor-pointer shrink-0 shadow-xs active:scale-95 disabled:opacity-40"
+            title="Close"
+          >
+            <X size={16} />
+          </button>
+        </div>
+
+        {/* User Card to be deleted */}
+        <div className="p-3.5 rounded-2xl bg-off-white border border-border/80 flex items-center gap-3 mb-4">
+          <Avatar name={name} role={user.role} size={42} />
+          <div className="min-w-0 flex-1">
+            <div className="font-bold text-fluid-13-5 text-text-main truncate leading-snug">{name}</div>
+            <div className="text-fluid-11 text-text-muted truncate">{user.email}</div>
+            <div className="flex items-center gap-2 mt-1">
+              <span className="text-fluid-10-5 font-mono font-medium text-text-sub bg-white px-1.5 py-0.5 rounded border border-border/70">{uid}</span>
+              <RoleBadge role={user.role} />
+            </div>
+          </div>
+        </div>
+
+        {/* Warning Alert */}
+        <div className="p-3.5 rounded-2xl bg-danger-light/50 border border-danger-border/80 text-fluid-12 leading-relaxed text-text-main mb-6">
+          <div className="flex items-center gap-1.5 text-danger font-extrabold text-fluid-12 uppercase tracking-wider mb-1">
+            <AlertTriangle size={14} className="shrink-0" />
+            <span>Warning: Cascade Data Removal</span>
+          </div>
+          <p className="m-0 text-text-sub font-medium">
+            Deleting this account will permanently erase all associated appointments, queue tickets, notifications, and login credentials. The user may re-register with this email and ID in the future as a fresh account.
+          </p>
+        </div>
+
+        {/* Action Buttons */}
+        <div className="flex gap-2.5 pt-3 border-t border-border">
+          <button 
+            type="button"
+            onClick={onClose} 
+            disabled={deleting}
+            className="flex-1 py-2.5 px-4 rounded-xl border border-border bg-surface text-text-sub hover:text-text-main hover:bg-border/60 text-fluid-13 font-bold transition-all cursor-pointer shadow-2xs active:scale-[0.98] disabled:opacity-50"
+          >
+            Cancel
+          </button>
+          <button 
+            type="button"
+            onClick={() => onConfirm(user.id)} 
+            disabled={deleting}
+            className="flex-2 py-2.5 px-4 rounded-xl border border-danger bg-danger text-white text-fluid-13 font-bold font-sans transition-all shadow-[0_4px_14px_rgba(220,38,38,0.25)] hover:bg-danger/90 hover:shadow-[0_6px_18px_rgba(220,38,38,0.35)] cursor-pointer active:scale-[0.98] flex items-center justify-center gap-1.5 disabled:opacity-60 disabled:cursor-not-allowed"
+          >
+            {deleting ? (
+              <span className="flex items-center gap-2">
+                <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                Deleting…
+              </span>
+            ) : (
+              <>
+                <Trash2 size={15} />
+                <span>Permanently Delete</span>
+              </>
+            )}
+          </button>
+        </div>
+      </div>
+    </div>
+  ), document.body)
+}
+
 // ── Export CSV ─────────────────────────────────────────────────────────────────
 function exportCSV(users, filename = 'users_export.csv') {
   if (!users.length) return
@@ -153,11 +250,13 @@ function exportCSV(users, filename = 'users_export.csv') {
 // MAIN AdminUserManagementPage
 // ─────────────────────────────────────────────────────────────────────────────
 export default function AdminUserManagementPage() {
-  const { token }  = useAuth()
+  const { token, user: currentUser } = useAuth()
   const [users, setUsers]         = useState([])
   const [loading, setLoading]     = useState(true)
   const [statsLoading, setStatsLoading] = useState(true)
   const [saving, setSaving]       = useState(false)
+  const [deleteTargetUser, setDeleteTargetUser] = useState(null)
+  const [deleting, setDeleting]   = useState(false)
   const toast = useToast()
   const [search, setSearch]       = useState('')
   const [activeTab, setActiveTab] = useState('all')
@@ -209,6 +308,21 @@ export default function AdminUserManagementPage() {
       setDropdownOpen(null)
     } catch (e) {
       showToast(e.message || 'Failed to change status.', 'error')
+    }
+  }
+
+  const handleDeleteUser = async (userId) => {
+    setDeleting(true)
+    try {
+      await deleteUserAccount(token, userId)
+      await fetchUsers()
+      getDashboardStats(token).catch(() => {})
+      showToast('User account deleted permanently.')
+      setDeleteTargetUser(null)
+    } catch (e) {
+      showToast(e.message || 'Failed to delete user account.', 'error')
+    } finally {
+      setDeleting(false)
     }
   }
 
@@ -443,7 +557,7 @@ export default function AdminUserManagementPage() {
                         {dropdownOpen === user.id && (
                           <>
                             <div className="fixed inset-0 z-10" onClick={() => setDropdownOpen(null)} />
-                            <div className="absolute bottom-full right-0 mb-1.5 bg-white border border-border rounded-xl shadow-[0_8px_24px_rgba(0,0,0,0.12)] p-1.5 z-20 min-w-36 animate-fade-up">
+                            <div className="absolute bottom-full right-0 mb-1.5 bg-white border border-border rounded-xl shadow-[0_8px_24px_rgba(0,0,0,0.12)] p-1.5 z-20 min-w-40 animate-fade-up">
                               <button
                                 onClick={() => { handleToggleStatus(user.id, user.is_active !== false); setDropdownOpen(null); }}
                                 className={`w-full py-2 px-3 border-none bg-transparent text-left text-fluid-12 cursor-pointer rounded-lg flex items-center gap-2 font-sans font-bold transition-colors ${user.is_active !== false ? 'text-danger hover:bg-danger-light' : 'text-success hover:bg-success-light'}`}
@@ -451,6 +565,18 @@ export default function AdminUserManagementPage() {
                                 <span className="shrink-0">{user.is_active !== false ? <Ban size={14} /> : <CheckCircle size={14} />}</span>
                                 <span>{user.is_active !== false ? 'Suspend User' : 'Reactivate User'}</span>
                               </button>
+                              {user.id !== currentUser?.id && (
+                                <>
+                                  <div className="h-px bg-border/60 my-1" />
+                                  <button
+                                    onClick={() => { setDeleteTargetUser(user); setDropdownOpen(null); }}
+                                    className="w-full py-2 px-3 border-none bg-transparent text-left text-fluid-12 cursor-pointer rounded-lg flex items-center gap-2 font-sans font-bold text-danger hover:bg-danger-light transition-colors"
+                                  >
+                                    <span className="shrink-0"><Trash2 size={14} /></span>
+                                    <span>Delete Account</span>
+                                  </button>
+                                </>
+                              )}
                             </div>
                           </>
                         )}
@@ -509,7 +635,7 @@ export default function AdminUserManagementPage() {
                       {dropdownOpen === user.id && (
                         <>
                           <div className="fixed inset-0 z-10" onClick={() => setDropdownOpen(null)} />
-                          <div className={`absolute ${isNearBottom ? 'bottom-full mb-2' : 'top-full mt-2'} right-0 bg-white border border-border rounded-xl shadow-[0_8px_24px_rgba(0,0,0,0.12)] p-1.5 z-20 min-w-35 animate-fade-up`} style={{ animationDuration: '0.15s' }}>
+                          <div className={`absolute ${isNearBottom ? 'bottom-full mb-2' : 'top-full mt-2'} right-0 bg-white border border-border rounded-xl shadow-[0_8px_24px_rgba(0,0,0,0.12)] p-1.5 z-20 min-w-42 animate-fade-up`} style={{ animationDuration: '0.15s' }}>
                             <button
                               onClick={() => { handleToggleStatus(user.id, user.is_active !== false); setDropdownOpen(null); }}
                               className={`w-full py-2 px-3 border-none bg-transparent text-left text-fluid-13 cursor-pointer rounded-lg flex items-center gap-2.5 transition-colors duration-150 font-sans font-semibold ${user.is_active !== false ? 'text-danger hover:bg-danger-light' : 'text-success hover:bg-success-light'}`}
@@ -517,6 +643,18 @@ export default function AdminUserManagementPage() {
                               <span className="flex items-center shrink-0">{user.is_active !== false ? <Ban size={15} /> : <CheckCircle size={15} />}</span> 
                               <span>{user.is_active !== false ? 'Suspend User' : 'Reactivate User'}</span>
                             </button>
+                            {user.id !== currentUser?.id && (
+                              <>
+                                <div className="h-px bg-border/60 my-1" />
+                                <button
+                                  onClick={() => { setDeleteTargetUser(user); setDropdownOpen(null); }}
+                                  className="w-full py-2 px-3 border-none bg-transparent text-left text-fluid-13 cursor-pointer rounded-lg flex items-center gap-2.5 transition-colors duration-150 font-sans font-semibold text-danger hover:bg-danger-light"
+                                >
+                                  <span className="flex items-center shrink-0"><Trash2 size={15} /></span>
+                                  <span>Delete Account</span>
+                                </button>
+                              </>
+                            )}
                           </div>
                         </>
                       )}
@@ -577,6 +715,16 @@ export default function AdminUserManagementPage() {
           onSave={handleSaveRole}
           onClose={() => setEditUser(null)}
           saving={saving}
+        />
+      )}
+
+      {/* ── Delete User Modal ── */}
+      {deleteTargetUser && (
+        <DeleteUserModal
+          user={deleteTargetUser}
+          onConfirm={handleDeleteUser}
+          onClose={() => !deleting && setDeleteTargetUser(null)}
+          deleting={deleting}
         />
       )}
     </div>
