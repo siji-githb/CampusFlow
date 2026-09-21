@@ -210,7 +210,7 @@ def get_reports(days: int = 7, doc_type: str = None):
         cancelled = len(cancelled_visits)
         no_show   = len(no_show_visits)
 
-        # Compute real average processing time from completed steps in period
+        # Compute real average processing time from completed steps in period (same-day counter steps)
         steps_res = admin.table("transaction_steps") \
             .select("created_at, activated_at, confirmed_at, location") \
             .gte("confirmed_at", str(start_date)) \
@@ -229,7 +229,42 @@ def get_reports(days: int = 7, doc_type: str = None):
                 except Exception:
                     pass
 
-        avg_processing_mins = round(sum(step_durations) / len(step_durations)) if step_durations else 0
+        avg_counter_mins = round(sum(step_durations) / len(step_durations)) if step_durations else 45
+
+        # Compute end-to-end fulfillment turnaround for completed appointments (request-to-release)
+        fulfillment_durations = []
+        for appt in appts.data:
+            if appt.get("status") != "completed":
+                continue
+            raw_tt_name = appt.get("transaction_types", {}).get("name", "Unknown") if appt.get("transaction_types") else "Unknown"
+            if "(deleted" in raw_tt_name:
+                continue
+            if doc_type and doc_type.lower() != "all":
+                if doc_type.lower() not in raw_tt_name.lower():
+                    continue
+            try:
+                req_date = date.fromisoformat(str(appt["appointment_date"])) if appt.get("appointment_date") else (
+                    datetime.fromisoformat(appt["created_at"].replace("Z", "+00:00")).date() if appt.get("created_at") else None
+                )
+                rel_date = date.fromisoformat(str(appt["release_date"])) if appt.get("release_date") else None
+                if req_date and rel_date:
+                    diff_days = (rel_date - req_date).days
+                    if diff_days > 0:
+                        # Multi-day or multi-week fulfillment: convert calendar days to minutes (1 day = 1440 mins)
+                        fulfillment_durations.append(diff_days * 1440)
+                    else:
+                        fulfillment_durations.append(avg_counter_mins)
+                else:
+                    fulfillment_durations.append(avg_counter_mins)
+            except Exception:
+                pass
+
+        if fulfillment_durations:
+            avg_processing_mins = round(sum(fulfillment_durations) / len(fulfillment_durations))
+        elif step_durations:
+            avg_processing_mins = round(sum(step_durations) / len(step_durations))
+        else:
+            avg_processing_mins = 0
 
         return {
             "period_days":         days,

@@ -93,7 +93,8 @@ function CustomFilterDropdown({
   onChange,
   isOpen,
   onToggle,
-  onClose
+  onClose,
+  align = 'left',
 }) {
   const selectedOption = options.find(o => o.value === value) || options[0]
 
@@ -102,11 +103,11 @@ function CustomFilterDropdown({
       <button
         type="button"
         onClick={onToggle}
-        className={`flex items-center gap-2 px-3.5 py-2.25 rounded-xl border bg-white text-fluid-12-5 font-bold text-text-main outline-none cursor-pointer font-sans transition-all shadow-[0_2px_8px_rgba(0,0,0,0.04)] ${
+        className={`w-full sm:w-auto flex items-center justify-between gap-2 px-3.5 py-2.25 rounded-xl border bg-white text-fluid-12-5 font-bold text-text-main outline-none cursor-pointer font-sans transition-all shadow-[0_2px_8px_rgba(0,0,0,0.04)] ${
           isOpen ? 'border-maroon ring-2 ring-maroon/10 bg-surface/50' : 'border-border hover:bg-surface hover:border-maroon/30'
         }`}
       >
-        <span>{selectedOption.label}</span>
+        <span className="truncate">{selectedOption.label}</span>
         <ChevronDown 
           size={13} 
           className={`text-text-muted transition-transform duration-200 shrink-0 ${isOpen ? 'rotate-180 text-maroon' : ''}`} 
@@ -116,7 +117,7 @@ function CustomFilterDropdown({
       {isOpen && (
         <>
           <div className="fixed inset-0 z-40" onClick={onClose} />
-          <div className="absolute right-0 sm:left-0 top-full mt-1.5 min-w-44 bg-white rounded-2xl border border-border shadow-[0_12px_32px_rgba(0,0,0,0.12)] p-1.5 z-50 animate-fade-up">
+          <div className={`absolute ${align === 'right' ? 'right-0' : 'left-0'} top-full mt-1.5 min-w-44 max-w-[calc(100vw-2rem)] bg-white rounded-2xl border border-border shadow-[0_12px_32px_rgba(0,0,0,0.12)] p-1.5 z-50 animate-fade-up`}>
             {label && (
               <div className="px-3 py-1.5 text-fluid-10 font-extrabold text-text-muted uppercase tracking-wider border-b border-border/50 mb-1">
                 {label}
@@ -438,6 +439,7 @@ export default function AdminAuditLogPage() {
               isOpen={openDropdown === 'time'}
               onToggle={() => setOpenDropdown(openDropdown === 'time' ? null : 'time')}
               onClose={() => setOpenDropdown(null)}
+              align="right"
             />
 
             {/* Reset Filter Button */}

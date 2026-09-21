@@ -40,7 +40,7 @@ const CustomSelect = ({ label, value, onChange, options, placeholder = 'Select�
 
   return (
     <div className={`relative ${className}`} ref={containerRef}>
-      {label && <label className="block text-[10.5px] sm:text-[11px] font-bold text-text-sub uppercase tracking-wider mb-1.5">{label}</label>}
+      {label && <label className="block text-[10px] sm:text-[11px] font-bold text-text-sub uppercase tracking-wider mb-1.5">{label}</label>}
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
@@ -131,7 +131,7 @@ function Stepper({ step }) {
             />
           ))}
         </div>
-        <div className="flex items-center justify-between text-[11px] font-medium text-text-muted px-1">
+        <div className="flex items-center justify-between text-[10px] sm:text-[11px] font-medium text-text-muted px-1">
           {STEPS.map((s, i) => {
             const num = i + 1
             const active = step === num
@@ -143,7 +143,7 @@ function Stepper({ step }) {
                   active ? 'text-maroon font-bold' : done ? 'text-text-main font-semibold' : 'text-text-muted'
                 }`}
               >
-                <span className={`w-4.5 h-4.5 rounded-full inline-flex items-center justify-center text-[9px] font-bold transition-all ${
+                <span className={`w-4.5 h-4.5 rounded-full inline-flex items-center justify-center text-[8px] sm:text-[9px] font-bold transition-all ${
                   done 
                     ? 'bg-maroon text-white shadow-2xs' 
                     : active 
@@ -460,7 +460,7 @@ export default function BookAppointment({ embedded = false }) {
           <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-success-light border-2 border-success-border flex items-center justify-center mx-auto mb-4 sm:mb-6 text-success shadow-2xs">
             <CheckCircle size={26} className="sm:w-7 sm:h-7" />
           </div>
-          <h2 className="font-serif text-xl sm:text-2xl font-bold text-maroon m-0 mb-1.5">Appointment Confirmed!</h2>
+          <h2 className="font-serif text-lg sm:text-2xl font-bold text-maroon m-0 mb-1.5">Appointment Confirmed!</h2>
           
           {/* Confirmed Schedule Pill */}
           <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-gold-light border border-gold-border/70 text-text-main text-xs sm:text-[13px] font-semibold my-3 sm:my-3.5">
@@ -627,7 +627,7 @@ export default function BookAppointment({ embedded = false }) {
                       <div className={`w-5 h-5 rounded-md flex items-center justify-center text-[10px] shrink-0 ${selectedTypes.length > 0 ? 'bg-maroon-light text-maroon' : 'bg-off-white text-text-muted'}`}>
                         <FileText size={11} />
                       </div>
-                      <span className="text-[9.5px] font-bold uppercase tracking-[0.08em] text-text-sub">Selected Documents</span>
+                      <span className="text-[8px] md:text-[9.5px] font-bold uppercase tracking-[0.08em] text-text-sub">Selected Documents</span>
                     </div>
                   </div>
 
@@ -639,14 +639,14 @@ export default function BookAppointment({ embedded = false }) {
                           className="flex items-center gap-2 p-1.5 px-2.5 rounded-lg bg-white border border-border/70 shadow-2xs hover:border-maroon/40 transition-all"
                         >
                           <span className="w-1.5 h-1.5 rounded-full bg-maroon shrink-0 ring-2 ring-maroon/20" />
-                          <span className="text-[11px] font-medium text-text-main truncate flex-1 leading-tight">
+                          <span className="text-[10px] md:text-[11px] font-medium text-text-main truncate flex-1 leading-tight">
                             {t.name}
                           </span>
                         </div>
                       ))}
                     </div>
                   ) : (
-                    <div className="mt-1.5 py-2.5 px-3 rounded-lg bg-white/60 border border-dashed border-border text-center text-[10.5px] text-text-muted font-medium">
+                    <div className="mt-1.5 py-2.5 px-3 rounded-lg bg-white/60 border border-dashed border-border text-center text-[10px] md:text-[10.5px] text-text-muted font-medium">
                       No documents selected yet
                     </div>
                   )}
@@ -658,16 +658,16 @@ export default function BookAppointment({ embedded = false }) {
                     <div className={`w-5 h-5 rounded-md flex items-center justify-center text-[10px] shrink-0 ${selectedSlot ? 'bg-maroon-light text-maroon' : 'bg-off-white text-text-muted'}`}>
                       <Calendar size={11} />
                     </div>
-                    <span className="text-[9.5px] font-bold uppercase tracking-[0.08em] text-text-sub">Schedule Date &amp; Time</span>
+                    <span className="text-[8px] md:text-[9.5px] font-bold uppercase tracking-[0.08em] text-text-sub">Schedule Date &amp; Time</span>
                   </div>
 
                   {selectedSlot ? (
                     <div className="mt-1.5 p-2.5 rounded-xl bg-white border border-maroon/20 shadow-2xs flex flex-col gap-2">
                       <div>
-                          <p className="text-[11px] font-bold text-text-main m-0 flex items-center gap-1.5">
+                          <p className="text-[10px] md:text-[11px] font-bold text-text-main m-0 flex items-center gap-1.5">
                             <span>{fmtDate(selectedDate)}</span>
                           </p>
-                          <p className="text-[10.5px] font-bold text-maroon m-0 mt-0.5 flex items-center gap-1.5">
+                          <p className="text-[10px] md:text-[10.5px] font-bold text-maroon m-0 mt-0.5 flex items-center gap-1.5">
                             <Clock size={11} className="shrink-0 text-maroon/70" />
                             <span>{fmt12h(selectedSlot)}</span>
                           </p>
@@ -677,15 +677,15 @@ export default function BookAppointment({ embedded = false }) {
                       {needsPurpose && (
                         <div className="pt-2 border-t border-border/60 flex items-center gap-1.5">
                           <Tag size={10.5} className="text-gold-dark shrink-0" />
-                          <span className="text-[9.5px] font-bold text-text-muted uppercase tracking-wider shrink-0">Purpose:</span>
-                          <span className={`text-[10.5px] truncate font-semibold ${purpose ? 'text-maroon' : 'text-text-muted italic'}`}>
+                          <span className="text-[8px] md:text-[9.5px] font-bold text-text-muted uppercase tracking-wider shrink-0">Purpose:</span>
+                          <span className={`text-[10px] md:text-[10.5px] truncate font-semibold ${purpose ? 'text-maroon' : 'text-text-muted italic'}`}>
                             {purpose === 'Other' ? (purposeOther || 'Other') : (purpose || 'Pending selection')}
                           </span>
                         </div>
                       )}
                     </div>
                   ) : (
-                    <div className="mt-1.5 py-2.5 px-3 rounded-lg bg-white/60 border border-dashed border-border text-center text-[10.5px] text-text-muted font-medium flex items-center justify-center gap-1.5">
+                    <div className="mt-1.5 py-2.5 px-3 rounded-lg bg-white/60 border border-dashed border-border text-center text-[10px] md:text-[10.5px] text-text-muted font-medium flex items-center justify-center gap-1.5">
                       <Clock size={11} className="text-text-muted/60" />
                       <span>Pending slot selection</span>
                     </div>
@@ -699,7 +699,7 @@ export default function BookAppointment({ embedded = false }) {
                       <Award size={13} className="text-gold-dark shrink-0" />
                       <div className="min-w-0 flex-1">
                         <p className="text-[10px] font-bold text-gold-dark m-0 leading-tight">Priority Lane Eligible</p>
-                        <p className="text-[9px] text-text-sub m-0 capitalize truncate leading-tight mt-0.5">{user.priority_class} Priority</p>
+                        <p className="text-[8px] md:text-[9px] text-text-sub m-0 capitalize truncate leading-tight mt-0.5">{user.priority_class} Priority</p>
                       </div>
                     </div>
                   </div>
@@ -723,7 +723,7 @@ export default function BookAppointment({ embedded = false }) {
               <div className="animate-fade-up pb-20 lg:pb-0">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4 sm:mb-6">
                   <div>
-                    <h1 className="font-serif text-xl sm:text-2xl md:text-3xl font-bold text-maroon m-0 mb-1 leading-snug">
+                    <h1 className="font-serif text-lg sm:text-2xl md:text-3xl font-bold text-maroon m-0 mb-1 leading-snug">
                       Select Transaction Documents
                     </h1>
                     <p className="text-xs sm:text-sm text-text-sub m-0 leading-normal">
@@ -780,7 +780,7 @@ export default function BookAppointment({ embedded = false }) {
                                 <FileText size={16} />
                               </div>
                               <div className="min-w-0 flex-1">
-                                <h3 className={`font-serif text-sm sm:text-base font-bold m-0 leading-snug wrap-break-word transition-colors ${
+                                <h3 className={`font-serif text-xs sm:text-base font-bold m-0 leading-snug wrap-break-word transition-colors ${
                                   isSelected ? 'text-maroon' : 'text-text-main group-hover:text-maroon'
                                 }`}>
                                   {cleanDocName(t.name)}
@@ -848,7 +848,7 @@ export default function BookAppointment({ embedded = false }) {
             {/* ─── STEP 2: Select Date & Time ─── */}
             {step === 2 && selectedTypes.length > 0 && (
               <div className="animate-fade-up">
-                <h1 className="font-serif text-xl sm:text-2xl md:text-3xl font-bold text-maroon m-0 mb-1 leading-snug">
+                <h1 className="font-serif text-lg sm:text-2xl md:text-3xl font-bold text-maroon m-0 mb-1 leading-snug">
                   Select Date &amp; Time
                 </h1>
                 <p className="text-xs sm:text-sm text-text-sub m-0 mb-4 sm:mb-6 leading-normal">
@@ -866,10 +866,10 @@ export default function BookAppointment({ embedded = false }) {
                         <FileText size={12} strokeWidth={2.2} />
                       </div>
                       <div className="flex items-center gap-2">
-                        <span className="text-[10.5px] font-extrabold uppercase tracking-[0.12em] text-maroon">
+                        <span className="text-[10px] sm:text-[10.5px] font-extrabold uppercase tracking-[0.12em] text-maroon">
                           Selected Documents
                         </span>
-                        <span className="text-[9.5px] font-extrabold text-maroon bg-maroon-light py-0.5 px-2 rounded-full border border-maroon-border/40 shadow-2xs whitespace-nowrap">
+                        <span className="text-[8px] sm:text-[9.5px] font-extrabold text-maroon bg-maroon-light py-0.5 px-2 rounded-full border border-maroon-border/40 shadow-2xs whitespace-nowrap">
                           {selectedTypes.length} {selectedTypes.length === 1 ? 'doc' : 'docs'}
                         </span>
                       </div>
@@ -1084,7 +1084,7 @@ export default function BookAppointment({ embedded = false }) {
             {step === 3 && selectedTypes.length > 0 && (
               <div className="animate-fade-up">
                 <div className="text-center mb-4 sm:mb-6">
-                  <h1 className="font-serif text-xl sm:text-2xl md:text-3xl font-bold text-maroon m-0 mb-1 leading-snug">
+                  <h1 className="font-serif text-lg sm:text-2xl md:text-3xl font-bold text-maroon m-0 mb-1 leading-snug">
                     Review Your Appointment
                   </h1>
                   <p className="text-xs sm:text-sm text-text-sub m-0">
@@ -1115,7 +1115,7 @@ export default function BookAppointment({ embedded = false }) {
                               <FileText size={16} />
                             </div>
                             <div className="min-w-0 flex-1">
-                              <h4 className="font-serif text-sm sm:text-base font-bold text-text-main m-0 truncate">{t.name}</h4>
+                              <h4 className="font-serif text-xs sm:text-base font-bold text-text-main m-0 truncate">{t.name}</h4>
                               <p className="text-[11px] text-text-sub m-0 truncate">{t.clean_description}</p>
                             </div>
                           </div>
@@ -1233,7 +1233,7 @@ export default function BookAppointment({ embedded = false }) {
                   <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-full bg-gold-light text-gold flex items-center justify-center mx-auto mb-3.5 shadow-2xs">
                     <HelpCircle size={22} />
                   </div>
-                  <h3 className="font-serif text-base sm:text-lg font-bold text-text-main m-0 mb-1.5">Confirm Appointment?</h3>
+                  <h3 className="font-serif text-sm sm:text-lg font-bold text-text-main m-0 mb-1.5">Confirm Appointment?</h3>
                   <p className="text-xs sm:text-[13px] text-text-sub m-0 mb-5 leading-relaxed">
                     Are you ready to confirm your appointment for <strong className="text-text-main">{selectedTypes.length} {selectedTypes.length === 1 ? 'document' : 'documents'}</strong> on <strong className="text-text-main">{fmtDate(selectedDate)}</strong> at <strong className="text-maroon">{fmt12h(selectedSlot)}</strong>?
                   </p>

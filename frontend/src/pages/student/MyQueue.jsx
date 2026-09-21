@@ -65,12 +65,12 @@ function EmptyQueueState({
         </div>
 
         {/* Title */}
-        <h2 className="font-serif text-[22px] sm:text-[24px] font-bold text-text-main m-0 mb-2">
+        <h2 className="font-serif text-[20px] sm:text-[24px] font-bold text-text-main m-0 mb-2">
           No Active Queue Ticket
         </h2>
 
         {/* Precise Description */}
-        <p className="text-[13px] sm:text-[13.5px] text-text-sub m-0 mb-6 leading-relaxed">
+        <p className="text-[12px] sm:text-[13.5px] text-text-sub m-0 mb-6 leading-relaxed">
           {todayAppt 
             ? "You have an appointment scheduled for today. Activate your queue ticket once you arrive at the Registrar's Office."
             : "You are not currently in line. Check your upcoming appointments or schedule a new one."}
@@ -760,13 +760,13 @@ export default function MyQueue({ embedded = false }) {
                                             </div>
                                           </div>
                                           <div className="bg-success/10 text-success border border-success/20 px-2.5 py-1 rounded-full shadow-2xs shrink-0 self-start sm:self-center">
-                                            <span className="text-[9.5px] sm:text-[10.5px] font-extrabold uppercase tracking-wider whitespace-nowrap">Ready for Pickup</span>
+                                            <span className="text-[8px] sm:text-[10.5px] font-extrabold uppercase tracking-wider whitespace-nowrap">Ready for Pickup</span>
                                           </div>
                                         </div>
                                         
                                         {/* Document & Window info */}
                                         <div className="relative z-10 bg-off-white/80 p-3 sm:p-4 rounded-xl border border-border">
-                                          <p className="text-[13.5px] sm:text-[15px] font-bold text-text-main m-0 mb-1 leading-snug truncate">
+                                          <p className="text-[12.5px] sm:text-[15px] font-bold text-text-main m-0 mb-1 leading-snug truncate">
                                             {(ticket.appointments?.transaction_types?.name || 'Document')?.replace(/([a-zA-Z])\(/g, '$1 (')}
                                           </p>
                                           <p className="text-xs sm:text-[12.5px] text-text-sub m-0 font-medium">
@@ -907,9 +907,9 @@ export default function MyQueue({ embedded = false }) {
               return (
                 <div className="animate-fade-up text-center py-16 px-8 bg-white rounded-2xl border border-border shadow-sm">
                   <div className="text-gold mb-4 flex justify-center"><Inbox size={48} /></div>
-                  <p className="text-[15px] font-semibold text-text-main m-0 mb-1.5">No upcoming appointments</p>
-                  <p className="text-[13px] text-text-sub m-0 mb-6">Queue numbers are only available on your appointment date.</p>
-                  <button onClick={() => navigate('/student/book')} className="py-2.5 px-6 rounded-lg border-none bg-maroon text-white text-[14px] font-semibold cursor-pointer hover:bg-maroon-dark transition-colors">
+                  <p className="text-[14px] md:text-[15px] font-semibold text-text-main m-0 mb-1.5">No upcoming appointments</p>
+                  <p className="text-[12px] md:text-[13px] text-text-sub m-0 mb-6">Queue numbers are only available on your appointment date.</p>
+                  <button onClick={() => navigate('/student/book')} className="py-2.5 px-6 rounded-lg border-none bg-maroon text-white text-[13px] md:text-[14px] font-semibold cursor-pointer hover:bg-maroon-dark transition-colors">
                     Book an Appointment
                   </button>
                 </div>
@@ -995,7 +995,7 @@ export default function MyQueue({ embedded = false }) {
                               </div>
 
                               {/* Title */}
-                              <h3 className="font-serif text-[19px] sm:text-[21px] font-bold text-text-main m-0 mb-3 leading-snug">
+                              <h3 className="font-serif text-[18px] sm:text-[21px] font-bold text-text-main m-0 mb-3 leading-snug">
                                 {appt.selected_documents && appt.selected_documents.length > 1
                                   ? `${appt.selected_documents.length} Requested Documents`
                                   : (appt.transaction_types?.name || 'Transaction')?.replace(/([a-zA-Z])\(/g, '$1 (')
@@ -1083,7 +1083,7 @@ export default function MyQueue({ embedded = false }) {
                                     <Ticket size={24} />
                                   </div>
                                   <span className="text-[10px] sm:text-[10.5px] font-extrabold text-gold tracking-widest uppercase">ACTIVE NUMBER</span>
-                                  <div className="font-serif text-[26px] sm:text-[28px] font-extrabold text-maroon my-1">
+                                  <div className="font-serif text-[24px] sm:text-[28px] font-extrabold text-maroon my-1">
                                     {liveTicketForAppt.queue_number}
                                   </div>
                                   <p className="text-[11.5px] sm:text-xs text-text-sub mb-3.5 leading-snug">Currently queued in waiting list</p>
@@ -1105,7 +1105,7 @@ export default function MyQueue({ embedded = false }) {
                                     <div className="bg-maroon text-white text-[10px] font-bold uppercase py-1 tracking-wider">
                                       {new Date(appt.appointment_date).toLocaleDateString('en-US', { month: 'short' })}
                                     </div>
-                                    <div className="text-[24px] font-extrabold font-serif text-text-main py-1.5 leading-none">
+                                    <div className="text-[22px] md:text-[24px] font-extrabold font-serif text-text-main py-1.5 leading-none">
                                       {new Date(appt.appointment_date).getDate()}
                                     </div>
                                   </div>
@@ -1195,8 +1195,8 @@ export default function MyQueue({ embedded = false }) {
         <div className="fixed inset-0 z-9999 flex items-center justify-center p-4 pointer-events-auto">
           <div className="fixed inset-0 bg-black/60 transition-opacity backdrop-blur-2xs" onClick={() => !cancelling && setCancelConfirmId(null)} />
           <div className="relative bg-white rounded-2xl p-7 max-w-sm w-full shadow-2xl animate-fade-up z-10">
-            <h3 className="text-[18px] font-bold text-text-main m-0 mb-2">Cancel Queue Ticket?</h3>
-            <p className="text-[14px] text-text-sub m-0 mb-6">
+            <h3 className="text-[17px] md:text-[18px] font-bold text-text-main m-0 mb-2">Cancel Queue Ticket?</h3>
+            <p className="text-[13px] md:text-[14px] text-text-sub m-0 mb-6">
               Are you sure you want to cancel this active queue ticket? This action cannot be undone and you will lose your spot in line.
             </p>
             <div className="flex gap-3">
@@ -1236,8 +1236,8 @@ export default function MyQueue({ embedded = false }) {
         <div className="fixed inset-0 z-9999 flex items-center justify-center p-4 pointer-events-auto">
           <div className="fixed inset-0 bg-black/60 transition-opacity backdrop-blur-2xs" onClick={() => !activating && setActivateConfirmId(null)} />
           <div className="relative bg-white rounded-2xl p-7 max-w-sm w-full shadow-2xl animate-fade-up z-10">
-            <h3 className="text-[18px] font-bold text-text-main m-0 mb-2">Activate Queue Ticket?</h3>
-            <p className="text-[14px] text-text-sub m-0 mb-6">
+            <h3 className="text-[17px] md:text-[18px] font-bold text-text-main m-0 mb-2">Activate Queue Ticket?</h3>
+            <p className="text-[13px] md:text-[14px] text-text-sub m-0 mb-6">
               Are you sure you want to activate your queue ticket now? Make sure you are already at the Campus and you already have the receipt or documents needed.
             </p>
             <div className="flex gap-3">

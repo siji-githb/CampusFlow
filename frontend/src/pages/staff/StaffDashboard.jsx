@@ -176,10 +176,10 @@ const SideItem = ({ icon, label, active, onClick, badge, disabled, collapsed }) 
       {icon}
     </span>
     
-    <span className={`tracking-wide whitespace-nowrap text-fluid-13 transition-all duration-250 ease-out overflow-hidden ${
+    <span className={`tracking-wide whitespace-nowrap text-fluid-13 transition-all duration-250 ease-out overflow-hidden truncate ${
       collapsed 
         ? 'opacity-0 max-w-0 -translate-x-2 pointer-events-none' 
-        : 'opacity-100 max-w-44 translate-x-0 flex-1'
+        : 'opacity-100 max-w-52 translate-x-0 flex-1'
     }`}>
       {label}
     </span>
@@ -233,9 +233,23 @@ export default function StaffDashboard() {
     } catch {
       // Ignore local storage errors
     }
-    // Default to compact icon rail (80px) on tablet portrait (<1024px) for optimal content width
-    return typeof window !== 'undefined' ? window.innerWidth < 1024 : false;
+    // Default to compact icon rail (80px) on tablet portrait (768px - 1023px)
+    return typeof window !== 'undefined' ? (window.innerWidth >= 768 && window.innerWidth < 1024) : false;
   })
+
+  const [isDesktop, setIsDesktop] = useState(() => typeof window !== 'undefined' ? window.innerWidth >= 768 : true)
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsDesktop(window.innerWidth >= 768)
+    }
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [])
+
+  // On mobile (<768px), the drawer is always fully expanded when opened.
+  // Collapsed state only applies on desktop screens (>=768px).
+  const isCollapsed = isDesktop && sidebarCollapsed
 
   useEffect(() => {
     try {
@@ -249,7 +263,7 @@ export default function StaffDashboard() {
   useEffect(() => {
     const checkWidth = () => {
       if (window.innerWidth >= 768) {
-        document.documentElement.style.setProperty('--cf-sidebar-width', sidebarCollapsed ? '80px' : '256px')
+        document.documentElement.style.setProperty('--cf-sidebar-width', isCollapsed ? '80px' : '256px')
       } else {
         document.documentElement.style.setProperty('--cf-sidebar-width', '0px')
       }
@@ -260,7 +274,7 @@ export default function StaffDashboard() {
       window.removeEventListener('resize', checkWidth)
       document.documentElement.style.removeProperty('--cf-sidebar-width')
     }
-  }, [sidebarCollapsed])
+  }, [isCollapsed])
 
   const handleNavChange = useCallback((tabId) => {
     setActiveNav(tabId)
@@ -399,14 +413,14 @@ export default function StaffDashboard() {
         <div onClick={() => setMobileMenuOpen(false)} className="fixed inset-0 bg-black/50 z-45 md:hidden" />
       )}
 
-      {/* ── Fixed Left Sidebar ── */}
-      <aside className={`${sidebarCollapsed ? 'md:w-20 md:px-2.5' : 'md:w-64 md:px-3.5'} w-64 px-3.5 shrink-0 bg-white border-r border-border flex flex-col fixed left-0 top-0 bottom-0 z-50 py-5 transition-[width,padding] duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}`}>
+      {/* ── Fixed Left Sidebar (Desktop & Mobile Slide-in Drawer) ── */}
+      <aside className={`${isCollapsed ? 'md:w-20 md:px-2.5' : 'md:w-64 md:px-3.5'} w-72 max-w-[85vw] px-3.5 shrink-0 bg-white border-r border-border flex flex-col fixed left-0 top-0 bottom-0 z-50 py-5 transition-[width,padding] duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}`}>
         {/* Logo & Mobile Close */}
-        <div className={`flex items-center ${sidebarCollapsed ? 'justify-center' : 'justify-between pl-1'} mb-7`}>
+        <div className={`flex items-center ${isCollapsed ? 'justify-center' : 'justify-between pl-1'} mb-7`}>
           <div className="flex items-center gap-2.5 min-w-0">
             <img src={campusFlowLogo} alt="CampusFlow" className="w-8.5 h-8.5 rounded-full bg-white object-contain border border-slate-200 shrink-0 shadow-2xs" />
             <div className={`whitespace-nowrap overflow-hidden transition-all duration-250 ease-out ${
-              sidebarCollapsed 
+              isCollapsed 
                 ? 'opacity-0 max-w-0 -translate-x-2 pointer-events-none' 
                 : 'opacity-100 max-w-40 translate-x-0'
             }`}>
@@ -430,9 +444,9 @@ export default function StaffDashboard() {
           {navGroups.map((group, idx) => (
             <div key={idx} className="flex flex-col gap-1.5">
               {idx === 0 ? (
-                <div className={`flex items-center ${sidebarCollapsed ? 'justify-center' : 'justify-between px-3'} mb-1`}>
+                <div className={`flex items-center ${isCollapsed ? 'justify-center' : 'justify-between px-3'} mb-1`}>
                   <div className={`transition-all duration-250 ease-out overflow-hidden whitespace-nowrap ${
-                    sidebarCollapsed 
+                    isCollapsed 
                       ? 'opacity-0 max-w-0 pointer-events-none' 
                       : 'opacity-100 max-w-40'
                   }`}>
@@ -455,7 +469,7 @@ export default function StaffDashboard() {
               ) : (
                 <>
                   <div className={`transition-all duration-250 ease-out overflow-hidden whitespace-nowrap ${
-                    sidebarCollapsed 
+                    isCollapsed 
                       ? 'opacity-0 max-w-0 pointer-events-none h-0' 
                       : 'opacity-100 max-w-40 px-3 mb-1'
                   }`}>
@@ -463,19 +477,19 @@ export default function StaffDashboard() {
                       {group.title}
                     </span>
                   </div>
-                  {sidebarCollapsed && (
+                  {isCollapsed && (
                     <div className="h-px bg-border/60 mx-2 my-1 shrink-0 transition-opacity duration-250" />
                   )}
                 </>
               )}
-              <div className={`flex flex-col gap-1 ${sidebarCollapsed ? 'px-1' : 'px-1.5'}`}>
+              <div className={`flex flex-col gap-1 ${isCollapsed ? 'px-1' : 'px-1.5'}`}>
                 {group.items.map(item => (
                   <SideItem
                     key={item.id}
                     icon={item.icon}
                     label={item.label}
                     active={activeNav === item.id}
-                    collapsed={sidebarCollapsed}
+                    collapsed={isCollapsed}
                     onClick={() => {
                       if (myWindow) {
                         handleNavChange(item.id)
@@ -492,7 +506,7 @@ export default function StaffDashboard() {
         </nav>
         {/* Window required hint in sidebar */}
         {!myWindow && (
-          sidebarCollapsed ? (
+          isCollapsed ? (
             <div 
               title="Claim a window to unlock navigation." 
               className="mx-auto mb-2 w-8.5 h-8.5 rounded-lg bg-gold-light border border-gold-border text-gold flex items-center justify-center text-sm font-bold cursor-help shadow-2xs shrink-0"
@@ -508,7 +522,7 @@ export default function StaffDashboard() {
       </aside>
 
       {/* ── Right Content ── */}
-      <div className={`${sidebarCollapsed ? 'md:ml-20' : 'md:ml-64'} ml-0 flex-1 flex flex-col min-h-screen min-w-0 transition-[margin-left] duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]`}>
+      <div className={`${isCollapsed ? 'md:ml-20' : 'md:ml-64'} ml-0 flex-1 flex flex-col min-h-screen min-w-0 transition-[margin-left] duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]`}>
 
         {/* Top Bar */}
         <header className="bg-white border-b border-border px-3 sm:px-7 h-14 sm:h-15 flex items-center justify-between sticky top-0 z-40 shadow-[0_1px_4px_rgba(0,0,0,0.04)] gap-1.5 sm:gap-2">
@@ -568,7 +582,7 @@ export default function StaffDashboard() {
                 </div>
               </button>
               {profileOpen && (
-                <div className="absolute top-11 right-0 w-70 bg-white rounded-2xl shadow-[0_8px_30px_rgba(0,0,0,0.12)] p-4 z-110 border border-border">
+                <div className="absolute top-11 right-0 w-70 max-w-[calc(100vw-1.5rem)] bg-white rounded-2xl shadow-[0_8px_30px_rgba(0,0,0,0.12)] p-4 z-110 border border-border animate-fade-up">
                   <div className="flex gap-3 mb-4 items-start">
                     <div className="w-10.5 h-10.5 rounded-full bg-maroon-mid border-[1.5px] border-maroon-border flex items-center justify-center text-fluid-16 font-bold text-maroon overflow-hidden shrink-0">
                       {user?.profile_image ? (

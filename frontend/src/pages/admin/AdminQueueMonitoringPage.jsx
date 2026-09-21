@@ -52,11 +52,11 @@ const cleanDocName = (name = '') => {
   return String(name).replace(/([^\s])\(/g, '$1 (').trim()
 }
 
-const CustomDropdown = ({ value, onChange, options, label, isOpen, onToggle, onClose, align = 'left' }) => {
+const CustomDropdown = ({ value, onChange, options, label, isOpen, onToggle, onClose, align = 'left', className = '' }) => {
   const currentLabel = options.find(o => o.value === value)?.label || value
 
   return (
-    <div className="relative z-20 group min-w-36">
+    <div className={`relative z-20 group min-w-32.5 sm:min-w-36 ${className}`}>
       {label && <div className="text-fluid-10 font-extrabold text-text-muted uppercase tracking-[0.08em] mb-1">{label}</div>}
       <button
         type="button"
@@ -71,7 +71,7 @@ const CustomDropdown = ({ value, onChange, options, label, isOpen, onToggle, onC
       {isOpen && (
         <>
           <div className="fixed inset-0 z-40" onClick={onClose} />
-          <div className={`absolute ${align === 'right' ? 'right-0' : 'left-0'} top-full mt-1.5 w-max min-w-48 max-w-72 sm:max-w-80 bg-white rounded-2xl border border-border shadow-[0_12px_36px_rgba(0,0,0,0.12)] p-1.5 z-50 animate-fade-up max-h-64 overflow-y-auto overflow-x-hidden custom-scrollbar`}>
+          <div className={`absolute ${align === 'right' ? 'right-0' : 'left-0'} top-full mt-1.5 w-max min-w-48 max-w-[calc(100vw-2rem)] sm:max-w-80 bg-white rounded-2xl border border-border shadow-[0_12px_36px_rgba(0,0,0,0.12)] p-1.5 z-50 animate-fade-up max-h-64 overflow-y-auto overflow-x-hidden custom-scrollbar`}>
             {options.map(o => {
               const isActive = value === o.value;
               return (
@@ -1089,8 +1089,9 @@ export default function AdminQueueMonitoringPage() {
             </div>
 
             {/* Dropdown Filters */}
-            <div className="flex items-center gap-2.5 flex-wrap">
+            <div className="flex items-center gap-2.5 flex-wrap w-full sm:w-auto">
               <CustomDropdown
+                className="flex-1 sm:flex-initial"
                 value={txTypeFilter}
                 onChange={val => { setTxTypeFilter(val); setCurrentPage(1); }}
                 isOpen={openDropdown === 'txType'}
@@ -1104,6 +1105,7 @@ export default function AdminQueueMonitoringPage() {
               />
 
               <CustomDropdown
+                className="flex-1 sm:flex-initial"
                 value={priorityFilter}
                 onChange={val => { setPriorityFilter(val); setCurrentPage(1); }}
                 isOpen={openDropdown === 'priority'}

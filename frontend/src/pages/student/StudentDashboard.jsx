@@ -282,8 +282,8 @@ export default function StudentDashboard({ embedded = false }) {
               <Bell size={20} className="animate-pulse" />
             </div>
             <div>
-              <h4 className="text-[15px] font-bold text-green-800 m-0">Ready for Pickup!</h4>
-              <p className="text-[13px] text-green-700 m-0">You have {documentsToClaim.length} document{documentsToClaim.length > 1 ? 's' : ''} ready to be claimed at the Registrar's Office.</p>
+              <h4 className="text-[14px] md:text-[15px] font-bold text-green-800 m-0">Ready for Pickup!</h4>
+              <p className="text-[12px] md:text-[13px] text-green-700 m-0">You have {documentsToClaim.length} document{documentsToClaim.length > 1 ? 's' : ''} ready to be claimed at the Registrar's Office.</p>
             </div>
           </div>
           <ChevronRight size={20} className="text-green-600 shrink-0" />
@@ -300,11 +300,11 @@ export default function StudentDashboard({ embedded = false }) {
           <div className="absolute right-[15%] bottom-[-45%] w-37.5 h-37.5 md:w-62.5 md:h-62.5 rounded-full pointer-events-none animate-float-bubble-alt blur-[20px] md:blur-[30px]" style={{ background: `radial-gradient(circle, rgba(123,26,42,0.06) 0%, transparent 70%)` }} />
 
           <div className="relative z-1">
-            <p className="md:hidden text-[13px] text-text-sub font-medium m-0 mb-1">{getGreeting()},</p>
-            <h1 className="font-serif text-[clamp(24px,5vw,42px)] font-bold text-maroon m-0 mb-2 md:mb-3 leading-[1.15]">
+            <p className="md:hidden text-[12px] text-text-sub font-medium m-0 mb-1">{getGreeting()},</p>
+            <h1 className="font-serif text-[clamp(22px,4.5vw,42px)] font-bold text-maroon m-0 mb-2 md:mb-3 leading-[1.15]">
               <span className="hidden md:inline text-text-main">{getGreeting()}, </span>{user?.first_name || 'Student'}!
             </h1>
-            <p className="text-[12px] md:text-[13.5px] text-text-sub font-medium m-0 max-w-145 leading-normal md:leading-[1.6]">
+            <p className="text-[11px] md:text-[13.5px] text-text-sub font-medium m-0 max-w-145 leading-normal md:leading-[1.6]">
               Track live queue status, manage appointments, and access registrar services.
             </p>
           </div>
@@ -327,8 +327,8 @@ export default function StudentDashboard({ embedded = false }) {
                 <Calendar size={22} className="text-maroon/90" />
               </div>
               <div className="flex-1 min-w-0">
-                <div className="text-[15px] font-bold text-text-main font-serif group-hover:text-maroon transition-colors duration-200 truncate">Book Appointment</div>
-                <div className="text-[12px] text-text-sub mt-1 leading-snug line-clamp-2 pr-1">Schedule a new appointment with the campus registrar</div>
+                <div className="text-[14px] md:text-[15px] font-bold text-text-main font-serif group-hover:text-maroon transition-colors duration-200 truncate">Book Appointment</div>
+                <div className="text-[11px] md:text-[12px] text-text-sub mt-1 leading-snug line-clamp-2 pr-1">Schedule a new appointment with the campus registrar</div>
               </div>
               <div className="w-8 h-8 rounded-full bg-off-white flex items-center justify-center text-text-muted group-hover:bg-maroon-light group-hover:text-maroon transition-colors duration-300 shrink-0">
                 <ChevronRight size={18} className="transition-transform duration-300 group-hover:translate-x-0.5" />
@@ -380,15 +380,15 @@ export default function StudentDashboard({ embedded = false }) {
                   <div className="animate-pulse h-5 rounded w-[60%] bg-border" />
                 ) : liveTicket ? (
                   <div>
-                    <div className="text-[16px] font-bold text-maroon font-serif leading-tight">{liveTicket.queue_number}</div>
-                    <div className="text-[12px] text-text-sub mt-0.5 whitespace-nowrap overflow-hidden text-ellipsis">
+                    <div className="text-[15px] md:text-[16px] font-bold text-maroon font-serif leading-tight">{liveTicket.queue_number}</div>
+                    <div className="text-[11px] md:text-[12px] text-text-sub mt-0.5 whitespace-nowrap overflow-hidden text-ellipsis">
                       <span className="font-medium text-text-main">{liveTicket.transaction_type || 'Registrar'}</span>
                     </div>
                   </div>
                 ) : (
                   <div>
-                    <div className="text-[14px] font-semibold text-text-main">No active ticket</div>
-                    <div className="text-[12px] text-text-sub mt-0.5">You are not currently in line</div>
+                    <div className="text-[13px] md:text-[14px] font-semibold text-text-main">No active ticket</div>
+                    <div className="text-[11px] md:text-[12px] text-text-sub mt-0.5">You are not currently in line</div>
                   </div>
                 )}
               </div>
@@ -409,7 +409,7 @@ export default function StudentDashboard({ embedded = false }) {
                 <p className="text-[11px] font-bold text-gold tracking-[0.12em] uppercase m-0 mb-1">
                   Schedule Overview
                 </p>
-                <h2 className="font-serif text-[17px] lg:text-[20px] font-bold text-text-main m-0 leading-tight">
+                <h2 className="font-serif text-[16px] md:text-[17px] lg:text-[20px] font-bold text-text-main m-0 leading-tight">
                   Upcoming Appointments
                 </h2>
               </div>
@@ -464,28 +464,28 @@ export default function StudentDashboard({ embedded = false }) {
                         {apt.hasMultipleDocs ? (
                           <div className="mb-1.5">
                             <div className="flex items-center gap-1.5 flex-wrap">
-                              <h3 className="text-[13px] sm:text-[14px] font-bold text-text-main group-hover:text-maroon transition-colors duration-200 m-0 leading-snug">
+                              <h3 className="text-[12px] sm:text-[14px] font-bold text-text-main group-hover:text-maroon transition-colors duration-200 m-0 leading-snug">
                                 {apt.docCount} Requested Documents
                               </h3>
-                              <span className="text-[9.5px] sm:text-[10px] font-extrabold px-1.5 py-0.5 rounded-full bg-maroon-light text-maroon border border-maroon-border/50 shrink-0 whitespace-nowrap">
+                              <span className="text-[8px] sm:text-[10px] font-extrabold px-1.5 py-0.5 rounded-full bg-maroon-light text-maroon border border-maroon-border/50 shrink-0 whitespace-nowrap">
                                 {apt.docCount} Docs
                               </span>
                             </div>
-                            <p className="text-[11px] sm:text-[12px] text-text-sub truncate m-0 mt-0.5 leading-tight" title={apt.type}>
+                            <p className="text-[10px] sm:text-[12px] text-text-sub truncate m-0 mt-0.5 leading-tight" title={apt.type}>
                               {apt.type}
                             </p>
                           </div>
                         ) : (
                           <div className="mb-1.5">
                             <h3 
-                              className="text-[13px] sm:text-[14px] font-bold text-text-main group-hover:text-maroon transition-colors duration-200 m-0 leading-snug line-clamp-2 wrap-break-word"
+                              className="text-[12px] sm:text-[14px] font-bold text-text-main group-hover:text-maroon transition-colors duration-200 m-0 leading-snug line-clamp-2 wrap-break-word"
                               title={apt.primaryDoc}
                             >
                               {apt.primaryDoc}
                             </h3>
                           </div>
                         )}
-                        <div className="flex flex-wrap gap-1.5 sm:gap-2 items-center text-[10.5px] sm:text-[12px]">
+                        <div className="flex flex-wrap gap-1.5 sm:gap-2 items-center text-[10px] sm:text-[12px]">
                           <span className={`py-0.5 px-2 rounded-md font-semibold flex items-center gap-1.5 shadow-2xs ${
                             apt.isToday 
                               ? 'bg-gold-light text-gold-dark border border-gold-border/60' 
@@ -508,7 +508,7 @@ export default function StudentDashboard({ embedded = false }) {
                     {/* Status & Click Affordance */}
                     <div className="flex flex-col items-center justify-center gap-1.5 shrink-0 ml-2.5 sm:ml-3.5">
                       <span 
-                        className="text-[9.5px] sm:text-[10px] font-extrabold py-0.5 px-2.5 rounded-full uppercase tracking-wider shadow-2xs whitespace-nowrap text-center"
+                        className="text-[8px] sm:text-[10px] font-extrabold py-0.5 px-2.5 rounded-full uppercase tracking-wider shadow-2xs whitespace-nowrap text-center"
                         style={{
                           background: STATUS_STYLES[apt.status]?.bg || '#EFF6FF',
                           color: STATUS_STYLES[apt.status]?.color || '#1D4ED8',
@@ -529,8 +529,8 @@ export default function StudentDashboard({ embedded = false }) {
                 <div className="w-11 h-11 rounded-xl bg-surface border border-border flex items-center justify-center text-text-muted mb-2.5">
                   <Calendar size={20} />
                 </div>
-                <p className="text-[14px] font-bold text-text-main m-0 mb-1">No upcoming appointments</p>
-                <p className="text-[12px] text-text-sub m-0 mb-4 max-w-xs">You don't have any upcoming appointments scheduled with the registrar.</p>
+                <p className="text-[13px] md:text-[14px] font-bold text-text-main m-0 mb-1">No upcoming appointments</p>
+                <p className="text-[11px] md:text-[12px] text-text-sub m-0 mb-4 max-w-xs">You don't have any upcoming appointments scheduled with the registrar.</p>
                 <button
                   onClick={() => navigate('/student/book')}
                   className="py-2 px-4 rounded-xl bg-maroon text-white text-xs font-bold hover:bg-maroon-dark transition-all cursor-pointer shadow-2xs inline-flex items-center gap-1.5"
@@ -549,7 +549,7 @@ export default function StudentDashboard({ embedded = false }) {
             <div className="flex justify-between items-end mb-4">
               <div>
                 <p className="text-[11px] font-semibold text-gold tracking-widest uppercase m-0 mb-0.5">Live Queue</p>
-                <h2 className="font-serif text-[18px] lg:text-[20px] font-bold text-text-main m-0 whitespace-nowrap">Active Registrar Queue</h2>
+                <h2 className="font-serif text-[17px] md:text-[18px] lg:text-[20px] font-bold text-text-main m-0 whitespace-nowrap">Active Registrar Queue</h2>
               </div>
             </div>
 
@@ -572,7 +572,7 @@ export default function StudentDashboard({ embedded = false }) {
                 </div>
                 <div className="bg-white p-3 rounded-[10px] border border-maroon/5 mx-auto mb-4 w-full text-center">
                   <span className="text-[10px] text-text-muted block uppercase tracking-wider font-semibold mb-0.5">Current Status</span>
-                  <strong className="text-[13px] text-maroon font-bold">{liveTicket.current_step}</strong>
+                  <strong className="text-[12px] md:text-[13px] text-maroon font-bold">{liveTicket.current_step}</strong>
                 </div>
               </div>
             ) : activeCounterTickets.length > 0 ? (
@@ -586,7 +586,7 @@ export default function StudentDashboard({ embedded = false }) {
                   </div>
                   <div className="bg-white p-3 rounded-[10px] border border-maroon/5 mx-auto w-full text-center">
                     <span className="text-[10px] text-text-muted block uppercase tracking-wider font-semibold mb-0.5">Now Serving</span>
-                    <strong className="text-[13px] text-text-main font-bold truncate block">{cleanDocName(activeCounterTickets[0].transaction_type)}</strong>
+                    <strong className="text-[12px] md:text-[13px] text-text-main font-bold truncate block">{cleanDocName(activeCounterTickets[0].transaction_type)}</strong>
                   </div>
                 </div>
               ) : (
@@ -595,13 +595,13 @@ export default function StudentDashboard({ embedded = false }) {
                   <div className="grid grid-cols-1 gap-2.5">
                     {activeCounterTickets.map((t) => (
                       <div key={t.queue_ticket_id} className="flex items-center gap-3 sm:gap-4 p-3.5 rounded-xl border border-border bg-off-white">
-                        <div className="font-serif text-[24px] sm:text-[28px] font-bold text-maroon leading-none tracking-[-0.02em] shrink-0 min-w-20 text-center">
+                        <div className="font-serif text-[22px] sm:text-[28px] font-bold text-maroon leading-none tracking-[-0.02em] shrink-0 min-w-20 text-center">
                           {t.queue_number}
                         </div>
                         <div className="w-px h-9 bg-border shrink-0" />
                         <div className="flex-1 min-w-0">
-                          <div className="text-[11px] font-bold text-gold-dark uppercase tracking-wider block mb-0.5">{t.location}</div>
-                          <div className="text-[13px] text-text-main font-semibold truncate">{cleanDocName(t.transaction_type)}</div>
+                          <div className="text-[10px] md:text-[11px] font-bold text-gold-dark uppercase tracking-wider block mb-0.5">{t.location}</div>
+                          <div className="text-[12px] md:text-[13px] text-text-main font-semibold truncate">{cleanDocName(t.transaction_type)}</div>
                         </div>
                       </div>
                     ))}
@@ -620,8 +620,8 @@ export default function StudentDashboard({ embedded = false }) {
                 </div>
                 
                 {/* Typography */}
-                <h3 className="relative z-10 font-serif text-[15px] sm:text-[17px] font-bold text-text-main m-0 mb-1 tracking-tight">No Active Queue Ticket</h3>
-                <p className="relative z-10 text-[11.5px] sm:text-[12.5px] m-0 text-text-sub max-w-xs leading-relaxed">There's no active queue ticket at the moment. Active tickets appear here once called.</p>
+                <h3 className="relative z-10 font-serif text-[14px] sm:text-[17px] font-bold text-text-main m-0 mb-1 tracking-tight">No Active Queue Ticket</h3>
+                <p className="relative z-10 text-[10.5px] sm:text-[12.5px] m-0 text-text-sub max-w-xs leading-relaxed">There's no active queue ticket at the moment. Active tickets appear here once called.</p>
               </div>
             )}
           </div>

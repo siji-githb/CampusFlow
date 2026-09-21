@@ -441,15 +441,18 @@ export default function AdminUserManagementPage() {
                         </button>
 
                         {dropdownOpen === user.id && (
-                          <div className="absolute bottom-full right-0 mb-1.5 bg-white border border-border rounded-xl shadow-[0_8px_24px_rgba(0,0,0,0.12)] p-1.5 z-20 min-w-36 animate-fade-up">
-                            <button
-                              onClick={() => handleToggleStatus(user.id, user.is_active !== false)}
-                              className={`w-full py-2 px-3 border-none bg-transparent text-left text-fluid-12 cursor-pointer rounded-lg flex items-center gap-2 font-sans font-bold transition-colors ${user.is_active !== false ? 'text-danger hover:bg-danger-light' : 'text-success hover:bg-success-light'}`}
-                            >
-                              <span className="shrink-0">{user.is_active !== false ? <Ban size={14} /> : <CheckCircle size={14} />}</span>
-                              <span>{user.is_active !== false ? 'Suspend User' : 'Reactivate User'}</span>
-                            </button>
-                          </div>
+                          <>
+                            <div className="fixed inset-0 z-10" onClick={() => setDropdownOpen(null)} />
+                            <div className="absolute bottom-full right-0 mb-1.5 bg-white border border-border rounded-xl shadow-[0_8px_24px_rgba(0,0,0,0.12)] p-1.5 z-20 min-w-36 animate-fade-up">
+                              <button
+                                onClick={() => { handleToggleStatus(user.id, user.is_active !== false); setDropdownOpen(null); }}
+                                className={`w-full py-2 px-3 border-none bg-transparent text-left text-fluid-12 cursor-pointer rounded-lg flex items-center gap-2 font-sans font-bold transition-colors ${user.is_active !== false ? 'text-danger hover:bg-danger-light' : 'text-success hover:bg-success-light'}`}
+                              >
+                                <span className="shrink-0">{user.is_active !== false ? <Ban size={14} /> : <CheckCircle size={14} />}</span>
+                                <span>{user.is_active !== false ? 'Suspend User' : 'Reactivate User'}</span>
+                              </button>
+                            </div>
+                          </>
                         )}
                       </div>
                     </div>
@@ -464,6 +467,7 @@ export default function AdminUserManagementPage() {
                 const name     = `${user.first_name} ${user.last_name}`
                 const uid      = user.student_id || user.staff_id || `UID-${user.id?.slice(0, 8)}`
                 const isLast   = idx === paginated.length - 1
+                const isNearBottom = idx >= Math.max(0, paginated.length - 2)
 
                 return (
                   <div key={user.id} className={`grid grid-cols-[120px_1.6fr_1.4fr_130px_100px] p-[16px_24px] items-center transition-all duration-200 hover:bg-surface group ${isLast ? 'border-none' : 'border-b border-border'} bg-white ${user.is_active === false ? 'opacity-60 grayscale-[0.2]' : 'opacity-100'}`}>
@@ -503,15 +507,18 @@ export default function AdminUserManagementPage() {
                       ><MoreVertical size={16} /></button>
                       
                       {dropdownOpen === user.id && (
-                        <div className="absolute top-full right-0 mt-2 bg-white border border-border rounded-xl shadow-[0_8px_24px_rgba(0,0,0,0.12)] p-1.5 z-10 min-w-35 animate-fade-up" style={{ animationDuration: '0.15s' }}>
-                          <button
-                            onClick={() => handleToggleStatus(user.id, user.is_active !== false)}
-                            className={`w-full py-2 px-3 border-none bg-transparent text-left text-fluid-13 cursor-pointer rounded-lg flex items-center gap-2.5 transition-colors duration-150 font-sans font-semibold ${user.is_active !== false ? 'text-danger hover:bg-danger-light' : 'text-success hover:bg-success-light'}`}
-                          >
-                            <span className="flex items-center shrink-0">{user.is_active !== false ? <Ban size={15} /> : <CheckCircle size={15} />}</span> 
-                            {user.is_active !== false ? 'Suspend User' : 'Reactivate User'}
-                          </button>
-                        </div>
+                        <>
+                          <div className="fixed inset-0 z-10" onClick={() => setDropdownOpen(null)} />
+                          <div className={`absolute ${isNearBottom ? 'bottom-full mb-2' : 'top-full mt-2'} right-0 bg-white border border-border rounded-xl shadow-[0_8px_24px_rgba(0,0,0,0.12)] p-1.5 z-20 min-w-35 animate-fade-up`} style={{ animationDuration: '0.15s' }}>
+                            <button
+                              onClick={() => { handleToggleStatus(user.id, user.is_active !== false); setDropdownOpen(null); }}
+                              className={`w-full py-2 px-3 border-none bg-transparent text-left text-fluid-13 cursor-pointer rounded-lg flex items-center gap-2.5 transition-colors duration-150 font-sans font-semibold ${user.is_active !== false ? 'text-danger hover:bg-danger-light' : 'text-success hover:bg-success-light'}`}
+                            >
+                              <span className="flex items-center shrink-0">{user.is_active !== false ? <Ban size={15} /> : <CheckCircle size={15} />}</span> 
+                              <span>{user.is_active !== false ? 'Suspend User' : 'Reactivate User'}</span>
+                            </button>
+                          </div>
+                        </>
                       )}
                     </div>
                   </div>

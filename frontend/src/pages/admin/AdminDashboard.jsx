@@ -38,10 +38,10 @@ const SideItem = ({ icon, label, active, onClick, badge, collapsed }) => (
     <span className={`flex items-center justify-center w-5 shrink-0 transition-all duration-250 ease-out ${active ? 'opacity-100 scale-105 text-maroon' : 'opacity-70 group-hover:opacity-100'}`}>
       {icon}
     </span>
-    <span className={`tracking-wide whitespace-nowrap transition-all duration-250 ease-out overflow-hidden ${
+    <span className={`tracking-wide whitespace-nowrap transition-all duration-250 ease-out overflow-hidden truncate ${
       collapsed 
         ? 'opacity-0 max-w-0 -translate-x-2 pointer-events-none' 
-        : 'opacity-100 max-w-44 translate-x-0 flex-1'
+        : 'opacity-100 max-w-52 translate-x-0 flex-1'
     }`}>
       {label}
     </span>
@@ -292,7 +292,7 @@ function OverviewTab() {
     {
       label: 'Completion Rate',
       value: loading || !stats ? null : `${stats?.today?.total > 0 ? Math.round(((stats?.today?.completed || 0) / stats?.today?.total) * 100) : 0}%`,
-      sub: loading || !stats ? '—' : 'Of total scheduled',
+      sub: loading || !stats ? '—' : 'Of today\'s schedule',
       subColorClass: 'text-maroon',
       icon: <CheckSquare size={18} strokeWidth={2.2} />,
       colorClass: 'text-maroon',
@@ -302,7 +302,7 @@ function OverviewTab() {
     {
       label: 'Avg. Wait Time',
       value: loading || !stats ? null : `${Math.round(stats?.avg_wait_minutes || 0)} min`,
-      sub: loading || !stats ? '—' : 'System-wide average',
+      sub: loading || !stats ? '—' : 'Of today\'s Queues ',
       subColorClass: 'text-gold',
       icon: <Clock size={18} strokeWidth={2.2} />,
       colorClass: 'text-gold',
@@ -540,9 +540,23 @@ export default function AdminDashboard() {
     } catch {
       /* ignore local storage errors */
     }
-    // Default to compact icon rail (80px) on tablet portrait (< 1024px) for optimal content width
-    return typeof window !== 'undefined' ? window.innerWidth < 1024 : false
+    // Default to compact icon rail (80px) on tablet portrait (768px - 1023px)
+    return typeof window !== 'undefined' ? (window.innerWidth >= 768 && window.innerWidth < 1024) : false
   })
+
+  const [isDesktop, setIsDesktop] = useState(() => typeof window !== 'undefined' ? window.innerWidth >= 768 : true)
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsDesktop(window.innerWidth >= 768)
+    }
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [])
+
+  // On mobile (<768px), the drawer is always fully expanded when opened.
+  // Collapsed state only applies on desktop screens (>=768px).
+  const isCollapsed = isDesktop && sidebarCollapsed
 
   useEffect(() => {
     try {
@@ -556,7 +570,7 @@ export default function AdminDashboard() {
   useEffect(() => {
     const checkWidth = () => {
       if (window.innerWidth >= 768) {
-        document.documentElement.style.setProperty('--cf-sidebar-width', sidebarCollapsed ? '80px' : '256px')
+        document.documentElement.style.setProperty('--cf-sidebar-width', isCollapsed ? '80px' : '256px')
       } else {
         document.documentElement.style.setProperty('--cf-sidebar-width', '0px')
       }
@@ -567,7 +581,7 @@ export default function AdminDashboard() {
       window.removeEventListener('resize', checkWidth)
       document.documentElement.style.removeProperty('--cf-sidebar-width')
     }
-  }, [sidebarCollapsed])
+  }, [isCollapsed])
 
   const fetchBadgeStats = useCallback(() => {
     Promise.all([
@@ -636,9 +650,9 @@ export default function AdminDashboard() {
       {navGroups.map((group, idx) => (
         <div key={idx} className="flex flex-col gap-1.5">
           {idx === 0 ? (
-            <div className={`flex items-center ${sidebarCollapsed ? 'justify-center' : 'justify-between px-3'} mb-1`}>
+            <div className={`flex items-center ${isCollapsed ? 'justify-center' : 'justify-between px-3'} mb-1`}>
               <div className={`transition-all duration-250 ease-out overflow-hidden whitespace-nowrap ${
-                sidebarCollapsed 
+                isCollapsed 
                   ? 'opacity-0 max-w-0 pointer-events-none' 
                   : 'opacity-100 max-w-40'
               }`}>
@@ -661,7 +675,7 @@ export default function AdminDashboard() {
           ) : (
             <>
               <div className={`transition-all duration-250 ease-out overflow-hidden whitespace-nowrap ${
-                sidebarCollapsed 
+                isCollapsed 
                   ? 'opacity-0 max-w-0 pointer-events-none h-0' 
                   : 'opacity-100 max-w-40 px-3 mb-1'
               }`}>
@@ -669,17 +683,17 @@ export default function AdminDashboard() {
                   {group.title}
                 </span>
               </div>
-              {sidebarCollapsed && (
+              {isCollapsed && (
                 <div className="h-px bg-border/60 mx-2 my-1 shrink-0 transition-opacity duration-250" />
               )}
             </>
           )}
-          <div className={`flex flex-col gap-1 ${sidebarCollapsed ? 'px-1' : 'px-1.5'}`}>
+          <div className={`flex flex-col gap-1 ${isCollapsed ? 'px-1' : 'px-1.5'}`}>
             {group.items.map(item => (
               <SideItem key={item.id} icon={item.icon} label={item.label}
                 active={activeNav === item.id}
                 badge={item.badge}
-                collapsed={sidebarCollapsed}
+                collapsed={isCollapsed}
                 onClick={() => handleNavChange(item.id)} />
             ))}
           </div>
@@ -697,13 +711,13 @@ export default function AdminDashboard() {
       )}
 
       {/* ── Fixed Left Sidebar (Desktop & Mobile Slide-in Drawer) ── */}
-      <aside className={`${sidebarCollapsed ? 'md:w-20 md:px-2.5' : 'md:w-64 md:px-3.5'} w-64 px-3.5 shrink-0 bg-white border-r border-border flex flex-col fixed left-0 top-0 bottom-0 z-50 py-5 transition-[width,padding] duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${isMobileOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}`}>
+      <aside className={`${isCollapsed ? 'md:w-20 md:px-2.5' : 'md:w-64 md:px-3.5'} w-72 max-w-[85vw] px-3.5 shrink-0 bg-white border-r border-border flex flex-col fixed left-0 top-0 bottom-0 z-50 py-5 transition-[width,padding] duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${isMobileOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}`}>
         {/* Brand */}
-        <div className={`flex items-center ${sidebarCollapsed ? 'justify-center' : 'justify-between pl-1'} mb-7`}>
+        <div className={`flex items-center ${isCollapsed ? 'justify-center' : 'justify-between pl-1'} mb-7`}>
           <div className="flex items-center gap-2.5 min-w-0">
             <img src={campusFlowLogo} alt="CampusFlow" className="w-8.5 h-8.5 rounded-full bg-white object-contain border border-slate-200 shrink-0 shadow-2xs" />
             <div className={`whitespace-nowrap overflow-hidden transition-all duration-250 ease-out ${
-              sidebarCollapsed 
+              isCollapsed 
                 ? 'opacity-0 max-w-0 -translate-x-2 pointer-events-none' 
                 : 'opacity-100 max-w-40 translate-x-0'
             }`}>
@@ -720,17 +734,18 @@ export default function AdminDashboard() {
       </aside>
 
       {/* ── Right Side ── */}
-      <div className={`${sidebarCollapsed ? 'md:ml-20' : 'md:ml-64'} ml-0 flex-1 flex flex-col min-h-screen min-w-0 w-full transition-[margin-left] duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]`}>
+      <div className={`${isCollapsed ? 'md:ml-20' : 'md:ml-64'} ml-0 flex-1 flex flex-col min-h-screen min-w-0 w-full transition-[margin-left] duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]`}>
 
         {/* Top Bar */}
         <header className="bg-white border-b border-border px-4 sm:px-8 h-15 flex items-center justify-between sticky top-0 z-40 shadow-[0_1px_3px_rgba(0,0,0,0.04)] gap-2">
           <div className="flex items-center gap-2 sm:gap-3 min-w-0">
             <button 
-              onClick={() => setIsMobileOpen(true)}
-              className="md:hidden w-9 h-9 rounded-xl bg-surface text-text-muted hover:text-text-main flex items-center justify-center border border-border cursor-pointer transition-colors shrink-0"
-              aria-label="Open menu"
+              onClick={() => setIsMobileOpen(!isMobileOpen)}
+              className="md:hidden w-9 h-9 flex items-center justify-center text-text-main hover:text-maroon hover:bg-surface rounded-xl border border-border/80 transition-all cursor-pointer shrink-0"
+              title="Open Navigation Menu"
+              aria-label="Open Navigation Menu"
             >
-              <Menu size={18} />
+              <Menu size={19} strokeWidth={2.2} />
             </button>
             <AdminGlobalSearch setActiveNav={handleNavChange} />
           </div>
@@ -761,7 +776,7 @@ export default function AdminDashboard() {
                 </div>
               </button>
               {profileOpen && (
-                <div className="absolute top-13 right-0 w-70 bg-white rounded-2xl shadow-[0_8px_30px_rgba(0,0,0,0.12)] p-4 z-110 border border-border animate-fade-up">
+                <div className="absolute top-13 right-0 w-70 max-w-[calc(100vw-1.5rem)] bg-white rounded-2xl shadow-[0_8px_30px_rgba(0,0,0,0.12)] p-4 z-110 border border-border animate-fade-up">
                   <div className="flex gap-3 mb-4 items-start">
                     <div className="w-10.5 h-10.5 rounded-full bg-maroon-mid border-[1.5px] border-maroon-border flex items-center justify-center text-fluid-16 font-bold text-maroon overflow-hidden shrink-0">
                       {user?.profile_image ? (

@@ -76,7 +76,7 @@ function TimeframeDropdown({ value, onChange }) {
       {isOpen && (
         <>
           <div className="fixed inset-0 z-40" onClick={() => setIsOpen(false)} />
-          <div className="absolute right-0 top-full mt-1.5 w-48 bg-white rounded-2xl border border-border shadow-[0_12px_36px_rgba(0,0,0,0.12)] p-1.5 z-50 animate-fade-up max-h-60 overflow-y-auto overflow-x-hidden custom-scrollbar">
+          <div className="absolute right-0 top-full mt-1.5 w-48 max-w-[calc(100vw-2rem)] bg-white rounded-2xl border border-border shadow-[0_12px_36px_rgba(0,0,0,0.12)] p-1.5 z-50 animate-fade-up max-h-60 overflow-y-auto overflow-x-hidden custom-scrollbar">
             <div className="px-2.5 py-1 text-fluid-10 font-extrabold text-text-muted uppercase tracking-wider">Timeframe</div>
             {options.map(o => {
               const isActive = value === o.value
@@ -313,7 +313,7 @@ export default function AdminRegistrarRecordsPage() {
               {openDropdown === 'status' && (
                 <>
                   <div className="fixed inset-0 z-40" onClick={() => setOpenDropdown(null)} />
-                  <div className="absolute left-0 top-full mt-1.5 w-max min-w-44 bg-white rounded-2xl border border-border shadow-[0_12px_36px_rgba(0,0,0,0.12)] p-1.5 z-50 animate-fade-up max-h-64 overflow-y-auto overflow-x-hidden custom-scrollbar">
+                  <div className="absolute left-0 top-full mt-1.5 w-max min-w-44 max-w-[calc(100vw-2rem)] bg-white rounded-2xl border border-border shadow-[0_12px_36px_rgba(0,0,0,0.12)] p-1.5 z-50 animate-fade-up max-h-64 overflow-y-auto overflow-x-hidden custom-scrollbar">
                     {['all', 'completed', 'released', 'processing', 'pending', 'archived'].map(s => {
                       const count = s === 'all' ? records.length : records.filter(r => r.status === s).length
                       const label = s === 'all' ? 'All Statuses' : (STATUS_CFG[s]?.label || s)
@@ -354,7 +354,7 @@ export default function AdminRegistrarRecordsPage() {
               {openDropdown === 'type' && (
                 <>
                   <div className="fixed inset-0 z-40" onClick={() => setOpenDropdown(null)} />
-                  <div className="absolute left-0 top-full mt-1.5 w-max min-w-56 max-w-80 sm:max-w-96 bg-white rounded-2xl border border-border shadow-[0_12px_36px_rgba(0,0,0,0.12)] p-1.5 z-50 animate-fade-up max-h-72 overflow-y-auto overflow-x-hidden custom-scrollbar">
+                  <div className="absolute right-0 sm:right-auto sm:left-0 top-full mt-1.5 w-max min-w-56 max-w-[calc(100vw-2.5rem)] sm:max-w-96 bg-white rounded-2xl border border-border shadow-[0_12px_36px_rgba(0,0,0,0.12)] p-1.5 z-50 animate-fade-up max-h-72 overflow-y-auto overflow-x-hidden custom-scrollbar">
                     <div
                       onClick={() => { setActiveType('all'); setPage(1); setOpenDropdown(null); }}
                       className={`px-3 py-2 rounded-xl cursor-pointer flex items-center justify-between gap-2 text-fluid-12 transition-colors ${

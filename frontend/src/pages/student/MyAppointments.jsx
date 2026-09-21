@@ -272,7 +272,7 @@ function AppointmentDetailsContent({
                 <Calendar size={22} />
               </div>
               <div>
-                <h4 className="text-[15px] font-bold text-text-main m-0 mb-1">Scheduled for Release</h4>
+                <h4 className="text-[14px] md:text-[15px] font-bold text-text-main m-0 mb-1">Scheduled for Release</h4>
                 <p className="text-[12.5px] text-text-sub m-0 leading-relaxed">
                   Your document is currently being prepared and processed in the back office. It is scheduled for release on <strong>{new Date(selectedAppt.release_date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</strong>.
                 </p>
@@ -307,7 +307,7 @@ function AppointmentDetailsContent({
                 <FileCheck size={22} />
               </div>
               <div>
-                <h4 className="text-[15px] font-bold text-text-main m-0 mb-1">Document Ready for Collection</h4>
+                <h4 className="text-[14px] md:text-[15px] font-bold text-text-main m-0 mb-1">Document Ready for Collection</h4>
                 <p className="text-[12.5px] text-text-sub m-0 leading-relaxed">
                   Your requested official document is verified, printed, sealed, and ready for claiming at the Registrar's Office.
                 </p>
@@ -361,7 +361,7 @@ function AppointmentDetailsContent({
                 if (onCloseMobileModal) onCloseMobileModal();
                 navigate('/student/queue?tab=active');
               }} 
-              className="w-full py-3.5 px-4 text-[14px] font-bold text-white bg-success border-none rounded-xl font-sans flex items-center justify-center gap-2 cursor-pointer hover:bg-success-dark transition-all shadow-sm hover:-translate-y-0.5"
+              className="w-full py-3.5 px-4 text-[13px] md:text-[14px] font-bold text-white bg-success border-none rounded-xl font-sans flex items-center justify-center gap-2 cursor-pointer hover:bg-success-dark transition-all shadow-sm hover:-translate-y-0.5"
             >
               <FileCheck size={18} /> View Digital Claim Stub
             </button>
@@ -375,7 +375,7 @@ function AppointmentDetailsContent({
                 <CheckCircle size={22} />
               </div>
               <div>
-                <h4 className="text-[15px] font-bold text-text-main m-0 mb-1">Document Officially Released</h4>
+                <h4 className="text-[14px] md:text-[15px] font-bold text-text-main m-0 mb-1">Document Officially Released</h4>
                 <p className="text-[12.5px] text-text-sub m-0 leading-relaxed">
                   This document was verified, claimed, and released by the Registrar's Office. The transaction is marked complete.
                 </p>
@@ -445,7 +445,7 @@ function AppointmentDetailsContent({
                 <AlertTriangle size={22} />
               </div>
               <div>
-                <h4 className="text-[15px] font-bold text-text-main m-0 mb-1">Appointment Cancelled</h4>
+                <h4 className="text-[14px] md:text-[15px] font-bold text-text-main m-0 mb-1">Appointment Cancelled</h4>
                 <p className="text-[12.5px] text-text-sub m-0 leading-relaxed">
                   This appointment slot was cancelled. You may schedule a new appointment whenever you are ready.
                 </p>
@@ -490,7 +490,7 @@ function AppointmentDetailsContent({
                   <Zap size={22} className="text-white fill-white" />
                 </div>
                 <div className="flex-1">
-                  <h4 className="text-[15px] font-bold text-text-main m-0 mb-1">Appointment is Today!</h4>
+                  <h4 className="text-[14px] md:text-[15px] font-bold text-text-main m-0 mb-1">Appointment is Today!</h4>
                   <p className="text-[12.5px] text-text-sub m-0 leading-relaxed mb-3">
                     When you arrive at the Registrar's Office, activate your ticket on the <strong className="text-maroon font-semibold">Upcoming</strong> tab to enter the live waiting line.
                   </p>
@@ -513,7 +513,7 @@ function AppointmentDetailsContent({
                   <Calendar size={22} />
                 </div>
                 <div>
-                  <h4 className="text-[15px] font-bold text-text-main m-0 mb-1">Appointment Confirmed & Reserved</h4>
+                  <h4 className="text-[14px] md:text-[15px] font-bold text-text-main m-0 mb-1">Appointment Confirmed & Reserved</h4>
                   <p className="text-[12.5px] text-text-sub m-0 leading-relaxed">
                     Your appointment slot is reserved. Please review the checklist below and bring all required items on your scheduled day.
                   </p>
@@ -1159,7 +1159,7 @@ export default function MyAppointments({ embedded = false }) {
             ) : (
               <div className="flex flex-col items-center justify-center flex-1 text-center py-20 text-text-muted">
                 <Inbox size={40} className="mb-3 opacity-40 text-gold" />
-                <p className="font-semibold text-[15px] m-0 text-text-main">No Appointment Selected</p>
+                <p className="font-semibold text-[14px] md:text-[15px] m-0 text-text-main">No Appointment Selected</p>
                 <p className="text-[13px] text-text-sub mt-1">Select an appointment from the list to view its complete details.</p>
               </div>
             )}
@@ -1188,7 +1188,7 @@ export default function MyAppointments({ embedded = false }) {
             <div className="w-12 h-12 rounded-full bg-red-100 text-maroon flex items-center justify-center mx-auto mb-4">
               <AlertTriangle size={24} />
             </div>
-            <h3 className="font-serif text-[18px] font-bold text-text-main m-0 mb-2">Cancel Appointment?</h3>
+            <h3 className="font-serif text-[17px] md:text-[18px] font-bold text-text-main m-0 mb-2">Cancel Appointment?</h3>
             <p className="text-[13px] text-text-sub m-0 mb-6 leading-relaxed">
               Are you sure you want to cancel this appointment slot? This action cannot be undone.
             </p>
@@ -1226,7 +1226,7 @@ export default function MyAppointments({ embedded = false }) {
             <div className="w-12 h-12 rounded-full bg-red-100 text-maroon flex items-center justify-center mx-auto mb-4">
               <Trash2 size={24} />
             </div>
-            <h3 className="font-serif text-[18px] font-bold text-text-main m-0 mb-2">Clear Cancelled Appointments?</h3>
+            <h3 className="font-serif text-[17px] md:text-[18px] font-bold text-text-main m-0 mb-2">Clear Cancelled Appointments?</h3>
             <p className="text-[13px] text-text-sub m-0 mb-6 leading-relaxed">
               This will remove all cancelled appointment records from your view permanently.
             </p>

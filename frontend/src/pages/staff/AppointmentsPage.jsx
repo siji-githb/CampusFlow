@@ -187,7 +187,7 @@ const StatusDropdown = ({ value, onChange }) => {
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center justify-between gap-3 py-2 px-3.5 rounded-xl border border-border bg-white text-fluid-12-5 text-text-main font-bold shadow-2xs hover:border-maroon/40 hover:shadow-xs transition-all cursor-pointer font-sans min-w-40"
+        className="w-full sm:w-auto flex items-center justify-between gap-3 py-2 px-3.5 rounded-xl border border-border bg-white text-fluid-12-5 text-text-main font-bold shadow-2xs hover:border-maroon/40 hover:shadow-xs transition-all cursor-pointer font-sans min-w-36 sm:min-w-40"
       >
         <div className="flex items-center gap-2">
           {current.dot && <span className={`w-2 h-2 rounded-full ${current.dot} shrink-0`} />}
@@ -199,7 +199,7 @@ const StatusDropdown = ({ value, onChange }) => {
       {isOpen && (
         <>
           <div className="fixed inset-0 z-40" onClick={() => setIsOpen(false)} />
-          <div className="absolute right-0 top-full mt-1.5 w-48 bg-white rounded-xl border border-border shadow-xl p-1.5 z-50 animate-fade-up" style={{ animationDuration: '0.15s' }}>
+          <div className="absolute left-0 sm:left-auto sm:right-0 top-full mt-1.5 w-full sm:w-48 max-w-[calc(100vw-2rem)] bg-white rounded-xl border border-border shadow-xl p-1.5 z-50 animate-fade-up" style={{ animationDuration: '0.15s' }}>
             {STATUS_OPTIONS.map(o => {
               const isActive = value === o.value
               return (
@@ -573,7 +573,7 @@ export default function AppointmentsPage() {
               </div>
 
               {/* Status Dropdown */}
-              <div className="flex items-center gap-1.5 shrink-0">
+              <div className="flex items-center gap-1.5 w-full sm:w-auto shrink-0">
                 <span className="text-fluid-10 sm:text-fluid-10-5 font-extrabold text-text-muted uppercase tracking-[0.08em] hidden xl:inline-block">Status</span>
                 <StatusDropdown
                   value={statusFilter}

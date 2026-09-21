@@ -7,6 +7,21 @@ import DonutChart from '../../components/DonutChart'
 
 const SERIES_COLORS = ['#7B1A2A', '#B8900A', '#1D4ED8', '#15803D', '#6D28D9', '#EA580C']
 
+const formatTurnaroundTime = (mins, total) => {
+  if (total === 0 || mins === undefined || mins === null) return '—'
+  if (mins <= 0) return 'Same day'
+  if (mins < 60) return `${mins}m`
+  if (mins < 1440) return `${Math.round(mins / 60)}h`
+  const days = mins / 1440
+  if (days < 7) {
+    const dStr = days.toFixed(1).replace('.0', '')
+    return dStr === '1' ? '1 day' : `${dStr} days`
+  }
+  const weeks = days / 7
+  const wStr = weeks.toFixed(1).replace('.0', '')
+  return wStr === '1' ? '1 week' : `${wStr} weeks`
+}
+
 // ── Filter Pill ────────────────────────────────────────────────────────────────
 const FilterSelect = ({
   label,
@@ -357,9 +372,9 @@ export default function AdminAnalyticsPage() {
         windows.push(daysAgo(new Date(y, m + 1, 1))) // the end boundary
       }
 
-      // Fetch all windows in parallel (always fetch all, filter client-side)
-      const p1 = Promise.all(windows.map(w => getReports(token, w, 'all')))
-      const p2 = viewType === 'annually' ? p1 : Promise.all(annualWindows.map(w => getReports(token, w, 'all')))
+      // Fetch all windows in parallel for the selected document type
+      const p1 = Promise.all(windows.map(w => getReports(token, w, docType)))
+      const p2 = viewType === 'annually' ? p1 : Promise.all(annualWindows.map(w => getReports(token, w, docType)))
       const [cumulativeResults, annualCumulativeResults] = await Promise.all([p1, p2])
 
       // Build main report stats based on exactly the selected period
@@ -455,7 +470,7 @@ export default function AdminAnalyticsPage() {
       setAnnualReports(annual)
     } catch (e) { setError(e.message) }
     finally { setLoading(false) }
-  }, [token, viewType, selectedMonth])
+  }, [token, viewType, selectedMonth, docType])
 
   const loadInsights = useCallback(async () => {
     setInsightLoading(true)
@@ -532,17 +547,18 @@ export default function AdminAnalyticsPage() {
 
   // Monthly table rows
   const tableRows = annualReports.map(m => {
-    const filteredTotal = docType === 'all' 
-      ? Math.max(0, m.total) 
-      : m.by_type.filter(t => t.name.toLowerCase().includes(docType.toLowerCase())).reduce((sum, t) => sum + t.count, 0)
+    const tot = Math.max(0, m.total || 0)
+    const comp = Math.max(0, m.completed || 0)
+    const canc = Math.max(0, m.cancelled || 0)
+    const noSh = Math.max(0, m.no_show || 0)
     
     return {
       Period:     m.month,
-      Total:      filteredTotal,
-      Completed:  docType === 'all' ? Math.max(0, m.completed) : '-',
-      Cancelled:  docType === 'all' ? Math.max(0, m.cancelled) : '-',
-      'No Show':  docType === 'all' ? Math.max(0, m.no_show) : '-',
-      'Completion Rate': docType === 'all' ? (m.total > 0 ? `${Math.round((m.completed / m.total) * 100)}%` : '0%') : '-'
+      Total:      tot,
+      Completed:  comp,
+      Cancelled:  canc,
+      'No Show':  noSh,
+      'Completion Rate': tot > 0 ? `${Math.round((comp / tot) * 100)}%` : '0%'
     }
   })
 
@@ -865,9 +881,9 @@ export default function AdminAnalyticsPage() {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4 mb-5 sm:mb-7">
         {[
           { label: 'Total Volume', value: totalVol.toLocaleString(), icon: <FileText size={18} strokeWidth={2.2} />, bg: 'bg-maroon-light', fg: 'text-maroon', border: 'border-maroon-border/60', sub: 'Total requests in period', subColor: 'text-maroon' },
-          { label: 'Completion Rate', value: docType === 'all' ? `${report?.completion_rate || 0}%` : '—', icon: <CheckCircle size={18} strokeWidth={2.2} />, bg: 'bg-success-light', fg: 'text-success', border: 'border-success-border/60', sub: 'Successfully processed', subColor: 'text-success' },
-          { label: 'Avg Process Time', value: docType === 'all' ? `${report?.avg_processing_mins || 0}m` : '—', icon: <Clock size={18} strokeWidth={2.2} />, bg: 'bg-gold-light', fg: 'text-gold', border: 'border-gold-border/60', sub: 'Per document average', subColor: 'text-gold' },
-          { label: 'No-Show Rate', value: docType === 'all' ? `${report?.no_show_rate || 0}%` : '—', icon: <AlertTriangle size={18} strokeWidth={2.2} />, bg: 'bg-danger-light', fg: 'text-danger', border: 'border-danger-border/60', sub: 'Missed appointments', subColor: 'text-danger' },
+          { label: 'Completion Rate', value: `${report?.completion_rate ?? 0}%`, icon: <CheckCircle size={18} strokeWidth={2.2} />, bg: 'bg-success-light', fg: 'text-success', border: 'border-success-border/60', sub: 'Successfully processed', subColor: 'text-success' },
+          { label: 'Avg. Fulfillment Time', value: formatTurnaroundTime(report?.avg_processing_mins, totalVol), icon: <Clock size={18} strokeWidth={2.2} />, bg: 'bg-gold-light', fg: 'text-gold', border: 'border-gold-border/60', sub: 'Request-to-release average', subColor: 'text-gold' },
+          { label: 'No-Show Rate', value: `${report?.no_show_rate ?? 0}%`, icon: <AlertTriangle size={18} strokeWidth={2.2} />, bg: 'bg-danger-light', fg: 'text-danger', border: 'border-danger-border/60', sub: 'Missed appointments', subColor: 'text-danger' },
         ].map((c, i) => (
           <div 
             key={i} 
@@ -1129,7 +1145,7 @@ export default function AdminAnalyticsPage() {
                       {cancellationPct + noShowPct}%
                     </div>
                     <div className="text-fluid-11 text-text-sub font-medium">
-                      {performanceTotals.cancelled + performanceTotals.noShow} missed appointments
+                      {performanceTotals.cancelled + performanceTotals.noShow} cancelled appointments
                     </div>
                   </div>
                 </div>
