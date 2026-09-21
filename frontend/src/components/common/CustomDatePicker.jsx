@@ -166,8 +166,8 @@ export default function CustomDatePicker({
       })
     }
 
-    // 3. Next month leading days to complete 42 cells
-    const remaining = 42 - cells.length
+    // 3. Next month leading days only to complete the final week's row
+    const remaining = (7 - (cells.length % 7)) % 7
     for (let day = 1; day <= remaining; day++) {
       const cellDate = new Date(year, month + 1, day)
       const dateStr = `${cellDate.getFullYear()}-${String(cellDate.getMonth() + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
@@ -314,6 +314,17 @@ export default function CustomDatePicker({
       {/* Calendar Grid */}
       <div className="grid grid-cols-7 gap-1">
         {calendarCells.map((cell, idx) => {
+          // Hide dates outside the current month while preserving column grid alignment
+          if (!cell.isCurrentMonth) {
+            return (
+              <div
+                key={`empty-${idx}`}
+                className="h-8 w-8 sm:h-8 sm:w-8 mx-auto pointer-events-none"
+                aria-hidden="true"
+              />
+            )
+          }
+
           const isSunday = cell.date.getDay() === 0
           const isPast = cell.dateStr < todayStr
           const isOutOfBounds = (minDate && cell.dateStr < minDate) || (maxDate && cell.dateStr > maxDate)
@@ -331,7 +342,7 @@ export default function CustomDatePicker({
 
           return (
             <button
-              key={idx}
+              key={cell.dateStr}
               type="button"
               disabled={isDisabled}
               onClick={() => handleSelectDay(cell)}
@@ -345,8 +356,6 @@ export default function CustomDatePicker({
                   ? 'bg-danger-light/30 text-danger font-medium cursor-not-allowed opacity-75'
                   : isDisabled
                   ? 'text-text-muted/30 cursor-not-allowed bg-transparent font-normal'
-                  : !cell.isCurrentMonth
-                  ? 'text-text-muted/40 font-normal hover:bg-surface cursor-pointer'
                   : 'text-text-main font-medium hover:bg-maroon-light hover:text-maroon cursor-pointer'
               }`}
             >

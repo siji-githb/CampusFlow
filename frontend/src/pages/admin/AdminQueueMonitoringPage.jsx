@@ -290,6 +290,16 @@ function AdminTicketDetailsModal({ item, onClose }) {
   )
 }
 
+// Helper to check if a timestamp matches today in user's local timezone
+const isSameLocalDate = (dateStr) => {
+  if (!dateStr) return false
+  const d = new Date(dateStr)
+  const now = new Date()
+  return d.getFullYear() === now.getFullYear() &&
+         d.getMonth() === now.getMonth() &&
+         d.getDate() === now.getDate()
+}
+
 export default function AdminQueueMonitoringPage() {
   const { token } = useAuth()
   const [queue, setQueue] = useState([])
@@ -426,16 +436,6 @@ export default function AdminQueueMonitoringPage() {
       return stepName.includes('preparation') || location === 'back office' || current.requires_presence === false
     })
 
-    // Helper to check if a timestamp matches today in user's local timezone
-    const isSameLocalDate = (dateStr) => {
-      if (!dateStr) return false
-      const d = new Date(dateStr)
-      const now = new Date()
-      return d.getFullYear() === now.getFullYear() &&
-             d.getMonth() === now.getMonth() &&
-             d.getDate() === now.getDate()
-    }
-
     // Ready for pickup releases
     const readyReleases = uncollected
     const overdueReleases = uncollected.filter(d => (d.days_waiting || 0) >= 3)
@@ -448,13 +448,13 @@ export default function AdminQueueMonitoringPage() {
           .sort((a, b) => new Date(b.confirmed_at) - new Date(a.confirmed_at))[0]
         const ts = lastConfirmed?.confirmed_at || q.ticket.updated_at || q.ticket.created_at
         if (isSameLocalDate(ts)) {
-          completedTodayMap.set(q.ticket.queue_number, true)
+          completedTodayMap.set(q.ticket.id || q.ticket.queue_number, true)
         }
       }
     })
     collected.forEach(d => {
       if (isSameLocalDate(d.confirmed_at)) {
-        completedTodayMap.set(d.queue_number, true)
+        completedTodayMap.set(d.queue_ticket_id || d.id || d.queue_number, true)
       }
     })
     const completedTodayCount = completedTodayMap.size
@@ -673,6 +673,7 @@ export default function AdminQueueMonitoringPage() {
         student_name: d.student_name || 'Unknown Student',
         student_id: d.student_id || '—',
         transaction_type: d.transaction_type,
+        selected_documents: d.selected_documents || (d.transaction_type ? [{ name: d.transaction_type }] : []),
         priority_class: d.priority_class || 'regular',
         stage: 'Claimed / Completed',
         statusKey: 'completed',
@@ -696,6 +697,7 @@ export default function AdminQueueMonitoringPage() {
             },
             appointments: {
               transaction_types: { name: d.transaction_type },
+              selected_documents: d.selected_documents || [],
               priority_class: d.priority_class || 'regular',
               release_date: d.release_date || null
             }
@@ -714,10 +716,10 @@ export default function AdminQueueMonitoringPage() {
       }
     })
 
-    // Combine avoiding duplication by queue_number
-    const existingQueueNumbers = new Set(queueItems.map(item => item.queue_number))
-    const uniqueReleaseItems = releaseItems.filter(item => !existingQueueNumbers.has(item.queue_number))
-    const uniqueCollectedItems = collectedItems.filter(item => !existingQueueNumbers.has(item.queue_number))
+    // Combine avoiding duplication by unique ticket ID (queue numbers restart daily/per transaction)
+    const existingTicketIds = new Set(queueItems.map(item => item.id).filter(Boolean))
+    const uniqueReleaseItems = releaseItems.filter(item => !item.id || !existingTicketIds.has(item.id))
+    const uniqueCollectedItems = collectedItems.filter(item => !item.id || !existingTicketIds.has(item.id))
     
     let combined = [...queueItems, ...uniqueReleaseItems, ...uniqueCollectedItems]
 
@@ -733,13 +735,8 @@ export default function AdminQueueMonitoringPage() {
         if (item.statusKey !== 'completed') return false
         const lastConfirmed = item.rawTicketData?.steps?.filter(s => s.status === 'completed' && s.confirmed_at)
           .sort((a, b) => new Date(b.confirmed_at) - new Date(a.confirmed_at))[0]
-        const ts = lastConfirmed?.confirmed_at || item.rawDate
-        if (!ts) return false
-        const d = new Date(ts)
-        const nowDate = new Date()
-        return d.getFullYear() === nowDate.getFullYear() &&
-               d.getMonth() === nowDate.getMonth() &&
-               d.getDate() === nowDate.getDate()
+        const ts = lastConfirmed?.confirmed_at || item.rawTicketData?.ticket?.updated_at || item.rawTicketData?.ticket?.created_at || item.rawDate
+        return isSameLocalDate(ts)
       }
       combined = combined.filter(isItemCompletedToday)
     } else if (activeTab === 'all_active') {
